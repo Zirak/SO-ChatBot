@@ -18,6 +18,18 @@ var IO = {
 		return this;
 	},
 
+	unregister : function ( name, fun ) {
+		if ( !this.events[name] ) {
+			return this;
+		}
+
+		this.events[ name ] = this.events[ name ].filter(function ( obj ) {
+			return obj.fun !== fun;
+		});
+
+		return this;
+	},
+
 	//fire event!
 	fire : function ( name ) {
 		if ( !this.events[name] ) {
@@ -105,7 +117,11 @@ var bot = {
 	elems : {
 		input : document.getElementById( 'input' ),
 		codify : document.getElementById( 'codify-button' ),
-		send : document.getElementById( 'sayit-button' )
+		send : document.getElementById( 'sayit-button' ),
+
+		//for my local testing
+		output : document.getElementById( 'output' ) ||
+			document.createElement( 'pre' )
 	},
 
 	stopped : false,
@@ -132,8 +148,9 @@ var bot = {
 			}
 
 			console.log( msg, 'parseMessage guess' );
-			//if it's valid and not a comment, then assume it's a game thing
-			game.receiveMessage( msg, usr );
+			//if it's valid and not a comment, fire an event and let someone
+			// else (or noone) worry about it
+			IO.fire( 'messageReceived', msg, usr );
 		}
 		catch ( e ) {
 			var err = 'Could not process input. Error: ';
@@ -194,8 +211,9 @@ var bot = {
 
 	//actually send the output
 	sendOutput : function () {
-		//document.getElementById( 'output' ).textContent += this.elems.input.value;
+		this.elems.output.textContent += this.elems.input.value;
 		//return;
+
 		if ( this.codifyOutput ) {
 			this.elems.codify.click();
 			this.codifyOutput = false;
@@ -229,7 +247,9 @@ var commands = {
 	},
 
 	learn : function ( args, usr ) {
+		args = args || '';
 		console.log( args, 'learn input' );
+
 		Object.keys( htmlEntities ).forEach(function ( entity ) {
 			var regex = new RegExp( entity, 'g' );
 			args = args.replace( regex, htmlEntities[entity] );
@@ -250,7 +270,8 @@ var commands = {
 		}
 
 		if ( commands[command.name] ) {
-			bot.reply( 'Command ' + command.name + 'already exists', usr );
+			bot.reply( 'Command ' + command.name + ' already exists', usr );
+			return;
 		}
 
 		//a shitty way to do it, I know
@@ -438,7 +459,13 @@ var game = {
 		// is codified
 		this.guessMade = true;
 
-		IO.register( 'beforeoutput', this.buildOutput, this );
+		IO.register( 'beforeoutput', this.buildOutput, this ).
+			register( 'messageReceived', this.receiveMessage, this );
+	},
+
+	destruct : function () {
+		IO.unregister( 'beforeoutput', this.buildOutput ).
+			unregister( 'messageReceived', this.receiveMessage );
 	},
 
 	//this is just a medium function
@@ -533,6 +560,8 @@ var game = {
 		bot.output(
 			'Correct! The phrase is ' + this.word + '. Congrats to @' + winrar
 		);
+
+		this.destruct();
 	},
 
 	winCheck : function () {
@@ -543,6 +572,8 @@ var game = {
 	lose : function () {
 		this.gameEnd = true;
 		bot.output( 'You people suck. The phrase was ' + this.word );
+
+		this.destruct();
 	},
 
 	loseCheck : function () {
