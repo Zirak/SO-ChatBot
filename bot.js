@@ -189,6 +189,10 @@ var bot = {
 			return false;
 		}
 
+		if ( msgObj.room_name !== location.pathname.split('/')[2] ) {
+			return false;
+		}
+
 		var msg = msgObj.content.toLowerCase().trim();
 
 		//all we really care about
