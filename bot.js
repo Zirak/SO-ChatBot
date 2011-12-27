@@ -189,7 +189,10 @@ var bot = {
 			return false;
 		}
 
-		if ( msgObj.room_name !== location.pathname.split('/')[2] ) {
+		var pathParts = location.pathname.split( '/' ),
+			id = parseFloat( pathParts[2] );
+		if ( msgObj.room_id !== id ) {
+			console.log( msgObj.room_id, id, 'validateMessage different room' );
 			return false;
 		}
 
