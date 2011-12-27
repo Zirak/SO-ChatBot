@@ -105,7 +105,7 @@ var IO = {
 
 ////bot start
 var bot = {
-	name : 'Zirak',
+	name : '!',
 
 	commandRegex : /^\/([\w\-\_]+)\s*(.+)?$/,
 
@@ -199,7 +199,7 @@ var bot = {
 		var msg = msgObj.content.toLowerCase().trim();
 
 		//all we really care about
-		if ( !msg.startsWith( '!' + this.name.toLowerCase()) ) {
+		if ( !msg.startsWith('!' + this.name) ) {
 			return false;
 		}
 
@@ -268,15 +268,14 @@ var commands = {
 		});
 		console.log( args, 'learn filtered' );
 
-		var command;
-		try {
-			command = JSON.parse( args );
-		}
-		catch ( e ) {
-			bot.reply( e.message, usr );
-			throw e;
-		}
-
+		var commandParts = parseTextCommand( args ),
+			command = {
+				name : commandParts[ 0 ],
+				output : commandParts[ 1 ],
+				input : commandParts[ 2 ] || '.*',
+			};
+		
+		console.log( commandParts, 'learn parsed' );
 		if ( !command.name || !command.input || !command.output ) {
 			bot.reply( 'Illegal /learn object ' + args, usr );
 			return;
@@ -416,6 +415,17 @@ var commands = {
 		console.log( msg, 'jQuery link' );
 
 		return msg;
+	},
+
+	online : function () {
+		var avatars = document.getElementById('present-users')
+				.getElementsByClassName('avatar');
+
+		return [].map.call(
+			avatars,
+			function ( wrapper ) {
+				return wrapper.children[ 0 ].title;
+		}).join( ', ' );
 	}
 };
 Object.keys( commands ).forEach(function ( cmdName ) {
@@ -423,8 +433,57 @@ Object.keys( commands ).forEach(function ( cmdName ) {
 });
 
 var htmlEntities = {
-	'&quot;' : '"'
+	'&quot;' : '"',
+	'&amp;'  : '&'
 };
+
+function parseTextCommand ( text ) {
+
+	var char, quotes = 0, commands = [], buffer = '', space = false;
+
+	for ( var i = 0, len = text.length; i < len; i++ ) {
+		char = text.charAt( i );
+		switch ( char ) {
+		case '"':
+			if ( quotes === 1 ) { 
+				buffer += char;
+			}
+			else {
+				quotes = quotes ? 0 : 2;
+			}
+		break;
+
+		case "'":
+			if ( quotes === 2 ) { 
+				buffer += char;
+			}
+			else {
+				quotes = quotes ? 0 : 1;
+			}
+		break;
+
+		case " ":
+			if ( !quotes ) {
+				if ( space ) {
+					break;
+				}
+				space = true;
+				commands.push( buffer );
+				buffer = '';
+				break;
+			}
+		// intentional fallthrough
+
+		default:
+			space = false;
+			buffer += char;
+		}
+	}
+	commands.push(buffer);
+
+
+	return commands;
+}
 ////commands end
 
 ////utility start
