@@ -47,6 +47,23 @@ var IO = {
 				this.preventDefault = true;
 			}
 		}
+	},
+
+	jsonp : function ( opts ) {
+		var script = document.createElement( 'script' ),
+			semiRandom = 'IO_' + ( Date.now() * Math.ceil(Math.random()) );
+		
+		window[ semiRandom ] = function () {
+			opts.fun.apply( opts.thisArg, arguments );
+			window[ semiRandom ] = null;
+		};
+
+		if ( opts.url.indexOf('?') === -1 ) {
+			opts.url += '?';
+		}
+		script.src = opts.url + '&jsonp=' + semiRandom;
+
+		document.head.appendChild( script );
 	}
 };
 
@@ -105,7 +122,8 @@ var IO = {
 
 ////bot start
 var bot = {
-	name : '!',
+	name : 'Zirak',
+	invocationPattern : '!!',
 
 	commandRegex : /^\/([\w\-\_]+)\s*(.+)?$/,
 
@@ -135,7 +153,7 @@ var bot = {
 
 		var msg = msgObj.content.trim(),
 			usr = msgObj.user_name;
-		msg = msg.slice( this.name.length + 1 ).trim();
+		msg = msg.slice( this.invocationPattern.length ).trim();
 
 		console.log( msg, 'parseMessage valid' );
 
@@ -143,7 +161,7 @@ var bot = {
 			//it's a command
 			if ( msg.startsWith('/') ) {
 				console.log( msg, 'parseMessage command' );
-				this.parseCommand( msg, usr );
+				this.parseCommand( msg, msgObj );
 				return;
 			}
 
@@ -165,22 +183,40 @@ var bot = {
 		}
 	},
 
-	parseCommand : function ( cmd, usr ) {
+	parseCommand : function ( cmd, msgObj ) {
 		console.log( cmd, 'parseCommand input' );
+
 		var commandParts = cmd.match( this.commandRegex ),
 			commandName = commandParts[ 1 ].toLowerCase(),
 			commandArgs = commandParts[ 2 ] || '';
 		
 		console.log( commandParts, 'parseCommand matched' );
 
-		if ( !this.commands.hasOwnProperty(commandName) ) {
-			this.reply( 'Invalid command ' + commandName, usr );
+		var availableCommands = Object.keys( this.commands ),
+
+		hasCommand = availableCommands.some(function ( name ) {
+
+				return this.commands[ name ].name === commandName;
+		}, this );
+
+		if ( !hasCommand ) {
+			bot.reply( 'Invalid command ' + commandName );
 			return;
 		}
 
-		bot.reply(
-			this.commands[ commandName ]( commandArgs, usr ),
-			usr
+		var cmdObj = this.commands[ commandName ];
+
+		if ( cmdObj.permissions && !cmdObj.permissions.indexOf(usr) ) {
+			bot.reply(
+				'You do not have permission to use the command ' + commandName,
+				msgObj
+			);
+			return;
+		}
+
+		bot.directReply(
+			cmdObj.fun.call( cmdObj.thisArg, commandArgs, msgObj ),
+			msgObj.message_id
 		);
 	},
 
@@ -199,7 +235,7 @@ var bot = {
 		var msg = msgObj.content.toLowerCase().trim();
 
 		//all we really care about
-		if ( !msg.startsWith('!' + this.name) ) {
+		if ( !msg.startsWith(this.invocationPattern) ) {
 			return false;
 		}
 
@@ -208,6 +244,10 @@ var bot = {
 
 	reply : function ( msg, usr ) {
 		this.output( '@' + usr + ' ' + msg );
+	},
+
+	directReply : function ( msg, repliedID ) {
+		this.output( ':' + repliedID + ' ' + msg );
 	},
 
 	output : function ( msg ) {
@@ -234,8 +274,8 @@ var bot = {
 	},
 
 	//some sugar
-	addCommand : function ( cmdName, cmd ) {
-		this.commands[ cmdName ] = cmd;
+	addCommand : function ( cmd ) {
+		this.commands[ cmd.name ] = cmd;
 	},
 
 	stop : function () {
@@ -248,243 +288,6 @@ IO.register( 'input', bot.parseMessage, bot );
 IO.register( 'output', bot.addOutput, bot );
 IO.register( 'afteroutput', bot.sendOutput, bot );
 ////bot ends
-
-////commands start
-var commands = {
-	die : function ( args, usr ) {
-		if ( this.stopped ) {
-			return 'Kill me once, shame on you, kill me twice...';
-		}
-		bot.stop();
-		return 'You killed me!';
-	},
-
-	learn : function ( args, usr ) {
-		console.log( args, 'learn input' );
-
-		Object.keys( htmlEntities ).forEach(function ( entity ) {
-			var regex = new RegExp( entity, 'g' );
-			args = args.replace( regex, htmlEntities[entity] );
-		});
-		console.log( args, 'learn filtered' );
-
-		var commandParts = parseTextCommand( args ),
-			command = {
-				name : commandParts[ 0 ],
-				output : commandParts[ 1 ],
-				input : commandParts[ 2 ] || '.*',
-			};
-		
-		console.log( commandParts, 'learn parsed' );
-		if ( !command.name || !command.input || !command.output ) {
-			bot.reply( 'Illegal /learn object ' + args, usr );
-			return;
-		}
-
-		if ( commands[command.name] ) {
-			bot.reply( 'Command ' + command.name + ' already exists', usr );
-			return;
-		}
-
-		//a shitty way to do it, I know
-		if ( !(command.input instanceof Object) ) {
-			command.input = {
-				pattern : command.input,
-				flags : ''
-			};
-		}
-
-		command.input.pattern = command.input.pattern.replace(
-			/~./g,
-			function ( c ) {
-				c = c.charAt( 1 );
-				if ( c === '~' ) {
-					return '~';
-				}
-				return '\\' + c;
-			}
-		);
-
-		var pattern;
-		try {
-			pattern = new RegExp( command.input.pattern, command.input.flags );
-		}
-		catch ( e ) {
-			bot.reply( e.message, usr );
-			throw e;
-		}
-		console.log( pattern );
-
-		var out = command.output;
-
-		bot.addCommand( command.name, function ( args, usr ) {
-			console.log( args, command.name + ' input' );
-
-			var msg = args.replace( pattern, function () {
-				var parts = arguments;
-
-				console.log( parts, command.name + ' replace #1' );
-
-				return out.replace( /\$(\d+)/g, function ( $0, $1 ) {
-					return parts[ $1 ];
-				});
-
-			});
-
-			console.log( msg, command.name + ' output' );
-			return msg;
-		});
-
-		return 'Command ' + command.name + ' learned';
-	},
-
-	mdn : function ( args ) {
-		var parts = args.trim().split( '.' ),
-			base = 	'https://developer.mozilla.org/en/',
-			url;
-		
-		console.log( args, parts, 'mdn input' );
-
-		if (
-			parts[0] === 'document' ||
-			parts[0] === 'Node' ||
-			parts[0] === 'element'
-		) {
-			url = base + 'DOM/' + args;
-			console.log( url, 'mdn DOM' );
-		}
-
-		else if ( window[parts[0]] ) {
-			url = base +
-				  'JavaScript/Reference/Global_Objects/' +
-				  parts.join( '/' );
-			console.log( url, 'mdn global' );
-		}
-
-		else {
-			url = 'https://developer.mozilla.org/en-US/search?q=' + args;
-			console.log( url, 'mdn unknown' );
-		}
-
-		return url;
-	},
-
-	jquery : function ( args ) {
-		args = args.trim().replace( /^\$/, 'jQuery' );
-
-		var parts = args.split( '.' ), exists = false, msg;
-		//parts will contain two likely components, depending on the user input
-		// user gave jQuery.prop - parts[0] will be jQuery, parts[1] will
-		//  be prop
-		// user gave prop - parts[0] will be prop
-		// user gave jQuery.fn.prop - that's a special case
-
-		console.log( args, parts, 'jQuery input' );
-
-		//jQuery API urls works like this:
-		// if it's on the jQuery object, then the url is /jQuery.property
-		// if it's on the proto, then the url is /property
-
-		//user gave something like jQuery.fn.prop, turn that to just prop
-		if ( parts.length === 3 ) {
-			parts = [ parts[2] ];
-		}
-
-		//check to see if it's a property on the jQuery object itself
-		if ( parts[0] === 'jQuery' && jQuery[parts[1]] ) {
-			exists = true;
-		}
-
-		//user wants something on the prototype?
-		else if ( parts.length === 1 && jQuery.prototype[parts[0]] ) {
-			exists = true;
-		}
-
-		//user just wanted a property? maybe.
-		else if ( jQuery[parts[0]] ) {
-			args = 'jQuery.' + parts[0];
-			exists = true;
-		}
-
-		if ( exists ) {
-			msg = 'http://api.jquery.com/' + args;
-		}
-		else {
-			msg = 'Could not find specified jQuery property ' + args;
-		}
-		console.log( msg, 'jQuery link' );
-
-		return msg;
-	},
-
-	online : function () {
-		var avatars = document.getElementById('present-users')
-				.getElementsByClassName('avatar');
-
-		return [].map.call(
-			avatars,
-			function ( wrapper ) {
-				return wrapper.children[ 0 ].title;
-		}).join( ', ' );
-	}
-};
-Object.keys( commands ).forEach(function ( cmdName ) {
-	bot.addCommand( cmdName, commands[cmdName] );
-});
-
-var htmlEntities = {
-	'&quot;' : '"',
-	'&amp;'  : '&'
-};
-
-function parseTextCommand ( text ) {
-
-	var char, quotes = 0, commands = [], buffer = '', space = false;
-
-	for ( var i = 0, len = text.length; i < len; i++ ) {
-		char = text.charAt( i );
-		switch ( char ) {
-		case '"':
-			if ( quotes === 1 ) { 
-				buffer += char;
-			}
-			else {
-				quotes = quotes ? 0 : 2;
-			}
-		break;
-
-		case "'":
-			if ( quotes === 2 ) { 
-				buffer += char;
-			}
-			else {
-				quotes = quotes ? 0 : 1;
-			}
-		break;
-
-		case " ":
-			if ( !quotes ) {
-				if ( space ) {
-					break;
-				}
-				space = true;
-				commands.push( buffer );
-				buffer = '';
-				break;
-			}
-		// intentional fallthrough
-
-		default:
-			space = false;
-			buffer += char;
-		}
-	}
-	commands.push(buffer);
-
-
-	return commands;
-}
-////commands end
 
 ////utility start
 //hijack xhr to monitor all incoming requests

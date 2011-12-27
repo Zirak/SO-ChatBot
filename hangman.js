@@ -173,4 +173,8 @@ var game = {
 		}
 	}
 };
-bot.addCommand( 'new', game.new.bind(game) );
+bot.addCommand({
+	name : 'new',
+	fun : game.new,
+	thisArg : game
+});
