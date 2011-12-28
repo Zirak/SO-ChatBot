@@ -45,6 +45,8 @@ var game = {
 
 		IO.register( 'beforeoutput', this.buildOutput, this ).
 			register( 'messageReceived', this.receiveMessage, this );
+
+		return '';
 	},
 
 	destruct : function () {

@@ -52,10 +52,13 @@ var IO = {
 	jsonp : function ( opts ) {
 		var script = document.createElement( 'script' ),
 			semiRandom = 'IO_' + ( Date.now() * Math.ceil(Math.random()) );
-		
+
 		window[ semiRandom ] = function () {
 			opts.fun.apply( opts.thisArg, arguments );
+
+			//cleanup
 			window[ semiRandom ] = null;
+			script.parentNode.removeChild( script );
 		};
 
 		if ( opts.url.indexOf('?') === -1 ) {
@@ -63,6 +66,12 @@ var IO = {
 		}
 		script.src = opts.url + '&jsonp=' + semiRandom;
 
+		document.head.appendChild( script );
+	},
+
+	loadScript : function ( url ) {
+		var script = document.createElement( 'script' );
+		script.src = url;
 		document.head.appendChild( script );
 	}
 };
@@ -126,10 +135,16 @@ var bot = {
 	invocationPattern : '!!',
 
 	commandRegex : /^\/([\w\-\_]+)\s*(.+)?$/,
-
 	commands : {}, //will be filled as needed
 
 	codifyOutput : false,
+
+	stopped : false,
+
+	dependencies : {
+		commands : 'https://raw.github.com/Titani/SO-ChatBot/master/commands.js',
+		hangman : 'https://raw.github.com/Titani/SO-ChatBot/master/hangman.js'
+	},
 
 	//common elements
 	elems : {
@@ -142,10 +157,9 @@ var bot = {
 			document.createElement( 'pre' )
 	},
 
-	stopped : false,
-
 	parseMessage : function ( msgObj ) {
 		console.log( msgObj, 'parseMessage input' );
+
 		if ( !this.validateMessage(msgObj) ) {
 			console.log( msgObj, 'parseMessage invalid' );
 			return;
@@ -168,7 +182,7 @@ var bot = {
 			console.log( msg, 'parseMessage guess' );
 			//if it's valid and not a comment, fire an event and let someone
 			// else (or noone) worry about it
-			IO.fire( 'messageReceived', msg, usr );
+			IO.fire( 'messageReceived', msg, msgObj.user_name );
 		}
 		catch ( e ) {
 			var err = 'Could not process input. Error: ';
@@ -186,30 +200,29 @@ var bot = {
 	parseCommand : function ( cmd, msgObj ) {
 		console.log( cmd, 'parseCommand input' );
 
+		if ( !this.commandRegex.test(cmd) ) {
+			bot.reply( 'Invalid command ' + cmd );
+		}
+
 		var commandParts = cmd.match( this.commandRegex ),
 			commandName = commandParts[ 1 ].toLowerCase(),
-			commandArgs = commandParts[ 2 ] || '';
-		
+			commandArgs = commandParts[ 2 ] || '',
+
+			usr = msgObj.user_name;
+
 		console.log( commandParts, 'parseCommand matched' );
 
-		var availableCommands = Object.keys( this.commands ),
-
-		hasCommand = availableCommands.some(function ( name ) {
-
-				return this.commands[ name ].name === commandName;
-		}, this );
-
-		if ( !hasCommand ) {
-			bot.reply( 'Invalid command ' + commandName );
+		if ( !this.commandExists(commandName) ) {
+			bot.reply( 'Unidentified command ' + commandName, usr );
 			return;
 		}
 
 		var cmdObj = this.commands[ commandName ];
 
-		if ( cmdObj.permissions && !cmdObj.permissions.indexOf(usr) ) {
+		if ( !cmdObj.canUse(usr) ) {
 			bot.reply(
 				'You do not have permission to use the command ' + commandName,
-				msgObj
+				usr
 			);
 			return;
 		}
@@ -242,6 +255,10 @@ var bot = {
 		return true;
 	},
 
+	commandExists : function ( cmdName ) {
+		return this.commands.hasOwnProperty( cmdName );
+	},
+
 	reply : function ( msg, usr ) {
 		this.output( '@' + usr + ' ' + msg );
 	},
@@ -269,12 +286,28 @@ var bot = {
 			this.codifyOutput = false;
 		}
 		this.elems.send.click();
-		
+
 		this.elems.input.value = '';
 	},
 
 	//some sugar
 	addCommand : function ( cmd ) {
+		cmd.permissions = cmd.permissions || {};
+		cmd.permissions.use = cmd.permissions.use || 'ALL';
+		cmd.permissions.del = cmd.permissions.del || 'NONE';
+
+		cmd.canUse = function ( usrName ) {
+			return this.permissions.use === 'ALL' ||
+				this.permissions.use !== 'NONE'
+				this.permissions.use.indexOf( usrName ) > -1;
+		};
+
+		cmd.canDel = function ( usrName ) {
+			return this.permissions.del !== 'NONE' &&
+				this.permissions.del === 'ALL' ||
+				this.permissions.del.indexOf( usrName ) > -1;
+		};
+
 		this.commands[ cmd.name ] = cmd;
 	},
 

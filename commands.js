@@ -1,14 +1,11 @@
-(function () {
-var learn = (function () {
-	
-function parseTextCommand ( text ) {
+function parseCommandArgs ( text ) {
 	var char, quotes = 0, commands = [], buffer = '', space = false;
 
 	for ( var i = 0, len = text.length; i < len; i++ ) {
 		char = text.charAt( i );
 		switch ( char ) {
 		case '"':
-			if ( quotes === 1 ) { 
+			if ( quotes === 1 ) {
 				buffer += char;
 			}
 			else {
@@ -17,7 +14,7 @@ function parseTextCommand ( text ) {
 		break;
 
 		case "'":
-			if ( quotes === 2 ) { 
+			if ( quotes === 2 ) {
 				buffer += char;
 			}
 			else {
@@ -47,7 +44,6 @@ function parseTextCommand ( text ) {
 
 	return commands;
 }
-}());
 
 var commands = {
 	die : function () {
@@ -58,91 +54,24 @@ var commands = {
 		return 'You killed me!';
 	},
 
-	learn : function ( args ) {
-		console.log( args, 'learn input' );
-
-		Object.keys( htmlEntities ).forEach(function ( entity ) {
-			var regex = new RegExp( entity, 'g' );
-			args = args.replace( regex, htmlEntities[entity] );
-		});
-		console.log( args, 'learn filtered' );
-
-		var commandParts = parseTextCommand( args ),
-			command = {
-				name   : commandParts[ 0 ],
-				output : commandParts[ 1 ],
-				input  : commandParts[ 2 ] || '.*',
-				flags  : commandParts[ 3 ]
-			};
-		
-		console.log( commandParts, 'learn parsed' );
-		if ( !command.name || !command.input || !command.output ) {
-			return 'Illegal /learn object ' + args;
+	forget : function ( args, msgObj ) {
+		if ( !bot.commandExists(args) ) {
+			return 'Command ' + args + ' does not exist';
 		}
 
-		if ( !this.commandRegex.test(command.name) ) {
-			return 'Invalid command name ' + command.name;
+		if ( !bot.commands[args].canDel(msgObj.user_name) ) {
+			return 'You are not authorized to delete the command ' + args;
 		}
 
-		if ( commands[command.name] ) {
-			return 'Command ' + command.name + ' already exists';
-		}
-
-		//a shitty way to do it, I know
-		if ( !(command.input instanceof Object) ) {
-			command.input = {
-				pattern : command.input,
-				flags : ''
-			};
-		}
-
-		command.input.pattern = command.input.pattern.replace(
-			/~./g,
-			function ( c ) {
-				c = c.charAt( 1 );
-				if ( c === '~' ) {
-					return '~';
-				}
-				return '\\' + c;
-			}
-		);
-
-		var pattern;
-		try {
-			pattern = new RegExp( command.input.pattern, command.input.flags );
-		}
-		catch ( e ) {
-			return e.message;
-		}
-		console.log( pattern );
-
-		var out = command.output;
-
-		bot.addCommand( command.name, function ( args, usr ) {
-			console.log( args, command.name + ' input' );
-
-			var msg = args.replace( pattern, function () {
-				var parts = arguments;
-
-				console.log( parts, command.name + ' replace #1' );
-
-				return out.replace( /\$(\d+)/g, function ( $0, $1 ) {
-					return parts[ $1 ];
-				});
-			});
-
-			console.log( msg, command.name + ' output' );
-			return msg;
-		});
-
-		return 'Command ' + command.name + ' learned';
+		delete bot.commands[ args ];
+		return 'Command ' + args + ' was forgotten.';
 	},
 
 	mdn : function ( args ) {
 		var parts = args.trim().split( '.' ),
 			base = 	'https://developer.mozilla.org/en/',
 			url;
-		
+
 		console.log( args, parts, 'mdn input' );
 
 		if (
@@ -228,11 +157,17 @@ var commands = {
 		}).join( ', ' );
 	},
 
+
+	user : function ( args, msgObj ) {
+		var senderID = msgObj.user_id;
+		return 'http://stackoverflow.com/users/' + ( args || senderID );
+	},
+
+
 	get : function ( args, msgObj ) {
 		var types = {
 			answer : true,
 			question : true,
-			user : true,
 		},
 		range = {
 			//the result array is in descending order, so it's "reversed"
@@ -253,29 +188,28 @@ var commands = {
 			plural = type + 's',
 
 			relativity = parts[ 1 ] || 'last',
-			start, end;
+			start, end,
+
+			usrid = parts[ 2 ] || msgObj.user_id;
 
 		console.log( parts, 'get input' );
 
 		if ( !(type in types) ) {
-			return 'Unrecognized blah blah blah ' + type;
+			return 'Invalid "getter" name ' + type;
 		}
-		if ( type !== 'user' && !(relativity in range) ) {
-			return 'Unrecognized blue blue blue ' + relativity;
+		if ( !(relativity in range) ) {
+			return 'Invalid range specifier ' + relativity;
 		}
 
-		var url = 'http://api.stackoverflow.com/1.1/users/' + msgObj.user_id;
-		
-		if ( type !== 'user' ) {
-			url += '/' + plural;
-		}
+		var url = 'http://api.stackoverflow.com/1.1/users/' + usrid + '/' +
+				plural + '?sort=creation';
 
 		console.log( url, 'get building url' );
 
 		if ( relativity === 'between' ) {
 			start = Date.parse( parts[2] );
 			end = Date.parse( parts[3] );
-			url += 'fromdate=' + start + '&todate=' + end;
+			url += '&fromdate=' + start + '&todate=' + end;
 
 			console.log( url, 'get building url between' );
 		}
@@ -285,7 +219,7 @@ var commands = {
 			fun : parseResponse
 		});
 
-		return 'Getting ' + type;
+		return 'Retrieving ' + type;
 
 		function parseResponse ( respObj ) {
 
@@ -294,16 +228,8 @@ var commands = {
 				return;
 			}
 
-			var relativePart, base = "http://stackoverflow.com/";
-			if ( type === 'user' ) {
-				relativePart = respObj.users[ 0 ];
-				base += 'users/';
-			}
-			else {
-				//have the range functions get what they want
-				relativePart = range[ relativity ]( respObj[plural] );
-				base += 'q/';
-			}
+			var relativePart = range[ relativity ]( respObj[plural] ),
+				base = "http://stackoverflow.com/q/";
 
 			console.log( relativePart, 'get parseResponse parsing' );
 			base += relativePart[ type + '_id' ];
@@ -315,15 +241,105 @@ var commands = {
 	}
 };
 
+commands.learn = (function () {
+
 var htmlEntities = {
 	'&quot;' : '"',
 	'&amp;'  : '&'
 };
 
+return function ( args ) {
+	console.log( args, 'learn input' );
+
+	Object.keys( htmlEntities ).forEach(function ( entity ) {
+		var regex = new RegExp( entity, 'g' );
+		args = args.replace( regex, htmlEntities[entity] );
+	});
+
+	console.log( args, 'learn filtered' );
+
+	var commandParts = parseCommandArgs( args ),
+		command = {
+			name   : commandParts[ 0 ],
+			output : commandParts[ 1 ],
+			input  : commandParts[ 2 ] || '.*',
+			flags  : commandParts[ 3 ]
+		};
+
+	console.log( commandParts, 'learn parsed' );
+
+	if ( !command.name || !command.input || !command.output ) {
+		return 'Illegal /learn object ' + args;
+	}
+
+	if ( bot.commandExists(command.name) ) {
+		return 'Command ' + command.name + ' already exists';
+	}
+
+	//a shitty way to do it, I know
+	if ( !(command.input instanceof Object) ) {
+		command.input = {
+			pattern : command.input,
+			flags : ''
+		};
+	}
+
+	command.input.pattern = command.input.pattern.replace(
+		/~./g,
+		function ( c ) {
+			c = c.charAt( 1 );
+			if ( c === '~' ) {
+				return '~';
+			}
+			return '\\' + c;
+		}
+	);
+
+	var pattern;
+	try {
+		pattern = new RegExp( command.input.pattern, command.input.flags );
+	}
+	catch ( e ) {
+		return e.message;
+	}
+	console.log( pattern );
+
+	var out = command.output;
+
+	bot.addCommand({
+		name : command.name,
+		fun : function ( args, usr ) {
+			console.log( args, command.name + ' input' );
+
+			var msg = args.replace( pattern, function () {
+				var parts = arguments;
+
+				console.log( parts, command.name + ' replace #1' );
+
+				return out.replace( /\$(\d+)/g, function ( $0, $1 ) {
+					return parts[ $1 ];
+				});
+			});
+
+			console.log( msg, command.name + ' output' );
+			return msg;
+		},
+		permissions : {
+			use : 'ALL',
+			del : 'ALL'
+		}
+	});
+
+	return 'Command ' + command.name + ' learned';
+}
+}());
+
 Object.keys( commands ).forEach(function ( cmdName ) {
 	bot.addCommand({
 		name : cmdName,
-		fun  : commands[ cmdName ]
+		fun  : commands[ cmdName ],
+		permissions : {
+			del : 'NONE'
+		}
 	});
 });
-}());
