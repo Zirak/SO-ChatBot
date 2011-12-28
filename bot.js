@@ -165,7 +165,7 @@ var bot = {
 			return;
 		}
 
-		var msg = msgObj.content.trim(),
+		var msg = this.cleanMessage( msgObj.content ),
 			usr = msgObj.user_name;
 		msg = msg.slice( this.invocationPattern.length ).trim();
 
@@ -259,6 +259,24 @@ var bot = {
 		return this.commands.hasOwnProperty( cmdName );
 	},
 
+	cleanMessage : (function () {
+		var htmlEntities = {
+			'&quot;' : '"',
+			'&amp;'  : '&'
+		};
+
+		return function ( msg ) {
+			msg = msg.trim();
+
+			Object.keys( htmlEntities ).forEach(function ( entity ) {
+				var regex = new RegExp( entity, 'g' );
+				msg = msg.replace( regex, htmlEntities[entity] );
+			});
+
+			return msg;
+		}
+	}()),
+
 	reply : function ( msg, usr ) {
 		this.output( '@' + usr + ' ' + msg );
 	},
@@ -296,9 +314,11 @@ var bot = {
 		cmd.permissions.use = cmd.permissions.use || 'ALL';
 		cmd.permissions.del = cmd.permissions.del || 'NONE';
 
+		cmd.description = cmd.description || '';
+
 		cmd.canUse = function ( usrName ) {
 			return this.permissions.use === 'ALL' ||
-				this.permissions.use !== 'NONE'
+				this.permissions.use !== 'NONE' &&
 				this.permissions.use.indexOf( usrName ) > -1;
 		};
 
@@ -306,6 +326,10 @@ var bot = {
 			return this.permissions.del !== 'NONE' &&
 				this.permissions.del === 'ALL' ||
 				this.permissions.del.indexOf( usrName ) > -1;
+		};
+
+		cmd.del = function () {
+			
 		};
 
 		this.commands[ cmd.name ] = cmd;
@@ -345,6 +369,7 @@ XMLHttpRequest.prototype.open = (function(){
 
 			//handle all messages that came,
 			IO.in.flush();
+			//output ALL THE THINGS!
 			IO.out.flush();
 		});
 
@@ -371,7 +396,7 @@ XMLHttpRequest.prototype.open = (function(){
 		if ( msg.event_type !== 1 ) {
 			return;
 		}
-		//add the message to the input buffer and then handle it
+		//add the message to the input buffer
 		IO.in.receive( msg );
 	}
 

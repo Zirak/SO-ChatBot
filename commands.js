@@ -1,49 +1,74 @@
-function parseCommandArgs ( text ) {
-	var char, quotes = 0, commands = [], buffer = '', space = false;
+var parseCommandArgs = (function ( args ) {
 
-	for ( var i = 0, len = text.length; i < len; i++ ) {
-		char = text.charAt( i );
-		switch ( char ) {
-		case '"':
-			if ( quotes === 1 ) {
-				buffer += char;
-			}
-			else {
-				quotes = quotes ? 0 : 2;
-			}
-		break;
+	var state, inString = false, previousWasSpace = false;
 
-		case "'":
-			if ( quotes === 2 ) {
-				buffer += char;
-			}
-			else {
-				quotes = quotes ? 0 : 1;
-			}
-		break;
+	var handleChar = function ( ch ) {
+		var ret;
 
-		case " ":
-			if ( !quotes ) {
-				if ( space ) {
-					break;
-				}
-				space = true;
-				commands.push( buffer );
-				buffer = '';
-				break;
-			}
-		// intentional fallthrough
-
-		default:
-			space = false;
-			buffer += char;
+		if ( state === 'escape' ) {
+			ret = ch;
+			state = 'data';
 		}
-	}
-	commands.push(buffer);
 
+		else if ( ch === '"' ) {
+			inString = !inString;
+			state = 'data';
+			ret = '';
+		}
 
-	return commands;
-}
+		else if ( ch === '\\' ) {
+			ret = '';
+			state = 'escape';
+		}
+
+		else if ( ch === ' ' && !inString ) {
+			if ( previousWasSpace ) {
+				ret = '';
+			}
+			else {
+				previousWasSpace = false;
+				ret = 'NEW';
+			}
+		}
+
+		else if ( state === 'data' ) {
+			ret = ch;
+		}
+
+		return ret;
+	};
+
+	return function ( args ) {
+		var ret = [],
+			arg = '',
+			ch,
+			pos = 0, len = args.length,
+			whatToDo;
+		
+		state = 'data';
+
+		while ( pos < len ) {
+			ch = args[ pos++ ];
+			whatToDo = handleChar( ch );
+
+			if ( whatToDo === 'NEW' ) {
+				ret.push( arg );
+				arg = '';
+			}
+			else {
+				arg += whatToDo;
+			}
+		}
+		ret.push( arg );
+
+		if ( inString ) {
+			throw 'Unexpected end of input';
+		}
+
+		return ret;
+	};
+
+}());
 
 var commands = {
 	die : function () {
@@ -161,102 +186,107 @@ var commands = {
 	user : function ( args, msgObj ) {
 		var senderID = msgObj.user_id;
 		return 'http://stackoverflow.com/users/' + ( args || senderID );
-	},
-
-
-	get : function ( args, msgObj ) {
-		var types = {
-			answer : true,
-			question : true,
-		},
-		range = {
-			//the result array is in descending order, so it's "reversed"
-			first : function ( arr ) {
-				return arr[ arr.length - 1 ];
-			},
-			last : function ( arr ) {
-				return arr[ 0 ];
-			},
-			between : function ( arr ) {
-				//SO api takes care of this for us
-				return arr;
-			}
-		};
-
-		var parts = args.split( ' ' ),
-			type = parts[ 0 ],
-			plural = type + 's',
-
-			relativity = parts[ 1 ] || 'last',
-			start, end,
-
-			usrid = parts[ 2 ] || msgObj.user_id;
-
-		console.log( parts, 'get input' );
-
-		if ( !(type in types) ) {
-			return 'Invalid "getter" name ' + type;
-		}
-		if ( !(relativity in range) ) {
-			return 'Invalid range specifier ' + relativity;
-		}
-
-		var url = 'http://api.stackoverflow.com/1.1/users/' + usrid + '/' +
-				plural + '?sort=creation';
-
-		console.log( url, 'get building url' );
-
-		if ( relativity === 'between' ) {
-			start = Date.parse( parts[2] );
-			end = Date.parse( parts[3] );
-			url += '&fromdate=' + start + '&todate=' + end;
-
-			console.log( url, 'get building url between' );
-		}
-
-		IO.jsonp({
-			url : url,
-			fun : parseResponse
-		});
-
-		return 'Retrieving ' + type;
-
-		function parseResponse ( respObj ) {
-
-			if ( respObj.error ) {
-				bot.directReply( respObj.error.message, msgObj.message_id );
-				return;
-			}
-
-			var relativePart = range[ relativity ]( respObj[plural] ),
-				base = "http://stackoverflow.com/q/";
-
-			console.log( relativePart, 'get parseResponse parsing' );
-			base += relativePart[ type + '_id' ];
-
-			console.log( base, 'get parseResponse ');
-
-			bot.directReply( base, msgObj.message_id );
-		}
 	}
 };
 
-commands.learn = (function () {
+commands.get = (function () {
+var types = {
+		answer : true,
+		question : true,
+	},
+	range = {
+		//the result array is in descending order, so it's "reversed"
+		first : function ( arr ) {
+			return arr[ arr.length - 1 ];
+		},
+		last : function ( arr ) {
+			return arr[ 0 ];
+		},
+		between : function ( arr ) {
+			//SO api takes care of this for us
+			return arr;
+		}
+	};
 
-var htmlEntities = {
-	'&quot;' : '"',
-	'&amp;'  : '&'
+return function ( args, msgObj ) {
+	var parts = parseCommandArgs( args ),
+		type = parts[ 0 ],
+		plural = type + 's',
+
+		relativity = parts[ 1 ] || 'last',
+		start, end,
+
+		usrid = parts[ 2 ] || msgObj.user_id;
+
+	//if "between" is given without the optional user_id, then assume the
+	// sender's id
+	console.log( usrid, Number(usrid) );
+	if ( relativity === 'between' && isNaN(Number(usrid)) ) {
+		usrid = msgObj.user_id;
+	}
+
+	console.log( parts, 'get input' );
+
+	if ( !types.hasOwnProperty(type) ) {
+		return 'Invalid "getter" name ' + type;
+	}
+	if ( !range.hasOwnProperty(relativity) ) {
+		return 'Invalid range specifier ' + relativity;
+	}
+
+	var url = 'http://api.stackoverflow.com/1.1/users/' + usrid + '/' +
+			plural + '?sort=creation';
+
+	console.log( url, 'get building url' );
+
+	if ( relativity === 'between' ) {
+		start = Date.parse( parts[2] );
+		end = Date.parse( parts[3] );
+		url += '&fromdate=' + start + '&todate=' + end;
+
+		console.log( url, 'get building url between' );
+	}
+
+	IO.jsonp({
+		url : url,
+		fun : parseResponse
+	});
+
+	return 'Retrieving ' + type;
+
+	function parseResponse ( respObj ) {
+
+		if ( respObj.error ) {
+			bot.directReply( respObj.error.message, msgObj.message_id );
+			return;
+		}
+
+		var relativeParts = [].concat( range[ relativity ]( respObj[plural] ) ),
+			base = "http://stackoverflow.com/q/",
+			res;
+
+		console.log( relativeParts.slice(), 'get parseResponse parsing' );
+
+		if ( relativeParts.length ) {
+			res = relativeParts.map(function ( obj ) {
+				console.log( obj );
+				return base + ( obj[type + '_id'] || '' );
+			}).join( ' ' );
+		}
+		else {
+			res = 'User did not submit any ' + plural;
+		}
+		console.log( res, 'get parseResponse parsed');
+
+		bot.directReply( res, msgObj.message_id );
+	}
 };
+}());
+
+commands.learn = (function () {
 
 return function ( args ) {
 	console.log( args, 'learn input' );
-
-	Object.keys( htmlEntities ).forEach(function ( entity ) {
-		var regex = new RegExp( entity, 'g' );
-		args = args.replace( regex, htmlEntities[entity] );
-	});
-
-	console.log( args, 'learn filtered' );
 
 	var commandParts = parseCommandArgs( args ),
 		command = {
@@ -276,15 +306,7 @@ return function ( args ) {
 		return 'Command ' + command.name + ' already exists';
 	}
 
-	//a shitty way to do it, I know
-	if ( !(command.input instanceof Object) ) {
-		command.input = {
-			pattern : command.input,
-			flags : ''
-		};
-	}
-
-	command.input.pattern = command.input.pattern.replace(
+	command.input= command.input.replace(
 		/~./g,
 		function ( c ) {
 			c = c.charAt( 1 );
@@ -297,7 +319,7 @@ return function ( args ) {
 
 	var pattern;
 	try {
-		pattern = new RegExp( command.input.pattern, command.input.flags );
+		pattern = new RegExp( command.input, command.flags );
 	}
 	catch ( e ) {
 		return e.message;
@@ -308,22 +330,8 @@ return function ( args ) {
 
 	bot.addCommand({
 		name : command.name,
-		fun : function ( args, usr ) {
-			console.log( args, command.name + ' input' );
-
-			var msg = args.replace( pattern, function () {
-				var parts = arguments;
-
-				console.log( parts, command.name + ' replace #1' );
-
-				return out.replace( /\$(\d+)/g, function ( $0, $1 ) {
-					return parts[ $1 ];
-				});
-			});
-
-			console.log( msg, command.name + ' output' );
-			return msg;
-		},
+		fun : customCommand,
+		description : 'User-taught command'
 		permissions : {
 			use : 'ALL',
 			del : 'ALL'
@@ -331,7 +339,24 @@ return function ( args ) {
 	});
 
 	return 'Command ' + command.name + ' learned';
-}
+
+	function customCommand ( args, usr ) {
+		console.log( args, command.name + ' input' );
+
+		var msg = args.replace( pattern, function () {
+			var parts = arguments;
+
+			console.log( parts, command.name + ' replace #1' );
+
+			return out.replace( /\$(\d+)/g, function ( $0, $1 ) {
+				return parts[ $1 ];
+			});
+		});
+
+		console.log( msg, command.name + ' output' );
+		return msg;
+	}
+};
 }());
 
 Object.keys( commands ).forEach(function ( cmdName ) {

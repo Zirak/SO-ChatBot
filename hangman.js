@@ -43,15 +43,16 @@ var game = {
 		// is codified
 		this.guessMade = true;
 
-		IO.register( 'beforeoutput', this.buildOutput, this ).
-			register( 'messageReceived', this.receiveMessage, this );
-
+		this.register();
 		return '';
 	},
 
-	destruct : function () {
-		IO.unregister( 'beforeoutput', this.buildOutput ).
-			unregister( 'messageReceived', this.receiveMessage );
+	register : function () {
+		IO
+			.unregister( 'beforeoutput', this.buildOutput )
+			.unregister( 'messageReceived', this.receiveMessage )
+			.register( 'beforeoutput', this.buildOutput, this )
+			.register( 'messageReceived', this.receiveMessage, this );
 	},
 
 	//this is just a medium function
@@ -146,8 +147,6 @@ var game = {
 		bot.output(
 			'Correct! The phrase is ' + this.word + '. Congrats to @' + winrar
 		);
-
-		this.destruct();
 	},
 
 	winCheck : function () {
@@ -158,8 +157,6 @@ var game = {
 	lose : function () {
 		this.gameEnd = true;
 		bot.output( 'You people suck. The phrase was ' + this.word );
-
-		this.destruct();
 	},
 
 	loseCheck : function () {
