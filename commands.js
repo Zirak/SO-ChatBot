@@ -1,6 +1,6 @@
 var parseCommandArgs = (function ( args ) {
 
-	var state, inString = false, previousWasSpace = false;
+	var state, inString, prev;
 
 	var handleChar = function ( ch ) {
 		var ret;
@@ -22,11 +22,10 @@ var parseCommandArgs = (function ( args ) {
 		}
 
 		else if ( ch === ' ' && !inString ) {
-			if ( previousWasSpace ) {
+			if ( prev === ' ' ) {
 				ret = '';
 			}
 			else {
-				previousWasSpace = false;
 				ret = 'NEW';
 			}
 		}
@@ -34,6 +33,8 @@ var parseCommandArgs = (function ( args ) {
 		else if ( state === 'data' ) {
 			ret = ch;
 		}
+
+		prev = ch;
 
 		return ret;
 	};
@@ -46,6 +47,7 @@ var parseCommandArgs = (function ( args ) {
 			whatToDo;
 		
 		state = 'data';
+		inString = false;
 
 		while ( pos < len ) {
 			ch = args[ pos++ ];
@@ -62,7 +64,7 @@ var parseCommandArgs = (function ( args ) {
 		ret.push( arg );
 
 		if ( inString ) {
-			throw 'Unexpected end of input';
+			throw new Error( 'Unexpected end of input' );
 		}
 
 		return ret;
