@@ -73,6 +73,10 @@ var parseCommandArgs = (function ( args ) {
 }());
 
 var commands = {
+	alive : function () {
+		return 'I LIVE!';
+	},
+
 	die : function () {
 		if ( this.stopped ) {
 			return 'Kill me once, shame on you, kill me twice...';
@@ -222,7 +226,6 @@ return function ( args, msgObj ) {
 
 	//if "between" is given without the optional user_id, then assume the
 	// sender's id
-	console.log( usrid, Number(usrid) );
 	if ( relativity === 'between' && isNaN(Number(usrid)) ) {
 		usrid = msgObj.user_id;
 	}
@@ -333,7 +336,7 @@ return function ( args ) {
 	bot.addCommand({
 		name : command.name,
 		fun : customCommand,
-		description : 'User-taught command'
+		description : 'User-taught command',
 		permissions : {
 			use : 'ALL',
 			del : 'ALL'

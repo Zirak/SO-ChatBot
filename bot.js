@@ -49,6 +49,59 @@ var IO = {
 		}
 	},
 
+	//sends a JSON-data xhr
+	xhr : (function ( props ) {
+		var defaults = {
+			url : null,
+			method : 'GET',
+			data : {},
+			load : function(){},
+			complete : function(){},
+			success : function(){},
+			fail : function(){},
+			abort : function(){}
+		},
+		//event listener names
+			listeners = {
+			load : true,
+			success : true,
+			fail : true,
+			abort : true
+		};
+
+		function toFormData ( obj ) {
+			var ret = new FormData();
+			Object.keys( obj ).forEach(function ( key ) {
+				ret.append( key, obj[key] );
+			});
+
+			return ret;
+		}
+
+		return function ( props ) {
+			props = Object.merge( defaults, props );
+
+			var xhr = new XMLHttpRequest();
+
+			//attach all needed event listeners
+			Object.keys( listeners ).forEach(function ( listenerName ) {
+				xhr.addEventListener( listenerName, props[listenerName] );
+			});
+
+			xhr.addEventListener( 'readystatechange', function () {
+				if ( xhr.readyState === 4 ) {
+					props.complete.call( xhr, xhr.responseText, xhr );
+				}
+			});
+
+			xhr.open( props.method, props.url );
+			xhr.send( toFormData(props.data) );
+
+
+			return xhr;
+		};
+	}()),
+
 	jsonp : function ( opts ) {
 		var script = document.createElement( 'script' ),
 			semiRandom = 'IO_' + ( Date.now() * Math.ceil(Math.random()) );
@@ -133,6 +186,8 @@ var IO = {
 var bot = {
 	name : 'Zirak',
 	invocationPattern : '!!',
+
+	roomid : location.pathname.match( /\d+/ )[ 0 ],
 
 	commandRegex : /^\/([\w\-\_]+)\s*(.+)?$/,
 	commands : {}, //will be filled as needed
@@ -238,10 +293,14 @@ var bot = {
 			return false;
 		}
 
-		var pathParts = location.pathname.split( '/' ),
-			id = parseFloat( pathParts[2] );
-		if ( msgObj.room_id !== id ) {
-			console.log( msgObj.room_id, id, 'validateMessage different room' );
+		var pathParts = location.pathname.split( '/' );
+
+		if ( msgObj.room_id !== this.roomid ) {
+			console.log(
+				msgObj.room_id,
+				this.roomid,
+				'validateMessage different room'
+			);
 			return false;
 		}
 
@@ -262,7 +321,8 @@ var bot = {
 	cleanMessage : (function () {
 		var htmlEntities = {
 			'&quot;' : '"',
-			'&amp;'  : '&'
+			'&amp;'  : '&',
+			'&#39;'  : '\''
 		};
 
 		return function ( msg ) {
@@ -274,7 +334,7 @@ var bot = {
 			});
 
 			return msg;
-		}
+		};
 	}()),
 
 	reply : function ( msg, usr ) {
@@ -296,16 +356,18 @@ var bot = {
 
 	//actually send the output
 	sendOutput : function () {
-		this.elems.output.textContent += this.elems.input.value;
-		//return;
+		var message = this.elems.input.value;
 
-		if ( this.codifyOutput ) {
-			this.elems.codify.click();
-			this.codifyOutput = false;
-		}
-		this.elems.send.click();
+		this.elems.output.textContent += message;
 
-		this.elems.input.value = '';
+		IO.xhr({
+			url : '/chats/' + this.roomid + '/messages/new',
+			type : 'POST',
+			data : {
+				text : message,
+				fkey : fkey().fkey
+			}
+		});
 	},
 
 	//some sugar
@@ -347,51 +409,79 @@ IO.register( 'afteroutput', bot.sendOutput, bot );
 ////bot ends
 
 ////utility start
-//hijack xhr to monitor all incoming requests
-XMLHttpRequest.prototype.open = (function(){
-	//keep a reference to the old one (will be used to call it later)
-	var old = XMLHttpRequest.prototype.open;
+var polling = {
+	//used in the SO chat requests, dunno exactly what for
+	times : {},
 
-	return function(){
-		//we only care about the finished reuqests
-		this.addEventListener( "load", function(){
+	pollInterval : 5000,
 
-			var parsed;
-			try {
-				parsed = JSON.parse( this.responseText );
-			}
-			//if there's a parsing error, just ignore the request
-			catch ( e ) {
-				return;
-			}
+	init : function () {
+		var that = this,
+			roomid = location.pathname.match( /\d+/ )[ 0 ];
 
-			handleMessageObject( parsed );
+		IO.xhr({
+			url : '/chats/' + roomid + '/events',
+			method : 'POST',
+			data : fkey({
+				since : 0,
+				mode : 'Messages',
+				msgCount : 0
+			}),
 
-			//handle all messages that came,
-			IO.in.flush();
-			//output ALL THE THINGS!
-			IO.out.flush();
+			complete : finish
 		});
 
-		//call the old version
-		return old.apply( this, arguments );
-	};
+		function finish ( resp ) {
+			resp = JSON.parse( resp );
 
-	//handle a request object
-	function handleMessageObject( obj ) {
-		Object.keys( obj ).forEach(function ( key ) {
+			that.times[ 'r' + roomid ] = resp.time;
 
-			//I can't intelligently explain this part. you gotta sniff around
-			// how SO sends message data to get this
-			var msgObj = obj[ key ];
-			if ( msgObj.e && msgObj.e[0] ) {
-				msgObj.e.forEach( handleMessage );
+			setTimeout(function () {
+				that.poll();
+			}, that.pollInterval );
+		}
+	},
+
+	poll : function () {
+		var that = this;
+
+		IO.xhr({
+			url : '/events',
+			method : 'POST',
+			data : Object.merge( fkey(), that.times, {foo : 'bar'} ),
+			complete : that.complete.bind( that )
+		});
+	},
+
+	complete : function ( resp ) {
+		resp = JSON.parse( resp );
+	
+		if ( !resp ) {
+			return;
+		}
+
+		var that = this;
+		Object.keys( resp ).forEach(function ( key ) {
+			var msgObj = resp[ key ];
+
+			if ( msgObj.t ) {
+				that.times[ key ] = msgObj.t;
+			}
+
+			if ( msgObj.e ) {
+				msgObj.e.forEach( that.handleMessageObject );
 			}
 		});
-	}
 
-	//handle an individual message object
-	function handleMessage ( msg ) {
+		IO.in.flush();
+		IO.out.flush();
+
+		setTimeout(function () {
+			that.poll();
+		}, this.pollInterval );
+	},
+
+	handleMessageObject : function ( msg ) {
 		//event_type of 1 means new message
 		if ( msg.event_type !== 1 ) {
 			return;
@@ -399,10 +489,19 @@ XMLHttpRequest.prototype.open = (function(){
 		//add the message to the input buffer
 		IO.in.receive( msg );
 	}
-
-}());
+};
 
 //small utility functions
+Object.merge = function () {
+	return [].reduce.call( arguments, function ( ret, merger ) {
+
+		Object.keys( merger ).forEach(function ( key ) {
+			ret[ key ] = merger[ key ];
+		});
+
+		return ret;
+	}, {} );
+};
 String.prototype.indexesOf = function ( str ) {
 	var part = this.valueOf(),
 
