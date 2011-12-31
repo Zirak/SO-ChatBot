@@ -243,11 +243,6 @@ var bot = {
 		var pathParts = location.pathname.split( '/' );
 
 		if ( msgObj.room_id !== this.roomid ) {
-			console.log(
-				msgObj.room_id,
-				this.roomid,
-				'validateMessage different room'
-			);
 			return false;
 		}
 
@@ -311,21 +306,23 @@ var bot = {
 				return;
 			}
 
-			jQuery.post(
-				'/chats/' + bot.roomid + '/messages/new',
-				{
+			jQuery.ajax({
+				url : '/chats/' + bot.roomid + '/messages/new',
+				data : {
 					text : message,
 					fkey : fkey().fkey
 				},
-				complete
-			);
+				type : 'POST',
+				complete : complete
+			});
 
 			that.msg = '';
 
-			function complete ( resp, xhr ) {
+			function complete ( xhr ) {
+				console.log( xhr.status );
 				//conflict, wait for next round to send message
 				if ( xhr.status === 409 ) {
-					that.msg = message + that.msg;
+					IO.out.receive( message.trim() );
 				}
 			}
 		},
@@ -433,7 +430,6 @@ var polling = {
 		});
 
 		IO.in.flush();
-		console.log( IO.out.buffer );
 		IO.out.flush();
 
 		setTimeout(function () {
