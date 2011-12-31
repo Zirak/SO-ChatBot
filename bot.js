@@ -49,59 +49,6 @@ var IO = {
 		}
 	},
 
-	//sends a JSON-data xhr
-	xhr : (function ( props ) {
-		var defaults = {
-			url : null,
-			method : 'GET',
-			data : {},
-			load : function(){},
-			complete : function(){},
-			success : function(){},
-			fail : function(){},
-			abort : function(){}
-		},
-		//event listener names
-			listeners = {
-			load : true,
-			success : true,
-			fail : true,
-			abort : true
-		};
-
-		function toFormData ( obj ) {
-			var ret = new FormData();
-			Object.keys( obj ).forEach(function ( key ) {
-				ret.append( key, obj[key] );
-			});
-
-			return ret;
-		}
-
-		return function ( props ) {
-			props = Object.merge( defaults, props );
-
-			var xhr = new XMLHttpRequest();
-
-			//attach all needed event listeners
-			Object.keys( listeners ).forEach(function ( listenerName ) {
-				xhr.addEventListener( listenerName, props[listenerName] );
-			});
-
-			xhr.addEventListener( 'readystatechange', function () {
-				if ( xhr.readyState === 4 ) {
-					props.complete.call( xhr, xhr.responseText, xhr );
-				}
-			});
-
-			xhr.open( props.method, props.url );
-			xhr.send( toFormData(props.data) );
-
-
-			return xhr;
-		};
-	}()),
-
 	jsonp : function ( opts ) {
 		var script = document.createElement( 'script' ),
 			semiRandom = 'IO_' + ( Date.now() * Math.ceil(Math.random()) );
@@ -187,7 +134,7 @@ var bot = {
 	name : 'Zirak',
 	invocationPattern : '!!',
 
-	roomid : location.pathname.match( /\d+/ )[ 0 ],
+	roomid : parseFloat( location.pathname.match(/\d+/)[0] ),
 
 	commandRegex : /^\/([\w\-\_]+)\s*(.+)?$/,
 	commands : {}, //will be filled as needed
@@ -338,36 +285,50 @@ var bot = {
 	}()),
 
 	reply : function ( msg, usr ) {
-		this.output( '@' + usr + ' ' + msg );
+		this.output.add( '@' + usr + ' ' + msg );
 	},
 
 	directReply : function ( msg, repliedID ) {
-		this.output( ':' + repliedID + ' ' + msg );
+		this.output.add( ':' + repliedID + ' ' + msg );
 	},
 
-	output : function ( msg ) {
-		IO.out.receive( msg );
-	},
+	output : {
+		msg : '',
 
-	//prepare msg to be sent
-	addOutput : function ( msg ) {
-		this.elems.input.value += msg + '\n';
-	},
+		add : function ( txt ) {
+			IO.out.receive( txt );
+		},
 
-	//actually send the output
-	sendOutput : function () {
-		var message = this.elems.input.value;
+		build : function ( txt ) {
+			this.msg += txt + '\n';
+			console.log( txt, this.msg );
+		},
 
-		this.elems.output.textContent += message;
+		send : function () {
+			var message = this.msg, that = this;
 
-		IO.xhr({
-			url : '/chats/' + this.roomid + '/messages/new',
-			type : 'POST',
-			data : {
-				text : message,
-				fkey : fkey().fkey
+			if ( !message ) {
+				return;
 			}
-		});
+
+			jQuery.post(
+				'/chats/' + bot.roomid + '/messages/new',
+				{
+					text : message,
+					fkey : fkey().fkey
+				},
+				complete
+			);
+
+			that.msg = '';
+
+			function complete ( resp, xhr ) {
+				//conflict, wait for next round to send message
+				if ( xhr.status === 409 ) {
+					that.msg = message + that.msg;
+				}
+			}
+		},
 	},
 
 	//some sugar
@@ -404,8 +365,8 @@ var bot = {
 
 IO.register( 'receiveinput', bot.validateMessage, bot );
 IO.register( 'input', bot.parseMessage, bot );
-IO.register( 'output', bot.addOutput, bot );
-IO.register( 'afteroutput', bot.sendOutput, bot );
+IO.register( 'output', bot.output.build, bot.output );
+IO.register( 'afteroutput', bot.output.send, bot.output );
 ////bot ends
 
 ////utility start
@@ -419,20 +380,19 @@ var polling = {
 		var that = this,
 			roomid = location.pathname.match( /\d+/ )[ 0 ];
 
-		IO.xhr({
-			url : '/chats/' + roomid + '/events',
-			method : 'POST',
-			data : fkey({
+		jQuery.post(
+			'/chats/' + roomid + '/events/',
+			fkey({
 				since : 0,
 				mode : 'Messages',
 				msgCount : 0
 			}),
-
-			complete : finish
-		});
+			finish
+		);
 
 		function finish ( resp ) {
-			resp = JSON.parse( resp );
+			console.log( resp );
+			//resp = JSON.parse( resp );
 
 			that.times[ 'r' + roomid ] = resp.time;
 
@@ -445,16 +405,15 @@ var polling = {
 	poll : function () {
 		var that = this;
 
-		IO.xhr({
-			url : '/events',
-			method : 'POST',
-			data : Object.merge( fkey(), that.times, {foo : 'bar'} ),
-			complete : that.complete.bind( that )
-		});
+		jQuery.post(
+			'/events',
+			Object.merge( fkey(), that.times ),
+			function () { that.complete.apply( that, arguments ); }
+		);
 	},
 
 	complete : function ( resp ) {
-		resp = JSON.parse( resp );
+		//resp = JSON.parse( resp );
 	
 		if ( !resp ) {
 			return;
@@ -474,6 +433,7 @@ var polling = {
 		});
 
 		IO.in.flush();
+		console.log( IO.out.buffer );
 		IO.out.flush();
 
 		setTimeout(function () {
@@ -490,6 +450,7 @@ var polling = {
 		IO.in.receive( msg );
 	}
 };
+polling.init();
 
 //small utility functions
 Object.merge = function () {
