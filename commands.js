@@ -45,7 +45,7 @@ var parseCommandArgs = (function ( args ) {
 			ch,
 			pos = 0, len = args.length,
 			whatToDo;
-		
+
 		state = 'data';
 		inString = false;
 
@@ -71,6 +71,22 @@ var parseCommandArgs = (function ( args ) {
 	};
 
 }());
+
+//to be used in commands.mdn
+// https://developer.mozilla.org/Special:Tags?tag=DOM
+//a lowercaseObjectName => DOM/objectName object, where a falsy value
+// means to just use lowercaseObjectName
+var DOMParts = {
+	'document' : '',
+	'element' : '',
+	'event' : '',
+	'form' : '',
+	'node' : 'Node',
+	'nodelist' : 'NodeList',
+	'range' : '',
+	'text' : 'Text',
+	'window' : '',
+};
 
 var commands = {
 	alive : function () {
@@ -103,27 +119,31 @@ var commands = {
 			base = 	'https://developer.mozilla.org/en/',
 			url;
 
-		console.log( args, parts, 'mdn input' );
+		console.log( args, parts, '!!/mdn input' );
 
-		if (
-			parts[0] === 'document' ||
-			parts[0] === 'Node' ||
-			parts[0] === 'element'
-		) {
-			url = base + 'DOM/' + args;
-			console.log( url, 'mdn DOM' );
+		var lowercased = parts[ 0 ].toLowerCase();
+		if ( DOMParts.hasOwnProperty(lowercased) ) {
+			parts[ 0 ] = DOMParts[ lowercased ] || parts[ 0 ];
+			url = base + 'DOM/';
+
+			if ( parts.length > 1 ) {
+				url += parts.join( '.' );
+			} else {
+				url += parts[ 0 ];
+			}
+			console.log( url, '!!/mdn DOM' );
 		}
 
 		else if ( window[parts[0]] ) {
 			url = base +
 				  'JavaScript/Reference/Global_Objects/' +
 				  parts.join( '/' );
-			console.log( url, 'mdn global' );
+			console.log( url, '!!/mdn global' );
 		}
 
 		else {
 			url = 'https://developer.mozilla.org/en-US/search?q=' + args;
-			console.log( url, 'mdn unknown' );
+			console.log( url, '!!/mdn unknown' );
 		}
 
 		return url;
@@ -262,7 +282,7 @@ return function ( args, msgObj ) {
 	function parseResponse ( respObj ) {
 
 		if ( respObj.error ) {
-			bot.directReply( respObj.error.message, msgObj.message_id );
+			bot.reply( respObj.error.message, msgObj.message_id );
 			return;
 		}
 
@@ -283,7 +303,7 @@ return function ( args, msgObj ) {
 		}
 		console.log( res, 'get parseResponse parsed');
 
-		bot.directReply( res, msgObj.message_id );
+		bot.reply( res, msgObj.user_name );
 	}
 };
 }());

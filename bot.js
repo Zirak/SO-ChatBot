@@ -229,9 +229,9 @@ var bot = {
 			return;
 		}
 
-		bot.directReply(
+		bot.reply(
 			cmdObj.fun.call( cmdObj.thisArg, commandArgs, msgObj ),
-			msgObj.message_id
+			usr
 		);
 	},
 
@@ -349,7 +349,7 @@ var bot = {
 		};
 
 		cmd.del = function () {
-			
+
 		};
 
 		this.commands[ cmd.name ] = cmd;
@@ -411,7 +411,7 @@ var polling = {
 
 	complete : function ( resp ) {
 		//resp = JSON.parse( resp );
-	
+
 		if ( !resp ) {
 			return;
 		}
