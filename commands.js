@@ -106,11 +106,12 @@ var commands = {
 			return 'Command ' + args + ' does not exist';
 		}
 
-		if ( !bot.commands[args].canDel(msgObj.user_name) ) {
+		var cmd = bot.commands[ cmd ];
+		if ( !cmd.canDel(msgObj.user_id) ) {
 			return 'You are not authorized to delete the command ' + args;
 		}
 
-		delete bot.commands[ args ];
+		cmd.del();
 		return 'Command ' + args + ' was forgotten.';
 	},
 
@@ -365,7 +366,7 @@ return function ( args ) {
 
 	return 'Command ' + command.name + ' learned';
 
-	function customCommand ( args, usr ) {
+	function customCommand ( args ) {
 		console.log( args, command.name + ' input' );
 
 		var msg = args.replace( pattern, function () {
@@ -393,3 +394,11 @@ Object.keys( commands ).forEach(function ( cmdName ) {
 		}
 	});
 });
+
+bot.commands.die.permissions.use = [
+	419970, //Raynos
+	342129, //Matt McDonald
+	170224, //Ivo Wetzel
+	94197,  //Andy E
+	617762  //me (Zirak)
+];

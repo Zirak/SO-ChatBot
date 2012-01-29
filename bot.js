@@ -261,6 +261,7 @@ var bot = {
 	},
 
 	cleanMessage : (function () {
+		//some html entities to replace
 		var htmlEntities = {
 			'&quot;' : '"',
 			'&amp;'  : '&',
@@ -281,10 +282,6 @@ var bot = {
 
 	reply : function ( msg, usr ) {
 		this.output.add( '@' + usr + ' ' + msg );
-	},
-
-	directReply : function ( msg, repliedID ) {
-		this.output.add( ':' + repliedID + ' ' + msg );
 	},
 
 	output : {
@@ -349,7 +346,7 @@ var bot = {
 		};
 
 		cmd.del = function () {
-
+			delete bot.commands[ cmd.name ];
 		};
 
 		this.commands[ cmd.name ] = cmd;
