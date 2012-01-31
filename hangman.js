@@ -56,20 +56,21 @@ var game = {
 	},
 
 	//this is just a medium function
-	receiveMessage : function ( msg, usr ) {
+	receiveMessage : function ( msg, msgObj ) {
 		if ( this.gameEnd ) {
 			bot.reply(
 				'Game finished or didn\'t start. Ping me with /new to start',
-				usr
+				msgObj.user_name
 			);
 			return;
 		}
 
-		this.handleGuess( msg, usr );
+		this.handleGuess( msg, msgObj.user_name );
 	},
 
-	handleGuess : function ( guess, usr ) {
-		console.log( guess, usr, 'handleGuess' );
+	handleGuess : function ( guess, msgObj ) {
+		var usr = msgObj.user_name;
+		console.log( guess, 'handleGuess' );
 		guess = guess.toLowerCase();
 
 		if ( !this.validGuessRegex.test(guess) ) {
@@ -138,13 +139,13 @@ var game = {
 		msg += this.guesses.join( ', ' ) + '\n';
 		msg += this.revealed;
 
-		bot.output( msg );
+		bot.output.add( msg );
 	},
 
 	//win the game
 	win : function ( winrar ) {
 		this.gameEnd = true;
-		bot.output(
+		bot.output.add(
 			'Correct! The phrase is ' + this.word + '. Congrats to @' + winrar
 		);
 	},
@@ -156,7 +157,7 @@ var game = {
 	//lose the game. less bitter messages? maybe.
 	lose : function () {
 		this.gameEnd = true;
-		bot.output( 'You people suck. The phrase was ' + this.word );
+		bot.output.add( 'You people suck. The phrase was ' + this.word );
 	},
 
 	loseCheck : function () {

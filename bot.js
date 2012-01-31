@@ -64,10 +64,49 @@ var IO = {
 		if ( opts.url.indexOf('?') === -1 ) {
 			opts.url += '?';
 		}
-		script.src = opts.url + '&jsonp=' + semiRandom;
+
+		if ( typeof opts.data === 'object' ) {
+			opts.url += IO.urlstringify( opts.data );
+		}
+		opts.jsonpName = opts.jsonpName || 'jsonp';
+
+		script.src = opts.url + '&' + opts.jsonpName + '=' + semiRandom;
 
 		document.head.appendChild( script );
 	},
+
+	urlstringify : (function () {
+		//simple types, for which toString does the job
+		//used in singularStringify
+		var simplies = { number : true, string : true, boolean : true };
+
+		var singularStringify = function ( thing ) {
+			if ( typeof thing in simplies ) {
+				return encodeURIComponent( thing.toString() );
+			}
+			return '';
+		};
+
+		var arrayStringify = function ( array, keyName ) {
+			keyName = singularStringify( keyName );
+
+			return array.map(function ( thing ) {
+				return keyName + '=' + singularStringify( thing );
+			});
+		};
+
+		return function ( obj ) {
+			return Object.keys( obj ).map(function ( key ) {
+				var val = obj[ key ];
+
+				if ( Array.isArray(val) ) {
+					return arrayStringify( val, key );
+				} else {
+					return singularStringify(key) + '=' + singularStringify( val );
+				}
+			}).join( '&' );
+		};
+	}()),
 
 	loadScript : function ( url ) {
 		var script = document.createElement( 'script' );
@@ -221,7 +260,7 @@ var bot = {
 
 		var cmdObj = this.commands[ commandName ];
 
-		if ( !cmdObj.canUse(usr) ) {
+		if ( !cmdObj.canUse(msgObj.user_id) ) {
 			bot.reply(
 				'You do not have permission to use the command ' + commandName,
 				usr
@@ -229,10 +268,10 @@ var bot = {
 			return;
 		}
 
-		bot.reply(
-			cmdObj.fun.call( cmdObj.thisArg, commandArgs, msgObj ),
-			usr
-		);
+		var reply = cmdObj.fun.call( cmdObj.thisArg, commandArgs, msgObj );
+		if ( reply ) {
+			bot.reply( reply, usr );
+		}
 	},
 
 	validateMessage : function ( msgObj ) {
@@ -303,6 +342,14 @@ var bot = {
 				return;
 			}
 
+			if ( bot.codifyOutput ) {
+				bot.elems.input.value = message;
+				bot.elems.codify.click();
+				message = bot.elems.input.value;
+
+				bot.codifyOutput = false;
+			}
+
 			jQuery.ajax({
 				url : '/chats/' + bot.roomid + '/messages/new',
 				data : {
@@ -322,10 +369,10 @@ var bot = {
 					IO.out.receive( message.trim() );
 				}
 			}
-		},
+		}
 	},
 
-	//some sugar
+	//some awesome
 	addCommand : function ( cmd ) {
 		cmd.permissions = cmd.permissions || {};
 		cmd.permissions.use = cmd.permissions.use || 'ALL';
@@ -386,7 +433,6 @@ var polling = {
 
 		function finish ( resp ) {
 			console.log( resp );
-			//resp = JSON.parse( resp );
 
 			that.times[ 'r' + roomid ] = resp.time;
 
@@ -407,8 +453,6 @@ var polling = {
 	},
 
 	complete : function ( resp ) {
-		//resp = JSON.parse( resp );
-
 		if ( !resp ) {
 			return;
 		}

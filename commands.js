@@ -90,14 +90,18 @@ var DOMParts = {
 
 var commands = {
 	alive : function () {
-		return 'I LIVE!';
+		if ( !bot.stopped ) {
+			return 'I\'m not dead! Honest!';
+		}
+		bot.stopped = false;
+		return 'And on this day, you shall paint eggs for a giant bunny.';
 	},
 
 	die : function () {
 		if ( this.stopped ) {
 			return 'Kill me once, shame on you, kill me twice...';
 		}
-		bot.stop();
+		bot.stopped = true;
 		return 'You killed me!';
 	},
 
@@ -106,13 +110,55 @@ var commands = {
 			return 'Command ' + args + ' does not exist';
 		}
 
-		var cmd = bot.commands[ cmd ];
+		var cmd = bot.commands[ args ];
 		if ( !cmd.canDel(msgObj.user_id) ) {
 			return 'You are not authorized to delete the command ' + args;
 		}
 
 		cmd.del();
 		return 'Command ' + args + ' was forgotten.';
+	},
+
+	define : function ( args, msgObj ) {
+		var duckyAPI = 'http://api.duckduckgo.com/?',
+			params = {
+				q : 'define ' + args,
+				format : 'json'
+			};
+
+		duckyAPI += IO.urlstringify( params );
+
+		IO.jsonp({
+			url : duckyAPI,
+			fun : finishCall,
+			jsonpName : 'callback'
+		});
+
+		function finishCall ( resp ) {
+			var url = resp.AbstractURL,
+				def = resp.AbstractText;
+
+			console.log( url, def, '!!/define finishCall input' );
+			
+			//Webster returns the definition as
+			// word definition: the actual definition
+			// instead of just the actual definition
+			if ( resp.AbstractSource === 'Merriam Webster' ) {
+				def = def.replace( args + ' definition:', '' );
+				console.log( def, '!!/define finishCall webster' );
+			}
+
+			if ( !def ) {
+				def = 'Could not find definition for ' + args;
+			}
+			else {
+				def = args + ': ' + def; //problem?
+				def += ' [(source)](' + url + ')';
+			}
+			console.log( def, '!/define finishCall output' );
+
+			bot.reply( def, msgObj.user_name );
+		}
 	},
 
 	mdn : function ( args ) {
@@ -123,6 +169,7 @@ var commands = {
 		console.log( args, parts, '!!/mdn input' );
 
 		var lowercased = parts[ 0 ].toLowerCase();
+
 		if ( DOMParts.hasOwnProperty(lowercased) ) {
 			parts[ 0 ] = DOMParts[ lowercased ] || parts[ 0 ];
 			url = base + 'DOM/';
@@ -160,7 +207,7 @@ var commands = {
 		// user gave prop - parts[0] will be prop
 		// user gave jQuery.fn.prop - that's a special case
 
-		console.log( args, parts, 'jQuery input' );
+		console.log( args, parts, '!!/jquery input' );
 
 		//jQuery API urls works like this:
 		// if it's on the jQuery object, then the url is /jQuery.property
@@ -193,7 +240,7 @@ var commands = {
 		else {
 			msg = 'Could not find specified jQuery property ' + args;
 		}
-		console.log( msg, 'jQuery link' );
+		console.log( msg, '!!/jquery link' );
 
 		return msg;
 	},
@@ -332,14 +379,14 @@ return function ( args ) {
 		return 'Command ' + command.name + ' already exists';
 	}
 
-	command.input= command.input.replace(
+	command.input = command.input.replace(
 		/~./g,
-		function ( c ) {
-			c = c.charAt( 1 );
-			if ( c === '~' ) {
+		function ( ch ) {
+			ch = ch[ 1 ];
+			if ( ch === '~' ) {
 				return '~';
 			}
-			return '\\' + c;
+			return '\\' + ch;
 		}
 	);
 
@@ -350,7 +397,6 @@ return function ( args ) {
 	catch ( e ) {
 		return e.message;
 	}
-	console.log( pattern );
 
 	var out = command.output;
 
@@ -366,7 +412,7 @@ return function ( args ) {
 
 	return 'Command ' + command.name + ' learned';
 
-	function customCommand ( args ) {
+	function customCommand ( args, msgObj ) {
 		console.log( args, command.name + ' input' );
 
 		var msg = args.replace( pattern, function () {
@@ -374,9 +420,25 @@ return function ( args ) {
 
 			console.log( parts, command.name + ' replace #1' );
 
-			return out.replace( /\$(\d+)/g, function ( $0, $1 ) {
-				return parts[ $1 ];
-			});
+			return out
+				.replace( /\$(\d+)/g, replaceParts )
+				.replace( /(?:.|^)\$(\w+)\$/g, replaceObjectAccess );
+
+			function replaceParts ( $0, num ) {
+				return parts[ num ];
+			}
+			function replaceObjectAccess ( $0, keyName ) {
+				console.log( $0, keyName, '!!/learn replaceObjectAccess' );
+				//don't do anything if the first $ is escaped
+				if ( $0[0] === '\\' ) {
+					return $0;
+				}
+
+				if ( msgObj.hasOwnProperty(keyName) ) {
+					return msgObj[ keyName ];
+				}
+				return $0;
+			}
 		});
 
 		console.log( msg, command.name + ' output' );
@@ -395,7 +457,7 @@ Object.keys( commands ).forEach(function ( cmdName ) {
 	});
 });
 
-bot.commands.die.permissions.use = [
+bot.commands.die.permissions.use = bot.commands.alive.permissions.use = [
 	419970, //Raynos
 	342129, //Matt McDonald
 	170224, //Ivo Wetzel
