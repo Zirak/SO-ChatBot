@@ -223,7 +223,7 @@ var bot = {
 			console.log( msg, 'parseMessage guess' );
 			//if it's valid and not a comment, fire an event and let someone
 			// else (or noone) worry about it
-			IO.fire( 'messageReceived', msg, msgObj.user_name );
+			IO.fire( 'messageReceived', msg, msgObj );
 		}
 		catch ( e ) {
 			var err = 'Could not process input. Error: ';
@@ -234,7 +234,8 @@ var bot = {
 			}
 
 			this.reply( err, usr );
-			throw e;
+
+			console.error( err, e );
 		}
 	},
 
@@ -350,8 +351,6 @@ var bot = {
 				bot.elems.input.value = message;
 				bot.elems.codify.click();
 				message = bot.elems.input.value;
-
-				bot.codifyOutput = false;
 			}
 
 			jQuery.ajax({
@@ -372,28 +371,29 @@ var bot = {
 				if ( xhr.status === 409 ) {
 					IO.out.receive( message.trim() );
 				}
+				bot.codifyOutput = false;
 			}
 		}
 	},
 
 	//some awesome
 	addCommand : function ( cmd ) {
+		cmd.name = cmd.name.toLowerCase();
+
 		cmd.permissions = cmd.permissions || {};
 		cmd.permissions.use = cmd.permissions.use || 'ALL';
 		cmd.permissions.del = cmd.permissions.del || 'NONE';
 
 		cmd.description = cmd.description || '';
 
-		cmd.canUse = function ( usrName ) {
-			return this.permissions.use === 'ALL' ||
-				this.permissions.use !== 'NONE' &&
-				this.permissions.use.indexOf( usrName ) > -1;
+		cmd.canUse = function ( usrid ) {
+			var use = this.permissions.use;
+			return use === 'ALL' || use !== 'NONE' && use.indexOf( usrid ) > -1;
 		};
 
-		cmd.canDel = function ( usrName ) {
-			return this.permissions.del !== 'NONE' &&
-				this.permissions.del === 'ALL' ||
-				this.permissions.del.indexOf( usrName ) > -1;
+		cmd.canDel = function ( usrid ) {
+			var del = this.permissions.del;
+			return del !== 'NONE' && del === 'ALL' || del.indexOf( usrid ) > -1;
 		};
 
 		cmd.del = function () {
@@ -416,7 +416,8 @@ IO.register( 'afteroutput', bot.output.send, bot.output );
 
 ////utility start
 var polling = {
-	//used in the SO chat requests, dunno exactly what for
+	//used in the SO chat requests, dunno exactly what for, but guessing it's
+	// the latest id or something like that
 	times : {},
 
 	pollInterval : 5000,

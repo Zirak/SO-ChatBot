@@ -261,7 +261,7 @@ var commands = {
 		return 'http://stackoverflow.com/users/' + ( args || senderID );
 	},
 
-	listCommands : function () {
+	listcommands : function () {
 		return 'Available commands:' + Object.keys( bot.commands ).join( ', ' );
 	}
 };

@@ -24,10 +24,10 @@ var game = {
 
 	guesses : [],
 	guessNum : 0,
-	maxGuess : 6,
+	maxGuess : 	6,
 	guessMade : false,
 
-	gameEnd : true,
+	//gameEnd : true,
 
 	validGuessRegex : /^[\w\s]+$/,
 
@@ -37,7 +37,7 @@ var game = {
 		this.revealed = new Array( this.word.length + 1 ).join( '-' );
 		this.guesses = [];
 		this.guessNum = 0;
-		this.gameEnd = false;
+		//this.gameEnd = false;
 
 		//oh look, another dirty hack...this one is to make sure the hangman
 		// is codified
@@ -68,8 +68,7 @@ var game = {
 		this.handleGuess( msg, msgObj.user_name );
 	},
 
-	handleGuess : function ( guess, msgObj ) {
-		var usr = msgObj.user_name;
+	handleGuess : function ( guess, usr ) {
 		console.log( guess, 'handleGuess' );
 		guess = guess.toLowerCase();
 
@@ -144,7 +143,7 @@ var game = {
 
 	//win the game
 	win : function ( winrar ) {
-		this.gameEnd = true;
+		//this.gameEnd = true;
 		bot.output.add(
 			'Correct! The phrase is ' + this.word + '. Congrats to @' + winrar
 		);
@@ -156,7 +155,7 @@ var game = {
 
 	//lose the game. less bitter messages? maybe.
 	lose : function () {
-		this.gameEnd = true;
+		//this.gameEnd = true;
 		bot.output.add( 'You people suck. The phrase was ' + this.word );
 	},
 
