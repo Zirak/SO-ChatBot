@@ -323,6 +323,10 @@ var bot = {
 		this.output.add( '@' + usr + ' ' + msg );
 	},
 
+	directreply : function ( msg, usrid ) {
+		this.output.add( ':' + usrid + ' ' + msg );
+	},
+
 	output : {
 		msg : '',
 

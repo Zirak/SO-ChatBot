@@ -249,17 +249,20 @@ var commands = {
 		var avatars = document.getElementById('present-users')
 				.getElementsByClassName('avatar');
 
-		return [].map.call(
-			avatars,
+		return [].map.call( avatars,
 			function ( wrapper ) {
-				return wrapper.children[ 0 ].title;
-		}).join( ', ' );
+				return wrapper.children[ 0 ].title;}
+			).join( ', ' );
 	},
 
 
 	user : function ( args, msgObj ) {
 		var senderID = msgObj.user_id;
 		return 'http://stackoverflow.com/users/' + ( args || senderID );
+	},
+
+	listCommands : function () {
+		return 'Available commands:' + Object.keys( bot.commands ).join( ', ' );
 	}
 };
 
@@ -330,11 +333,11 @@ return function ( args, msgObj ) {
 	function parseResponse ( respObj ) {
 
 		if ( respObj.error ) {
-			bot.reply( respObj.error.message, msgObj.message_id );
+			bot.reply( respObj.error.message, msgObj.user_name );
 			return;
 		}
 
-		var relativeParts = [].concat( range[ relativity ]( respObj[plural] ) ),
+		var relativeParts = [].concat( range[relativity]( respObj[plural] ) ),
 			base = "http://stackoverflow.com/q/",
 			res;
 
@@ -351,7 +354,7 @@ return function ( args, msgObj ) {
 		}
 		console.log( res, 'get parseResponse parsed');
 
-		bot.reply( res, msgObj.user_name );
+		bot.directreply( res, msgObj.message_id );
 	}
 };
 }());
@@ -371,14 +374,22 @@ return function ( args ) {
 
 	console.log( commandParts, 'learn parsed' );
 
+	if ( !/^\w+$/.test(command.name) ) {
+		return 'Command name must only contain alphanumeric characters.';
+	}
+
 	if ( !command.name || !command.input || !command.output ) {
 		return 'Illegal /learn object ' + args;
 	}
+
+	command.name = command.name.toLowerCase();
 
 	if ( bot.commandExists(command.name) ) {
 		return 'Command ' + command.name + ' already exists';
 	}
 
+	//the input regular expression have a slightly syntax: instead of \w, for
+	// instance, you do ~w. to write a ~, you do ~~
 	command.input = command.input.replace(
 		/~./g,
 		function ( ch ) {
@@ -421,7 +432,9 @@ return function ( args ) {
 			console.log( parts, command.name + ' replace #1' );
 
 			return out
+				//replaces parts like $0, $1, etc
 				.replace( /\$(\d+)/g, replaceParts )
+				//replaces $key_name$ with msgObj.key_name
 				.replace( /(?:.|^)\$(\w+)\$/g, replaceObjectAccess );
 
 			function replaceParts ( $0, num ) {
