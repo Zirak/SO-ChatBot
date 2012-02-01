@@ -24,12 +24,22 @@ var game = {
 
 	guesses : [],
 	guessNum : 0,
-	maxGuess : 	6,
+	maxGuess : 6,
 	guessMade : false,
 
-	validGuessRegex : /^[\w\s]+$/,
+	end : true,
 
-	//start a new game
+	validGuessRegex : /^[\w\s]+$/,
+	
+	receiveMessage : function ( msg, msgObj ) {
+		if ( this.end ) {
+			this.new();
+		}
+		else {
+			this.handleGuess( msg, msgObj.user_name );
+		}
+	},
+	
 	new : function () {
 		this.word = randomWord();
 		this.revealed = new Array( this.word.length + 1 ).join( '-' );
@@ -46,19 +56,14 @@ var game = {
 
 	register : function () {
 		this.unregister();
-		IO
-			.register( 'beforeoutput', this.buildOutput, this )
-			.register( 'messageReceived', this.receiveMessage, this );
+		IO.register( 'beforeoutput', this.buildOutput, this );
+
+		this.end = false;
 	},
 	unregister : function () {
-		IO
-			.unregister( 'beforeoutput', this.buildOutput )
-			.unregister( 'messageReceived', this.receiveMessage )
-	},
+		IO.unregister( 'beforeoutput', this.buildOutput );
 
-	//this is just a medium function
-	receiveMessage : function ( msg, msgObj ) {
-		this.handleGuess( msg, msgObj.user_name );
+		this.end = true;
 	},
 
 	handleGuess : function ( guess, usr ) {
@@ -168,7 +173,7 @@ var game = {
 	}
 };
 bot.addCommand({
-	name : 'new',
-	fun : game.new,
+	name : 'hang',
+	fun : game.receiveMessage,
 	thisArg : game
 });
