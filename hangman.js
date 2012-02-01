@@ -27,8 +27,6 @@ var game = {
 	maxGuess : 	6,
 	guessMade : false,
 
-	//gameEnd : true,
-
 	validGuessRegex : /^[\w\s]+$/,
 
 	//start a new game
@@ -37,7 +35,6 @@ var game = {
 		this.revealed = new Array( this.word.length + 1 ).join( '-' );
 		this.guesses = [];
 		this.guessNum = 0;
-		//this.gameEnd = false;
 
 		//oh look, another dirty hack...this one is to make sure the hangman
 		// is codified
@@ -48,23 +45,19 @@ var game = {
 	},
 
 	register : function () {
+		this.unregister();
+		IO
+			.register( 'beforeoutput', this.buildOutput, this )
+			.register( 'messageReceived', this.receiveMessage, this );
+	},
+	unregister : function () {
 		IO
 			.unregister( 'beforeoutput', this.buildOutput )
 			.unregister( 'messageReceived', this.receiveMessage )
-			.register( 'beforeoutput', this.buildOutput, this )
-			.register( 'messageReceived', this.receiveMessage, this );
 	},
 
 	//this is just a medium function
 	receiveMessage : function ( msg, msgObj ) {
-		if ( this.gameEnd ) {
-			bot.reply(
-				'Game finished or didn\'t start. Ping me with /new to start',
-				msgObj.user_name
-			);
-			return;
-		}
-
 		this.handleGuess( msg, msgObj.user_name );
 	},
 
@@ -135,7 +128,7 @@ var game = {
 			return part > that.guessNum ? ' ' : that.parts[ part ];
 		});
 
-		msg += this.guesses.join( ', ' ) + '\n';
+		msg += this.guesses.sort().join( ', ' ) + '\n';
 		msg += this.revealed;
 
 		bot.output.add( msg );
@@ -143,10 +136,11 @@ var game = {
 
 	//win the game
 	win : function ( winrar ) {
-		//this.gameEnd = true;
 		bot.output.add(
 			'Correct! The phrase is ' + this.word + '. Congrats to @' + winrar
 		);
+
+		this.unregister();
 	},
 
 	winCheck : function () {
@@ -155,8 +149,9 @@ var game = {
 
 	//lose the game. less bitter messages? maybe.
 	lose : function () {
-		//this.gameEnd = true;
 		bot.output.add( 'You people suck. The phrase was ' + this.word );
+
+		this.unregister();
 	},
 
 	loseCheck : function () {
@@ -164,7 +159,7 @@ var game = {
 	},
 
 	buildOutput : function () {
-		if ( !this.gameEnd && this.guessMade ) {
+		if ( this.guessMade ) {
 			this.preparePrint();
 
 			bot.codifyOutput = true;
