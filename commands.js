@@ -260,10 +260,11 @@ var commands = {
 
 
 	user : function ( args, msgObj ) {
+		args = parseCommandArgs( args )[ 0 ];
 		var usrid = args || msgObj.user_id;
 
 		//check for searching by username
-		if ( /^[a-zA-Z]+$/.test(usrid) ) {
+		if ( /^[\w\s]+$/.test(usrid) ) {
 			var users = [].slice.call( document
 				.getElementById( 'sidebar' )
 				.getElementsByClassName( 'user-container' ) );
