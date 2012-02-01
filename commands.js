@@ -89,6 +89,10 @@ var DOMParts = {
 };
 
 var commands = {
+	help : function () {
+		return 'https://github.com/Titani/SO-ChatBot/blob/master/README.md';
+	},
+	
 	alive : function () {
 		if ( !bot.stopped ) {
 			return 'I\'m not dead! Honest!';
@@ -293,11 +297,20 @@ return function ( args, msgObj ) {
 		relativity = parts[ 1 ] || 'last',
 		start, end,
 
-		usrid = parts[ 2 ] || msgObj.user_id;
+		usrid = parts[ 2 ];
 
 	//if "between" is given without the optional user_id, then assume the
 	// sender's id
 	if ( relativity === 'between' && isNaN(Number(usrid)) ) {
+		usrid = msgObj.user_id;
+	}
+
+	//relativity is a number and no usrid, assume the relativity is the usrid
+	if ( !usrid && !isNaN(Number(relativity)) ) {
+		usrid = relativity;
+		relativity = 'last';
+	}
+	else if ( !usrid ) {
 		usrid = msgObj.user_id;
 	}
 
@@ -422,15 +435,8 @@ return function ( args ) {
 		}
 	);
 
-	var pattern;
-	try {
-		pattern = new RegExp( command.input, command.flags );
-	}
-	catch ( e ) {
-		return e.message;
-	}
-
-	var out = command.output;
+	var pattern = new RegExp( command.input, command.flags ),
+		out = command.output;
 
 	bot.addCommand({
 		name : command.name,
