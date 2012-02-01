@@ -361,6 +361,17 @@ return function ( args, msgObj ) {
 
 commands.learn = (function () {
 
+//special variables that are recognized in output patterns
+var fillers = {
+	who : function ( msgObj ) {
+		return msgObj.user_name;
+	},
+	someone : function () {
+		//I'll figure it out later...
+		return 'sometone';
+	}
+};
+
 return function ( args ) {
 	console.log( args, 'learn input' );
 
@@ -426,33 +437,38 @@ return function ( args ) {
 	function customCommand ( args, msgObj ) {
 		console.log( args, command.name + ' input' );
 
-		var msg = args.replace( pattern, function () {
-			var parts = arguments;
+		var match = pattern.exec( args ) || [],
+			msg = out;
+		console.log( match, command.name + ' replace #1' );
+		msg = msg.replace( /(?:.|^)\$(\w+)/g, replacePart );
 
-			console.log( parts, command.name + ' replace #1' );
-
-			return out
-				//replaces parts like $0, $1, etc
-				.replace( /\$(\d+)/g, replaceParts )
-				//replaces $key_name$ with msgObj.key_name
-				.replace( /(?:.|^)\$(\w+)\$/g, replaceObjectAccess );
-
-			function replaceParts ( $0, num ) {
-				return parts[ num ];
+		function replacePart ( $0, filler ) {
+			if ( $0.startsWith('$$') ) {
+				return $0.slice( 1 );
 			}
-			function replaceObjectAccess ( $0, keyName ) {
-				console.log( $0, keyName, '!!/learn replaceObjectAccess' );
-				//don't do anything if the first $ is escaped
-				if ( $0[0] === '\\' ) {
-					return $0;
-				}
 
-				if ( msgObj.hasOwnProperty(keyName) ) {
-					return msgObj[ keyName ];
-				}
-				return $0;
+			//include the character that was matched in the $$ check, unless
+			// it's a $
+			var ret = '';
+			if ( $0[0] !== '$' ) {
+				ret = $0[ 0 ];
 			}
-		});
+			
+			if ( match.hasOwnProperty(filler) ) {
+				ret += match[ filler ];
+			}
+			else if ( fillers.hasOwnProperty(filler) ) {
+				ret += fillers[ filler ]( msgObj );
+			}
+			else if ( msgObj.hasOwnProperty(filler) ) {
+				ret += msgObj[ filler ];
+			}
+			else {
+				ret += $0.slice( 1 );
+			}
+
+			return ret;
+		}
 
 		console.log( msg, command.name + ' output' );
 		return msg;
@@ -477,3 +493,4 @@ bot.commands.die.permissions.use = bot.commands.alive.permissions.use = [
 	94197,  //Andy E
 	617762  //me (Zirak)
 ];
+
