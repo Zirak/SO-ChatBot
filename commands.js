@@ -188,8 +188,7 @@ var commands = {
 
 		else if ( window[parts[0]] ) {
 			url = base +
-				  'JavaScript/Reference/Global_Objects/' +
-				  parts.join( '/' );
+				'JavaScript/Reference/Global_Objects/' + parts.join( '/' );
 			console.log( url, '!!/mdn global' );
 		}
 
@@ -261,8 +260,27 @@ var commands = {
 
 
 	user : function ( args, msgObj ) {
-		var senderID = msgObj.user_id;
-		return 'http://stackoverflow.com/users/' + ( args || senderID );
+		var usrid = args || msgObj.user_id;
+
+		//check for searching by username
+		if ( /^[a-zA-Z]+$/.test(usrid) ) {
+			var users = [].slice.call( document
+				.getElementById( 'sidebar' )
+				.getElementsByClassName( 'user-container' ) );
+
+			var ids = users.map(function ( container ) {
+				return container.id.match( /\d+/ )[ 0 ];
+			});
+			var names = users.map(function ( container ) {
+				return container.getElementsByTagName( 'img' )[ 0 ].title;
+			});
+
+			var index = names.indexOf(usrid);
+			if ( index > -1 ) {
+				usrid = ids[ index ];
+			}
+		}
+		return 'http://stackoverflow.com/users/' + usrid;
 	},
 
 	listcommands : function () {
@@ -480,9 +498,10 @@ return function ( args ) {
 				ret += msgObj[ filler ];
 			}
 			else {
-				ret += $0.slice( 1 );
+				ret = $0;
 			}
-
+			console.log( ret, command.name + ' replacePart output' );
+			
 			return ret;
 		}
 
