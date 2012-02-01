@@ -83,4 +83,14 @@ Any flags you'd give a js regex.
 
 Defaults to `undefined`.
 
+## `hang`
+
+    !!/hang [guess]
+
+Starts a Hangman game. If there is no game running, calling this command in any form will start a new game. If a game is running, then it accepts a single argument as your guess. Error messages included.
+You have 6 guesses to get the word right.
+
+**NOTE:** The hangman game is a more like a module than a core part of the bot. So it may not be available, unless the bot owner explicitly loaded it.
+To bot owner: Via your console, simply doing `IO.loadScript( bot.dependencies.hangman )` should automagically get everything imported and done.
+
 I'm not very good in writing README files.
