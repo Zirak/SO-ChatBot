@@ -367,8 +367,18 @@ var fillers = {
 		return msgObj.user_name;
 	},
 	someone : function () {
-		//I'll figure it out later...
-		return 'sometone';
+		var active = document.getElementById( 'sidebar' )
+			.getElementsByClassName( 'present-user' );
+		
+		active = [].filter.call( active, function ( user ) {
+			return Number( user.style.opacity ) >= 0.5;
+		});
+
+		var user = active[ Math.floor(Math.random() * active.length) ];
+		return user.getElementsByTagName( 'img' )[ 0 ].title;
+	},
+	digit : function () {
+		return Math.floor( Math.random() * 10 );
 	}
 };
 
