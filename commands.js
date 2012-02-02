@@ -172,7 +172,7 @@ var commands = {
 		args = args.trim().replace( /^\$/, 'jQuery' );
 
 		var parts = args.split( '.' ), exists = false, url = args, msg;
-		//parts will contain two likely components, depending on the user input
+		//parts will contain two likely components, depending on the input
 		// jQuery.prop    -  parts[0] will be jQuery, parts[1] will be prop
 		// prop           -  parts[0] will be prop
 		// jQuery.fn.prop -  that's a special case
@@ -254,11 +254,13 @@ var commands = {
 	},
 
 	listcommands : function () {
-		return 'Available commands:' + Object.keys( bot.commands ).join( ', ' );
+		return 'Available commands: ' +
+			Object.keys( bot.commands ).join( ', ' );
 	}
 };
 
 commands.mdn = (function () {
+
 // https://developer.mozilla.org/Special:Tags?tag=DOM
 //a lowercaseObjectName => DOM/objectName object, where a falsy value
 // means to just use lowercaseObjectName
@@ -276,7 +278,7 @@ var DOMParts = {
 
 return function ( args ) {
 	var parts = args.trim().split( '.' ),
-		base = 	'https://developer.mozilla.org/en/',
+		base = 'https://developer.mozilla.org/en/',
 		url;
 
 	console.log( args, parts, '/mdn input' );
@@ -347,10 +349,10 @@ return function ( args, msgObj ) {
 		usrid = parts[ 4 ];
 	}
 
-	//range is a number and no usrid, assume the relativity is the usrid, and
+	//range is a number and no usrid, assume the range is the usrid, and
 	//default range to last
 	if ( !usrid && !isNaN(Number(range)) ) {
-		usrid = relativity;
+		usrid = range;
 		range = 'last';
 	}
 
@@ -395,8 +397,8 @@ return function ( args, msgObj ) {
 			return;
 		}
 
-		//get only the part we care about in the result, based on which one the
-		// user asked for (first, last, between)
+		//get only the part we care about in the result, based on which one
+		// the user asked for (first, last, between)
 		var relativeParts = [].concat( ranges[range](respObj[plural]) ),
 			base = "http://stackoverflow.com/q/",
 			res;
@@ -546,7 +548,8 @@ function buildCommand ( cmd ) {
 	return cmd;
 }
 
-//return a truthy value (an error message) if it's invalid, falsy if it's valid
+//return a truthy value (an error message) if it's invalid, falsy if it's
+// valid
 function checkCommand ( cmd ) {
 	var somethingUndefined = Object.keys( cmd ).some(function ( key ) {
 		return !cmd[ key ];

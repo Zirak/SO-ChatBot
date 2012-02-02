@@ -102,7 +102,8 @@ var IO = {
 				if ( Array.isArray(val) ) {
 					return arrayStringify( val, key );
 				} else {
-					return singularStringify(key) + '=' + singularStringify( val );
+					return singularStringify(key) +
+						'=' + singularStringify( val );
 				}
 			}).join( '&' );
 		};
@@ -183,8 +184,10 @@ var bot = {
 	stopped : false,
 
 	dependencies : {
-		commands : 'https://raw.github.com/Titani/SO-ChatBot/master/commands.js',
-		hangman : 'https://raw.github.com/Titani/SO-ChatBot/master/hangman.js'
+		commands :
+			'https://raw.github.com/Titani/SO-ChatBot/master/commands.js',
+		hangman :
+			'https://raw.github.com/Titani/SO-ChatBot/master/hangman.js'
 	},
 
 	//common elements
@@ -263,7 +266,8 @@ var bot = {
 
 		if ( !cmdObj.canUse(msgObj.user_id) ) {
 			bot.reply(
-				'You do not have permission to use the command ' + commandName,
+				'You do not have permission to use the command ' +
+					commandName,
 				usr
 			);
 			return;
@@ -386,12 +390,14 @@ var bot = {
 
 		cmd.canUse = function ( usrid ) {
 			var use = this.permissions.use;
-			return use === 'ALL' || use !== 'NONE' && use.indexOf( usrid ) > -1;
+			return use === 'ALL' || use !== 'NONE' &&
+				use.indexOf( usrid ) > -1;
 		};
 
 		cmd.canDel = function ( usrid ) {
 			var del = this.permissions.del;
-			return del !== 'NONE' && del === 'ALL' || del.indexOf( usrid ) > -1;
+			return del !== 'NONE' && del === 'ALL' ||
+				del.indexOf( usrid ) > -1;
 		};
 
 		cmd.del = function () {
@@ -493,7 +499,7 @@ var polling = {
 			//remove the enclosing tag
 			multiline = msg.content
 				.slice( 0, msg.content.lastIndexOf('</div>') )
-				.replace( '<div class=\'full\'>', '' )
+				.replace( '<div class=\'full\'>', '' );
 
 			multiline.split( '<br>' ).forEach(function ( line ) {
 				line = line.trim();
