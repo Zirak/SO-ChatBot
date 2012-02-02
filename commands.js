@@ -73,7 +73,20 @@ var parseCommandArgs = (function ( args ) {
 }());
 
 var commands = {
-	help : function () {
+	help : function ( args ) {
+		if ( args ) {
+			if ( !bot.commandExists(args) ) {
+				return 'Command ' + args + ' isn\'t defined';
+			}
+
+			var desc = bot.commands[ args ].description;
+			if ( !desc ) {
+				return 'No info is available on command ' + args;
+			}
+
+			return args + ': ' + desc;
+		}
+
 		return 'https://github.com/Titani/SO-ChatBot/blob/master/README.md';
 	},
 
@@ -440,8 +453,7 @@ return function ( args ) {
 	var command = {
 		name   : commandParts[ 0 ],
 		output : commandParts[ 1 ],
-		input  : commandParts[ 2 ] || '.*',
-		flags  : commandParts[ 3 ] || 'g'
+		input  : commandParts[ 2 ] || '.*'
 	};
 
 	//a truthy value, unintuitively, means it isn't valid
@@ -453,7 +465,7 @@ return function ( args ) {
 
 	console.log( commandParts, '/learn parsed' );
 
-	var pattern = new RegExp( command.input, command.flags ),
+	var pattern = new RegExp( command.input ),
 		out = command.output;
 
 	bot.addCommand({

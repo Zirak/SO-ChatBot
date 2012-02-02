@@ -39,7 +39,7 @@ The userid of the user from which you wish to get. Defaults to your own.
 
 ## `learn`
 
-	!!/learn commandName outputPattern [inputRegex [inputRegexFlags]]
+	!!/learn commandName outputPattern [inputRegex]
 
 	!!/learn greet "Hello, $0!" \w+
 
@@ -77,11 +77,6 @@ Like any regular regex, except that instead of where you'd use `\`, you use `~`.
 For example: `\w => ~w`, `\\d => ~~d`.
 
 Defaults to `.*`
-
-### `inputRegexFlags`
-Any flags you'd give a js regex.
-
-Defaults to `undefined`.
 
 ## `hang`
 

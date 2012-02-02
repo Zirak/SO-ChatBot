@@ -280,8 +280,6 @@ var bot = {
 			return false;
 		}
 
-		var pathParts = location.pathname.split( '/' );
-
 		if ( msgObj.room_id !== this.roomid ) {
 			return false;
 		}
@@ -471,7 +469,7 @@ var polling = {
 			}
 
 			if ( msgObj.e ) {
-				msgObj.e.forEach( that.handleMessageObject );
+				msgObj.e.forEach( that.handleMessageObject, that );
 			}
 		});
 
@@ -484,10 +482,29 @@ var polling = {
 	},
 
 	handleMessageObject : function ( msg ) {
-		//event_type of 1 means new message
-		if ( msg.event_type !== 1 ) {
+		//event_type of 1 means new message, 2 means edited message
+		if ( msg.event_type !== 1 && msg.event_type !== 2 ) {
 			return;
 		}
+
+		//check for a multiline message
+		var multiline;
+		if ( msg.content.startsWith( '<div class=\'full\'>') ) {
+			//remove the enclosing tag
+			multiline = msg.content
+				.slice( 0, msg.content.lastIndexOf('</div>') )
+				.replace( '<div class=\'full\'>', '' )
+
+			multiline.split( '<br>' ).forEach(function ( line ) {
+				line = line.trim();
+				this.handleMessageObject(
+					Object.merge( msg, { content : line })
+				);
+			}, this );
+
+			return;
+		}
+
 		//add the message to the input buffer
 		IO.in.receive( msg );
 	}
@@ -525,4 +542,3 @@ String.prototype.startsWith = function ( str ) {
 	return this.indexOf( str ) === 0;
 };
 ////utility end
-
