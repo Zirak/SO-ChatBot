@@ -8,12 +8,12 @@ For example:
     !!/listcommands
 Will print something like this:
 
-    @yourUsername Available commands:alive, die, forget, define, mdn, jquery, online, user, listcommands, get, learn
+    @yourUsername Available commands:help, live, die, forget, define, mdn, jquery, online, user, listcommands, get, learn
 
 ## `get`
 
     !!/get getterName [range [userid]]
-	
+
     or, to be more descriptive:
     !!/get answer|question [first|last [userid]]
 

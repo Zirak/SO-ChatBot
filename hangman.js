@@ -129,6 +129,7 @@ var game = {
 	preparePrint : function () {
 		var msg = '', that = this;
 
+		//replace the placeholders in the dude with body parts
 		msg += this.dude.replace( /\d/g, function ( part ) {
 			return part > that.guessNum ? ' ' : that.parts[ part ];
 		});
