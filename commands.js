@@ -260,6 +260,71 @@ var commands = {
 	}
 };
 
+commands.parse = (function () {
+
+//special variables/macros
+var fillers = {
+	who : function ( msgObj ) {
+		return msgObj.user_name;
+	},
+
+	someone : function () {
+		var active = document.getElementById( 'sidebar' )
+			.getElementsByClassName( 'present-user' );
+
+		active = [].filter.call( active, function ( user ) {
+			return Number( user.style.opacity ) >= 0.5;
+		});
+
+		var user = active[ Math.floor(Math.random() * active.length) ];
+		return user.getElementsByTagName( 'img' )[ 0 ].title;
+	},
+
+	digit : function () {
+		return Math.floor( Math.random() * 10 );
+	}
+};
+var fillerRegex = /(?:.|^)\$(\w+)/g;
+
+//extraVars is for internal usage via other commands
+return function ( args, msgObj, extraVars ) {
+	extraVars = extraVars || {};
+	return args.replace( fillerRegex, replacePart );
+
+	function replacePart ( $0, filler ) {
+		if ( $0.startsWith('$$') ) {
+			return $0.slice( 1 );
+		}
+
+		//include the character that was matched in the $$ check, unless
+		// it's a $
+		var ret = '';
+		if ( $0[0] !== '$' ) {
+			ret = $0[ 0 ];
+		}
+
+		//it's recognized by special extra variables passed
+		if ( extraVars.hasOwnProperty(filler) ) {
+			ret += extraVars[ filler ];
+		}
+		//it's a special variables
+		else if ( fillers.hasOwnProperty(filler) ) {
+			ret += fillers[ filler ]( msgObj );
+		}
+		//it's part of msgObj
+		else if ( msgObj.hasOwnProperty(filler) ) {
+			ret += msgObj[ filler ];
+		}
+		//it's not defined, just return the full thing
+		else {
+			ret = $0;
+		}
+
+		return ret;
+	}
+}
+}());
+
 commands.tell = (function () {
 
 var invalidCommands = { tell : true, forget : true };
@@ -270,7 +335,7 @@ return function ( args, msgObj ) {
 
 	var replyTo = args[ 0 ],
 		cmdName = args[ 1 ],
-		cmdArgs = args.slice( 2 ),
+		cmdArgs = args.slice( 2 ).join( ' ' ),
 		cmd;
 
 	if ( !bot.commandExists(cmdName) ) {
@@ -286,7 +351,7 @@ return function ( args, msgObj ) {
 		return 'You do not have permission to use command ' + cmdName;
 	}
 
-	var res = cmd.fun.apply( cmd.thisArg, cmdArgs );
+	var res = cmd.fun.call( cmd.thisArg, cmdArgs, msgObj );
 
 	//check if the user wants to reply to a message
 	if ( /\d+$/.test(replyTo) ) {
@@ -463,30 +528,6 @@ return function ( args, msgObj ) {
 
 commands.learn = (function () {
 
-//special variables that are recognized in output patterns
-var fillers = {
-	who : function ( msgObj ) {
-		return msgObj.user_name;
-	},
-
-	someone : function () {
-		var active = document.getElementById( 'sidebar' )
-			.getElementsByClassName( 'present-user' );
-
-		active = [].filter.call( active, function ( user ) {
-			return Number( user.style.opacity ) >= 0.5;
-		});
-
-		var user = active[ Math.floor(Math.random() * active.length) ];
-		return user.getElementsByTagName( 'img' )[ 0 ].title;
-	},
-
-	digit : function () {
-		return Math.floor( Math.random() * 10 );
-	}
-};
-var outputFillerRegex = /(?:.|^)\$(\w+)/g;
-
 return function ( args ) {
 	console.log( args, '/learn input' );
 
@@ -526,44 +567,11 @@ return function ( args ) {
 
 		var match = pattern.exec( args ) || [],
 			msg = out;
-		console.log( match, command.name + ' replace #1' );
 
-		msg = msg.replace( outputFillerRegex, replacePart );
-		console.log( msg, command.name + ' output' );
+		msg = commands.parse( msg, msgObj, match );
+		console.log( msg, match, command.name + ' output' );
 
 		return msg;
-
-		function replacePart ( $0, filler ) {
-			if ( $0.startsWith('$$') ) {
-				return $0.slice( 1 );
-			}
-
-			//include the character that was matched in the $$ check, unless
-			// it's a $
-			var ret = '';
-			if ( $0[0] !== '$' ) {
-				ret = $0[ 0 ];
-			}
-
-			//it's a input-regex match
-			if ( match.hasOwnProperty(filler) ) {
-				ret += match[ filler ];
-			}
-			//it's a special variables
-			else if ( fillers.hasOwnProperty(filler) ) {
-				ret += fillers[ filler ]( msgObj );
-			}
-			//it's part of msgObj
-			else if ( msgObj.hasOwnProperty(filler) ) {
-				ret += msgObj[ filler ];
-			}
-			//it's not defined, just return the full thing
-			else {
-				ret = $0;
-			}
-
-			return ret;
-		}
 	}
 };
 
