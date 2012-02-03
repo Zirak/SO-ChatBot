@@ -547,13 +547,21 @@ String.prototype.indexesOf = function ( str ) {
 String.prototype.startsWith = function ( str ) {
 	return this.indexOf( str ) === 0;
 };
-Array.prototype.invoke = function ( funName ) {
-	var args = [].slice.call( arguments, 1 );
 
-	this.forEach(function ( item ) {
-		if ( item[funName] && item[funName].call ) {
-			item.funName.call( item, args );
-		}
-	});
-};
+//SO chat uses an unfiltered for...in to iterate over an array somewhere, so 
+// that I have to use Object.defineProperty to make these non-enumerable
+Object.defineProperty( Array.prototype, 'invoke', {
+	value : function ( funName ) {
+		var args = [].slice.call( arguments, 1 );
+
+		this.forEach(function ( item ) {
+			if ( item[funName] && item[funName].call ) {
+				item.funName.call( item, args );
+			}
+		});
+	},
+
+	configurable : true,
+	writable : true,
+});
 ////utility end
