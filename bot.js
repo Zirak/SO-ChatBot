@@ -170,6 +170,7 @@ var IO = {
 ////IO end
 
 ////bot start
+var baseRepURL = 'https://raw.github.com/Titani/SO-ChatBot/master/'
 var bot = {
 	name : 'Zirak',
 	invocationPattern : '!!',
@@ -184,10 +185,9 @@ var bot = {
 	stopped : false,
 
 	dependencies : {
-		commands :
-			'https://raw.github.com/Titani/SO-ChatBot/master/commands.js',
-		hangman :
-			'https://raw.github.com/Titani/SO-ChatBot/master/hangman.js'
+		commands : baseRepURL + 'commands.js',
+		hangman  : baseRepURL + 'plugins/hangman.js',
+		todo     : baseRepURL + 'plugins/todolist.js'
 	},
 
 	//common elements
@@ -546,5 +546,14 @@ String.prototype.indexesOf = function ( str ) {
 };
 String.prototype.startsWith = function ( str ) {
 	return this.indexOf( str ) === 0;
+};
+Array.prototype.invoke = function ( funName ) {
+	var args = [].slice.call( arguments, 1 );
+
+	this.forEach(function ( item ) {
+		if ( item[funName] && item[funName].call ) {
+			item.funName.call( item, args );
+		}
+	});
 };
 ////utility end

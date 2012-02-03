@@ -1,6 +1,6 @@
 var parseCommandArgs = (function ( args ) {
 
-	var state, inString, prev;
+	var state, inString, prev, separator;
 
 	var handleChar = function ( ch ) {
 		var ret;
@@ -21,8 +21,8 @@ var parseCommandArgs = (function ( args ) {
 			state = 'escape';
 		}
 
-		else if ( ch === ' ' && !inString ) {
-			if ( prev === ' ' ) {
+		else if ( ch === separator && !inString ) {
+			if ( prev === separator ) {
 				ret = '';
 			}
 			else {
@@ -39,7 +39,7 @@ var parseCommandArgs = (function ( args ) {
 		return ret;
 	};
 
-	return function ( args ) {
+	return function ( args, sep ) {
 		var ret = [],
 			arg = '',
 			ch,
@@ -48,6 +48,7 @@ var parseCommandArgs = (function ( args ) {
 
 		state = 'data';
 		inString = false;
+		separator = sep || ' ';
 
 		while ( pos < len ) {
 			ch = args[ pos++ ];
