@@ -273,7 +273,9 @@ var bot = {
 			return;
 		}
 
+		console.log( cmdObj, 'parseCommand calling' );
 		var reply = cmdObj.fun.call( cmdObj.thisArg, commandArgs, msgObj );
+		console.log( reply, 'parseCommand called' );
 		if ( reply ) {
 			bot.reply( reply, usr );
 		}

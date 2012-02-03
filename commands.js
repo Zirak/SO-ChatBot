@@ -260,6 +260,44 @@ var commands = {
 	}
 };
 
+commands.tell = (function () {
+
+var invalidCommands = { tell : true, forget : true };
+
+return function ( args, msgObj ) {
+	//[ usrname|msgid, cmdName, cmdArgs ]
+	args = parseCommandArgs( args );
+
+	var replyTo = args[ 0 ],
+		cmdName = args[ 1 ],
+		cmdArgs = args.slice( 2 ),
+		cmd;
+
+	if ( !bot.commandExists(cmdName) ) {
+		return 'Unidentified command ' + cmdName;
+	}
+	if ( invalidCommands.hasOwnProperty(cmdName) ) {
+		return 'Command ' + cmdName + ' cannot be used in /tell.';
+	}
+
+	cmd = bot.commands[ cmdName ];
+
+	if ( !cmd.canUse(msgObj.user_id) ) {
+		return 'You do not have permission to use command ' + cmdName;
+	}
+
+	var res = cmd.fun.apply( cmd.thisArg, cmdArgs );
+
+	//check if the user wants to reply to a message
+	if ( /\d+$/.test(replyTo) ) {
+		bot.directreply( res, replyTo );
+	}
+	else {
+		bot.reply( res, replyTo );
+	}
+};
+}());
+
 commands.mdn = (function () {
 
 // https://developer.mozilla.org/Special:Tags?tag=DOM
