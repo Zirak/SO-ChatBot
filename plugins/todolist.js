@@ -10,16 +10,16 @@ var userlist = function ( usrid ) {
 	return {
 		get : function ( count ) {
 			return usr.map(function ( item, index ) {
-				return '(' + index + ')' + item;
-			});
+				return '(' + index+1 + ')' + item;
+			}).join( ', ' );
 		},
-		
+
 		add : function ( item ) {
 			usr.push( item );
 
 			return true;
 		},
-		
+
 		remove : function ( item ) {
 			usr.splice( usr.indexOf(item), 1 );
 
@@ -28,6 +28,8 @@ var userlist = function ( usrid ) {
 
 		exists : function ( suspect ) {
 			suspect = suspect.toLowerCase();
+			//it could be re-written as:
+			//usr.invoke( 'toLowerCase' ).indexOf( suspect ) > -1
 			return usr.some(function (item) {
 				return suspect === item.toLowerCase();
 			});
@@ -49,7 +51,7 @@ var todo = function ( args, msgObj ) {
 
 	//user wants to get n items, we just want the count
 	if ( action === 'get' ) {
-		ret = usr.get( items[0] ).join( ', ' );
+		ret = usr.get( items[0] );
 
 		if ( !ret ) {
 			ret = 'No items on your todo.';
@@ -80,7 +82,7 @@ var todo = function ( args, msgObj ) {
 
 	else if ( action === 'remove' ) {
 		res = items.every(function ( item ) {
-			
+
 			if ( !usr.exists(item) ) {
 				ret = item + ' does not exist.';
 				return false;

@@ -239,6 +239,35 @@ var commands = {
 		return msg;
 	},
 
+	roll : function ( args ) {
+		var nums = args.match( /\d+/g ),
+			sides, count;
+
+		console.log( nums, '/roll input' );
+
+		if ( !nums || !nums.length ) {
+			return 'Invalid input for /roll'; //should probably be better...
+		}
+
+		if ( nums.length === 1 ) {
+			sides = 6;
+			count = nums[ 0 ];
+		}
+		else if ( nums.length > 1 ) {
+			count = nums[ 0 ];
+			sides = nums[ 1 ];
+		}
+		console.log( count, sides, '/roll rolling')
+
+		var rolls = [];
+		var max = sides - 1;
+		for ( var i = 0; i < count; i++ ) {
+			rolls[ i ] = Math.floor( Math.random() * max + 1 );
+		}
+
+		return rolls.join( ', ' );
+	},
+
 	online : function () {
 		var avatars = document.getElementById( 'present-users' )
 				.getElementsByClassName( 'avatar' );
@@ -250,8 +279,8 @@ var commands = {
 		).join( ', ' );
 	},
 
-
 	user : function ( args, msgObj ) {
+		//to support names with spaces in the, you can call like "user name"
 		args = parseCommandArgs( args )[ 0 ];
 		var usrid = args || msgObj.user_id;
 
@@ -311,7 +340,9 @@ var fillerRegex = /(?:.|^)\$(\w+)/g;
 
 //extraVars is for internal usage via other commands
 return function ( args, msgObj, extraVars ) {
+	console.log( args, extraVars, '/parse input' );
 	extraVars = extraVars || {};
+
 	return args.replace( fillerRegex, replacePart );
 
 	function replacePart ( $0, filler ) {
@@ -338,7 +369,7 @@ return function ( args, msgObj, extraVars ) {
 		else if ( msgObj.hasOwnProperty(filler) ) {
 			ret += msgObj[ filler ];
 		}
-		//it's not defined, just return the full thing
+		//it's not defined
 		else {
 			ret = $0;
 		}
@@ -402,7 +433,7 @@ var DOMParts = {
 	'nodelist' : 'NodeList',
 	'range' : '',
 	'text' : 'Text',
-	'window' : '',
+	'window' : ''
 };
 
 return function ( args ) {
@@ -445,7 +476,7 @@ commands.get = (function () {
 
 var types = {
 	answer : true,
-	question : true,
+	question : true
 };
 var ranges = {
 	//the result array is in descending order, so it's "reversed"
@@ -572,8 +603,7 @@ return function ( args ) {
 
 	console.log( commandParts, '/learn parsed' );
 
-	var pattern = new RegExp( command.input ),
-		out = command.output;
+	var pattern = new RegExp( command.input );
 
 	bot.addCommand({
 		name : command.name,
@@ -589,14 +619,7 @@ return function ( args ) {
 
 	function customCommand ( args, msgObj ) {
 		console.log( args, command.name + ' input' );
-
-		var match = pattern.exec( args ) || [],
-			msg = out;
-
-		msg = commands.parse( msg, msgObj, match );
-		console.log( msg, match, command.name + ' output' );
-
-		return msg;
+		return command.parse( command.output, msgObj, pattern.exec(args) );
 	}
 };
 
@@ -611,7 +634,7 @@ function buildCommand ( cmd ) {
 		function ( ch ) {
 			ch = ch[ 1 ];
 			if ( ch === '~' ) {
-				return '~';
+				return ch;
 			}
 			return '\\' + ch;
 		}

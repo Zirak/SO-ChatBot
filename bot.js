@@ -522,7 +522,7 @@ var output = {
 	send : function () {
 		Object.keys( this.messages ).forEach(function ( room ) {
 			var message = this.messages[ room ];
-			console.log( message );
+
 			if ( !message ) {
 				return;
 			}
@@ -544,7 +544,6 @@ var output = {
 	},
 
 	sendToRoom : function ( obj ) {
-		console.log( obj );
 		IO.xhr({
 			url : '/chats/' + obj.room + '/messages/new',
 			data : {
@@ -579,15 +578,15 @@ Object.merge = function () {
 		return ret;
 	}, {} );
 };
+
 String.prototype.indexesOf = function ( str ) {
 	var part = this.valueOf(),
-
-		//we use offset to determine the absolute distance from beginning
-		index, offset = 0,
+		index,
+		offset = 0, //to determine the absolute distance from beginning
 		len = str.length,
 		ret = [];
 
-	while ( (index = part.indexOf(str)) >= 0 ) {
+	while ( (index = part.indexOf(str)) > -1 ) {
 		ret.push( index + offset );
 		part = part.slice( index + len );
 		offset += index + len;
@@ -599,20 +598,26 @@ String.prototype.startsWith = function ( str ) {
 	return this.indexOf( str ) === 0;
 };
 
-//SO chat uses an unfiltered for...in to iterate over an array somewhere, so 
+//SO chat uses an unfiltered for...in to iterate over an array somewhere, so
 // that I have to use Object.defineProperty to make these non-enumerable
 Object.defineProperty( Array.prototype, 'invoke', {
 	value : function ( funName ) {
-		var args = [].slice.call( arguments, 1 );
+		var args = [].slice.call( arguments, 1 ), ret = [];
 
-		this.forEach(function ( item ) {
+		this.forEach(function ( item, index ) {
+			var res = item;
+
 			if ( item[funName] && item[funName].call ) {
-				item.funName.call( item, args );
+				res = item.funName.call( item, args );
 			}
+
+			ret[ index ] = res;
 		});
+
+		return ret;
 	},
 
 	configurable : true,
-	writable : true,
+	writable : true
 });
 ////utility end
