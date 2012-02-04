@@ -246,23 +246,26 @@ var commands = {
 		console.log( nums, '/roll input' );
 
 		if ( !nums || !nums.length ) {
-			return 'Invalid input for /roll'; //should probably be better...
-		}
-
-		if ( nums.length === 1 ) {
 			sides = 6;
-			count = nums[ 0 ];
+			count = 1;
+		}
+		else if ( nums.length === 1 ) {
+			sides = nums[ 0 ];
+			count = 1;
 		}
 		else if ( nums.length > 1 ) {
-			count = nums[ 0 ];
-			sides = nums[ 1 ];
+			sides = nums[ 0 ];
+			count = nums[ 1 ];
 		}
 		console.log( count, sides, '/roll rolling')
 
+		if ( count > 100 ) {
+			return 'Maximum roll-count is 100';
+		}
+
 		var rolls = [];
-		var max = sides - 1;
 		for ( var i = 0; i < count; i++ ) {
-			rolls[ i ] = Math.floor( Math.random() * max + 1 );
+			rolls[ i ] = Math.floor( Math.random() * sides + 1 );
 		}
 
 		return rolls.join( ', ' );

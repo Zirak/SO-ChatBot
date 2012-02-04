@@ -10,6 +10,50 @@ Will print something like this:
 
     @yourUsername Available commands: help, live, die, forget, define, mdn, jquery, online, user, listcommands, get, learn
 
+## `forget`
+
+    !!/forget cmdName
+
+Have the bot forget `cmdName`. You may have to have permission to forget certain commands. Once a command is forgotten, it cannot be un-forgotten (unless, of course, it is `/learn`ed.)
+
+## `define`
+
+    !!/define something
+
+Gives you the definition of `something`. Uses the wonderful [DuckDuckGo api.](http://api.duckduckgo.com/)
+
+## `roll`
+
+    !!/roll [sidesNum] [rollCount]
+
+Rolls a `sidesNum` (default 6) sides die `rollCount` (maximum 100, default 1) times and prints the result.
+
+    roll a 6-sided die 17 times
+    !!/roll 6 17
+    roll a 3-sided die 1 time
+    !!/roll 3
+    roll a 6-sided die 1 time
+    !!/roll
+
+*PLANNED:* Having roll also be a choice-maker.
+
+    !!/roll "go to sleep" "eat food" "do work"
+
+## `tell`
+
+    !!/tell usrName|msgid cmdName [commandArg0, [commandArg1, [...]]]
+
+Executes the command `cmdName`, and have the output be a reply to either a user or a specific message.
+
+    !!/tell Thor listcommands
+    !!/tell 253961 mdn Date.parse
+
+    will output something like this:
+    @Thor Available commands: help, live, die, forget, define, mdn, jquery, online, user, listcommands, get, learn
+    :253961 https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Date/parse
+
+**NOTE:** For bot-safety reasons, there are several commands which cannot be executed via `tell`. At the time of writing, they are `tell` and `forget`.
+
 ## `get`
 
     !!/get getterName [range [userid]]
@@ -39,9 +83,9 @@ The userid of the user from which you wish to get. Defaults to your own.
 
 ## `learn`
 
-	!!/learn commandName outputPattern [inputRegex]
+    !!/learn commandName outputPattern [inputRegex]
 
-	!!/learn greet "Hello, $0!" \w+
+    !!/learn greet "Hello, $0!" \w+
 
 ### `commandName`
 An alphanumeric string
@@ -77,27 +121,6 @@ Like any regular regex, except that instead of where you'd use `\`, you use `~`.
 For example: `\w => ~w`, `\\d => ~~d`.
 
 Defaults to `.*`
-
-## `forget`
-
-    !!/forget cmdName
-
-Have the bot forget `cmdName`. You may have to have permission to forget certain commands. Once a command is forgotten, it cannot be un-forgotten (unless, of course, it is `/learn`ed.)
-
-## `tell`
-
-    !!/tell usrName|msgid cmdName [commandArg0, [commandArg1, [...]]]
-
-Executes the command `cmdName`, and have the output be a reply to either a user or a specific message.
-
-    !!/tell Thor listcommands
-    !!/tell 253961 mdn Date.parse
-    
-    will output something like this:
-    @Thor Available commands: help, live, die, forget, define, mdn, jquery, online, user, listcommands, get, learn
-    :253961 https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Date/parse
-
-**NOTE:** For bot-safety reasons, there are several commands which cannot be executed via `tell`. At the time of writing, they are `tell` and `forget`.
 
 ## `hang`
 
