@@ -159,7 +159,7 @@ var commands = {
 			}
 			console.log( def, '/define finishCall output' );
 
-			bot.reply( def, msgObj.user_name );
+			bot.reply( def, msgObj );
 		}
 	},
 
@@ -182,7 +182,7 @@ var commands = {
 				msg = resp.value.joke;
 			}
 
-			bot.reply( msg, msgObj.user_name );
+			bot.reply( msg, msgObj );
 		}
 	},
 
@@ -378,10 +378,12 @@ return function ( args, msgObj ) {
 
 	//check if the user wants to reply to a message
 	if ( /\d+$/.test(replyTo) ) {
-		bot.directreply( res, replyTo );
+		msgObj.message_id = replyTo;
+		bot.directreply( res, msgObj );
 	}
 	else {
-		bot.reply( res, replyTo );
+		msgObj.user_name = replyTo;
+		bot.reply( res, msgObj );
 	}
 };
 }());
@@ -520,7 +522,7 @@ return function ( args, msgObj ) {
 	function parseResponse ( respObj ) {
 		//Une erreru! L'horreur!
 		if ( respObj.error ) {
-			bot.reply( respObj.error.message, msgObj.user_name );
+			bot.reply( respObj.error.message, msgObj );
 			return;
 		}
 
@@ -544,7 +546,7 @@ return function ( args, msgObj ) {
 		}
 		console.log( res, '/get parseResponse parsed');
 
-		bot.directreply( res, msgObj.message_id );
+		bot.directreply( res, msgObj );
 	}
 };
 }());

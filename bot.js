@@ -49,6 +49,34 @@ var IO = {
 		}
 	},
 
+	//it's a very incomplete, non-comprehensive implemantation, since I only
+	// use it for POST requests
+	xhr : function ( params ) {
+		if ( typeof params.data === 'object' ) {
+			params.data = IO.urlstringify( params.data );
+		}
+
+		var xhr = new XMLHttpRequest();
+		xhr.open( params.method || 'GET', params.url );
+
+		xhr.addEventListener( 'readystatechange', function () {
+			if ( xhr.readyState === 4 ) {
+				params.complete && params.complete.call &&
+					params.complete.call(
+						params.thisArg, xhr.responseText, xhr
+					);
+			}
+		});
+
+		xhr.setRequestHeader(
+			'Content-Type', 'application/x-www-form-urlencoded'
+		);
+
+		xhr.send( params.data );
+
+		return xhr;
+	},
+
 	jsonp : function ( opts ) {
 		var script = document.createElement( 'script' ),
 			semiRandom = 'IO_' + ( Date.now() * Math.ceil(Math.random()) );
@@ -236,7 +264,7 @@ var bot = {
 				err += ' on line ' + e.lineNumber;
 			}
 
-			this.reply( err, usr );
+			this.reply( err, msgObj );
 
 			console.error( err, e );
 		}
@@ -246,7 +274,7 @@ var bot = {
 		console.log( cmd, 'parseCommand input' );
 
 		if ( !this.commandRegex.test(cmd) ) {
-			bot.reply( 'Invalid command ' + cmd );
+			bot.reply( 'Invalid command ' + cmd, msgObj );
 		}
 
 		var commandParts = cmd.match( this.commandRegex ),
@@ -268,16 +296,16 @@ var bot = {
 			bot.reply(
 				'You do not have permission to use the command ' +
 					commandName,
-				usr
+				msgObj
 			);
 			return;
 		}
 
 		console.log( cmdObj, 'parseCommand calling' );
 		var reply = cmdObj.fun.call( cmdObj.thisArg, commandArgs, msgObj );
-		console.log( reply, 'parseCommand called' );
+
 		if ( reply ) {
-			bot.reply( reply, usr );
+			bot.reply( reply, msgObj );
 		}
 	},
 
@@ -287,7 +315,7 @@ var bot = {
 		}
 
 		if ( msgObj.room_id !== this.roomid ) {
-			return false;
+			//return false;
 		}
 
 		var msg = msgObj.content.toLowerCase().trim();
@@ -324,60 +352,15 @@ var bot = {
 		};
 	}()),
 
-	reply : function ( msg, usr ) {
-		this.output.add( '@' + usr + ' ' + msg );
+	reply : function ( msg, msgObj, codify ) {
+		var usr = msgObj.user_name, roomid = msgObj.room_id;
+
+		output.add( '@' + usr + ' ' + msg, roomid, codify );
 	},
 
-	directreply : function ( msg, usrid ) {
-		this.output.add( ':' + usrid + ' ' + msg );
-	},
-
-	output : {
-		msg : '',
-
-		add : function ( txt ) {
-			IO.out.receive( txt );
-		},
-
-		build : function ( txt ) {
-			this.msg += txt + '\n';
-			console.log( txt, this.msg );
-		},
-
-		send : function () {
-			var message = this.msg, that = this;
-
-			if ( !message ) {
-				return;
-			}
-
-			if ( bot.codifyOutput ) {
-				bot.elems.input.value = message;
-				bot.elems.codify.click();
-				message = bot.elems.input.value;
-			}
-
-			jQuery.ajax({
-				url : '/chats/' + bot.roomid + '/messages/new',
-				data : {
-					text : message,
-					fkey : fkey().fkey
-				},
-				type : 'POST',
-				complete : complete
-			});
-
-			that.msg = '';
-
-			function complete ( xhr ) {
-				console.log( xhr.status );
-				//conflict, wait for next round to send message
-				if ( xhr.status === 409 ) {
-					IO.out.receive( message.trim() );
-				}
-				bot.codifyOutput = false;
-			}
-		}
+	directreply : function ( msg, msgObj, codify ) {
+		var msgid = msgObj.message_id, roomid = msgObj.room_id;
+		output.add( ':' + msgid + ' ' + msg, roomid, codify );
 	},
 
 	//some awesome
@@ -416,8 +399,6 @@ var bot = {
 
 IO.register( 'receiveinput', bot.validateMessage, bot );
 IO.register( 'input', bot.parseMessage, bot );
-IO.register( 'output', bot.output.build, bot.output );
-IO.register( 'afteroutput', bot.output.send, bot.output );
 ////bot ends
 
 ////utility start
@@ -518,6 +499,74 @@ var polling = {
 	}
 };
 polling.init();
+
+var output = {
+	messages : {},
+
+	add : function ( msg, roomid, codify ) {
+		roomid = roomid || bot.roomid;
+		IO.out.receive({
+			text : msg,
+			room : roomid
+		});
+	},
+
+	build : function ( obj ) {
+		if ( !this.messages[obj.room] ) {
+			this.messages[ obj.room ] = '';
+		}
+		this.messages[ obj.room ] += obj.text;
+		this.messages[ obj.room ].codify = obj.codify;
+	},
+
+	send : function () {
+		Object.keys( this.messages ).forEach(function ( room ) {
+			var message = this.messages[ room ];
+			console.log( message );
+			if ( !message ) {
+				return;
+			}
+
+			if ( message.codify ) {
+				bot.elems.input.value = message;
+				bot.elems.codify.click();
+				message = bot.elems.input.value;
+			}
+
+			this.sendToRoom({
+				text   : message,
+				room   : room,
+				codify : message.codify
+			});
+
+			this.messages[ room ] = '';
+		}, this );
+	},
+
+	sendToRoom : function ( obj ) {
+		console.log( obj );
+		IO.xhr({
+			url : '/chats/' + obj.room + '/messages/new',
+			data : {
+				text : obj.text,
+				fkey : fkey().fkey
+			},
+			method : 'POST',
+			complete : complete
+		});
+
+		function complete ( resp, xhr ) {
+			console.log( xhr.status );
+
+			//conflict, wait for next round to send message
+			if ( xhr.status === 409 ) {
+				output.add( obj.text, obj.room, obj.codify );
+			}
+		}
+	}
+};
+IO.register( 'output', output.build, output );
+IO.register( 'afteroutput', output.send, output );
 
 //small utility functions
 Object.merge = function () {

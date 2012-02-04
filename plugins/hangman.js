@@ -36,7 +36,7 @@ var game = {
 			this.new();
 		}
 		else {
-			this.handleGuess( msg, msgObj.user_name );
+			return this.handleGuess( msg, msgObj.user_name );
 		}
 	},
 	
@@ -55,7 +55,7 @@ var game = {
 	},
 
 	register : function () {
-		this.unregister();
+		this.unregister(); //to make sure it's not added multiple times
 		IO.register( 'beforeoutput', this.buildOutput, this );
 
 		this.end = false;
@@ -71,17 +71,12 @@ var game = {
 		guess = guess.toLowerCase();
 
 		if ( !this.validGuessRegex.test(guess) ) {
-			bot.reply(
-				'Only alphanumeric and whitespace characters allowed',
-				usr
-			);
-			return;
+			return 'Only alphanumeric and whitespace characters allowed',
 		}
 
 		//check if it was already submitted
 		if ( this.guesses.indexOf(guess) > -1 ) {
-			bot.reply( guess + ' was already submitted', usr );
-			return;
+			return guess + ' was already submitted';
 		}
 
 		//replace all occurences of guest within the hidden word with their
@@ -104,12 +99,10 @@ var game = {
 
 		//plain vanilla lose-win checks
 		if ( this.loseCheck() ) {
-			this.lose();
-			return;
+			return this.lose();
 		}
 		if ( this.winCheck() ) {
-			this.win( usr );
-			return;
+			return this.win( usr );
 		}
 	},
 
@@ -141,12 +134,9 @@ var game = {
 	},
 
 	//win the game
-	win : function ( winrar ) {
-		bot.output.add(
-			'Correct! The phrase is ' + this.word + '. Congrats to @' + winrar
-		);
-
+	win : function () {
 		this.unregister();
+		return 'Correct! The phrase is ' + this.word + '.'
 	},
 
 	winCheck : function () {
@@ -155,9 +145,8 @@ var game = {
 
 	//lose the game. less bitter messages? maybe.
 	lose : function () {
-		bot.output.add( 'You people suck. The phrase was ' + this.word );
-
 		this.unregister();
+		return 'You people suck. The phrase was ' + this.word;
 	},
 
 	loseCheck : function () {
