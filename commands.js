@@ -163,6 +163,29 @@ var commands = {
 		}
 	},
 
+	norris : function ( args, msgObj ) {
+		var chucky = 'http://api.icndb.com/jokes/random';
+
+		IO.jsonp({
+			url : chucky,
+			fun : finishCall,
+			jsonpName : 'callback'
+		});
+
+		function finishCall ( resp ) {
+			var msg;
+
+			if ( resp.type !== 'success' ) {
+				msg = 'Chuck Norris is too awesome for this API. Try again.';
+			}
+			else {
+				msg = resp.value.joke;
+			}
+
+			bot.reply( msg, msgObj.user_name );
+		}
+	},
+
 	jquery : function ( args ) {
 		//check to see if more than one thing is requested
 		var parsedArgs = parseCommandArgs( args );
@@ -390,7 +413,7 @@ return function ( args ) {
 	var lowercased = parts[ 0 ].toLowerCase();
 
 	if ( DOMParts.hasOwnProperty(lowercased) ) {
-		parts[ 0 ] = DOMParts[ lowercased ] || parts[ 0 ];
+		parts[ 0 ] = DOMParts[ lowercased ] || lowercased;
 		url = base + 'DOM/';
 
 		if ( parts.length > 1 ) {

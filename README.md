@@ -8,7 +8,7 @@ For example:
     !!/listcommands
 Will print something like this:
 
-    @yourUsername Available commands:help, live, die, forget, define, mdn, jquery, online, user, listcommands, get, learn
+    @yourUsername Available commands: help, live, die, forget, define, mdn, jquery, online, user, listcommands, get, learn
 
 ## `get`
 
@@ -78,6 +78,27 @@ For example: `\w => ~w`, `\\d => ~~d`.
 
 Defaults to `.*`
 
+## `forget`
+
+    !!/forget cmdName
+
+Have the bot forget `cmdName`. You may have to have permission to forget certain commands. Once a command is forgotten, it cannot be un-forgotten (unless, of course, it is `/learn`ed.)
+
+## `tell`
+
+    !!/tell usrName|msgid cmdName [commandArg0, [commandArg1, [...]]]
+
+Executes the command `cmdName`, and have the output be a reply to either a user or a specific message.
+
+    !!/tell Thor listcommands
+    !!/tell 253961 mdn Date.parse
+    
+    will output something like this:
+    @Thor Available commands: help, live, die, forget, define, mdn, jquery, online, user, listcommands, get, learn
+    :253961 https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/Date/parse
+
+**NOTE:** For bot-safety reasons, there are several commands which cannot be executed via `tell`. At the time of writing, they are `tell` and `forget`.
+
 ## `hang`
 
     !!/hang [guess]
@@ -87,6 +108,11 @@ You have 6 guesses to get the word right.
 
 **NOTE:** The hangman game is a more like a module than a core part of the bot. So it may not be available, unless the bot owner explicitly loaded it.
 
-To bot owner: Via your console, simply doing `IO.loadScript( bot.dependencies.hangman )` should automagically get everything imported and done.
+To bot owner: Via your console, simply doing `IO.loadScript( bot.dependencies.hangman )` should automagically get everything imported and done. If you're just using the bookmarklet, you're good to go.
+
+## `todo`
+
+    !!/todo get|add|delete item1|[count [, item2 [...]]]
+~TODO~
 
 I'm not very good in writing README files.
