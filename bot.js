@@ -286,7 +286,7 @@ var bot = {
 		console.log( commandParts, 'parseCommand matched' );
 
 		if ( !this.commandExists(commandName) ) {
-			bot.reply( 'Unidentified command ' + commandName, usr );
+			bot.reply( 'Unidentified command ' + commandName, msgObj );
 			return;
 		}
 

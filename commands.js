@@ -179,7 +179,7 @@ var commands = {
 				msg = 'Chuck Norris is too awesome for this API. Try again.';
 			}
 			else {
-				msg = resp.value.joke;
+				msg = resp.value.joke.replace( '&amp;quot;', '\"' );
 			}
 
 			bot.reply( msg, msgObj );
@@ -405,15 +405,26 @@ return function ( args, msgObj ) {
 		return 'You do not have permission to use command ' + cmdName;
 	}
 
-	var res = cmd.fun.call( cmd.thisArg, cmdArgs, msgObj );
-
 	//check if the user wants to reply to a message
+	var direct = false;
 	if ( /\d+$/.test(replyTo) ) {
 		msgObj.message_id = replyTo;
-		bot.directreply( res, msgObj );
+		direct = true;
 	}
 	else {
 		msgObj.user_name = replyTo;
+	}
+
+	var res = cmd.fun.call( cmd.thisArg, cmdArgs, msgObj );
+
+	if ( !res ) {
+		return;
+	}
+
+	if ( direct ) {
+		bot.directreply( res, msgObj );
+	}
+	else {
 		bot.reply( res, msgObj );
 	}
 };
