@@ -506,7 +506,7 @@ var output = {
 	add : function ( msg, roomid, codify ) {
 		roomid = roomid || bot.roomid;
 		IO.out.receive({
-			text : msg,
+			text : msg + '\n',
 			room : roomid
 		});
 	},

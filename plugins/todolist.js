@@ -2,7 +2,7 @@ var list = JSON.parse( localStorage.getItem('todo') || '{}' );
 
 var userlist = function ( usrid ) {
 
-	var usr = list[ usrid ];
+	var usr = list[ usrid ], toRemove = [];
 	if ( !usr ) {
 		usr = list[ usrid ] = [];
 	}
@@ -10,7 +10,7 @@ var userlist = function ( usrid ) {
 	return {
 		get : function ( count ) {
 			return usr.map(function ( item, index ) {
-				return '(' + index+1 + ')' + item;
+				return '(' + (index+1) + ')' + item;
 			}).join( ', ' );
 		},
 
@@ -21,9 +21,28 @@ var userlist = function ( usrid ) {
 		},
 
 		remove : function ( item ) {
-			usr.splice( usr.indexOf(item), 1 );
+			toRemove.push( usr.indexOf(item) );
 
 			return true;
+		},
+		removeByIndex : function ( idx ) {
+			if ( idx >= usr.length ) {
+				return false;
+			}
+			toRemove.push( idx );
+
+			return true;
+		},
+
+		save : function () {
+			console.log( toRemove.slice(), usr.slice() );
+			usr = usr.filter(function ( item, idx ) {
+				return toRemove.indexOf( idx ) === -1;
+			});
+
+			toRemove.length = 0;
+
+			list[ usrid ] = usr;
 		},
 
 		exists : function ( suspect ) {
@@ -41,7 +60,7 @@ var todo = function ( args, msgObj ) {
 	args = parseCommandArgs( args );
 	console.log( args, 'todo input' );
 
-	if ( !args.length ) {
+	if ( !args[0] ) {
 		args = [ 'get' ];
 	}
 	var action = args[ 0 ],
@@ -83,7 +102,10 @@ var todo = function ( args, msgObj ) {
 	else if ( action === 'remove' ) {
 		res = items.every(function ( item ) {
 
-			if ( !usr.exists(item) ) {
+			if ( /^\d+$/.test(item) ) {
+				usr.removeByIndex( Number(item - 1) );
+			}
+			else if ( !usr.exists(item) ) {
 				ret = item + ' does not exist.';
 				return false;
 			}
@@ -107,6 +129,7 @@ var todo = function ( args, msgObj ) {
 	}
 
 	//save the updated list
+	usr.save();
 	localStorage.setItem( 'todo', JSON.stringify(list) );
 	return ret;
 };
