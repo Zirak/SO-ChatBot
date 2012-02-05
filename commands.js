@@ -107,13 +107,13 @@ var commands = {
 		return 'You killed me!';
 	},
 
-	forget : function ( args, msgObj ) {
+	forget : function ( args ) {
 		if ( !bot.commandExists(args) ) {
 			return 'Command ' + args + ' does not exist';
 		}
 
 		var cmd = bot.commands[ args ];
-		if ( !cmd.canDel(msgObj.user_id) ) {
+		if ( !cmd.canDel(args.get('user_id')) ) {
 			return 'You are not authorized to delete the command ' + args;
 		}
 
@@ -121,7 +121,7 @@ var commands = {
 		return 'Command ' + args + ' forgotten.';
 	},
 
-	define : function ( args, msgObj ) {
+	define : function ( args ) {
 		var duckyAPI = 'http://api.duckduckgo.com/?',
 			params = {
 				q : 'define ' + args,
@@ -159,11 +159,11 @@ var commands = {
 			}
 			console.log( def, '/define finishCall output' );
 
-			bot.reply( def, msgObj );
+			args.directreply( def );
 		}
 	},
 
-	norris : function ( args, msgObj ) {
+	norris : function ( args ) {
 		var chucky = 'http://api.icndb.com/jokes/random';
 
 		IO.jsonp({
@@ -182,7 +182,7 @@ var commands = {
 				msg = resp.value.joke.replace( '&amp;quot;', '\"' );
 			}
 
-			bot.reply( msg, msgObj );
+			args.reply( msg );
 		}
 	},
 
@@ -193,15 +193,15 @@ var commands = {
 			return parsedArgs.map( bot.commands.jquery.fun ).join( ' ' );
 		}
 
-		args = args.trim().replace( /^\$/, 'jQuery' );
+		var props = args.trim().replace( /^\$/, 'jQuery' );
 
-		var parts = args.split( '.' ), exists = false, url = args, msg;
+		var parts = props.split( '.' ), exists = false, url = props, msg;
 		//parts will contain two likely components, depending on the input
 		// jQuery.prop    -  parts[0] will be jQuery, parts[1] will be prop
 		// prop           -  parts[0] will be prop
 		// jQuery.fn.prop -  that's a special case
 
-		console.log( args, parts, '/jquery input' );
+		console.log( props, parts, '/jquery input' );
 
 		//jQuery API urls works like this:
 		// if it's on the jQuery object, then the url is /jQuery.property
@@ -257,7 +257,7 @@ var commands = {
 			sides = nums[ 0 ];
 			count = nums[ 1 ];
 		}
-		console.log( count, sides, '/roll rolling')
+		console.log( count, sides, '/roll rolling');
 
 		if ( count > 100 ) {
 			return 'Maximum roll-count is 100';
@@ -272,10 +272,10 @@ var commands = {
 	},
 
 	choose : function ( args ) {
-		args = parseCommandArgs( args );
-		console.log( args, '/choose input' );
+		var opts = parseCommandArgs( args );
+		console.log( opts, '/choose input' );
 
-		return args[ Math.floor(Math.random() * args.length) ];
+		return opts[ Math.floor(Math.random() * opts.length) ];
 	},
 
 	online : function () {
@@ -289,10 +289,10 @@ var commands = {
 		).join( ', ' );
 	},
 
-	user : function ( args, msgObj ) {
+	user : function ( args ) {
 		//to support names with spaces in the, you can call like "user name"
-		args = parseCommandArgs( args )[ 0 ];
-		var usrid = args || msgObj.user_id;
+		var props = parseCommandArgs( args )[ 0 ],
+			usrid = props || args.get( 'user_id' );
 
 		//check for searching by username
 		if ( /^[\w\s]+$/.test(usrid) ) {
@@ -313,7 +313,7 @@ var commands = {
 			}
 		}
 
-		return 'http://stackoverflow.com/users/' + usrid;
+		args.directreply( 'http://stackoverflow.com/users/' + usrid );
 	},
 
 	listcommands : function () {
@@ -326,8 +326,8 @@ commands.parse = (function () {
 
 //special variables/macros
 var fillers = {
-	who : function ( msgObj ) {
-		return msgObj.user_name;
+	who : function ( msg ) {
+		return msg.get( 'user_name' );
 	},
 
 	someone : function () {
@@ -349,7 +349,7 @@ var fillers = {
 var fillerRegex = /(?:.|^)\$(\w+)/g;
 
 //extraVars is for internal usage via other commands
-return function ( args, msgObj, extraVars ) {
+return function ( args, extraVars ) {
 	console.log( args, extraVars, '/parse input' );
 	extraVars = extraVars || {};
 
@@ -373,11 +373,11 @@ return function ( args, msgObj, extraVars ) {
 		}
 		//it's a special variables
 		else if ( fillers.hasOwnProperty(filler) ) {
-			ret += fillers[ filler ]( msgObj );
+			ret += fillers[ filler ]( args );
 		}
-		//it's part of msgObj
-		else if ( msgObj.hasOwnProperty(filler) ) {
-			ret += msgObj[ filler ];
+		//it's part of the argument variables
+		else if ( args.get(filler) ) {
+			ret += args.get( filler );
 		}
 		//it's not defined
 		else {
@@ -386,20 +386,19 @@ return function ( args, msgObj, extraVars ) {
 
 		return ret;
 	}
-}
+};
 }());
 
 commands.tell = (function () {
 
 var invalidCommands = { tell : true, forget : true };
 
-return function ( args, msgObj ) {
-	//[ usrname|msgid, cmdName, cmdArgs ]
-	args = parseCommandArgs( args );
+return function ( args ) {
+	var props = parseCommandArgs( args );
+	console.log( props, '/tell input' );
 
-	var replyTo = args[ 0 ],
-		cmdName = args[ 1 ],
-		cmdArgs = args.slice( 2 ).join( ' ' ),
+	var replyTo = props[ 0 ],
+		cmdName = props[ 1 ],
 		cmd;
 
 	if ( !bot.commandExists(cmdName) ) {
@@ -411,31 +410,36 @@ return function ( args, msgObj ) {
 
 	cmd = bot.commands[ cmdName ];
 
-	if ( !cmd.canUse(msgObj.user_id) ) {
+	if ( !cmd.canUse(args.get('user_id')) ) {
 		return 'You do not have permission to use command ' + cmdName;
 	}
 
 	//check if the user wants to reply to a message
 	var direct = false;
 	if ( /\d+$/.test(replyTo) ) {
-		msgObj.message_id = replyTo;
+		args.set( 'message_id', replyTo );
 		direct = true;
 	}
 	else {
-		msgObj.user_name = replyTo;
+		args.set( 'user_name', replyTo );
 	}
 
-	var res = cmd.fun.call( cmd.thisArg, cmdArgs, msgObj );
+	var cmdArgs = makeMessage(
+		args.slice( replyTo.length + cmdName.length + 1 ).trim(),
+		args.get()
+	);
+	console.log( cmdArgs, '/tell calling ' + cmdName );
+	var res = cmd.fun.call( cmd.thisArg, cmdArgs );
 
 	if ( !res ) {
 		return;
 	}
 
 	if ( direct ) {
-		bot.directreply( res, msgObj );
+		args.directreply( res );
 	}
 	else {
-		bot.reply( res, msgObj );
+		args.reply( res );
 	}
 };
 }());
@@ -515,7 +519,7 @@ var ranges = {
 	}
 };
 
-return function ( args, msgObj ) {
+return function ( args ) {
 	var parts = parseCommandArgs( args ),
 		type = parts[ 0 ],
 		plural = type + 's',
@@ -539,7 +543,7 @@ return function ( args, msgObj ) {
 
 	//if after all this it's falsy, assume the user's id
 	if ( !usrid ) {
-		usrid = msgObj.user_id;
+		usrid = args.get( 'user_id' );
 	}
 
 	console.log( parts, 'get input' );
@@ -574,7 +578,7 @@ return function ( args, msgObj ) {
 	function parseResponse ( respObj ) {
 		//Une erreru! L'horreur!
 		if ( respObj.error ) {
-			bot.reply( respObj.error.message, msgObj );
+			args.reply( respObj.error.message );
 			return;
 		}
 
@@ -598,7 +602,7 @@ return function ( args, msgObj ) {
 		}
 		console.log( res, '/get parseResponse parsed');
 
-		bot.directreply( res, msgObj );
+		args.directreply( res );
 	}
 };
 }());
@@ -638,9 +642,11 @@ return function ( args ) {
 
 	return 'Command ' + command.name + ' learned';
 
-	function customCommand ( args, msgObj ) {
+	function customCommand ( args ) {
 		console.log( args, command.name + ' input' );
-		return command.parse( command.output, msgObj, pattern.exec(args) );
+
+		var cmdArgs = makeMessage( command.output, args.get() );
+		return commands.parse( cmdArgs, pattern.exec(args) );
 	}
 };
 

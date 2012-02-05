@@ -61,10 +61,11 @@ var IO = {
 
 		xhr.addEventListener( 'readystatechange', function () {
 			if ( xhr.readyState === 4 ) {
-				params.complete && params.complete.call &&
+				if ( params.complete && params.complete.call ) {
 					params.complete.call(
 						params.thisArg, xhr.responseText, xhr
 					);
+				}
 			}
 		});
 
@@ -198,7 +199,7 @@ var IO = {
 ////IO end
 
 ////bot start
-var baseRepURL = 'https://raw.github.com/Titani/SO-ChatBot/master/'
+var baseRepURL = 'https://raw.github.com/Titani/SO-ChatBot/master/';
 var bot = {
 	name : 'Zirak',
 	invocationPattern : '!!',
@@ -207,6 +208,7 @@ var bot = {
 
 	commandRegex : /^\/([\w\-\_]+)\s*(.+)?$/,
 	commands : {}, //will be filled as needed
+	listeners : [],
 
 	codifyOutput : false,
 
@@ -214,7 +216,7 @@ var bot = {
 
 	dependencies : {
 		commands : baseRepURL + 'commands.js',
-		hangman  : baseRepURL + 'plugins/hangman.js',
+		//hangman  : baseRepURL + 'plugins/hangman.js',
 		todo     : baseRepURL + 'plugins/todolist.js'
 	},
 
@@ -237,9 +239,12 @@ var bot = {
 			return;
 		}
 
-		var msg = this.cleanMessage( msgObj.content ),
-			usr = msgObj.user_name;
+		//"casting" to object so that it can be extended with cool stuff in
+		// makeMessage
+		var msg = this.cleanMessage(msgObj.content);
 		msg = msg.slice( this.invocationPattern.length ).trim();
+
+		msg = makeMessage( msg, msgObj );
 
 		console.log( msg, 'parseMessage valid' );
 
@@ -247,75 +252,73 @@ var bot = {
 			//it's a command
 			if ( msg.startsWith('/') ) {
 				console.log( msg, 'parseMessage command' );
-				this.parseCommand( msg, msgObj );
+				this.parseCommand( msg );
 				return;
 			}
 
-			console.log( msg, 'parseMessage guess' );
-			//if it's valid and not a comment, fire an event and let someone
-			// else (or noone) worry about it
-			IO.fire( 'messageReceived', msg, msgObj );
+			//see if some hobo listener wants this
+			this.callListeners( msg );
+
+			//Feuer Sie das Ereignis!
+			IO.fire( 'messageReceived', msg );
 		}
 		catch ( e ) {
-			var err = 'Could not process input. Error: ';
-			err += e.message;
+			var err = 'Could not process input. Error: ' + e.message;
 
 			if ( e.lineNumber ) {
 				err += ' on line ' + e.lineNumber;
 			}
 
-			this.reply( err, msgObj );
+			msg.directreply( err );
 
 			console.error( err, e );
 		}
 	},
 
-	parseCommand : function ( cmd, msgObj ) {
-		console.log( cmd, 'parseCommand input' );
+	parseCommand : function ( msg ) {
+		console.log( msg, 'parseCommand input' );
 
-		if ( !this.commandRegex.test(cmd) ) {
-			bot.reply( 'Invalid command ' + cmd, msgObj );
+		var commandParts = this.commandRegex.exec( msg );
+		if ( !commandParts ) {
+			msg.reply( 'Invalid command ' + msg );
 		}
 
-		var commandParts = cmd.match( this.commandRegex ),
-			commandName = commandParts[ 1 ].toLowerCase(),
-			commandArgs = commandParts[ 2 ] || '',
-
-			usr = msgObj.user_name;
+		var commandName = commandParts[ 1 ].toLowerCase();
 
 		console.log( commandParts, 'parseCommand matched' );
 
 		if ( !this.commandExists(commandName) ) {
-			bot.reply( 'Unidentified command ' + commandName, msgObj );
+			msg.reply( 'Unidentified command ' + commandName );
 			return;
 		}
 
 		var cmdObj = this.commands[ commandName ];
 
-		if ( !cmdObj.canUse(msgObj.user_id) ) {
-			bot.reply(
+		if ( !cmdObj.canUse(msg.get('user_id')) ) {
+			msg.reply(
 				'You do not have permission to use the command ' +
-					commandName,
-				msgObj
+					commandName
 			);
 			return;
 		}
 
 		console.log( cmdObj, 'parseCommand calling' );
-		var reply = cmdObj.fun.call( cmdObj.thisArg, commandArgs, msgObj );
 
-		if ( reply ) {
-			bot.reply( reply, msgObj );
+		var args = makeMessage(
+			//+ 1 is for the /
+			msg.slice( commandName.length + 1 ).trim(),
+			msg.get()
+		);
+		var res = cmdObj.fun.call( cmdObj.thisArg, args );
+
+		if ( res ) {
+			msg.reply( res );
 		}
 	},
 
 	validateMessage : function ( msgObj ) {
 		if ( this.stopped ) {
 			return false;
-		}
-
-		if ( msgObj.room_id !== this.roomid ) {
-			//return false;
 		}
 
 		var msg = msgObj.content.toLowerCase().trim();
@@ -351,6 +354,24 @@ var bot = {
 			return msg;
 		};
 	}()),
+
+	listen : function ( regex, fun, thisArg ) {
+		this.listeners.push({
+			pattern : regex,
+			fun : fun,
+			thisArg: thisArg
+		});
+	},
+
+	callListeners : function ( msg ) {
+		this.listeners.forEach(function ( listener ) {
+			var res = listener.pattern.exec( msg );
+
+			if ( res ) {
+				listener.fun.call( listener.thisArg, msg, res );
+			}
+		});
+	},
 
 	reply : function ( msg, msgObj, codify ) {
 		var usr = msgObj.user_name, roomid = msgObj.room_id;
@@ -399,6 +420,57 @@ var bot = {
 
 IO.register( 'receiveinput', bot.validateMessage, bot );
 IO.register( 'input', bot.parseMessage, bot );
+
+var makeMessage = function ( text, msgObj ) {
+	text = Object( text );
+
+	var deliciousObject = {
+		respond : function ( resp ) {
+			output.add({
+				text : resp,
+				roomid : msgObj.room_id
+			});
+		},
+
+		reply : function ( resp, usrname ) {
+			usrname = usrname || msgObj.user_name;
+
+			bot.reply( resp, Object.merge(
+				msgObj, {user_name : usrname}
+			));
+		},
+		directreply : function ( resp, msgid ) {
+			msgid = msgid || msgObj.message_id;
+
+			bot.directreply( resp, Object.merge(
+				msgObj, {message_id : msgid}
+			));
+		},
+
+		exec : function ( regexp ) {
+			var match = regexp.exec( text );
+			this.matches = match ? match : [];
+
+			return match;
+		},
+
+		get : function ( what ) {
+			if ( !what ) {
+				return msgObj;
+			}
+			return msgObj[ what ];
+		},
+		set : function ( what, val ) {
+			return msgObj[ what ] = val;
+		}
+	};
+
+	Object.keys( deliciousObject ).forEach(function ( key ) {
+		text[ key ] = deliciousObject[ key ];
+	});
+
+	return text;
+};
 ////bot ends
 
 ////utility start

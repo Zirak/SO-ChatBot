@@ -56,16 +56,16 @@ var userlist = function ( usrid ) {
 	};
 };
 
-var todo = function ( args, msgObj ) {
-	args = parseCommandArgs( args );
-	console.log( args, 'todo input' );
+var todo = function ( args ) {
+	var props = parseCommandArgs( args );
+	console.log( props, 'todo input' );
 
-	if ( !args[0] ) {
-		args = [ 'get' ];
+	if ( !props[0] ) {
+		props = [ 'get' ];
 	}
-	var action = args[ 0 ],
-		usr = userlist( msgObj.user_id ),
-		items = args.slice( 1 ),
+	var action = props[ 0 ],
+		usr = userlist( args.get('user_id') ),
+		items = props.slice( 1 ),
 		res, ret;
 
 	//user wants to get n items, we just want the count
@@ -131,6 +131,7 @@ var todo = function ( args, msgObj ) {
 	//save the updated list
 	usr.save();
 	localStorage.setItem( 'todo', JSON.stringify(list) );
+
 	return ret;
 };
 
@@ -139,5 +140,10 @@ bot.addCommand({
 	fun  : todo,
 	permissions : {
 		del : 'NONE'
-	}
+	},
+	description : 'Your personal todo list. ' +
+		'`/get [count]` retrieves everything or count items. ' +
+		'`/add [items]` adds n-items to your todo list (make sure items ' +
+			'with spaces are wrapped in quotes) ' +
+		'`/remove [indices]` removes items specified by indice'
 });
