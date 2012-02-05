@@ -271,6 +271,13 @@ var commands = {
 		return rolls.join( ', ' );
 	},
 
+	choose : function ( args ) {
+		args = parseCommandArgs( args );
+		console.log( args, '/choose input' );
+
+		return args[ Math.floor(Math.random() * args.length) ];
+	},
+
 	online : function () {
 		var avatars = document.getElementById( 'present-users' )
 				.getElementsByClassName( 'avatar' );

@@ -35,9 +35,17 @@ Rolls a `sidesNum` (default 6) sides die `rollCount` (maximum 100, default 1) ti
     roll a 6-sided die 1 time
     !!/roll
 
-*PLANNED:* Having roll also be a choice-maker.
+## `choose`
 
-    !!/roll "go to sleep" "eat food" "do work"
+    !!/choose option0 [, option1 [, option2 [,...]]]
+
+Make the bot choose an option for you.
+
+    !!/choose "go to sleep" "eat food" "do work"
+    will result in one of the following, semi-randomly:
+    go to sleep
+    eat food
+    do work
 
 ## `tell`
 
