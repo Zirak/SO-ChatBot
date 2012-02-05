@@ -216,6 +216,7 @@ var bot = {
 
 	dependencies : {
 		commands : baseRepURL + 'commands.js',
+		listeners : baseRepURL + 'listeners.js',
 		//hangman  : baseRepURL + 'plugins/hangman.js',
 		todo     : baseRepURL + 'plugins/todolist.js'
 	},
@@ -365,10 +366,14 @@ var bot = {
 
 	callListeners : function ( msg ) {
 		this.listeners.forEach(function ( listener ) {
-			var res = listener.pattern.exec( msg );
+			var match = msg.exec( listener.pattern ), resp;
 
-			if ( res ) {
-				listener.fun.call( listener.thisArg, msg, res );
+			if ( match ) {
+				resp = listener.fun.call( listener.thisArg, msg );
+			}
+			console.log( match, resp );
+			if ( resp ) {
+				msg.reply( resp );
 			}
 		});
 	},
@@ -485,17 +490,19 @@ var polling = {
 		var that = this,
 			roomid = location.pathname.match( /\d+/ )[ 0 ];
 
-		jQuery.post(
-			'/chats/' + roomid + '/events/',
-			fkey({
+		IO.xhr({
+			url : '/chats/' + roomid + '/events/',
+			data : fkey({
 				since : 0,
 				mode : 'Messages',
 				msgCount : 0
 			}),
-			finish
-		);
+			method : 'POST',
+			complete : finish
+		});
 
 		function finish ( resp ) {
+			resp = JSON.parse( resp );
 			console.log( resp );
 
 			that.times[ 'r' + roomid ] = resp.time;
@@ -509,17 +516,20 @@ var polling = {
 	poll : function () {
 		var that = this;
 
-		jQuery.post(
-			'/events',
-			Object.merge( fkey(), that.times ),
-			function () { that.complete.apply( that, arguments ); }
-		);
+		IO.xhr({
+			url : '/events',
+			data : fkey( that.times ),
+			method : 'POST',
+			complete : that.complete,
+			thisArg : that
+		});
 	},
 
 	complete : function ( resp ) {
 		if ( !resp ) {
 			return;
 		}
+		resp = JSON.parse( resp );
 
 		var that = this;
 		Object.keys( resp ).forEach(function ( key ) {
