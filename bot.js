@@ -1,5 +1,8 @@
+(function () {
+"use strict";
+
 ////IO start
-var IO = {
+var IO = window.IO = {
 	//event handling
 	events : {},
 	preventDefault : false,
@@ -200,7 +203,7 @@ var IO = {
 
 ////bot start
 var baseRepURL = 'https://raw.github.com/Titani/SO-ChatBot/master/';
-var bot = {
+var bot = window.bot = {
 	name : 'Zirak',
 	invocationPattern : '!!',
 
@@ -209,8 +212,6 @@ var bot = {
 	commandRegex : /^\/([\w\-\_]+)\s*(.+)?$/,
 	commands : {}, //will be filled as needed
 	listeners : [],
-
-	codifyOutput : false,
 
 	stopped : false,
 
@@ -221,17 +222,6 @@ var bot = {
 		todo     : baseRepURL + 'plugins/todolist.js'
 	},
 
-	//common elements
-	elems : {
-		input : document.getElementById( 'input' ),
-		codify : document.getElementById( 'codify-button' ),
-		send : document.getElementById( 'sayit-button' ),
-
-		//for my local testing
-		output : document.getElementById( 'output' ) ||
-			document.createElement( 'pre' )
-	},
-
 	parseMessage : function ( msgObj ) {
 		console.log( msgObj, 'parseMessage input' );
 
@@ -240,12 +230,10 @@ var bot = {
 			return;
 		}
 
-		//"casting" to object so that it can be extended with cool stuff in
-		// makeMessage
 		var msg = this.cleanMessage(msgObj.content);
 		msg = msg.slice( this.invocationPattern.length ).trim();
 
-		msg = makeMessage( msg, msgObj );
+		msg = this.makeMessage( msg, msgObj );
 
 		console.log( msg, 'parseMessage valid' );
 
@@ -305,7 +293,7 @@ var bot = {
 
 		console.log( cmdObj, 'parseCommand calling' );
 
-		var args = makeMessage(
+		var args = this.makeMessage(
 			//+ 1 is for the /
 			msg.slice( commandName.length + 1 ).trim(),
 			msg.get()
@@ -386,15 +374,15 @@ var bot = {
 		});
 	},
 
-	reply : function ( msg, msgObj, codify ) {
+	reply : function ( msg, msgObj ) {
 		var usr = msgObj.user_name, roomid = msgObj.room_id;
 
-		output.add( '@' + usr + ' ' + msg, roomid, codify );
+		output.add( '@' + usr + ' ' + msg, roomid );
 	},
 
-	directreply : function ( msg, msgObj, codify ) {
+	directreply : function ( msg, msgObj ) {
 		var msgid = msgObj.message_id, roomid = msgObj.room_id;
-		output.add( ':' + msgid + ' ' + msg, roomid, codify );
+		output.add( ':' + msgid + ' ' + msg, roomid );
 	},
 
 	//some awesome
@@ -431,18 +419,89 @@ var bot = {
 	}
 };
 
-IO.register( 'receiveinput', bot.validateMessage, bot );
-IO.register( 'input', bot.parseMessage, bot );
+bot.parseCommandArgs = (function ( args ) {
 
-var makeMessage = function ( text, msgObj ) {
+	var state, inString, prev, separator;
+
+	var handleChar = function ( ch ) {
+		var ret;
+
+		if ( state === 'escape' ) {
+			ret = ch;
+			state = 'data';
+		}
+
+		else if ( ch === '"' ) {
+			inString = !inString;
+			state = 'data';
+			ret = '';
+		}
+
+		else if ( ch === '\\' ) {
+			ret = '';
+			state = 'escape';
+		}
+
+		else if ( ch === separator && !inString ) {
+			if ( prev === separator ) {
+				ret = '';
+			}
+			else {
+				ret = 'NEW';
+			}
+		}
+
+		else if ( state === 'data' ) {
+			ret = ch;
+		}
+
+		prev = ch;
+
+		return ret;
+	};
+
+	return function ( args, sep ) {
+		var ret = [],
+			arg = '',
+			ch,
+			pos = 0, len = args.length,
+			whatToDo;
+
+		state = 'data';
+		inString = false;
+		separator = sep || ' ';
+
+		while ( pos < len ) {
+			ch = args[ pos++ ];
+			whatToDo = handleChar( ch );
+
+			if ( whatToDo === 'NEW' ) {
+				ret.push( arg );
+				arg = '';
+			}
+			else {
+				arg += whatToDo;
+			}
+		}
+		ret.push( arg );
+
+		if ( inString ) {
+			throw new Error( 'Unexpected end of input; expected \"' );
+		}
+
+		return ret;
+	};
+
+}());
+
+bot.makeMessage = function ( text, msgObj ) {
+	//"casting" to object so that it can be extended with cool stuff and
+	// still be treated like a string
 	text = Object( text );
 
 	var deliciousObject = {
 		respond : function ( resp ) {
-			output.add({
-				text : resp,
-				roomid : msgObj.room_id
-			});
+			output.add( resp, msgObj.room_id );
 		},
 
 		reply : function ( resp, usrname ) {
@@ -458,6 +517,19 @@ var makeMessage = function ( text, msgObj ) {
 			bot.directreply( resp, Object.merge(
 				msgObj, {message_id : msgid}
 			));
+		},
+
+		codify : function ( msg ) {
+			var tab = '    ',
+				spacified = msg.replace( '\t', tab ),
+				lines = spacified.split( /[\n\r]/g );
+
+			return lines.reduce(function ( ret, line ) {
+				if ( !line.startsWith(tab) ) {
+					line = tab + line;
+				}
+				return ret + line + '\n';
+			}, '' );
 		},
 
 		exec : function ( regexp ) {
@@ -483,7 +555,10 @@ var makeMessage = function ( text, msgObj ) {
 	});
 
 	return text;
-};
+}
+
+IO.register( 'receiveinput', bot.validateMessage, bot );
+IO.register( 'input', bot.parseMessage, bot );
 ////bot ends
 
 ////utility start
@@ -593,7 +668,7 @@ polling.init();
 var output = {
 	messages : {},
 
-	add : function ( msg, roomid, codify ) {
+	add : function ( msg, roomid ) {
 		roomid = roomid || bot.roomid;
 		IO.out.receive({
 			text : msg + '\n',
@@ -606,7 +681,6 @@ var output = {
 			this.messages[ obj.room ] = '';
 		}
 		this.messages[ obj.room ] += obj.text;
-		this.messages[ obj.room ].codify = obj.codify;
 	},
 
 	send : function () {
@@ -617,16 +691,9 @@ var output = {
 				return;
 			}
 
-			if ( message.codify ) {
-				bot.elems.input.value = message;
-				bot.elems.codify.click();
-				message = bot.elems.input.value;
-			}
-
 			this.sendToRoom({
 				text   : message,
 				room   : room,
-				codify : message.codify
 			});
 
 			this.messages[ room ] = '';
@@ -649,7 +716,7 @@ var output = {
 
 			//conflict, wait for next round to send message
 			if ( xhr.status === 409 ) {
-				output.add( obj.text, obj.room, obj.codify );
+				output.add( obj.text, obj.room );
 			}
 		}
 	}
@@ -711,3 +778,5 @@ Object.defineProperty( Array.prototype, 'invoke', {
 	writable : true
 });
 ////utility end
+
+}());

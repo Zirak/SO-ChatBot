@@ -1,77 +1,5 @@
-var parseCommandArgs = (function ( args ) {
-
-	var state, inString, prev, separator;
-
-	var handleChar = function ( ch ) {
-		var ret;
-
-		if ( state === 'escape' ) {
-			ret = ch;
-			state = 'data';
-		}
-
-		else if ( ch === '"' ) {
-			inString = !inString;
-			state = 'data';
-			ret = '';
-		}
-
-		else if ( ch === '\\' ) {
-			ret = '';
-			state = 'escape';
-		}
-
-		else if ( ch === separator && !inString ) {
-			if ( prev === separator ) {
-				ret = '';
-			}
-			else {
-				ret = 'NEW';
-			}
-		}
-
-		else if ( state === 'data' ) {
-			ret = ch;
-		}
-
-		prev = ch;
-
-		return ret;
-	};
-
-	return function ( args, sep ) {
-		var ret = [],
-			arg = '',
-			ch,
-			pos = 0, len = args.length,
-			whatToDo;
-
-		state = 'data';
-		inString = false;
-		separator = sep || ' ';
-
-		while ( pos < len ) {
-			ch = args[ pos++ ];
-			whatToDo = handleChar( ch );
-
-			if ( whatToDo === 'NEW' ) {
-				ret.push( arg );
-				arg = '';
-			}
-			else {
-				arg += whatToDo;
-			}
-		}
-		ret.push( arg );
-
-		if ( inString ) {
-			throw new Error( 'Unexpected end of input; expected \"' );
-		}
-
-		return ret;
-	};
-
-}());
+(function () {
+"use strict";
 
 var commands = {
 	help : function ( args ) {
@@ -188,7 +116,7 @@ var commands = {
 
 	jquery : function ( args ) {
 		//check to see if more than one thing is requested
-		var parsedArgs = parseCommandArgs( args );
+		var parsedArgs = bot.parseCommandArgs( args );
 		if ( parsedArgs.length > 1 ) {
 			return parsedArgs.map( bot.commands.jquery.fun ).join( ' ' );
 		}
@@ -272,7 +200,7 @@ var commands = {
 	},
 
 	choose : function ( args ) {
-		var opts = parseCommandArgs( args );
+		var opts = bot.parseCommandArgs( args );
 		console.log( opts, '/choose input' );
 
 		return opts[ Math.floor(Math.random() * opts.length) ];
@@ -291,7 +219,7 @@ var commands = {
 
 	user : function ( args ) {
 		//to support names with spaces in the, you can call like "user name"
-		var props = parseCommandArgs( args )[ 0 ],
+		var props = bot.parseCommandArgs( args )[ 0 ],
 			usrid = props || args.get( 'user_id' );
 
 		//check for searching by username
@@ -394,7 +322,7 @@ commands.tell = (function () {
 var invalidCommands = { tell : true, forget : true };
 
 return function ( args ) {
-	var props = parseCommandArgs( args );
+	var props = bot.parseCommandArgs( args );
 	console.log( props, '/tell input' );
 
 	var replyTo = props[ 0 ],
@@ -424,7 +352,7 @@ return function ( args ) {
 		args.set( 'user_name', replyTo );
 	}
 
-	var cmdArgs = makeMessage(
+	var cmdArgs = bot.makeMessage(
 		args.slice( replyTo.length + cmdName.length + 1 ).trim(),
 		args.get()
 	);
@@ -520,7 +448,7 @@ var ranges = {
 };
 
 return function ( args ) {
-	var parts = parseCommandArgs( args ),
+	var parts = bot.parseCommandArgs( args ),
 		type = parts[ 0 ],
 		plural = type + 's',
 
@@ -612,7 +540,7 @@ commands.learn = (function () {
 return function ( args ) {
 	console.log( args, '/learn input' );
 
-	var commandParts = parseCommandArgs( args );
+	var commandParts = bot.parseCommandArgs( args );
 	var command = {
 		name   : commandParts[ 0 ],
 		output : commandParts[ 1 ],
@@ -645,7 +573,7 @@ return function ( args ) {
 	function customCommand ( args ) {
 		console.log( args, command.name + ' input' );
 
-		var cmdArgs = makeMessage( command.output, args.get() );
+		var cmdArgs = bot.makeMessage( command.output, args.get() );
 		return commands.parse( cmdArgs, pattern.exec(args) );
 	}
 };
@@ -709,3 +637,5 @@ bot.commands.die.permissions.use = bot.commands.live.permissions.use = [
 	94197,  //Andy E
 	617762  //me (Zirak)
 ];
+
+}());
