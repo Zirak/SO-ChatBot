@@ -43,7 +43,7 @@ if ( bot.commandExists('define') ) {
 		//what is an animal
 		//imagine all those above without a ?
 		//explanation in the post-mortem
-		/what(?:\'s)?\s(?:(?:is|are)\s)?(?:(?:an|a)\s)?([\w\s\-]+)(?:\s(?:are|is))?\??/,
+		/what(?:\'s)?\s(?:(?:is|are)\s)?(?:(?:an|a)\s)?([\w\s\-]+)\??/,
 
 		//define squid
 		//define a squid
