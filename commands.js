@@ -3,7 +3,8 @@
 
 var commands = {
 	help : function ( args ) {
-		if ( args ) {
+		if ( args.length ) {
+
 			if ( !bot.commandExists(args) ) {
 				return 'Command ' + args + ' isn\'t defined';
 			}
@@ -36,11 +37,12 @@ var commands = {
 	},
 
 	forget : function ( args ) {
-		if ( !bot.commandExists(args) ) {
+		var name = args.toLowerCase();
+		if ( !bot.commandExists(name) ) {
 			return 'Command ' + args + ' does not exist';
 		}
 
-		var cmd = bot.commands[ args ];
+		var cmd = bot.commands[ name ];
 		if ( !cmd.canDel(args.get('user_id')) ) {
 			return 'You are not authorized to delete the command ' + args;
 		}
@@ -49,7 +51,8 @@ var commands = {
 		return 'Command ' + args + ' forgotten.';
 	},
 
-	define : function ( args ) {
+	//cb is for internal usage by other commands/listeners
+	define : function ( args, cb ) {
 		var duckyAPI = 'http://api.duckduckgo.com/?',
 			params = {
 				q : 'define ' + args,
@@ -87,7 +90,12 @@ var commands = {
 			}
 			console.log( def, '/define finishCall output' );
 
-			args.directreply( def );
+			if ( cb && cb.call ) {
+				cb( def );
+			}
+			else {
+				args.directreply( def );
+			}
 		}
 	},
 
@@ -357,7 +365,7 @@ return function ( args ) {
 		args.get()
 	);
 	console.log( cmdArgs, '/tell calling ' + cmdName );
-	var res = cmd.fun.call( cmd.thisArg, cmdArgs );
+	var res = cmd.exec( cmdArgs );
 
 	if ( !res ) {
 		return;

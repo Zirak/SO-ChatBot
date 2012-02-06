@@ -1,4 +1,4 @@
-(function () {
+//(function () {
 "use strict";
 
 var randomWord = (function () {
@@ -41,7 +41,7 @@ var game = {
 			this.new();
 		}
 		else {
-			return this.handleGuess( msg, msg.get('user_name') );
+			return this.handleGuess( msg );
 		}
 	},
 
@@ -71,7 +71,7 @@ var game = {
 		this.end = true;
 	},
 
-	handleGuess : function ( msg, usr ) {
+	handleGuess : function ( msg ) {
 		var guess = msg.slice();
 		console.log( guess, 'handleGuess' );
 		guess = guess.toLowerCase();
@@ -86,8 +86,8 @@ var game = {
 		}
 
 		//or if it's the wrong length
-		if ( this.word.length !== guess.length ) {
-			return guess + ' isn\'t the same length as what you\'re after!';
+		if ( this.word.length < guess.length ) {
+			return guess + ' is longer than what you\'re after!';
 		}
 
 		//replace all occurences of guest within the hidden word with their
@@ -108,12 +108,14 @@ var game = {
 		this.guesses.push( guess );
 		this.guessMade = true;
 
+		console.log( guess, this.guessMade, 'handleGuess handled' )
+
 		//plain vanilla lose-win checks
 		if ( this.loseCheck() ) {
 			return this.lose();
 		}
 		if ( this.winCheck() ) {
-			return this.win( usr );
+			return this.win();
 		}
 	},
 
@@ -180,4 +182,4 @@ bot.addCommand({
 	thisArg : game
 });
 
-}());
+//}());

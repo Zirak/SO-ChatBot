@@ -218,7 +218,7 @@ var bot = window.bot = {
 	dependencies : {
 		commands : baseRepURL + 'commands.js',
 		listeners : baseRepURL + 'listeners.js',
-		//hangman  : baseRepURL + 'plugins/hangman.js',
+		hangman  : baseRepURL + 'plugins/hangman.js',
 		todo     : baseRepURL + 'plugins/todolist.js'
 	},
 
@@ -298,7 +298,7 @@ var bot = window.bot = {
 			msg.slice( commandName.length + 1 ).trim(),
 			msg.get()
 		);
-		var res = cmdObj.fun.call( cmdObj.thisArg, args );
+		var res = cmdObj.exec( args );
 
 		if ( res ) {
 			msg.reply( res );
@@ -346,7 +346,7 @@ var bot = window.bot = {
 
 	listen : function ( regex, fun, thisArg ) {
 		if ( Array.isArray(regex) ) {
-			regex.foreach(function ( reg ) {
+			regex.forEach(function ( reg ) {
 				this.listen( reg, fun, thisArg );
 			}, this );
 
@@ -399,6 +399,10 @@ var bot = window.bot = {
 			var use = this.permissions.use;
 			return use === 'ALL' || use !== 'NONE' &&
 				use.indexOf( usrid ) > -1;
+		};
+
+		cmd.exec = function () {
+			return this.fun.apply( this.thisArg, arguments );
 		};
 
 		cmd.canDel = function ( usrid ) {

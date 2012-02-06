@@ -57,7 +57,7 @@ var userlist = function ( usrid ) {
 };
 
 var todo = function ( args ) {
-	var props = parseCommandArgs( args );
+	var props = bot.parseCommandArgs( args );
 	console.log( props, 'todo input' );
 
 	if ( !props[0] ) {
