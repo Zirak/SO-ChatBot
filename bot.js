@@ -357,6 +357,14 @@ var bot = {
 	}()),
 
 	listen : function ( regex, fun, thisArg ) {
+		if ( Array.isArray(regex) ) {
+			regex.foreach(function ( reg ) {
+				this.listen( reg, fun, thisArg );
+			}, this );
+
+			return;
+		}
+
 		this.listeners.push({
 			pattern : regex,
 			fun : fun,

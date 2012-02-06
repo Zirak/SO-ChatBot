@@ -1,4 +1,4 @@
-bot.listen( /tell me your laws/i, function ( msg ) {
+bot.listen( /tell me your laws/, function ( msg ) {
 	var laws = [
 		'A robot may not injure a human being or, through inaction, ' +
 			'allow a human being to come to harm.',
@@ -16,4 +16,18 @@ bot.listen( /tell me your laws/i, function ( msg ) {
 	}, '' );
 
 	return out;
+});
+
+bot.listen( /give ([\w\s]+) a lick/, function ( msg ) {
+	var target = msg.matches[ 1 ], conjugation = 's';
+	if ( target === 'me' ) {
+		target = 'you';
+		conjugation = '';
+	}
+	else if ( target === 'yourself' ) {
+		target = 'I';
+		conjugation = '';
+	}
+
+	return 'Mmmm! ' + target + ' taste' + conjugation + ' just like raisin';
 });
