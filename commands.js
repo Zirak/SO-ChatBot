@@ -51,78 +51,6 @@ var commands = {
 		return 'Command ' + args + ' forgotten.';
 	},
 
-	//cb is for internal usage by other commands/listeners
-	define : function ( args, cb ) {
-		var duckyAPI = 'http://api.duckduckgo.com/?',
-			params = {
-				q : 'define ' + args,
-				format : 'json'
-			};
-
-		duckyAPI += IO.urlstringify( params );
-
-		IO.jsonp({
-			url : duckyAPI,
-			fun : finishCall,
-			jsonpName : 'callback'
-		});
-
-		function finishCall ( resp ) {
-			var url = resp.AbstractURL,
-				def = resp.AbstractText;
-
-			console.log( url, def, '/define finishCall input' );
-
-			//Webster returns the definition as
-			// wordName definition: the actual definition
-			// instead of just the actual definition
-			if ( resp.AbstractSource === 'Merriam-Webster' ) {
-				def = def.replace( args + ' definition: ', '' );
-				console.log( def, '/define finishCall webster' );
-			}
-
-			if ( !def ) {
-				def = 'Could not find definition for ' + args;
-			}
-			else {
-				def = args + ': ' + def; //problem?
-				def += ' [(source)](' + url + ')';
-			}
-			console.log( def, '/define finishCall output' );
-
-			if ( cb && cb.call ) {
-				cb( def );
-			}
-			else {
-				args.directreply( def );
-			}
-		}
-	},
-
-	//cb is for internal usage by other commands/listeners
-	norris : function ( args, cb ) {
-		var chucky = 'http://api.icndb.com/jokes/random';
-
-		IO.jsonp({
-			url : chucky,
-			fun : finishCall,
-			jsonpName : 'callback'
-		});
-
-		function finishCall ( resp ) {
-			var msg;
-
-			if ( resp.type !== 'success' ) {
-				msg = 'Chuck Norris is too awesome for this API. Try again.';
-			}
-			else {
-				msg = resp.value.joke.replace( '&amp;quot;', '\"' );
-			}
-
-			args.reply( msg );
-		}
-	},
-
 	jquery : function ( args ) {
 		//check to see if more than one thing is requested
 		var parsedArgs = bot.parseCommandArgs( args );
@@ -259,6 +187,85 @@ var commands = {
 	}
 };
 
+//cb is for internal usage by other commands/listeners
+commands.define = function ( args, cb ) {
+	var duckyAPI = 'http://api.duckduckgo.com/?',
+		params = {
+			q : 'define ' + args,
+			format : 'json'
+		};
+
+	duckyAPI += IO.urlstringify( params );
+
+	IO.jsonp({
+		url : duckyAPI,
+		fun : finishCall,
+		jsonpName : 'callback'
+	});
+
+	function finishCall ( resp ) {
+		var url = resp.AbstractURL,
+			def = resp.AbstractText;
+
+		console.log( url, def, '/define finishCall input' );
+
+		//Webster returns the definition as
+		// wordName definition: the actual definition
+		// instead of just the actual definition
+		if ( resp.AbstractSource === 'Merriam-Webster' ) {
+			def = def.replace( args + ' definition: ', '' );
+			console.log( def, '/define finishCall webster' );
+		}
+
+		if ( !def ) {
+			def = 'Could not find definition for ' + args;
+		}
+		else {
+			def = args + ': ' + def; //problem?
+			def += ' [(source)](' + url + ')';
+		}
+		console.log( def, '/define finishCall output' );
+
+		if ( cb && cb.call ) {
+			cb( def );
+		}
+		else {
+			args.directreply( def );
+		}
+	}
+};
+commands.define.async = true;
+
+//cb is for internal usage by other commands/listeners
+commands.norris = function ( args, cb ) {
+	var chucky = 'http://api.icndb.com/jokes/random';
+
+	IO.jsonp({
+		url : chucky,
+		fun : finishCall,
+		jsonpName : 'callback'
+	});
+
+	function finishCall ( resp ) {
+		var msg;
+
+		if ( resp.type !== 'success' ) {
+			msg = 'Chuck Norris is too awesome for this API. Try again.';
+		}
+		else {
+			msg = resp.value.joke.replace( '&amp;quot;', '\"' );
+		}
+
+		if ( cb && cb.call ) {
+			cb( msg );
+		}
+		else {
+			args.reply( msg );
+		}
+	}
+};
+commands.norris.async = true;
+
 commands.parse = (function () {
 
 //special variables/macros
@@ -366,17 +373,26 @@ return function ( args ) {
 		args.get()
 	);
 	console.log( cmdArgs, '/tell calling ' + cmdName );
-	var res = cmd.exec( cmdArgs );
 
-	if ( !res ) {
-		return;
-	}
-
-	if ( direct ) {
-		args.directreply( res );
+	//if the command is async, it'll accept a callback
+	if ( cmd.async ) {
+		cmd.exec( cmdArgs, callFinished );
 	}
 	else {
-		args.reply( res );
+		callFinished( cmd.exec(cmdArgs) );
+	}
+
+	function callFinished ( res ) {
+		if ( !res ) {
+			return;
+		}
+
+		if ( direct ) {
+			args.directreply( res );
+		}
+		else {
+			args.reply( res );
+		}
 	}
 };
 }());
@@ -456,7 +472,7 @@ var ranges = {
 	}
 };
 
-return function ( args ) {
+return function ( args, cb ) {
 	var parts = bot.parseCommandArgs( args ),
 		type = parts[ 0 ],
 		plural = type + 's',
@@ -539,10 +555,16 @@ return function ( args ) {
 		}
 		console.log( res, '/get parseResponse parsed');
 
-		args.directreply( res );
+		if ( cb && cb.call ) {
+			cb( res );
+		}
+		else {
+			args.directreply( res );
+		}
 	}
 };
 }());
+commands.get.async = true;
 
 commands.learn = (function () {
 
@@ -634,7 +656,8 @@ Object.keys( commands ).forEach(function ( cmdName ) {
 		fun  : commands[ cmdName ],
 		permissions : {
 			del : 'NONE'
-		}
+		},
+		async : commands[ cmdName ].async
 	});
 });
 

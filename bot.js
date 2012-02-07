@@ -279,6 +279,7 @@ var bot = window.bot = {
 		var commandParts = this.commandRegex.exec( msg );
 		if ( !commandParts ) {
 			msg.reply( 'Invalid command ' + msg );
+			return;
 		}
 
 		var commandName = commandParts[ 1 ].toLowerCase();
@@ -640,7 +641,6 @@ var polling = {
 		});
 
 		IO.in.flush();
-		IO.out.flush();
 
 		setTimeout(function () {
 			that.poll();
@@ -731,8 +731,15 @@ var output = {
 				output.add( obj.text, obj.room );
 			}
 		}
+	},
+
+	loopage : function () {
+		IO.out.flush();
 	}
 };
+output.loopage = output.loopage.bind( output );
+output.interval = setInterval( output.loopage, 5000 );
+
 IO.register( 'output', output.build, output );
 IO.register( 'afteroutput', output.send, output );
 
