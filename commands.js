@@ -24,12 +24,12 @@ var commands = {
 		if ( !bot.stopped ) {
 			return 'I\'m not dead! Honest!';
 		}
-		bot.stopped = false;
+		bot.continue();
 		return 'And on this day, you shall paint eggs for a giant bunny.';
 	},
 
 	die : function () {
-		if ( this.stopped ) {
+		if ( bot.stopped ) {
 			return 'Kill me once, shame on you, kill me twice...';
 		}
 		bot.stopped = true;
@@ -99,7 +99,8 @@ var commands = {
 		}
 	},
 
-	norris : function ( args ) {
+	//cb is for internal usage by other commands/listeners
+	norris : function ( args, cb ) {
 		var chucky = 'http://api.icndb.com/jokes/random';
 
 		IO.jsonp({

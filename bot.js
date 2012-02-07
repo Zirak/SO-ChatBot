@@ -213,8 +213,6 @@ var bot = window.bot = {
 	commands : {}, //will be filled as needed
 	listeners : [],
 
-	stopped : false,
-
 	dependencies : {
 		commands : baseRepURL + 'commands.js',
 		listeners : baseRepURL + 'listeners.js',
@@ -232,6 +230,17 @@ var bot = window.bot = {
 
 		var msg = this.cleanMessage(msgObj.content);
 		msg = msg.slice( this.invocationPattern.length ).trim();
+
+		//cheat. check if the bot's dead and the user wants to relive it
+		if ( this.stopped && (msg === 'live' || msg === '/live') ) {
+			if ( this.commands.live.canUse(msgObj.user_id) ) {
+				this.reply( this.commands.live.exec(), msgObj );
+			}
+			return;
+		}
+		else if ( this.stopped ) {
+			return;
+		}
 
 		msg = this.makeMessage( msg, msgObj );
 
@@ -306,10 +315,6 @@ var bot = window.bot = {
 	},
 
 	validateMessage : function ( msgObj ) {
-		if ( this.stopped ) {
-			return false;
-		}
-
 		var msg = msgObj.content.toLowerCase().trim();
 
 		//all we really care about
@@ -420,6 +425,9 @@ var bot = window.bot = {
 
 	stop : function () {
 		this.stopped = true;
+	},
+	continue : function () {
+		this.stopped = false;
 	}
 };
 
