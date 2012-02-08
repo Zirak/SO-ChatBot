@@ -217,7 +217,7 @@ var bot = window.bot = {
 		commands  : baseRepURL + 'commands.js',
 		listeners : baseRepURL + 'listeners.js',
 		hangman   : baseRepURL + 'plugins/hangman.js',
-		todo      : baseRepURL + 'plugins/todolist.js'
+		todo      : baseRepURL + 'plugins/todolist.js',
 		roll      : baseRepURL + 'plugins/roll.js'
 	},
 
