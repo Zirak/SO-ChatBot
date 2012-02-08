@@ -104,38 +104,6 @@ var commands = {
 		return msg;
 	},
 
-	roll : function ( args ) {
-		var nums = args.match( /\d+/g ),
-			sides, count;
-
-		console.log( nums, '/roll input' );
-
-		if ( !nums || !nums.length ) {
-			sides = 6;
-			count = 1;
-		}
-		else if ( nums.length === 1 ) {
-			sides = nums[ 0 ];
-			count = 1;
-		}
-		else if ( nums.length > 1 ) {
-			sides = nums[ 0 ];
-			count = nums[ 1 ];
-		}
-		console.log( count, sides, '/roll rolling');
-
-		if ( count > 100 ) {
-			return 'Maximum roll-count is 100';
-		}
-
-		var rolls = [];
-		for ( var i = 0; i < count; i++ ) {
-			rolls[ i ] = Math.floor( Math.random() * sides + 1 );
-		}
-
-		return rolls.join( ', ' );
-	},
-
 	choose : function ( args ) {
 		var opts = bot.parseCommandArgs( args );
 		console.log( opts, '/choose input' );

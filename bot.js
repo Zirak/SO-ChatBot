@@ -214,10 +214,11 @@ var bot = window.bot = {
 	listeners : [],
 
 	dependencies : {
-		commands : baseRepURL + 'commands.js',
+		commands  : baseRepURL + 'commands.js',
 		listeners : baseRepURL + 'listeners.js',
-		hangman  : baseRepURL + 'plugins/hangman.js',
-		todo     : baseRepURL + 'plugins/todolist.js'
+		hangman   : baseRepURL + 'plugins/hangman.js',
+		todo      : baseRepURL + 'plugins/todolist.js'
+		roll      : baseRepURL + 'plugins/roll.js'
 	},
 
 	parseMessage : function ( msgObj ) {

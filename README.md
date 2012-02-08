@@ -22,19 +22,6 @@ Have the bot forget `cmdName`. You may have to have permission to forget certain
 
 Gives you the definition of `something`. Uses the wonderful [DuckDuckGo api.](http://api.duckduckgo.com/)
 
-## `roll`
-
-    !!/roll [sidesNum] [rollCount]
-
-Rolls a `sidesNum` (default 6) sides die `rollCount` (maximum 100, default 1) times and prints the result.
-
-    roll a 6-sided die 17 times
-    !!/roll 6 17
-    roll a 3-sided die 1 time
-    !!/roll 3
-    roll a 6-sided die 1 time
-    !!/roll
-
 ## `choose`
 
     !!/choose option0 [, option1 [, option2 [,...]]]
@@ -145,5 +132,22 @@ To bot owner: Via your console, simply doing `IO.loadScript( bot.dependencies.ha
 
     !!/todo get|add|delete item1|[count [, item2 [...]]]
 ~TODO~
+
+## `roll`
+
+    !!/roll DnD-roll-notation
+
+Rolls dice based on the DnD dice-roll notation:
+
+    MdN = roll M N-sided dice
+You can apply `+` and `-` to rolls as well:
+
+    MdN + X
+    MdN - X
+Where `X` can either be a number, or another roll:
+
+    MdN + YdX
+    MdN - YdX
+And so forth.
 
 I'm not very good in writing README files.
