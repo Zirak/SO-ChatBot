@@ -66,7 +66,7 @@ return function ( source ) {
 
 			//check for things like 1d2d3, which aren't valid
 			if ( last && token.value === 'd' && last.value === 'd' ) {
-				throw new Error( 'Unexpected unchainable-operator d' );
+				throw new Error( 'Unexpected unchainable operator d' );
 			}
 
 			if (
@@ -147,7 +147,7 @@ return function ( source ) {
 		couplet.push( rolls );
 
 		if ( couplet.indexOf(undefined) > -1 ) {
-			throw new Error( 'Incomplete expression - expected number' );
+			throw new Error( 'Incomplete expression; expected number' );
 		}
 
 		numberStack.push(

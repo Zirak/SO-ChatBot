@@ -32,35 +32,34 @@ bot.listen( /give ([\w\s]+) a lick/, function ( msg ) {
 	return 'Mmmm! ' + target + ' taste' + conjugation + ' just like raisin';
 });
 
-if ( bot.commandExists('define') ) {
-	var dictionaries = [
-		//what's a squid?
-		//what is a squid?
-		//what're squids?
-		//what are squids?
-		//what squid is
-		//what squids are
-		//what is an animal
-		//imagine all those above without a ?
-		//explanation in the post-mortem
-		/what(?:\'s)?\s(?:(?:is|are)\s)?(?:(?:an|a)\s)?([\w\s\-]+)\??/,
 
-		//define squid
-		//define a squid
-		//define an animal
-		/define\s(?:(?:an|a)\s)?([\w\s\-]+)/
-	];
+var dictionaries = [
+	//what's a squid?
+	//what is a squid?
+	//what're squids?
+	//what are squids?
+	//what squid is
+	//what squids are
+	//what is an animal
+	//imagine all those above without a ?
+	//explanation in the post-mortem
+	/what(?:\'s)?\s(?:(?:is|are)\s)?(?:(?:an|a)\s)?([\w\s\-]+)\??/,
 
-	bot.listen( dictionaries, function ( msg ) {
-		var what = msg.matches[ 1 ];
+	//define squid
+	//define a squid
+	//define an animal
+	/define\s(?:(?:an|a)\s)?([\w\s\-]+)/
+];
 
-		bot.commands.define.exec( what, function ( def ) {
-			def = def.replace( what + ':', '' );
+bot.listen( dictionaries, function ( msg ) {
+	var what = msg.matches[ 1 ];
 
-			msg.reply( def );
-		});
+	bot.commands.define.exec( what, function ( def ) {
+		def = def.replace( what + ':', '' );
+
+		msg.reply( def );
 	});
-}
+});
 /*
 what              --simply the word what
 (?:\'s)?          --optional 's suffix (what's)

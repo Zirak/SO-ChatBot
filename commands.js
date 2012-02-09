@@ -250,7 +250,7 @@ var fillers = {
 			return Number( user.style.opacity ) >= 0.5;
 		});
 
-		var user = active[ Math.floor(Math.random() * active.length) ];
+		var user = active[ Math.floor(Math.random() * (active.length-1)) ];
 		return user.getElementsByTagName( 'img' )[ 0 ].title;
 	},
 
