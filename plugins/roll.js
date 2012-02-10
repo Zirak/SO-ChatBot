@@ -1,18 +1,20 @@
-//infix operator-precedence parser, supporting d, + and -, where d is a dice
-// roll
+//infix operator-precedence parser
+//also supports a d operator - a dice roll
 var parse = (function () {
-
-//the operators we deal with and their precedence
-var operators = {
-	'+' : 1,
-	'-' : 1,
-	'd' : 2
-};
 
 //we don't care about whitespace. well, most whitespace
 var whitespace = {
 	' ' : true,
 	'\t' : true
+};
+
+//the operators we deal with and their precedence
+var operators = {
+	'+' : 1,
+	'-' : 1,
+	'*' : 2,
+	'/' : 2,
+	'd' : 3
 };
 
 var callbacks = {
@@ -21,6 +23,12 @@ var callbacks = {
 	},
 	'-' : function ( a, b ) {
 		return a - b;
+	},
+	'*' : function ( a, b ) {
+		return a * b;
+	},
+	'/' : function ( a, b ) {
+		return a / b;
 	},
 	'd' : function ( rolls, sides, rollsSoFar ) {
 		if ( rolls > 100 || sides > 100 ) {
@@ -47,6 +55,7 @@ return function ( source ) {
 		operatorStack = [],
 		rolls = [];
 
+	//the tokenizer
 	var token, last;
 	for ( var pos = 0, len = source.length; pos < len; ++pos ) {
 		//skip teh noobz whitespace
@@ -57,7 +66,6 @@ return function ( source ) {
 		token = nextToken();
 
 		if ( token.type === 'number' ) {
-			if ( token.value)
 			numberStack.push( token.value );
 		}
 
@@ -66,26 +74,32 @@ return function ( source ) {
 
 			//check for things like 1d2d3, which aren't valid
 			if ( last && token.value === 'd' && last.value === 'd' ) {
-				throw new Error( 'Unexpected unchainable operator d' );
-			}
-
-			if (
-				//previous operator is more important than us
-				(last && token.precedence < last.precedence) ||
-				//or, we're about to finish
-				pos + 1 === len
-			) {
-				operate();
+				throw new Error(
+					'Unexpected unchainable operator d at ' + pos
+				);
 			}
 
 			operatorStack.push( token );
 		}
 	}
 
-	//by now, operatorStack will only have operators of equal, lowest
-	// precedence, so we just need to go over the operator stack and execute
+	//the "executer"
 	while ( operatorStack.length ) {
-		operate();
+		operatorStack.forEach(function ( token, index ) {
+			last = operatorStack[ index - 1 ];
+
+			//last one is more important than we are
+			if ( last && last.precedence > token.precedence ) {
+				//execute it
+				operate( index - 1 );
+			}
+			//we're about to finish and the last one isn't as all-mighty as we
+			// thought
+			else if ( index + 1 === operatorStack.length ) {
+				//execute za operator!
+				operate( index );
+			}
+		});
 	}
 
 	//the last number in the stack is the result
@@ -136,32 +150,28 @@ return function ( source ) {
 			offset++;
 		}
 
+		if ( num.length === 0 ) {
+			throw new Error(
+				'Incomplete operation: Expected number at ' + pos
+			);
+		}
+
 		return {
 			value : Number( num ),
 			length : offset
 		};
 	}
 
-	function operate () {
-		var couplet = popTwo();
-		couplet.push( rolls );
-
-		if ( couplet.indexOf(undefined) > -1 ) {
-			throw new Error( 'Incomplete expression; expected number' );
+	function operate ( index ) {
+		if ( typeof index === 'undefined' ) {
+			index = operatorStack.length - 1;
 		}
 
-		numberStack.push(
-			callbacks[ operatorStack.pop().value ].apply( null, couplet )
-		);
-	}
+		var couplet = numberStack.slice( index, index + 2 );
+		couplet.push( rolls );
 
-	function popTwo () {
-		//because we're going left->right, something like:
-		// 4 + 1
-		//will be displayed in the stack like:
-		// [1, 4]
-		//so after grabbing the topmost numbers, we need to flip them
-		return [ numberStack.pop(), numberStack.pop() ].reverse();
+		var method = callbacks[ operatorStack.splice(index, 1)[0].value ];
+		numberStack.splice( index, 2, method.apply(null, couplet) );
 	}
 };
 }());
@@ -183,8 +193,10 @@ bot.addCommand({
 	permissions : {
 		del : 'NONE'
 	},
-	description : 'Roll dice in DnD notation. `MdN` rolls M N-sided dice. ' +
-		'`MdN+X` rolls as said above, and adds X to the result. ' +
-		'`MdN-X` does the same, but subtracts x. ' +
-		'X can also be a die roll: `MdN+XdY`, or `MdN-XdY`, and so forth.'
+	description : [
+		'Roll dice in DnD notation. `MdN` rolls `M` `N`-sided dice',
+		'`MdN+X` rolls as said above, and adds `X` to the result'  ,
+		'You can use any of the four arithmetic operators +-*/,'   ,
+		'`X` can also be a die roll: `MdN*XdY` for example'
+	].join( '. ' )
 });
