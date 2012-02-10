@@ -1,7 +1,7 @@
 You run commands by sending
 
     !!/commandName [commandArg0, [commandArg1, [...]]]
-In a chatroom where the bot is present (cross-room support is planned.)
+In a chatroom where the bot is present.
 
 For example:
 
@@ -10,19 +10,13 @@ Will print something like this:
 
     @yourUsername Available commands: help, live, die, forget, define, mdn, jquery, online, user, listcommands, get, learn
 
-## `forget`
+## forget
 
     !!/forget cmdName
 
 Have the bot forget `cmdName`. You may have to have permission to forget certain commands. Once a command is forgotten, it cannot be un-forgotten (unless, of course, it is `/learn`ed.)
 
-## `define`
-
-    !!/define something
-
-Gives you the definition of `something`. Uses the wonderful [DuckDuckGo api.](http://api.duckduckgo.com/)
-
-## `choose`
+## choose
 
     !!/choose option0 [, option1 [, option2 [,...]]]
 
@@ -34,7 +28,18 @@ Make the bot choose an option for you.
     eat food
     do work
 
-## `tell`
+## define
+
+    !!/define something
+
+Gives you the definition of `something`. Uses the wonderful [DuckDuckGo api.](http://api.duckduckgo.com/)
+
+## norris
+
+    !!/norris
+Have a bot tell you a Chuck Norris joke! Uses the [Internet Chuck Norris Database.](http://www.icndb.com/api/)
+
+## tell
 
     !!/tell usrName|msgid cmdName [commandArg0, [commandArg1, [...]]]
 
@@ -49,7 +54,7 @@ Executes the command `cmdName`, and have the output be a reply to either a user 
 
 **NOTE:** For bot-safety reasons, there are several commands which cannot be executed via `tell`. At the time of writing, they are `tell` and `forget`.
 
-## `get`
+## get
 
     !!/get getterName [range [userid]]
 
@@ -62,10 +67,10 @@ Executes the command `cmdName`, and have the output be a reply to either a user 
     !!/get answer 1337
     Which is a link to the latest answer by user 1337
 
-### `getterName`
+### getterName
 Name of what you wish to get. Valid values are `answer` and `question`.
 
-### `range`
+### range
 The "range" specifier of what you wish to get. Valid values: `first`, `last` and `between`.
 
 If `between` is specified, then the next two arguments should be the beginning date, and the end date, as such:
@@ -73,19 +78,19 @@ If `between` is specified, then the next two arguments should be the beginning d
     !!/get getterName between "beginning date" "end date" [userid]
 Both dates are supposed to be valid strings, which can be parsed by `Date.parse`
 
-### `userid`
+### userid
 The userid of the user from which you wish to get. Defaults to your own.
 
-## `learn`
+## learn
 
     !!/learn commandName outputPattern [inputRegex]
 
     !!/learn greet "Hello, $0!" \w+
 
-### `commandName`
+### commandName
 An alphanumeric string
 
-### `outputPattern`
+### outputPattern
 A string, which can contain some special variables:
 
 #### Matched groups
@@ -104,20 +109,20 @@ Objects used by SO when passing messages around.
 * `content` Message content
 * `event_type` Speaks for itself - will always be 1 (new message)
 * `id` ?
-* `message_id` Message ID
+* `message_id` Number identifying a single message
 * `room_id` Room id
 * `room_name` Room name
 * `time_stamp` Do I have to explain these?
 * `user_id` I mean, they're so obvious,
 * `user_name` aren't they?
 
-### `inputRegex`
+### inputRegex
 Like any regular regex, except that instead of where you'd use `\`, you use `~`.
 For example: `\w => ~w`, `\\d => ~~d`.
 
 Defaults to `.*`
 
-## `hang`
+## hang
 
     !!/hang [guess]
 
@@ -128,26 +133,60 @@ You have 6 guesses to get the word right.
 
 To bot owner: Via your console, simply doing `IO.loadScript( bot.dependencies.hangman )` should automagically get everything imported and done. If you're just using the bookmarklet, you're good to go.
 
-## `todo`
+## todo
 
-    !!/todo get|add|delete item1|[count [, item2 [...]]]
-~TODO~
+    !!/todo get|add|remove item0|[count [, item1 [...]]]
+A personal todo list.
 
-## `roll`
+### get
+
+    !!/todo get [count]
+
+	Grab the first two items:
+	!!/todo get 2
+	Grab all the items:
+	!!/todo get
+
+### add
+
+	!!/todo add item0 [, item1 [,...]]
+
+	Add an item to your todo list:
+	!!/todo add eat
+	Make sure to wrap values with spaces in quotes:
+	!!/todo add "eat apple"
+
+	Insert several items at once:
+	!!/todo add "eat apple" "go to bathroom" floss
+
+###remove
+
+    !!/todo remove index0 [, index1 [,...]]
+	(index is 1-based)
+
+	Remove the 1st item:
+	!!/todo remove 1
+
+	Remove the 3rd and 4th:
+	!!/todo remove 3 4
+Once an item is removed, it cannot be restored.
+
+## roll
 
     !!/roll DnD-roll-notation
 
 Rolls dice based on the DnD dice-roll notation:
 
     MdN = roll M N-sided dice
-You can apply `+` and `-` to rolls as well:
+You can apply arithmetic operators `+-*/` to rolls as well:
 
     MdN + X
-    MdN - X
-Where `X` can either be a number, or another roll:
+    MdN / X
+And so on.
+`X` can either be a number, or another roll:
 
-    MdN + YdX
     MdN - YdX
-And so forth.
+    MdN * YdX
+etc.
 
 I'm not very good in writing README files.

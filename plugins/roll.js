@@ -28,6 +28,9 @@ var callbacks = {
 		return a * b;
 	},
 	'/' : function ( a, b ) {
+		if ( b === 0 ) {
+			throw new Error( 'Division by 0' );
+		}
 		return a / b;
 	},
 	'd' : function ( rolls, sides, rollsSoFar ) {
@@ -135,6 +138,11 @@ return function ( source ) {
 		else if ( operators.hasOwnProperty(ch) ) {
 			ret.type = 'operator';
 			ret.precedence = operators[ ch ];
+		}
+
+		//Y U TROLLZ!?!?
+		else {
+			throw new Error( 'Invalid character ' + ch + ' at ' + pos );
 		}
 
 
