@@ -156,7 +156,14 @@ var commands = {
 };
 
 //cb is for internal usage by other commands/listeners
-commands.define = function ( args, cb ) {
+commands.define = (function () {
+var cache = {};
+
+return function ( args, cb ) {
+	if ( cache.hasOwnProperty(args) ) {
+		return finish( cache[args] );
+	}
+
 	var duckyAPI = 'http://api.duckduckgo.com/?',
 		params = {
 			q : 'define ' + args,
@@ -194,6 +201,13 @@ commands.define = function ( args, cb ) {
 		}
 		console.log( def, '/define finishCall output' );
 
+		//add to cache
+		cache[ args ] = def;
+
+		finish( def );
+	}
+
+	function finish ( def ) {
 		if ( cb && cb.call ) {
 			cb( def );
 		}
@@ -202,6 +216,7 @@ commands.define = function ( args, cb ) {
 		}
 	}
 };
+}());
 commands.define.async = true;
 
 //cb is for internal usage by other commands/listeners
@@ -221,7 +236,7 @@ commands.norris = function ( args, cb ) {
 			msg = 'Chuck Norris is too awesome for this API. Try again.';
 		}
 		else {
-			msg = resp.value.joke.replace( '&amp;quot;', '\"' );
+			msg = IO.decodehtml( resp.value.joke );
 		}
 
 		if ( cb && cb.call ) {
