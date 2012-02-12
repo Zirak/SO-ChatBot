@@ -375,7 +375,8 @@ var bot = window.bot = {
 	},
 
 	reply : function ( msg, msgObj ) {
-		var usr = msgObj.user_name, roomid = msgObj.room_id;
+		var usr = msgObj.user_name.replace( /\s/g, '' ),
+			roomid = msgObj.room_id;
 
 		output.add( '@' + usr + ' ' + msg, roomid );
 	},
@@ -450,12 +451,12 @@ bot.parseCommandArgs = (function ( args ) {
 			state = 'data';
 			ret = '';
 		}
-
+/*
 		else if ( ch === '\\' ) {
 			ret = '';
 			state = 'escape';
 		}
-
+*/
 		else if ( ch === separator && !inString ) {
 			if ( prev === separator ) {
 				ret = '';
@@ -544,6 +545,10 @@ bot.makeMessage = function ( text, msgObj ) {
 				}
 				return ret + line + '\n';
 			}, '' );
+		},
+
+		parse : function () {
+			return bot.parseCommandArgs( text );
 		},
 
 		exec : function ( regexp ) {

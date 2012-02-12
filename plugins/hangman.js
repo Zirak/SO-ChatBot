@@ -59,8 +59,8 @@ var game = {
 			that.guesses = [];
 			that.guessNum = 0;
 
-			//oh look, another dirty hack...this one is to make sure the hangman
-			// is codified
+			//oh look, another dirty hack...this one is to make sure the
+			// hangman is codified
 			that.guessMade = true;
 
 			that.register();

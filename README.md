@@ -16,6 +16,11 @@ Will print something like this:
 
 Have the bot forget `cmdName`. You may have to have permission to forget certain commands. Once a command is forgotten, it cannot be un-forgotten (unless, of course, it is `/learn`ed.)
 
+## regex
+
+    !!/regex text regex [flags]
+Prints the result of matching `regex` (a regular exression) against `text`.
+
 ## choose
 
     !!/choose option0 [, option1 [, option2 [,...]]]
@@ -117,8 +122,7 @@ Objects used by SO when passing messages around.
 * `user_name` aren't they?
 
 ### inputRegex
-Like any regular regex, except that instead of where you'd use `\`, you use `~`.
-For example: `\w => ~w`, `\\d => ~~d`.
+A regular expression, which will be matched against the command arguments.
 
 Defaults to `.*`
 

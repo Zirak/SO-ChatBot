@@ -51,9 +51,21 @@ var commands = {
 		return 'Command ' + args + ' forgotten.';
 	},
 
+	regex : function ( args ) {
+		var parts = args.parse(),
+			what = parts[ 0 ], pattern = parts[ 1 ], flags = parts[ 2 ] || '';
+		//replace \ with \\
+		//pattern = pattern.replace( /\\/g, '\\\\')
+
+		var regex = new RegExp( pattern, flags.toLowerCase() );
+		console.log( what, pattern, flags, regex );
+
+		return ( regex.exec(what) || ['No matches'] ).join();
+	},
+
 	jquery : function ( args ) {
 		//check to see if more than one thing is requested
-		var parsedArgs = bot.parseCommandArgs( args );
+		var parsedArgs = args.parse();
 		if ( parsedArgs.length > 1 ) {
 			return parsedArgs.map( bot.commands.jquery.fun ).join( ' ' );
 		}
@@ -105,7 +117,7 @@ var commands = {
 	},
 
 	choose : function ( args ) {
-		var opts = bot.parseCommandArgs( args );
+		var opts = args.parse();
 		console.log( opts, '/choose input' );
 
 		return opts[ Math.floor(Math.random() * opts.length) ];
@@ -124,7 +136,7 @@ var commands = {
 
 	user : function ( args ) {
 		//to support names with spaces in the, you can call like "user name"
-		var props = bot.parseCommandArgs( args )[ 0 ],
+		var props = args.parse()[ 0 ],
 			usrid = props || args.get( 'user_id' );
 
 		//check for searching by username
@@ -321,7 +333,7 @@ commands.tell = (function () {
 var invalidCommands = { tell : true, forget : true };
 
 return function ( args ) {
-	var props = bot.parseCommandArgs( args );
+	var props = args.parse();
 	console.log( props, '/tell input' );
 
 	var replyTo = props[ 0 ],
@@ -456,7 +468,7 @@ var ranges = {
 };
 
 return function ( args, cb ) {
-	var parts = bot.parseCommandArgs( args ),
+	var parts = args.parse(),
 		type = parts[ 0 ],
 		plural = type + 's',
 
@@ -550,23 +562,23 @@ return function ( args, cb ) {
 commands.get.async = true;
 
 commands.learn = (function () {
-
 return function ( args ) {
 	console.log( args, '/learn input' );
 
-	var commandParts = bot.parseCommandArgs( args );
+	var commandParts = args.parse();
 	var command = {
 		name   : commandParts[ 0 ],
 		output : commandParts[ 1 ],
 		input  : commandParts[ 2 ] || '.*'
 	};
 
-	//a truthy value, unintuitively, means it isn't valid
+	//a truthy value, unintuitively, means it isn't valid, because it returns
+	// an error message
 	var invalid = checkCommand( command );
 	if ( invalid ) {
 		return invalid;
 	}
-	command = buildCommand( command );
+	command.name = command.name.toLowerCase();
 
 	console.log( commandParts, '/learn parsed' );
 
@@ -591,26 +603,6 @@ return function ( args ) {
 		return commands.parse( cmdArgs, pattern.exec(args) );
 	}
 };
-
-function buildCommand ( cmd ) {
-	console.log( cmd, '/learn buildCommand input' );
-
-	cmd.name = cmd.name.toLowerCase();
-	//the input regular expression have a slightly syntax: instead of \w, for
-	// instance, you do ~w. to write a ~, you do ~~
-	cmd.input = cmd.input.replace(
-		/~./g,
-		function ( ch ) {
-			ch = ch[ 1 ];
-			if ( ch === '~' ) {
-				return ch;
-			}
-			return '\\' + ch;
-		}
-	);
-
-	return cmd;
-}
 
 //return a truthy value (an error message) if it's invalid, falsy if it's
 // valid
