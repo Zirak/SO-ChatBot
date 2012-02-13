@@ -1,6 +1,6 @@
 //infix operator-precedence parser
 //also supports a d operator - a dice roll
-var parse = (function () {
+var parsePrecedence = (function () {
 
 //we don't care about whitespace. well, most whitespace
 var whitespace = {
@@ -190,7 +190,7 @@ var roll = function ( args ) {
 		return 'Invalid /roll argument; use `/help roll` for help';
 	}
 
-	var res = parse( args );
+	var res = parsePrecedence( args );
 
 	return res.rolls.join() + ' => ' + res.total;
 };

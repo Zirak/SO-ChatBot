@@ -224,6 +224,7 @@ var bot = window.bot = {
 
 	commandRegex : /^\/([\w\-\_]+)\s*(.+)?$/,
 	commands : {}, //will be filled as needed
+	commandDictionary : null, //it's undefined at this point, won't be for long
 	listeners : [],
 
 	dependencies : {
@@ -300,12 +301,11 @@ var bot = window.bot = {
 
 		console.log( commandParts, 'parseCommand matched' );
 
-		if ( !this.commandExists(commandName) ) {
-			msg.reply( 'Unidentified command ' + commandName );
+		var cmdObj = this.getCommand( commandName );
+		if ( cmdObj.error ) {
+			msg.reply( cmdObj.error );
 			return;
 		}
-
-		var cmdObj = this.commands[ commandName ];
 
 		if ( !cmdObj.canUse(msg.get('user_id')) ) {
 			msg.reply(
@@ -342,6 +342,23 @@ var bot = window.bot = {
 
 	commandExists : function ( cmdName ) {
 		return this.commands.hasOwnProperty( cmdName );
+	},
+
+	getCommand : function ( cmdName ) {
+		if ( !this.commandExists(cmdName) ) {
+			var msg = 'Command ' + cmdName + ' does not exist.',
+				guesses = this.commandDictionary.search( cmdName );
+
+			if ( guesses.length ) {
+				msg += ' Did you mean: ' + guesses.join( ', ' );
+			}
+
+			return {
+				error : msg
+			};
+		}
+
+		return this.commands[ cmdName ];
 	},
 
 	listen : function ( regex, fun, thisArg ) {
@@ -417,6 +434,8 @@ var bot = window.bot = {
 		};
 
 		this.commands[ cmd.name ] = cmd;
+
+		this.commandDictionary.trie.add( cmd.name );
 	},
 
 	stoplog : false,
@@ -451,12 +470,7 @@ bot.parseCommandArgs = (function ( args ) {
 			state = 'data';
 			ret = '';
 		}
-/*
-		else if ( ch === '\\' ) {
-			ret = '';
-			state = 'escape';
-		}
-*/
+
 		else if ( ch === separator && !inString ) {
 			if ( prev === separator ) {
 				ret = '';
@@ -574,7 +588,7 @@ bot.makeMessage = function ( text, msgObj ) {
 	});
 
 	return text;
-}
+};
 
 IO.register( 'receiveinput', bot.validateMessage, bot );
 IO.register( 'input', bot.parseMessage, bot );
@@ -803,5 +817,168 @@ Object.defineProperty( Array.prototype, 'invoke', {
 	writable : true
 });
 ////utility end
+
+//a Trie suggestion dictionary, made by Esailija
+// http://stackoverflow.com/users/995876/esailija
+//used in the "command not found" message to show you closest commands
+var SuggestionDictionary = (function () {
+
+function TrieNode() {
+	this.word = null;
+	this.children = {};
+}
+
+TrieNode.prototype.add = function( word ) {
+	var node = this, char, i = 0;
+
+	while( char = word.charAt(i++) ) {
+
+		if( !( char in node.children ) ) {
+			node.children[char] = new TrieNode();
+		}
+
+		node = node.children[char];
+
+	}
+
+	node.word = word;
+};
+
+
+//Having a small maxCost will increase performance greatly, experiment with
+//values of 1-3
+function SuggestionDictionary( maxCost ) {
+	if( !( this instanceof SuggestionDictionary ) ) {
+		throw new TypeError( "Illegal function call" );
+	}
+
+	maxCost = parseInt( maxCost, 10 );
+
+	if( isNaN( maxCost ) || maxCost < 1 ) {
+		throw new TypeError( "maxCost must be an integer > 1 " );
+	}
+
+	this.maxCost = maxCost;
+	this.trie = new TrieNode();
+}
+
+SuggestionDictionary.prototype = {
+
+	constructor: SuggestionDictionary,
+
+	build: function( words ) {
+		if( !Array.isArray( words ) ) {
+			throw new TypeError( "Cannot build a dictionary from "+words );
+		}
+
+		this.trie = new TrieNode();
+
+		words.forEach(function ( word ) {
+			this.trie.add( word );
+		}, this);
+	},
+
+	__sortfn: function( a, b ) {
+		return a[1] - b[1];
+	},
+
+	search: function( word ) {
+		var r;
+
+		if( typeof word !== "string" ) {
+			throw new TypeError( "Cannot search "+word );
+		}
+
+		if( this.trie == null ) {
+			throw new TypeError( "Cannot search, dictionary isn't built yet" );
+		}
+
+		r = search( word, this.maxCost, this.trie );
+		//r will be array of arrays:
+		//["word", cost], ["word2", cost2], ["word3", cost3] , ..
+
+		r.sort( this.__sortfn ); //Sort the results in order of least cost
+
+
+		return r.map(function ( subarr ) {
+			return subarr[ 0 ];
+		});
+	}
+};
+
+function range( x, y ) {
+	var r = [], i, l, start;
+
+	if( y == null ) {
+		start = 0;
+		l = x;
+	}
+	else {
+		start = x;
+		l = y-start;
+	}
+
+	for( i = 0; i < l; ++i ) {
+		r[i] = start++;
+	}
+
+	return r;
+
+}
+
+function search( word, maxCost, trie ) {
+	var results = [],
+	currentRow = range( word.length + 1 );
+
+
+	for( var letter in trie.children ) {
+		searchRecursive(
+			trie.children[letter], letter, word, currentRow, results, maxCost
+		);
+	}
+
+	return results;
+}
+
+
+function searchRecursive( node, letter, word, previousRow, results, maxCost ) {
+	var columns = word.length + 1,
+	currentRow = [previousRow[0] + 1],
+	i, insertCost, deleteCost, replaceCost, last;
+
+	for( i = 1; i < columns; ++i ) {
+
+		insertCost = currentRow[i-1] + 1;
+		deleteCost = previousRow[i] + 1;
+
+		if( word.charAt( i-1 ) !== letter ) {
+			replaceCost = previousRow[i-1]+1;
+
+		}
+		else {
+			replaceCost = previousRow[i-1];
+		}
+
+		currentRow.push( Math.min( insertCost, deleteCost, replaceCost ) );
+	}
+
+	last = currentRow[currentRow.length-1];
+	if( last <= maxCost && node.word !== null ) {
+		results.push( [node.word, last] );
+	}
+
+	if( Math.min.apply( Math, currentRow ) <= maxCost ) {
+		for( letter in node.children ) {
+			searchRecursive(
+				node.children[letter], letter, word, currentRow,
+				results, maxCost
+			);
+		}
+	}
+}
+
+return SuggestionDictionary;
+}());
+bot.commandDictionary = new SuggestionDictionary( 3 );
 
 }());

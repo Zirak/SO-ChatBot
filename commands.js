@@ -5,11 +5,12 @@ var commands = {
 	help : function ( args ) {
 		if ( args.length ) {
 
-			if ( !bot.commandExists(args) ) {
-				return 'Command ' + args + ' isn\'t defined';
+			var cmd = bot.getCommand( args );
+			if ( cmd.error ) {
+				return cmd.error;
 			}
 
-			var desc = bot.commands[ args ].description;
+			var desc = cmd.description;
 			if ( !desc ) {
 				return 'No info is available on command ' + args;
 			}
@@ -38,11 +39,12 @@ var commands = {
 
 	forget : function ( args ) {
 		var name = args.toLowerCase();
-		if ( !bot.commandExists(name) ) {
-			return 'Command ' + args + ' does not exist';
+
+		var cmd = bot.getCommand( name );
+		if ( cmd.error ) {
+			return cmd.error;
 		}
 
-		var cmd = bot.commands[ name ];
 		if ( !cmd.canDel(args.get('user_id')) ) {
 			return 'You are not authorized to delete the command ' + args;
 		}
@@ -54,8 +56,6 @@ var commands = {
 	regex : function ( args ) {
 		var parts = args.parse(),
 			what = parts[ 0 ], pattern = parts[ 1 ], flags = parts[ 2 ] || '';
-		//replace \ with \\
-		//pattern = pattern.replace( /\\/g, '\\\\')
 
 		var regex = new RegExp( pattern, flags.toLowerCase() );
 		console.log( what, pattern, flags, regex );
@@ -340,14 +340,14 @@ return function ( args ) {
 		cmdName = props[ 1 ],
 		cmd;
 
-	if ( !bot.commandExists(cmdName) ) {
-		return 'Unidentified command ' + cmdName;
+	cmd = bot.getCommand( cmdName );
+	if ( cmd.error ) {
+		return cmd.error;
 	}
+
 	if ( invalidCommands.hasOwnProperty(cmdName) ) {
 		return 'Command ' + cmdName + ' cannot be used in /tell.';
 	}
-
-	cmd = bot.commands[ cmdName ];
 
 	if ( !cmd.canUse(args.get('user_id')) ) {
 		return 'You do not have permission to use command ' + cmdName;
