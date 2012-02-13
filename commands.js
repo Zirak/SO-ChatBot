@@ -268,6 +268,38 @@ commands.norris = function ( args, cb ) {
 };
 commands.norris.async = true;
 
+//cb is for internal blah blah blah
+commands.urban = function ( args, cb ) {
+	IO.jsonp({
+		url:'http://www.urbandictionary.com/iphone/search/define',
+		data : {
+			term : args.slice()
+		},
+		jsonpName : 'callback',
+		fun : complete
+	});
+
+	function complete ( resp ) {
+		var msg, top;
+
+		if ( resp.result_type === 'no_results' ) {
+			msg = 'Y U NO MAEK SENSE!!!???!!?11 No results.';
+		}
+		else {
+			top = resp.list[ 0 ];
+			msg = '[' + args + '](' + top.permalink + '): ' + top.definition;
+		}
+
+		if ( cb && cb.call ) {
+			cb( msg );
+		}
+		else {
+			args.reply( msg );
+		}
+	}
+};
+commands.urban.async = true;
+
 commands.parse = (function () {
 
 //special variables/macros
