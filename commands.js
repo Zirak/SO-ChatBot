@@ -57,10 +57,17 @@ var commands = {
 		var parts = args.parse(),
 			what = parts[ 0 ], pattern = parts[ 1 ], flags = parts[ 2 ] || '';
 
-		var regex = new RegExp( pattern, flags.toLowerCase() );
-		console.log( what, pattern, flags, regex );
+		var regex = new RegExp( pattern, flags.toLowerCase() ),
+			matches = regex.exec( what );
 
-		return ( regex.exec(what) || ['No matches'] ).join();
+		console.log( what, pattern, flags, regex, 'regex parsed' );
+		console.log( matches, 'regex matched' );
+
+		if ( !matches ) {
+			return 'No matches.';
+		}
+
+		return matches.join( ', ' );
 	},
 
 	jquery : function ( args ) {
@@ -521,8 +528,6 @@ return function ( args, cb ) {
 		fun : parseResponse
 	});
 
-	return 'Retrieving ' + type;
-
 	function parseResponse ( respObj ) {
 		//Une erreru! L'horreur!
 		if ( respObj.error ) {
@@ -538,7 +543,7 @@ return function ( args, cb ) {
 
 		console.log( relativeParts.slice(), '/get parseResponse parsing' );
 
-		if ( relativeParts.length ) {
+		if ( relativeParts[0] ) {
 			//get the id(s) of the answer(s)/question(s)
 			res = relativeParts.map(function ( obj ) {
 				console.log( obj );
