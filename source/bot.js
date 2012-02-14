@@ -217,7 +217,6 @@ return function ( html ) {
 ////IO end
 
 ////bot start
-var baseRepURL = 'https://raw.github.com/Titani/SO-ChatBot/master/';
 var bot = window.bot = {
 	name : 'Zirak',
 	invocationPattern : '!!',
@@ -228,15 +227,6 @@ var bot = window.bot = {
 	commands : {}, //will be filled as needed
 	commandDictionary : null, //it's undefined at this point, won't be for long
 	listeners : [],
-
-	dependencies : {
-		commands  : baseRepURL + 'commands.js',
-		listeners : baseRepURL + 'listeners.js',
-		hangman   : baseRepURL + 'plugins/hangman.js',
-		todo      : baseRepURL + 'plugins/todolist.js',
-		roll      : baseRepURL + 'plugins/roll.js',
-		spec      : baseRepURL + 'plugins/spec.js'
-	},
 
 	parseMessage : function ( msgObj ) {
 		console.log( msgObj, 'parseMessage input' );
