@@ -174,7 +174,7 @@ return function ( html ) {
 			IO.fire( 'receive' + fullName, obj );
 
 			if ( IO.preventDefault ) {
-				console.log( obj, 'preventDefault' );
+				bot.log( obj, 'preventDefault' );
 				IO.preventDefault = false;
 				return this;
 			}
@@ -229,10 +229,10 @@ var bot = window.bot = {
 	listeners : [],
 
 	parseMessage : function ( msgObj ) {
-		console.log( msgObj, 'parseMessage input' );
+		bot.log( msgObj, 'parseMessage input' );
 
 		if ( !this.validateMessage(msgObj) ) {
-			console.log( msgObj, 'parseMessage invalid' );
+			bot.log( msgObj, 'parseMessage invalid' );
 			return;
 		}
 
@@ -252,12 +252,12 @@ var bot = window.bot = {
 
 		msg = this.makeMessage( msg, msgObj );
 
-		console.log( msg, 'parseMessage valid' );
+		bot.log( msg, 'parseMessage valid' );
 
 		try {
 			//it's a command
 			if ( msg.startsWith('/') ) {
-				console.log( msg, 'parseMessage command' );
+				bot.log( msg, 'parseMessage command' );
 				this.parseCommand( msg );
 				return;
 			}
@@ -277,12 +277,12 @@ var bot = window.bot = {
 
 			msg.directreply( err );
 
-			console.error( err, e );
+			bot.log( err, e );
 		}
 	},
 
 	parseCommand : function ( msg ) {
-		console.log( msg, 'parseCommand input' );
+		bot.log( msg, 'parseCommand input' );
 
 		var commandParts = this.commandRegex.exec( msg );
 		if ( !commandParts ) {
@@ -292,7 +292,7 @@ var bot = window.bot = {
 
 		var commandName = commandParts[ 1 ].toLowerCase();
 
-		console.log( commandParts, 'parseCommand matched' );
+		bot.log( commandParts, 'parseCommand matched' );
 
 		var cmdObj = this.getCommand( commandName );
 		if ( cmdObj.error ) {
@@ -308,7 +308,7 @@ var bot = window.bot = {
 			return;
 		}
 
-		console.log( cmdObj, 'parseCommand calling' );
+		bot.log( cmdObj, 'parseCommand calling' );
 
 		var args = this.makeMessage(
 			//+ 1 is for the /
@@ -383,7 +383,7 @@ var bot = window.bot = {
 			if ( match ) {
 				resp = listener.fun.call( listener.thisArg, msg );
 			}
-			console.log( match, resp );
+			bot.log( match, resp );
 			if ( resp ) {
 				msg.reply( resp );
 			}
@@ -642,7 +642,7 @@ var polling = {
 
 		function finish ( resp ) {
 			resp = JSON.parse( resp );
-			console.log( resp );
+			bot.log( resp );
 
 			that.times[ 'r' + roomid ] = resp.time;
 
@@ -767,7 +767,7 @@ var output = {
 		});
 
 		function complete ( resp, xhr ) {
-			console.log( xhr.status );
+			bot.log( xhr.status );
 
 			//conflict, wait for next round to send message
 			if ( xhr.status === 409 ) {
@@ -906,6 +906,7 @@ SuggestionDictionary.prototype = {
 	},
 
 	search: function( word ) {
+		word = word.valueOf();
 		var r;
 
 		if( typeof word !== "string" ) {

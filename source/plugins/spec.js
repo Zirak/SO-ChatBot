@@ -5,9 +5,13 @@ var spec = function ( args ) {
 	var matches = specParts.filter(function ( obj ) {
 		return ~obj.name.toLowerCase().indexOf( lookup );
 	}).map(function ( obj ) {
-		return '[' + obj.name + '](http://es5.github.com/#' + obj.section + ')';
+		//escape square-brackets and parentheses so the chat's markdown won't
+		//flip out
+		var name = obj.name.replace( /([\(\)\[\]])/g, '\\$1' );
+		return '[' + name + '](http://es5.github.com/#' + obj.section + ')';
 	});
 
+	bot.log( matches, '/spec done' );
 	if ( !matches.length ) {
 		return 'Nothing found in spec';
 	}

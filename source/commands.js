@@ -60,8 +60,8 @@ var commands = {
 		var regex = new RegExp( pattern, flags.toLowerCase() ),
 			matches = regex.exec( what );
 
-		console.log( what, pattern, flags, regex, 'regex parsed' );
-		console.log( matches, 'regex matched' );
+		bot.log( what, pattern, flags, regex, 'regex parsed' );
+		bot.log( matches, 'regex matched' );
 
 		if ( !matches ) {
 			return 'No matches.';
@@ -85,7 +85,7 @@ var commands = {
 		// prop           -  parts[0] will be prop
 		// jQuery.fn.prop -  that's a special case
 
-		console.log( props, parts, '/jquery input' );
+		bot.log( props, parts, '/jquery input' );
 
 		//jQuery API urls works like this:
 		// if it's on the jQuery object, then the url is /jQuery.property
@@ -118,14 +118,14 @@ var commands = {
 		else {
 			msg = 'Could not find specified jQuery property ' + args;
 		}
-		console.log( msg, '/jquery link' );
+		bot.log( msg, '/jquery link' );
 
 		return msg;
 	},
 
 	choose : function ( args ) {
 		var opts = args.parse();
-		console.log( opts, '/choose input' );
+		bot.log( opts, '/choose input' );
 
 		return opts[ Math.floor(Math.random() * opts.length) ];
 	},
@@ -201,14 +201,14 @@ return function ( args, cb ) {
 		var url = resp.AbstractURL,
 			def = resp.AbstractText;
 
-		console.log( url, def, '/define finishCall input' );
+		bot.log( url, def, '/define finishCall input' );
 
 		//Webster returns the definition as
 		// wordName definition: the actual definition
 		// instead of just the actual definition
 		if ( resp.AbstractSource === 'Merriam-Webster' ) {
 			def = def.replace( args + ' definition: ', '' );
-			console.log( def, '/define finishCall webster' );
+			bot.log( def, '/define finishCall webster' );
 		}
 
 		if ( !def ) {
@@ -216,9 +216,10 @@ return function ( args, cb ) {
 		}
 		else {
 			def = args + ': ' + def; //problem?
-			def += ' [(source)](' + url + ')';
+			//the chat treats ( as a special character, so we escape!
+			def += ' [\\(source\\)](' + url + ')';
 		}
-		console.log( def, '/define finishCall output' );
+		bot.log( def, '/define finishCall output' );
 
 		//add to cache
 		cache[ args ] = def;
@@ -270,6 +271,10 @@ commands.norris.async = true;
 
 //cb is for internal blah blah blah
 commands.urban = function ( args, cb ) {
+	if ( !args.length ) {
+		return 'Y U NO PROVIDE ARGUMENTS!?';
+	}
+
 	IO.jsonp({
 		url:'http://www.urbandictionary.com/iphone/search/define',
 		data : {
@@ -328,7 +333,7 @@ var fillerRegex = /(?:.|^)\$(\w+)/g;
 
 //extraVars is for internal usage via other commands
 return function ( args, extraVars ) {
-	console.log( args, extraVars, '/parse input' );
+	bot.log( args, extraVars, '/parse input' );
 	extraVars = extraVars || {};
 
 	return args.replace( fillerRegex, replacePart );
@@ -373,11 +378,15 @@ var invalidCommands = { tell : true, forget : true };
 
 return function ( args ) {
 	var props = args.parse();
-	console.log( props, '/tell input' );
+	bot.log( props, '/tell input' );
 
 	var replyTo = props[ 0 ],
 		cmdName = props[ 1 ],
 		cmd;
+
+	if ( !replyTo || !cmdName ) {
+		return 'Invalid /tell arguments. Use /help for usage info';
+	}
 
 	cmd = bot.getCommand( cmdName );
 	if ( cmd.error ) {
@@ -406,7 +415,7 @@ return function ( args ) {
 		args.slice( replyTo.length + cmdName.length + 1 ).trim(),
 		args.get()
 	);
-	console.log( cmdArgs, '/tell calling ' + cmdName );
+	bot.log( cmdArgs, '/tell calling ' + cmdName );
 
 	//if the command is async, it'll accept a callback
 	if ( cmd.async ) {
@@ -453,7 +462,7 @@ return function ( args ) {
 		base = 'https://developer.mozilla.org/en/',
 		url;
 
-	console.log( args, parts, '/mdn input' );
+	bot.log( args, parts, '/mdn input' );
 
 	var lowercased = parts[ 0 ].toLowerCase();
 
@@ -466,18 +475,18 @@ return function ( args ) {
 		} else {
 			url += parts[ 0 ];
 		}
-		console.log( url, '/mdn DOM' );
+		bot.log( url, '/mdn DOM' );
 	}
 
 	else if ( window[parts[0]] ) {
 		url = base +
 			'JavaScript/Reference/Global_Objects/' + parts.join( '/' );
-		console.log( url, '/mdn global' );
+		bot.log( url, '/mdn global' );
 	}
 
 	else {
 		url = 'https://developer.mozilla.org/en-US/search?q=' + args;
-		console.log( url, '/mdn unknown' );
+		bot.log( url, '/mdn unknown' );
 	}
 
 	return url;
@@ -533,7 +542,7 @@ return function ( args, cb ) {
 		usrid = args.get( 'user_id' );
 	}
 
-	console.log( parts, 'get input' );
+	bot.log( parts, 'get input' );
 
 	if ( !types.hasOwnProperty(type) ) {
 		return 'Invalid "getter" name ' + type;
@@ -545,14 +554,14 @@ return function ( args, cb ) {
 	var url = 'http://api.stackoverflow.com/1.1/users/' + usrid + '/' +
 			plural + '?sort=creation';
 
-	console.log( url, '/get building url' );
+	bot.log( url, '/get building url' );
 
 	if ( range === 'between' ) {
 		start = Date.parse( parts[2] );
 		end = Date.parse( parts[3] );
 		url += '&fromdate=' + start + '&todate=' + end;
 
-		console.log( url, '/get building url between' );
+		bot.log( url, '/get building url between' );
 	}
 
 	IO.jsonp({
@@ -573,19 +582,19 @@ return function ( args, cb ) {
 			base = "http://stackoverflow.com/q/",
 			res;
 
-		console.log( relativeParts.slice(), '/get parseResponse parsing' );
+		bot.log( relativeParts.slice(), '/get parseResponse parsing' );
 
 		if ( relativeParts[0] ) {
 			//get the id(s) of the answer(s)/question(s)
 			res = relativeParts.map(function ( obj ) {
-				console.log( obj );
+				bot.log( obj );
 				return base + ( obj[type + '_id'] || '' );
 			}).join( ' ' );
 		}
 		else {
 			res = 'User did not submit any ' + plural;
 		}
-		console.log( res, '/get parseResponse parsed');
+		bot.log( res, '/get parseResponse parsed');
 
 		if ( cb && cb.call ) {
 			cb( res );
@@ -600,7 +609,7 @@ commands.get.async = true;
 
 commands.learn = (function () {
 return function ( args ) {
-	console.log( args, '/learn input' );
+	bot.log( args, '/learn input' );
 
 	var commandParts = args.parse();
 	var command = {
@@ -617,7 +626,7 @@ return function ( args ) {
 	}
 	command.name = command.name.toLowerCase();
 
-	console.log( commandParts, '/learn parsed' );
+	bot.log( commandParts, '/learn parsed' );
 
 	var pattern = new RegExp( command.input );
 
@@ -634,7 +643,7 @@ return function ( args ) {
 	return 'Command ' + command.name + ' learned';
 
 	function customCommand ( args ) {
-		console.log( args, command.name + ' input' );
+		bot.log( args, command.name + ' input' );
 
 		var cmdArgs = bot.makeMessage( command.output, args.get() );
 		return commands.parse( cmdArgs, pattern.exec(args) );

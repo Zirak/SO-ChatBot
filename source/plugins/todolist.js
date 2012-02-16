@@ -35,7 +35,7 @@ var userlist = function ( usrid ) {
 		},
 
 		save : function () {
-			console.log( toRemove.slice(), usr.slice() );
+			bot.log( toRemove.slice(), usr.slice() );
 			usr = usr.filter(function ( item, idx ) {
 				return toRemove.indexOf( idx ) === -1;
 			});
@@ -58,7 +58,7 @@ var userlist = function ( usrid ) {
 
 var todo = function ( args ) {
 	var props = args.parse();
-	console.log( props, 'todo input' );
+	bot.log( props, 'todo input' );
 
 	if ( !props[0] ) {
 		props = [ 'get' ];
@@ -75,7 +75,7 @@ var todo = function ( args ) {
 		if ( !ret ) {
 			ret = 'No items on your todo.';
 		}
-		console.log( ret, 'todo get' );
+		bot.log( ret, 'todo get' );
 	}
 
 	else if ( action === 'add' ) {
@@ -96,7 +96,7 @@ var todo = function ( args ) {
 			ret = 'Items added.';
 		}
 
-		console.log( ret, 'todo add' );
+		bot.log( ret, 'todo add' );
 	}
 
 	else if ( action === 'remove' ) {
@@ -120,12 +120,12 @@ var todo = function ( args ) {
 			ret = 'Items removed.';
 		}
 
-		console.log( ret, 'todo remove' );
+		bot.log( ret, 'todo remove' );
 	}
 	//not a valid action
 	else {
 		ret = 'Unidentified /todo action ' + action;
-		console.log( ret, 'todo undefined' );
+		bot.log( ret, 'todo undefined' );
 	}
 
 	//save the updated list

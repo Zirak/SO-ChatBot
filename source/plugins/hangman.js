@@ -81,7 +81,7 @@ var game = {
 
 	handleGuess : function ( msg ) {
 		var guess = msg.slice();
-		console.log( guess, 'handleGuess' );
+		bot.log( guess, 'handleGuess' );
 		guess = guess.toLowerCase();
 
 		if ( !this.validGuessRegex.test(guess) ) {
@@ -116,7 +116,7 @@ var game = {
 		this.guesses.push( guess );
 		this.guessMade = true;
 
-		console.log( guess, this.guessMade, 'handleGuess handled' );
+		bot.log( guess, this.guessMade, 'handleGuess handled' );
 
 		//plain vanilla lose-win checks
 		if ( this.loseCheck() ) {
@@ -152,7 +152,7 @@ var game = {
 		hangy += this.revealed;
 
 		hangy = this.msg.codify( hangy );
-		console.log( hangy, this.msg );
+		bot.log( hangy, this.msg );
 		this.msg.respond( hangy );
 	},
 
