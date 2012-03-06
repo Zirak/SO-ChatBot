@@ -2,21 +2,23 @@ var fs = require( 'fs' ),
 	http = require( 'http' ),
 	querystring = require( 'querystring' );
 
-//until I figure out how to do it asynchronously, file IO unfortunately
-// has to be done synchronously
+//some file IO done synchronously because I'm a fat lazy bastard
 var build = {
 	mainFolder : './source/',
-	outputName : process.argv[2] || 'master.js',
-	tempName : 'buildtmp.tmp',
+	outputName : 'master.js',
+
+	allTogetherNow : [],
+	filesAdded : 0,
+	totalFiles : 0,
 
 	tempFile : null,
 	totalSize : 0,
 	outputSize : 0,
 
 	endCallback : function () {
-		console.log( '\nbuilding ' + this.outputName + ' complete' );
-		console.log( 'total size of all files (pre-build): ' + this.totalSize );
-		console.log( 'final file size: ' + this.outputSize );
+		build.print( '\nbuilding ' + this.outputName + ' complete' );
+		build.print( 'total size of all files (pre-build): ' + this.totalSize );
+		build.print( 'final file size: ' + this.outputSize );
 	},
 	filterer : function () { return true; },
 
@@ -26,49 +28,77 @@ var build = {
 			this.endCallback = end;
 		}
 
-		this.tempFile = fs.openSync( this.tempName, 'w' );
-
-		names.forEach(function ( path ) {
-			this.add( this.mainFolder + path );
+		this.totalFiles = names.length;
+		names.forEach(function ( path, idx ) {
+			this.add( this.mainFolder + path, idx );
 		}, this );
-
-		this.minify();
 	},
 
-	add : function ( path ) {
+	add : function ( path, idx ) {
 		if ( !this.filterer(path) ) {
-			console.log( 'rejected ' + path );
+			build.print( 'rejected ' + path );
 			return;
 		}
 
-		var stat = fs.statSync( path );
-		if ( stat.isDirectory() ) {
-			this.addDirectory( path );
-		}
-		else if ( stat.isFile() ) {
-			this.totalSize += stat.size;
-			this.addFile( path );
+		fs.stat( path, decide );
+
+		var that = this;
+		function decide ( err, stat ) {
+			if ( err ) {
+				throw err;
+			}
+
+			if ( stat.isDirectory() ) {
+				that.addDirectory( path, idx );
+			}
+			else if ( stat.isFile() ) {
+				that.totalSize += stat.size;
+				that.addFile( path, idx );
+			}
 		}
 	},
 
-	addFile : function ( filePath ) {
-		console.log( 'adding ' + filePath );
-		fs.writeSync(
-			this.tempFile,
-			fs.readFileSync( filePath, 'utf8'),
-			null
-		);
+	addFile : function ( filePath, idx ) {
+		build.print( 'adding ' + filePath );
+		//add the file contents as the idx'th item, pushing everything there and
+		// after it to the right
+		var that = this;
+		fs.readFile( filePath, 'utf8', function ( err, data ) {
+			if ( err ) {
+				throw err;
+			}
+			that.allTogetherNow.splice( idx, 0, data );
+
+			that.filesAdded++;
+
+			that.addComplete();
+		});
 	},
 
-	addDirectory : function ( dirPath ) {
-		var files = fs.readdirSync( dirPath );
-		files.forEach(function ( subpath ) {
-			this.add( dirPath + subpath );
-		}, this);
+	addDirectory : function ( dirPath, idx ) {
+		var that = this;
+		fs.readdir( dirPath, function ( err, files ) {
+			if ( err ) {
+				throw err;
+			}
+
+			//-1 because the folder itself was included in the initial count
+			that.totalFiles += files.length - 1;
+
+			files.forEach(function ( subpath ) {
+				that.add( dirPath + subpath, idx++ );
+			});
+		});
+	},
+
+	addComplete : function () {
+		if ( this.filesAdded >= this.totalFiles ) {
+			this.minify();
+		}
 	},
 
 	minify : function () {
-		console.log( '\nminifying everything...' );
+		build.print( '\nminifying everything...' );
 		var opts = {
 			host : 'marijnhaverbeke.nl',
 			path : '/uglifyjs',
@@ -78,7 +108,9 @@ var build = {
 			}
 		};
 		var data = {
-			'js_code' : fs.readFileSync( this.tempName, 'utf8' ),
+			//the semi-colon is to be sure no weird things will happen with
+			// anonym-functions executing other anonym-functions...
+			'js_code' : this.allTogetherNow.join( ';' ),
 			'utf8' : true
 		};
 
@@ -106,34 +138,35 @@ var build = {
 
 	minifyFinish : function ( writeStream ) {
 		writeStream.end();
-		console.log( 'minifying complete\n' );
-		console.log( 'removing temp build file...' );
+		build.print( 'minifying complete\n' );
 
-		var that = this;
-		fs.unlink( that.tempName, function ( err ) {
-			if ( err ) {
-				throw err;
-			}
+		this.endCallback();
+	},
 
-			that.endCallback();
-		});
+	print : function ( out, overrideVerbose ) {
+		if ( !this.verbose || overrideVerbose ) {
+			console.log( out );
+		}
 	}
 };
 
 //array of files/folders, relative to build.mainFolder,
 // which is by default ./source/
-var toMinify = [
-	//'IO.js',
+var blocks = [
 	'bot.js',
 	'commands.js',
 	'listeners.js',
 	'plugins/'
 ];
 build.start(
-	toMinify,
-	//don't
+	blocks,
 	function ( fileName ) {
-		return fileName.indexOf( '~' ) === -1 &&
-			fileName.indexOf( '#' ) !== 0;
+		return (
+			//only .js files
+			fileName.indexOf( '.js' ) > -1 &&
+			//no backup files
+			fileName.indexOf( '~' ) === -1 &&
+			fileName.indexOf( '#' ) !== 0
+		);
 	}
 );

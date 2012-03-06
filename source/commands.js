@@ -307,8 +307,8 @@ commands.urban.async = true;
 
 commands.parse = (function () {
 
-//special variables/macros
-var fillers = {
+//special variable
+var variables = {
 	who : function ( msg ) {
 		return msg.get( 'user_name' );
 	},
@@ -329,16 +329,26 @@ var fillers = {
 		return Math.floor( Math.random() * 10 );
 	}
 };
-var fillerRegex = /(?:.|^)\$(\w+)/g;
+//special macros
+var funcs = {
+	encode : function ( string ) {
+		return encodeURIComponent( string );
+	}
+};
+var varRegex = /(?:.|^)\$(\w+)/g,
+	funcRegex = /(?:.|^)\$(\w+)\((.*)\)/g;
 
 //extraVars is for internal usage via other commands
 return function ( args, extraVars ) {
-	bot.log( args, extraVars, '/parse input' );
 	extraVars = extraVars || {};
+	bot.log( args, extraVars, '/parse input' );
 
-	return args.replace( fillerRegex, replacePart );
+	return args
+		.replace( funcRegex, replaceFunc )
+		.replace( varRegex, replaceVar );
 
-	function replacePart ( $0, filler ) {
+	function replaceFunc ( $0, filler, fillerArgs ) {
+		//$$ makes a literal $
 		if ( $0.startsWith('$$') ) {
 			return $0.slice( 1 );
 		}
@@ -350,13 +360,33 @@ return function ( args, extraVars ) {
 			ret = $0[ 0 ];
 		}
 
+		//check for the function's existance in the funcs object
+		if ( funcs.hasOwnProperty(filler) ) {
+			console.log( filler, fillerArgs, '/parse func call')
+			ret += funcs[ filler ].apply( null, fillerArgs.split(',') );
+		}
+
+		return ret;
+	}
+
+	function replaceVar ( $0, filler ) {
+		//same as in the above function
+		if ( $0.startsWith('$$') ) {
+			return $0.slice( 1 );
+		}
+
+		var ret = '';
+		if ( $0[0] !== '$' ) {
+			ret = $0[ 0 ];
+		}
+
 		//it's recognized by special extra variables passed
 		if ( extraVars.hasOwnProperty(filler) ) {
 			ret += extraVars[ filler ];
 		}
 		//it's a special variables
-		else if ( fillers.hasOwnProperty(filler) ) {
-			ret += fillers[ filler ]( args );
+		else if ( variables.hasOwnProperty(filler) ) {
+			ret += variables[ filler ]( args );
 		}
 		//it's part of the argument variables
 		else if ( args.get(filler) ) {
@@ -378,7 +408,7 @@ var invalidCommands = { tell : true, forget : true };
 
 return function ( args ) {
 	var props = args.parse();
-	bot.log( props, '/tell input' );
+	bot.log( args.valueOf(), props, '/tell input' );
 
 	var replyTo = props[ 0 ],
 		cmdName = props[ 1 ],
@@ -412,7 +442,8 @@ return function ( args ) {
 	}
 
 	var cmdArgs = bot.makeMessage(
-		args.slice( replyTo.length + cmdName.length + 1 ).trim(),
+		//the + 2 is for the two spaces after each arg
+		args.slice( replyTo.length + cmdName.length + 2 ).trim(),
 		args.get()
 	);
 	bot.log( cmdArgs, '/tell calling ' + cmdName );

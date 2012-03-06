@@ -103,7 +103,6 @@ var IO = window.IO = {
 		opts.jsonpName = opts.jsonpName || 'jsonp';
 
 		script.src = opts.url + '&' + opts.jsonpName + '=' + semiRandom;
-
 		document.head.appendChild( script );
 	},
 
@@ -264,15 +263,15 @@ var bot = window.bot = {
 
 			//see if some hobo listener wants this
 			this.callListeners( msg );
-
-			//Feuer Sie das Ereignis!
-			IO.fire( 'messageReceived', msg );
 		}
 		catch ( e ) {
 			var err = 'Could not process input. Error: ' + e.message;
 
 			if ( e.lineNumber ) {
 				err += ' on line ' + e.lineNumber;
+			}
+			if ( e.column ) {
+				err += ' on column ' + e.column;
 			}
 
 			msg.directreply( err );
@@ -377,17 +376,25 @@ var bot = window.bot = {
 	},
 
 	callListeners : function ( msg ) {
+		var fired = false;
+
 		this.listeners.forEach(function ( listener ) {
 			var match = msg.exec( listener.pattern ), resp;
 
 			if ( match ) {
+				fired = true;
 				resp = listener.fun.call( listener.thisArg, msg );
-			}
-			bot.log( match, resp );
-			if ( resp ) {
-				msg.reply( resp );
+
+				bot.log( match, resp );
+				if ( resp ) {
+					msg.reply( resp );
+				}
 			}
 		});
+
+		if ( !fired ) {
+			msg.reply( 'Y U NO MAEK SENSE!?' );
+		}
 	},
 
 	reply : function ( msg, msgObj ) {
@@ -452,104 +459,173 @@ var bot = window.bot = {
 	}
 };
 
-bot.parseCommandArgs = (function ( args ) {
+bot.parseCommandArgs = (function () {
 
-	var state, prev, separator, escaper,
-		singleQuote, doubleQuote;
+//the different states, not nearly enough to represent a female humanoid
+var S_DATA         = 0,
+	S_SINGLE_QUOTE = 1,
+	S_DOUBLE_QUOTE = 2,
+	S_NEW          = 3;
 
-	var handleChar = function ( ch ) {
-		var ret;
+//and constants representing constant special chars (why aren't I special? ;_;)
+var CH_SINGLE_QUOTE = '\'',
+	CH_DOUBLE_QUOTE = '\"';
 
-		if ( state === 'escape' ) {
-			ret = ch;
-			state = 'data';
-		}
+/*
+the "scheme" roughly looks like this:
+  args -> arg <sep> arg <sep> arg ... | Ø
+  arg  -> singleQuotedString | doubleQuotedString | string | Ø
 
-		else if ( ch === escaper ) {
-			ret = '';
-			state = 'escape';
-		}
+  singleQuotedString -> 'string'
+  doubleQuotedString -> "string"
+  string -> char char char ... | Ø
+  char -> anyCharacter | <escaper>anyCharacter | Ø
 
-		else if ( ch == '\'') {
-			if ( doubleQuote ) {
-				ret = ch;
-			}
-			else {
-				singleQuote = !singleQuote;
-				state = 'data';
-				ret = '';
-			}
-		}
+Ø is the empty string
+*/
 
-		else if ( ch === '"' ) {
-			if ( singleQuote ) {
-				ret = ch;
-			}
-			else {
-				doubleQuote = !doubleQuote;
-				state = 'data';
-				ret = '';
-			}
-		}
+//the bad boy in the hood
+//I dunno what kind of parser this is, so I can't flaunt it or taunt with it,
+// but it was fun to make
+var parser = {
 
-		else if ( ch === separator && !(singleQuote || doubleQuote) ) {
-			if ( prev === separator ) {
-				ret = '';
-			}
-			else {
-				ret = 'NEW';
-			}
-		}
+	parse : function ( source, sep, esc ) {
+		//initializations are safe fun for the whole family!
+		var ret = [], arg;
 
-		else if ( state === 'data' ) {
-			ret = ch;
-		}
+		this.source = source;
+		this.pos = 0;
+		this.length = source.length;
+		this.state = S_DATA;
 
-		prev = ch;
+		this.escaper = esc || '\\';
+		this.separator = sep || ' ';
 
-		return ret;
-	};
+		//let the parsing commence!
+		while ( this.pos < this.length ) {
+			arg = this.nextArg();
 
-	return function ( args, sep, esc ) {
-		var ret = [],
-			arg = '',
-			ch,
-			pos = 0, len = args.length,
-			whatToDo;
-
-		state = 'data';
-		singleQuote = false;
-		doubleQuote = false;
-		separator = sep || ' ';
-		escaper = esc || '~';
-
-		while ( pos < len ) {
-			ch = args[ pos++ ];
-			whatToDo = handleChar( ch );
-
-			if ( whatToDo === 'NEW' ) {
+			//only add the next arg if it's actually something
+			if ( arg ) {
 				ret.push( arg );
-				arg = '';
-			}
-			else {
-				arg += whatToDo;
 			}
 		}
-		ret.push( arg );
 
-		if ( singleQuote || doubleQuote ) {
-			throw new Error( 'Unexpected end of input; expected \"' );
+		//oh noez! errorz!
+		if ( this.state !== S_DATA ) {
+			var errMsg = '';
+
+			if ( this.state === S_SINGLE_QUOTE ) {
+				errMsg = 'Expected ' + CH_SINGLE_QUOTE;
+			}
+			else if ( this.state === S_DOUBLE_QUOTE ) {
+				errMsg = 'Expected ' + CH_DOUBLE_QUOTE;
+			}
+
+			var up = new Error( 'Unexpected end of input. ' + errMsg );
+			up.column = this.pos;
+
+			throw up; //problem?
 		}
 
 		return ret;
-	};
+	},
 
+	//fetches the next argument (see the "scheme" at the top)
+	nextArg : function () {
+		var lexeme = '', ch;
+		this.state = S_DATA;
+
+		while ( true ) {
+			ch = this.nextChar();
+			if ( ch === null || this.state === S_NEW ) {
+				break;
+			}
+
+			lexeme += ch;
+		}
+
+		return lexeme;
+	},
+
+	nextChar : function ( escape ) {
+		var ch = this.source[ this.pos ];
+		this.pos++;
+
+		if ( !ch ) {
+			return null;
+		}
+
+		if ( escape ) {
+			return ch;
+		}
+
+		//l'escaping!
+		else if ( ch === this.escaper ) {
+			return this.nextChar( true );
+		}
+
+		//IM IN YO STRINGZ EATING YO CHARS
+		// a.k.a string handling starts roughly here
+
+		//single quotes are teh rulez
+		else if ( ch === CH_SINGLE_QUOTE ) {
+			//we're already inside a double-quoted string, it's just another
+			// char for us
+			if ( this.state === S_DOUBLE_QUOTE ) {
+				return ch;
+			}
+
+			//start your stringines!
+			else if ( this.state !== S_SINGLE_QUOTE ) {
+				this.state = S_SINGLE_QUOTE;
+			}
+
+			//end your stringiness!
+			else {
+				this.state = S_DATA;
+			}
+
+			return this.nextChar();
+		}
+
+		//exactly the same, just with double-quotes, which aren't quite as teh
+		// rulez
+		else if ( ch === CH_DOUBLE_QUOTE ) {
+			if ( this.state === S_SINGLE_QUOTE ) {
+				return ch;
+			}
+
+			else if ( this.state !== S_DOUBLE_QUOTE ) {
+				this.state = S_DOUBLE_QUOTE;
+			}
+
+			else {
+				this.state = S_DATA;
+			}
+
+			return this.nextChar();
+		}
+
+		//encountered a separator and you're in data-mode!? ay digity!
+		else if ( ch === this.separator && this.state === S_DATA ) {
+			this.state = S_NEW;
+		}
+
+		return ch;
+	}
+};
+
+return function () {
+	return parser.parse.apply( parser, arguments );
+};
 }());
 
 bot.makeMessage = function ( text, msgObj ) {
 	//"casting" to object so that it can be extended with cool stuff and
 	// still be treated like a string
-	text = Object( text );
+	var ret = Object( text );
+	ret.content = text;
 
 	var deliciousObject = {
 		respond : function ( resp ) {
@@ -559,16 +635,12 @@ bot.makeMessage = function ( text, msgObj ) {
 		reply : function ( resp, usrname ) {
 			usrname = usrname || msgObj.user_name;
 
-			bot.reply( resp, Object.merge(
-				msgObj, {user_name : usrname}
-			));
+			bot.reply( resp, Object.merge(msgObj, {user_name : usrname}) );
 		},
 		directreply : function ( resp, msgid ) {
 			msgid = msgid || msgObj.message_id;
 
-			bot.directreply( resp, Object.merge(
-				msgObj, {message_id : msgid}
-			));
+			bot.directreply( resp, Object.merge(msgObj, {message_id : msgid}) );
 		},
 
 		codify : function ( msg ) {
@@ -607,10 +679,10 @@ bot.makeMessage = function ( text, msgObj ) {
 	};
 
 	Object.keys( deliciousObject ).forEach(function ( key ) {
-		text[ key ] = deliciousObject[ key ];
+		ret[ key ] = deliciousObject[ key ];
 	});
 
-	return text;
+	return ret;
 };
 
 IO.register( 'receiveinput', bot.validateMessage, bot );
@@ -747,8 +819,8 @@ var output = {
 			}
 
 			this.sendToRoom({
-				text   : message,
-				room   : room,
+				text : message,
+				room : room,
 			});
 
 			this.messages[ room ] = '';
@@ -780,8 +852,7 @@ var output = {
 		IO.out.flush();
 	}
 };
-output.loopage = output.loopage.bind( output );
-output.interval = setInterval( output.loopage, 5000 );
+output.timer = setInterval( output.loopage, 5000 );
 
 IO.register( 'output', output.build, output );
 IO.register( 'afteroutput', output.send, output );
