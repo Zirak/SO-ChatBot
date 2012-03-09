@@ -70,11 +70,11 @@ var commands = {
 		return matches.join( ', ' );
 	},
 
-	jquery : function ( args ) {
+	jquery : function jquery ( args ) {
 		//check to see if more than one thing is requested
-		var parsedArgs = args.parse();
-		if ( parsedArgs.length > 1 ) {
-			return parsedArgs.map( bot.commands.jquery.fun ).join( ' ' );
+		var splitArgs = args.split( ' ' );
+		if ( splitArgs.length > 1 ) {
+			return splitArgs.map( jquery ).join( ' ' );
 		}
 
 		var props = args.trim().replace( /^\$/, 'jQuery' );
@@ -85,28 +85,38 @@ var commands = {
 		// prop           -  parts[0] will be prop
 		// jQuery.fn.prop -  that's a special case
 
-		bot.log( props, parts, '/jquery input' );
-
 		//jQuery API urls works like this:
 		// if it's on the jQuery object, then the url is /jQuery.property
 		// if it's on the proto, then the url is /property
 
+		//so, the mapping goes like this:
+		// jQuery.fn.prop => prop
+		// jQuery.prop    => jQuery.prop if it's on jQuery
+		// prop           => prop if it's on jQuery.prototype,
+		//                   jQuery.prop if it's on jQuery
+
+		bot.log( props, parts, '/jquery input' );
+
 		//user gave something like jQuery.fn.prop, turn that to just prop
+		// jQuery.fn.prop => prop
 		if ( parts.length === 3 ) {
 			parts = [ parts[2] ];
 		}
 
 		//check to see if it's a property on the jQuery object itself
+		// jQuery.prop => jQuery.prop
 		if ( parts[0] === 'jQuery' && jQuery[parts[1]] ) {
 			exists = true;
 		}
 
 		//user wants something on the prototype?
+		// prop => prop
 		else if ( parts.length === 1 && jQuery.prototype[parts[0]] ) {
 			exists = true;
 		}
 
 		//user just wanted a property? maybe.
+		// prop => jQuery.prop
 		else if ( jQuery[parts[0]] ) {
 			url = 'jQuery.' + parts[0];
 			exists = true;
@@ -142,19 +152,21 @@ var commands = {
 	},
 
 	user : function ( args ) {
-		//to support names with spaces in the, you can call like "user name"
-		var props = args.parse()[ 0 ],
+		var props = args.replace( ' ', '' ),
 			usrid = props || args.get( 'user_id' );
 
-		//check for searching by username
-		if ( /^[\w\s]+$/.test(usrid) ) {
+		//check for searching by username, which here just means "there's no
+		// digit in there"
+		if ( /\D$/.test(usrid) ) {
 			var users = [].slice.call( document
 				.getElementById( 'sidebar' )
 				.getElementsByClassName( 'user-container' ) );
 
+			//grab a list of user ids
 			var ids = users.map(function ( container ) {
 				return container.id.match( /\d+/ )[ 0 ];
 			});
+			//and a list of their names
 			var names = users.map(function ( container ) {
 				return container.getElementsByTagName( 'img' )[ 0 ].title;
 			});
@@ -162,6 +174,9 @@ var commands = {
 			var index = names.indexOf(usrid);
 			if ( index > -1 ) {
 				usrid = ids[ index ];
+			}
+			else {
+				return 'Ca\'t find user ' + usrid + ' in this chatroom.';
 			}
 		}
 
@@ -306,18 +321,19 @@ commands.urban = function ( args, cb ) {
 commands.urban.async = true;
 
 commands.parse = (function () {
-
-//special variable
+//special variables
 var variables = {
 	who : function ( msg ) {
 		return msg.get( 'user_name' );
 	},
 
 	someone : function () {
-		var active = document.getElementById( 'sidebar' )
+		var presentUsers = document.getElementById( 'sidebar' )
 			.getElementsByClassName( 'present-user' );
 
-		active = [].filter.call( active, function ( user ) {
+		//the chat keeps a low opacity for users who remained silent for long,
+		// and high opacity for those who recently talked
+		var active = [].filter.call( presentUsers, function ( user ) {
 			return Number( user.style.opacity ) >= 0.5;
 		});
 
@@ -333,13 +349,34 @@ var variables = {
 var funcs = {
 	encode : function ( string ) {
 		return encodeURIComponent( string );
+	},
+
+	//random number, min <= n <= max
+	//treats non-numeric inputs like they don't exist
+	rand : function ( min, max ) {
+		min = Number( min );
+		max = Number( max );
+
+		//handle rand() === rand( 0, 9 )
+		if ( !min ) {
+			min = 0;
+			max = 9;
+		}
+
+		//handle rand( max ) === rand( 0, max )
+		else if ( !max ) {
+			max = min;
+			min = 0;
+		}
+
+		return Math.floor( Math.random() * (max - min + 1) ) + min;
 	}
 };
 var varRegex = /(?:.|^)\$(\w+)/g,
-	funcRegex = /(?:.|^)\$(\w+)\((.*)\)/g;
+	funcRegex = /(?:.|^)\$(\w+)\((.*?)\)/g;
 
 //extraVars is for internal usage via other commands
-return function ( args, extraVars ) {
+return function parse ( args, extraVars ) {
 	extraVars = extraVars || {};
 	bot.log( args, extraVars, '/parse input' );
 
@@ -362,8 +399,13 @@ return function ( args, extraVars ) {
 
 		//check for the function's existance in the funcs object
 		if ( funcs.hasOwnProperty(filler) ) {
+			//parse the arguments, split them into individual arguments,
+			// and trim'em (to cover the case of "arg,arg" and "arg, arg")
+			fillerArgs = parse( fillerArgs, extraVars )
+				.split( ',' ).invoke( 'trim' );
+
 			console.log( filler, fillerArgs, '/parse func call')
-			ret += funcs[ filler ].apply( null, fillerArgs.split(',') );
+			ret += funcs[ filler ].apply( null, fillerArgs );
 		}
 
 		return ret;
@@ -664,7 +706,7 @@ return function ( args ) {
 	bot.addCommand({
 		name : command.name,
 		fun : customCommand,
-		description : 'User-taught command',
+		description : 'User-taught command: ' + command.output,
 		permissions : {
 			use : 'ALL',
 			del : 'ALL'

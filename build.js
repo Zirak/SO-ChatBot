@@ -1,4 +1,5 @@
 var fs = require( 'fs' ),
+	path = require( 'path' ),
 	http = require( 'http' ),
 	querystring = require( 'querystring' );
 
@@ -8,25 +9,21 @@ var build = {
 	outputName : 'master.js',
 
 	allTogetherNow : [],
-	filesAdded : 0,
 	totalFiles : 0,
 
 	tempFile : null,
 	totalSize : 0,
 	outputSize : 0,
 
-	endCallback : function () {
-		build.print( '\nbuilding ' + this.outputName + ' complete' );
-		build.print( 'total size of all files (pre-build): ' + this.totalSize );
-		build.print( 'final file size: ' + this.outputSize );
-	},
-	filterer : function () { return true; },
-
 	start : function ( names, filterer, end ) {
-		filterer = filterer || function(){return true;};
-		if ( end ) {
-			this.endCallback = end;
-		}
+		this.filterer = filterer || function () { return true; };
+		this.endCallback = end || function () {
+			build.print( '\nbuilding ' + this.outputName + ' complete' );
+			build.print(
+				'total size of all files (pre-build): ' + this.totalSize
+			);
+			build.print( 'final file size: ' + this.outputSize );
+		};
 
 		this.totalFiles = names.length;
 		names.forEach(function ( path, idx ) {
@@ -35,11 +32,6 @@ var build = {
 	},
 
 	add : function ( path, idx ) {
-		if ( !this.filterer(path) ) {
-			build.print( 'rejected ' + path );
-			return;
-		}
-
 		fs.stat( path, decide );
 
 		var that = this;
@@ -59,18 +51,17 @@ var build = {
 	},
 
 	addFile : function ( filePath, idx ) {
+		if ( !this.filterer(filePath) ) {
+			build.print( 'rejected ' + filePath );
+			return;
+		}
+
 		build.print( 'adding ' + filePath );
 		//add the file contents as the idx'th item, pushing everything there and
 		// after it to the right
 		var that = this;
-		fs.readFile( filePath, 'utf8', function ( err, data ) {
-			if ( err ) {
-				throw err;
-			}
+		this.preprocessor( filePath, function ( data ) {
 			that.allTogetherNow.splice( idx, 0, data );
-
-			that.filesAdded++;
-
 			that.addComplete();
 		});
 	},
@@ -92,61 +83,149 @@ var build = {
 	},
 
 	addComplete : function () {
-		if ( this.filesAdded >= this.totalFiles ) {
+		if ( this.allTogetherNow.length >= this.totalFiles ) {
 			this.minify();
 		}
-	},
+	}
+};
 
-	minify : function () {
-		build.print( '\nminifying everything...' );
-		var opts = {
-			host : 'marijnhaverbeke.nl',
-			path : '/uglifyjs',
-			method : 'POST',
-			headers : {
-				'Content-Type' : 'application/x-www-form-urlencoded'
-			}
-		};
-		var data = {
-			//the semi-colon is to be sure no weird things will happen with
-			// anonym-functions executing other anonym-functions...
-			'js_code' : this.allTogetherNow.join( ';' ),
-			'utf8' : true
-		};
+build.preprocessor = function ( filePath, cb ) {
+	var lastIndex = 0, index,
+		source,
+		instruction = '//#build ';
 
-		var that = this;
-		var req = http.request( opts, function ( resp ) {
-			resp.setEncoding( 'utf8' );
-			resp.on( 'data', write );
-			resp.on( 'end', function () {
-				that.minifyFinish( writeStream );
-			});
+	fs.readFile( filePath, 'utf8', function ( err, data ) {
+		if ( err ) {
+			throw err;
+		}
+		source = data;
+
+		preprocess(function cont () {
+			//this is the continuation function, which is called when either
+			// the processor finished doing its job, or if the processor
+			// skipped a match for any reason.
+			// it sets the index for the next match to begin with, and
+			// calls the preprocess function again. recursion ftw
+			lastIndex = index + instruction.length;
+			preprocess( cont );
 		});
+	});
 
-		req.end( querystring.stringify(data) );
+	function preprocess ( next ) {
+		index = source.indexOf( instruction, lastIndex );
 
-		var writeStream = fs.createWriteStream(
-			this.outputName,
-			{flags : 'w', encoding : 'utf8'}
-		);
-
-		function write ( data ) {
-			writeStream.write( data );
-			build.outputSize += data.length;
+		if ( index < 0 ) {
+			finish();
+			return;
 		}
-	},
 
-	minifyFinish : function ( writeStream ) {
-		writeStream.end();
-		build.print( 'minifying complete\n' );
+		//check to see if you're at the beginning of a line or at the beginning
+		// of the file
+		var offset, targetName = '';
 
-		this.endCallback();
-	},
+		if ( index === 0 || source[index-1] === '\n' ) {
+			offset = index + instruction.length;
 
-	print : function ( out, overrideVerbose ) {
-		if ( !this.verbose || overrideVerbose ) {
-			console.log( out );
+			//capture the filename:
+			//#build blah.js
+			//       [-----]  <-- this part, everything until a newline or EOF
+			while (
+				source[offset] &&
+				source[offset] !== '\n' && source[offset] !== '\r'
+			) {
+				targetName += source[ offset++ ];
+			}
+
+			//check to see if the file requested exists
+			path.exists( targetName, function ( exists ) {
+				if ( !exists ) {
+					throw new Error(
+						'Cannot #build unexisting file ' + targetName +
+						' (in ' + filePath + ')'
+					);
+				}
+
+				embedFile( targetName );
+			});
 		}
+		else {
+			next();
+		}
+
+		function embedFile ( targetName ) {
+			fs.readFile( targetName, 'utf8', function ( err, data ) {
+				if ( err ) {
+					throw err;
+				}
+
+				//replace the comment with the file content
+				//TODO: make this better
+				//this seems INCREDIBLY inefficient, and should be replaced with
+				// some better solution
+				source =
+					source.slice( 0, index ) +
+					data +
+					source.slice(
+						index + instruction.length + targetName.length
+					);
+				next();
+			});
+		}
+	}
+
+	function finish () {
+		cb( source );
+	}
+};
+
+build.minify = function () {
+	build.print( '\nminifying everything...' );
+
+	var opts = {
+		host : 'marijnhaverbeke.nl',
+		path : '/uglifyjs',
+		method : 'POST',
+		headers : {
+			'Content-Type' : 'application/x-www-form-urlencoded'
+		}
+	};
+	var data = {
+		//the semi-colon is to be sure no weird things will happen with
+		// anonym-functions executing other anonym-functions...
+		'js_code' : this.allTogetherNow.join( ';' ),
+		'utf8' : true
+	};
+
+	var writeStream = fs.createWriteStream(
+		this.outputName,
+		{flags : 'w', encoding : 'utf8'}
+	);
+
+	var that = this;
+	var req = http.request( opts, function ( resp ) {
+		resp.setEncoding( 'utf8' );
+
+		resp.on( 'data', write );
+
+		resp.on( 'end', function () {
+			build.print( 'minifying complete\n' );
+			writeStream.end();
+
+			that.endCallback();
+		});
+	});
+
+	req.end( querystring.stringify(data) );
+
+	function write ( data ) {
+		writeStream.write( data );
+		build.outputSize += data.length;
+	}
+};
+
+build.print = function ( out, overrideVerbose ) {
+	if ( !this.verbose || overrideVerbose ) {
+		console.log( out );
 	}
 };
 
@@ -163,7 +242,7 @@ build.start(
 	function ( fileName ) {
 		return (
 			//only .js files
-			fileName.indexOf( '.js' ) > -1 &&
+			path.extname( fileName ) === '.js' &&
 			//no backup files
 			fileName.indexOf( '~' ) === -1 &&
 			fileName.indexOf( '#' ) !== 0

@@ -237,18 +237,6 @@ var bot = window.bot = {
 
 		var msg = IO.decodehtml(msgObj.content);
 		msg = msg.slice( this.invocationPattern.length ).trim();
-
-		//cheat. check if the bot's dead and the user wants to relive it
-		if ( this.stopped && (msg === 'live' || msg === '/live') ) {
-			if ( this.commands.live.canUse(msgObj.user_id) ) {
-				this.reply( this.commands.live.exec(), msgObj );
-			}
-			return;
-		}
-		else if ( this.stopped ) {
-			return;
-		}
-
 		msg = this.makeMessage( msg, msgObj );
 
 		bot.log( msg, 'parseMessage valid' );
@@ -276,7 +264,7 @@ var bot = window.bot = {
 
 			msg.directreply( err );
 
-			bot.log( err, e );
+			console.error( e, err );
 		}
 	},
 
@@ -811,20 +799,23 @@ var output = {
 	},
 
 	send : function () {
-		Object.keys( this.messages ).forEach(function ( room ) {
-			var message = this.messages[ room ];
+		if ( !bot.stopped ) {
+			Object.keys( this.messages ).forEach(function ( room ) {
+				var message = this.messages[ room ];
 
-			if ( !message ) {
-				return;
-			}
+				if ( !message ) {
+					return;
+				}
 
-			this.sendToRoom({
-				text : message,
-				room : room,
-			});
+				this.sendToRoom({
+					text : message,
+					room : room,
+				});
 
-			this.messages[ room ] = '';
-		}, this );
+			}, this );
+		}
+
+		this.messages = {};
 	},
 
 	sendToRoom : function ( obj ) {
@@ -898,7 +889,7 @@ Object.defineProperty( Array.prototype, 'invoke', {
 			var res = item;
 
 			if ( item[funName] && item[funName].call ) {
-				res = item.funName.call( item, args );
+				res = item[ funName ]call( item, args );
 			}
 
 			ret[ index ] = res;
