@@ -889,7 +889,7 @@ Object.defineProperty( Array.prototype, 'invoke', {
 			var res = item;
 
 			if ( item[funName] && item[funName].call ) {
-				res = item[ funName ]call( item, args );
+				res = item[ funName ].call( item, args );
 			}
 
 			ret[ index ] = res;

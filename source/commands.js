@@ -404,7 +404,7 @@ return function parse ( args, extraVars ) {
 			fillerArgs = parse( fillerArgs, extraVars )
 				.split( ',' ).invoke( 'trim' );
 
-			console.log( filler, fillerArgs, '/parse func call')
+			console.log( filler, fillerArgs, '/parse func call');
 			ret += funcs[ filler ].apply( null, fillerArgs );
 		}
 
