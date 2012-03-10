@@ -7,6 +7,9 @@ var fs = require( 'fs' ),
 var build = {
 	mainFolder : './source/',
 	outputName : 'master.js',
+	outputMin  : 'master.min.js',
+
+	doMinify : true,
 
 	allTogetherNow : [],
 	totalFiles : 0,
@@ -15,14 +18,20 @@ var build = {
 	totalSize : 0,
 	outputSize : 0,
 
-	start : function ( names, filterer, end ) {
+	start : function ( names, filterer, end, minEnd ) {
 		this.filterer = filterer || function () { return true; };
+
 		this.endCallback = end || function () {
 			build.print( '\nbuilding ' + this.outputName + ' complete' );
 			build.print(
 				'total size of all files (pre-build): ' + this.totalSize
 			);
 			build.print( 'final file size: ' + this.outputSize );
+		};
+
+		this.minEndCallback = minEnd || function ( name, size ) {
+			build.print( '\nminifying to ' + name + ' complete' );
+			build.print( 'final minified size: ' + size );
 		};
 
 		this.totalFiles = names.length;
@@ -60,7 +69,7 @@ var build = {
 		//add the file contents as the idx'th item, pushing everything there and
 		// after it to the right
 		var that = this;
-		this.preprocessor( filePath, function ( data ) {
+		preprocessor( filePath, function ( data ) {
 			that.allTogetherNow.splice( idx, 0, data );
 			that.addComplete();
 		});
@@ -82,14 +91,34 @@ var build = {
 		});
 	},
 
+	write : function ( finalCode ) {
+		var that = this;
+		this.outputSize = finalCode.length;
+
+		fs.writeFile( this.outputName, finalCode, 'utf8', function ( err ) {
+			if ( err ) {
+				throw err;
+			}
+
+			that.endCallback();
+		});
+	},
+
 	addComplete : function () {
 		if ( this.allTogetherNow.length >= this.totalFiles ) {
-			this.minify();
+			build.print( 'all files added' );
+			var code = this.allTogetherNow.join( '\n;\n' );
+
+			this.write( code );
+
+			if ( this.doMinify ) {
+				minifier.minify( code, this.minEndCallback );
+			}
 		}
 	}
 };
 
-build.preprocessor = function ( filePath, cb ) {
+var preprocessor = function ( filePath, cb ) {
 	var lastIndex = 0, index,
 		source,
 		instruction = '//#build ';
@@ -178,48 +207,53 @@ build.preprocessor = function ( filePath, cb ) {
 	}
 };
 
-build.minify = function () {
-	build.print( '\nminifying everything...' );
+var minifier = {
+	outputName : 'master.min.js',
+	outputSize : 0,
 
-	var opts = {
-		host : 'marijnhaverbeke.nl',
-		path : '/uglifyjs',
-		method : 'POST',
-		headers : {
-			'Content-Type' : 'application/x-www-form-urlencoded'
-		}
-	};
-	var data = {
-		//the semi-colon is to be sure no weird things will happen with
-		// anonym-functions executing other anonym-functions...
-		'js_code' : this.allTogetherNow.join( ';' ),
-		'utf8' : true
-	};
+	minify : function ( code, callback ) {
+		build.print( '\nminifying...' );
 
-	var writeStream = fs.createWriteStream(
-		this.outputName,
-		{flags : 'w', encoding : 'utf8'}
-	);
+		var opts = {
+			host : 'marijnhaverbeke.nl',
+			path : '/uglifyjs',
+			method : 'POST',
+			headers : {
+				'Content-Type' : 'application/x-www-form-urlencoded'
+			}
+		};
+		var data = {
+			//the semi-colon is to be sure no weird things will happen with
+			// anonym-functions executing other anonym-functions...
+			'js_code' : code,
+			'utf8' : true
+		};
 
-	var that = this;
-	var req = http.request( opts, function ( resp ) {
-		resp.setEncoding( 'utf8' );
+		var writeStream = fs.createWriteStream(
+			this.outputName,
+			{flags : 'w', encoding : 'utf8'}
+		);
 
-		resp.on( 'data', write );
+		var that = this;
 
-		resp.on( 'end', function () {
-			build.print( 'minifying complete\n' );
-			writeStream.end();
+		var req = http.request( opts, function ( resp ) {
+			resp.setEncoding( 'utf8' );
 
-			that.endCallback();
+			resp.on( 'data', write );
+
+			resp.on( 'end', function () {
+				writeStream.end();
+
+				callback( that.outputName, that.outputSize );
+			});
 		});
-	});
 
-	req.end( querystring.stringify(data) );
+		req.end( querystring.stringify(data) );
 
-	function write ( data ) {
-		writeStream.write( data );
-		build.outputSize += data.length;
+		function write ( data ) {
+			writeStream.write( data );
+			that.outputSize += data.length;
+		}
 	}
 };
 
@@ -228,6 +262,10 @@ build.print = function ( out, overrideVerbose ) {
 		console.log( out );
 	}
 };
+
+if ( process.argv.indexOf('no-min') > -1 ) {
+	build.doMinify = false;
+}
 
 //array of files/folders, relative to build.mainFolder,
 // which is by default ./source/

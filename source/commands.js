@@ -50,7 +50,7 @@ var commands = {
 		}
 
 		cmd.del();
-		return 'Command ' + args + ' forgotten.';
+		return 'Command ' + name + ' forgotten.';
 	},
 
 	regex : function ( args ) {
@@ -67,7 +67,10 @@ var commands = {
 			return 'No matches.';
 		}
 
-		return matches.join( ', ' );
+		return matches.map(function ( match ) {
+			//have the chat codify the output
+			return '`' + match + '`';
+		}).join( ', ' );
 	},
 
 	jquery : function jquery ( args ) {
