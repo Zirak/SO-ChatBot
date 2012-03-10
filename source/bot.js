@@ -35,19 +35,21 @@ var IO = window.IO = {
 
 	//fire event!
 	fire : function ( name ) {
+		this.preventDefault = false;
+
 		if ( !this.events[name] ) {
 			return;
 		}
 
-		var args = Array.prototype.slice.call( arguments, 1 );
-
-		this.events[ name ].forEach( fireEvent, this);
+		var args = Array.prototype.slice.call( arguments, 1 ),
+			that = this;
+		this.events[ name ].forEach( fireEvent );
 
 		function fireEvent( evt ) {
 			var call = evt.fun.apply( evt.thisArg, evt.args.concat(args) );
 
 			if ( call === false ) {
-				this.preventDefault = true;
+				that.preventDefault = true;
 			}
 		}
 	},
@@ -174,7 +176,6 @@ return function ( html ) {
 
 			if ( IO.preventDefault ) {
 				bot.log( obj, 'preventDefault' );
-				IO.preventDefault = false;
 				return this;
 			}
 
@@ -486,7 +487,7 @@ var parser = {
 		this.length = source.length;
 		this.state = S_DATA;
 
-		this.escaper = esc || '\\';
+		this.escaper = esc || '~';
 		this.separator = sep || ' ';
 
 		//let the parsing commence!
@@ -706,9 +707,7 @@ var polling = {
 
 			that.times[ 'r' + roomid ] = resp.time;
 
-			setTimeout(function () {
-				that.poll();
-			}, that.pollInterval );
+			that.loopage();
 		}
 	},
 
@@ -719,12 +718,12 @@ var polling = {
 			url : '/events',
 			data : fkey( that.times ),
 			method : 'POST',
-			complete : that.complete,
+			complete : that.pollComplete,
 			thisArg : that
 		});
 	},
 
-	complete : function ( resp ) {
+	pollComplete : function ( resp ) {
 		if ( !resp ) {
 			return;
 		}
@@ -744,10 +743,6 @@ var polling = {
 		});
 
 		IO.in.flush();
-
-		setTimeout(function () {
-			that.poll();
-		}, this.pollInterval );
 	},
 
 	handleMessageObject : function ( msg ) {
@@ -757,12 +752,12 @@ var polling = {
 		}
 
 		//check for a multiline message
-		var multiline;
-		if ( msg.content.startsWith( '<div class=\'full\'>') ) {
+		var multiline, tag = '<div class=\'full\'>';
+		if ( msg.content.startsWith(tag) ) {
 			//remove the enclosing tag
 			multiline = msg.content
 				.slice( 0, msg.content.lastIndexOf('</div>') )
-				.replace( '<div class=\'full\'>', '' );
+				.replace( tag, '' );
 
 			multiline.split( '<br>' ).forEach(function ( line ) {
 				line = line.trim();
@@ -776,6 +771,14 @@ var polling = {
 
 		//add the message to the input buffer
 		IO.in.receive( msg );
+	},
+
+	loopage : function () {
+		var that = this;
+		setTimeout(function () {
+			that.poll();
+			that.loopage();
+		}, this.pollInterval );
 	}
 };
 polling.init();
@@ -783,6 +786,7 @@ polling.init();
 var output = {
 	messages : {},
 
+	//add a message to the output queue
 	add : function ( msg, roomid ) {
 		roomid = roomid || bot.roomid;
 		IO.out.receive({
@@ -791,6 +795,7 @@ var output = {
 		});
 	},
 
+	//build the final output
 	build : function ( obj ) {
 		if ( !this.messages[obj.room] ) {
 			this.messages[ obj.room ] = '';
@@ -798,7 +803,11 @@ var output = {
 		this.messages[ obj.room ] += obj.text;
 	},
 
+	//and send output to all the good boys and girls
 	send : function () {
+		//unless the bot's stopped. in which case, it should shut the fudge up
+		// the freezer and never let it out. not until it can talk again. what
+		// was I intending to say?
 		if ( !bot.stopped ) {
 			Object.keys( this.messages ).forEach(function ( room ) {
 				var message = this.messages[ room ];
@@ -807,22 +816,18 @@ var output = {
 					return;
 				}
 
-				this.sendToRoom({
-					text : message,
-					room : room,
-				});
-
+				this.sendToRoom( message, room );
 			}, this );
 		}
 
 		this.messages = {};
 	},
 
-	sendToRoom : function ( obj ) {
+	sendToRoom : function ( text, room ) {
 		IO.xhr({
-			url : '/chats/' + obj.room + '/messages/new',
+			url : '/chats/' + room + '/messages/new',
 			data : {
-				text : obj.text,
+				text : text,
 				fkey : fkey().fkey
 			},
 			method : 'POST',
@@ -834,7 +839,7 @@ var output = {
 
 			//conflict, wait for next round to send message
 			if ( xhr.status === 409 ) {
-				output.add( obj.text, obj.room );
+				output.add( text, room );
 			}
 		}
 	},
@@ -860,17 +865,17 @@ Object.merge = function () {
 	}, {} );
 };
 
-String.prototype.indexesOf = function ( str ) {
-	var part = this.valueOf(),
-		index,
-		offset = 0, //to determine the absolute distance from beginning
-		len = str.length,
+String.prototype.indexesOf = function ( str, fromIndex ) {
+	//since we also use index to tell indexOf from where to begin, and since
+	// telling it to begin from where it found the match will cause it to just
+	// match it again and again, inside the indexOf we do `index + 1`
+	// to compensate for that 1, we need to subtract 1 from the original
+	// starting position
+	var index = ( fromIndex || 0 ) - 1,
 		ret = [];
 
-	while ( (index = part.indexOf(str)) > -1 ) {
-		ret.push( index + offset );
-		part = part.slice( index + len );
-		offset += index + len;
+	while ( (index = this.indexOf(str, index + 1)) > -1 ) {
+		ret.push( index );
 	}
 
 	return ret;

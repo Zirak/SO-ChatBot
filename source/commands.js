@@ -33,7 +33,7 @@ var commands = {
 		if ( bot.stopped ) {
 			return 'Kill me once, shame on you, kill me twice...';
 		}
-		bot.stopped = true;
+		bot.stop();
 		return 'You killed me!';
 	},
 
@@ -474,19 +474,19 @@ return function ( args ) {
 	}
 
 	//check if the user wants to reply to a message
-	var direct = false;
+	var direct = false, msgObj = args.get();
 	if ( /\d+$/.test(replyTo) ) {
-		args.set( 'message_id', replyTo );
+		msgObj.message_id = replyTo;
 		direct = true;
 	}
 	else {
-		args.set( 'user_name', replyTo );
+		msgObj.user_name = replyTo;
 	}
 
 	var cmdArgs = bot.makeMessage(
 		//the + 2 is for the two spaces after each arg
 		args.slice( replyTo.length + cmdName.length + 2 ).trim(),
-		args.get()
+		msgObj
 	);
 	bot.log( cmdArgs, '/tell calling ' + cmdName );
 
@@ -516,7 +516,7 @@ return function ( args ) {
 commands.mdn = (function () {
 
 // https://developer.mozilla.org/Special:Tags?tag=DOM
-//a lowercaseObjectName => DOM/objectName object, where a falsy value
+//a lowercaseObjectName => DOMobjectName object, where a falsy value
 // means to just use lowercaseObjectName
 var DOMParts = {
 	'document' : '',
@@ -530,7 +530,12 @@ var DOMParts = {
 	'window' : ''
 };
 
-return function ( args ) {
+return function mdn ( args ) {
+	var splittedArgs = args.split( ' ' );
+	if ( splittedArgs.length > 1 ) {
+		return splittedArgs.map( mdn ).join( ' ' );
+	}
+
 	var parts = args.trim().split( '.' ),
 		base = 'https://developer.mozilla.org/en/',
 		url;
@@ -541,13 +546,8 @@ return function ( args ) {
 
 	if ( DOMParts.hasOwnProperty(lowercased) ) {
 		parts[ 0 ] = DOMParts[ lowercased ] || lowercased;
-		url = base + 'DOM/';
+		url = base + 'DOM/' + parts.join( '.' );
 
-		if ( parts.length > 1 ) {
-			url += parts.join( '.' );
-		} else {
-			url += parts[ 0 ];
-		}
 		bot.log( url, '/mdn DOM' );
 	}
 
