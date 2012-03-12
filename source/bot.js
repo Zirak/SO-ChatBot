@@ -57,26 +57,29 @@ var IO = window.IO = {
 	//it's a very incomplete, non-comprehensive implemantation, since I only
 	// use it for POST requests
 	xhr : function ( params ) {
+		params.headers = params.headers || {
+			'Content-Type' : 'application/x-www-form-urlencoded'
+
+		};
+
 		if ( typeof params.data === 'object' ) {
 			params.data = IO.urlstringify( params.data );
 		}
 
-		var xhr = new XMLHttpRequest();
+		var xhr = new XMLHttpRequest(), complete = params.complete;
 		xhr.open( params.method || 'GET', params.url );
 
 		xhr.addEventListener( 'readystatechange', function () {
-			if ( xhr.readyState === 4 ) {
-				if ( params.complete && params.complete.call ) {
-					params.complete.call(
-						params.thisArg, xhr.responseText, xhr
-					);
-				}
+			if ( xhr.readyState === 4 && complete && complete.call ) {
+				complete.call(
+					params.thisArg, xhr.responseText, xhr
+				);
 			}
 		});
 
-		xhr.setRequestHeader(
-			'Content-Type', 'application/x-www-form-urlencoded'
-		);
+		Object.keys( params.headers ).forEach(function ( header ) {
+			xhr.setRequestHeader( header, params.headers[header] );
+		});
 
 		xhr.send( params.data );
 
@@ -228,7 +231,7 @@ var bot = window.bot = {
 
 	roomid : parseFloat( location.pathname.match(/\d+/)[0] ),
 
-	commandRegex : /^\/([\w\-\_]+)\s*(.+)?$/,
+	commandRegex : /^\/([\w\-]+)(?:\s(.+))?$/,
 	commands : {}, //will be filled as needed
 	commandDictionary : null, //it's null at this point, won't be for long
 	listeners : [],
@@ -304,7 +307,7 @@ var bot = window.bot = {
 		bot.log( cmdObj, 'parseCommand calling' );
 
 		var args = this.makeMessage(
-			//+ 1 is for the /
+			//+ 1 is for the / in the message
 			msg.slice( commandName.length + 1 ).trim(),
 			msg.get()
 		);
@@ -319,17 +322,16 @@ var bot = window.bot = {
 		var msg = msgObj.content.toLowerCase().trim();
 
 		//all we really care about
-		if ( !msg.startsWith(this.invocationPattern) ) {
-			return false;
-		}
-
-		return true;
+		return msg.startsWith( this.invocationPattern );
 	},
 
+	//gee, I wonder what this will return?
 	commandExists : function ( cmdName ) {
 		return this.commands.hasOwnProperty( cmdName );
 	},
 
+	//if a command named cmdName exists, it returns that command object
+	//otherwise, it returns an object with an error message property
 	getCommand : function ( cmdName ) {
 		if ( !this.commandExists(cmdName) ) {
 			//set the error margin according to the length
@@ -353,20 +355,20 @@ var bot = window.bot = {
 		return this.commands[ cmdName ];
 	},
 
+	//the function women think is lacking in men
 	listen : function ( regex, fun, thisArg ) {
 		if ( Array.isArray(regex) ) {
 			regex.forEach(function ( reg ) {
 				this.listen( reg, fun, thisArg );
 			}, this );
-
-			return;
 		}
-
-		this.listeners.push({
-			pattern : regex,
-			fun : fun,
-			thisArg: thisArg
-		});
+		else {
+			this.listeners.push({
+				pattern : regex,
+				fun : fun,
+				thisArg: thisArg
+			});
+		}
 	},
 
 	callListeners : function ( msg ) {
@@ -403,7 +405,7 @@ var bot = window.bot = {
 		output.add( ':' + msgid + ' ' + msg, roomid );
 	},
 
-	//some awesome
+	//some awesome in function form
 	addCommand : function ( cmd ) {
 		cmd.name = cmd.name.toLowerCase();
 
@@ -419,14 +421,14 @@ var bot = window.bot = {
 				use.indexOf( usrid ) > -1;
 		};
 
-		cmd.exec = function () {
-			return this.fun.apply( this.thisArg, arguments );
-		};
-
 		cmd.canDel = function ( usrid ) {
 			var del = this.permissions.del;
 			return del !== 'NONE' && del === 'ALL' ||
 				del.indexOf( usrid ) > -1;
+		};
+
+		cmd.exec = function () {
+			return this.fun.apply( this.thisArg, arguments );
 		};
 
 		cmd.del = function () {
@@ -434,7 +436,6 @@ var bot = window.bot = {
 		};
 
 		this.commands[ cmd.name ] = cmd;
-
 		this.commandDictionary.trie.add( cmd.name );
 	},
 
@@ -654,6 +655,7 @@ bot.makeMessage = function ( text, msgObj ) {
 			return bot.parseCommandArgs( text );
 		},
 
+		//execute a regexp against the text, saving it inside the object
 		exec : function ( regexp ) {
 			var match = regexp.exec( text );
 			this.matches = match ? match : [];
@@ -661,6 +663,8 @@ bot.makeMessage = function ( text, msgObj ) {
 			return match;
 		},
 
+		//retrieve a value from the original message object, or if no argument
+		// provided, the msgObj itself
 		get : function ( what ) {
 			if ( !what ) {
 				return msgObj;

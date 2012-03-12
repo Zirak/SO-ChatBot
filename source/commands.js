@@ -160,7 +160,7 @@ var commands = {
 
 		//check for searching by username, which here just means "there's no
 		// digit in there"
-		if ( /\D$/.test(usrid) ) {
+		if ( /^\D+$/.test(usrid) ) {
 			var users = [].slice.call( document
 				.getElementById( 'sidebar' )
 				.getElementsByClassName( 'user-container' ) );
@@ -179,7 +179,7 @@ var commands = {
 				usrid = ids[ index ];
 			}
 			else {
-				return 'Ca\'t find user ' + usrid + ' in this chatroom.';
+				return 'Can\'t find user ' + usrid + ' in this chatroom.';
 			}
 		}
 
@@ -197,6 +197,9 @@ commands.define = (function () {
 var cache = {};
 
 return function ( args, cb ) {
+	//we already defined it, grab from memory
+	//unless you have alzheimer
+	//in which case, you have bigger problems
 	if ( cache.hasOwnProperty(args) ) {
 		return finish( cache[args] );
 	}
@@ -210,11 +213,14 @@ return function ( args, cb ) {
 	duckyAPI += IO.urlstringify( params );
 
 	IO.jsonp({
+		//talk to the duck!
 		url : duckyAPI,
 		fun : finishCall,
 		jsonpName : 'callback'
 	});
 
+	//the duck talked back! either the xhr is complete, or the hallucinations
+	// are back
 	function finishCall ( resp ) {
 		var url = resp.AbstractURL,
 			def = resp.AbstractText;
@@ -323,7 +329,7 @@ commands.urban = function ( args, cb ) {
 };
 commands.urban.async = true;
 
-commands.parse = (function () {
+var parse = commands.parse = (function () {
 //special variables
 var variables = {
 	who : function ( msg ) {
@@ -375,7 +381,7 @@ var funcs = {
 		return Math.floor( Math.random() * (max - min + 1) ) + min;
 	}
 };
-var varRegex = /(?:.|^)\$(\w+)/g,
+var varRegex  = /(?:.|^)\$(\w+)/g,
 	funcRegex = /(?:.|^)\$(\w+)\((.*?)\)/g;
 
 //extraVars is for internal usage via other commands
@@ -523,20 +529,20 @@ commands.mdn = (function () {
 // means to just use lowercaseObjectName
 var DOMParts = {
 	'document' : '',
-	'element' : '',
-	'event' : '',
-	'form' : '',
-	'node' : 'Node',
+	'element'  : '',
+	'event'    : '',
+	'form'     : '',
+	'node'     : 'Node',
 	'nodelist' : 'NodeList',
-	'range' : '',
-	'text' : 'Text',
-	'window' : ''
+	'range'    : '',
+	'text'     : 'Text',
+	'window'   : ''
 };
 
 return function mdn ( args ) {
-	var splittedArgs = args.split( ' ' );
-	if ( splittedArgs.length > 1 ) {
-		return splittedArgs.map( mdn ).join( ' ' );
+	var splitArgs = args.split( ' ' );
+	if ( splitArgs.length > 1 ) {
+		return splitArgs.map( mdn ).join( ' ' );
 	}
 
 	var parts = args.trim().split( '.' ),
@@ -663,7 +669,6 @@ return function ( args, cb ) {
 		if ( relativeParts[0] ) {
 			//get the id(s) of the answer(s)/question(s)
 			res = relativeParts.map(function ( obj ) {
-				bot.log( obj );
 				return base + ( obj[type + '_id'] || '' );
 			}).join( ' ' );
 		}
@@ -696,55 +701,87 @@ return function ( args ) {
 
 	//a truthy value, unintuitively, means it isn't valid, because it returns
 	// an error message
-	var invalid = checkCommand( command );
-	if ( invalid ) {
-		return invalid;
+	var errorMessage = checkCommand( command );
+	if ( errorMessage ) {
+		return errorMessage;
 	}
 	command.name = command.name.toLowerCase();
 
 	bot.log( commandParts, '/learn parsed' );
 
-	var pattern = new RegExp( command.input );
+	saveCommand( command );
+	addCustomCommand( command.name, command.input, command.output );
+	return 'Command ' + command.name + ' learned';
+};
 
+function addCustomCommand ( name, input, output ) {
 	bot.addCommand({
-		name : command.name,
-		fun : customCommand,
-		description : 'User-taught command: ' + command.output,
+		name : name,
+		description : 'User-taught command: ' + output,
+
+		fun : makeCustomCommand( name, input, output ),
 		permissions : {
 			use : 'ALL',
 			del : 'ALL'
 		}
 	});
+}
+function makeCustomCommand ( name, input, output ) {
+	input = new RegExp( input );
 
-	return 'Command ' + command.name + ' learned';
+	return function ( args ) {
+		bot.log( args, name + ' input' );
 
-	function customCommand ( args ) {
-		bot.log( args, command.name + ' input' );
-
-		var cmdArgs = bot.makeMessage( command.output, args.get() );
-		return commands.parse( cmdArgs, pattern.exec(args) );
-	}
-};
+		var cmdArgs = bot.makeMessage( output, args.get() );
+		//parse is bot.commands.parse
+		return parse( cmdArgs, input.exec(args) );
+	};
+}
 
 //return a truthy value (an error message) if it's invalid, falsy if it's
 // valid
 function checkCommand ( cmd ) {
 	var somethingUndefined = Object.keys( cmd ).some(function ( key ) {
 		return !cmd[ key ];
-	});
+	}),
+		error;
 
 	if ( somethingUndefined ) {
-		return 'Illegal /learn object';
+		error = 'Illegal /learn object';
 	}
 
-	if ( !/^\w+$/.test(cmd.name) ) {
-		return 'Command name must only contain alphanumeric characters.';
+	if ( !/^[\w\-]+$/.test(cmd.name) ) {
+		error = 'Invalid command name';
 	}
 
 	if ( bot.commandExists(cmd.name.toLowerCase()) ) {
-		return 'Command ' + cmd.name + ' already exists';
+		error = 'Command ' + cmd.name + ' already exists';
 	}
+
+	return error;
 }
+
+//save the learnt command into localStorage
+function saveCommand ( cmd ) {
+	var storageKey = 'bot-commands',
+		commands = JSON.parse( localStorage[storageKey] || '[]' );
+
+	commands.push( cmd );
+	localStorage[ storageKey ] = JSON.stringify( commands );
+}
+//load the learnt commands from localStorage
+function loadCommands ( ) {
+	var storageKey = 'bot-commands',
+		commands = JSON.parse( localStorage[storageKey] || '[]' );
+
+	commands.forEach(function ( cmd ) {
+		if ( !bot.commandExists(cmd.name) ) {
+			addCustomCommand( cmd.name, cmd.input, cmd.output );
+		}
+	});
+}
+
+loadCommands();
 }());
 
 Object.keys( commands ).forEach(function ( cmdName ) {

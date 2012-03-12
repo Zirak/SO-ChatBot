@@ -20,14 +20,17 @@ bot.listen( /tell (me (?:your|the) )?(rules|laws)/, function ( msg ) {
 
 bot.listen( /give ([\w\s]+) a lick/, function ( msg ) {
 	var target = msg.matches[ 1 ], conjugation = 's';
+	//give me => you taste
 	if ( target === 'me' ) {
 		target = 'you';
 		conjugation = '';
 	}
+	//give yourself => I taste
 	else if ( target === 'yourself' ) {
 		target = 'I';
 		conjugation = '';
 	}
+	//otherwise, it's safe to use what the user gave us, plus a plural `s`
 
 	return 'Mmmm! ' + target + ' taste' + conjugation + ' just like raisin';
 });
@@ -38,8 +41,6 @@ var dictionaries = [
 	//what is a squid?
 	//what're squids?
 	//what are squids?
-	//what squid is
-	//what squids are
 	//what is an animal
 	//imagine all those above without a ?
 	//explanation in the post-mortem
