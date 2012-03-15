@@ -53,6 +53,73 @@ var commands = {
 		return 'Command ' + name + ' forgotten.';
 	},
 
+	ban : function ( args ) {
+		var msg = '',
+		toBan = args.parse().map(function ( usrid ) {
+			var id = Number( usrid );
+			//name provided instead of id
+			if ( /\D/.test(usrid) ) {
+				id = findUserid( usrid );
+			}
+
+			console.log( owners, id, owners.indexOf(id) );
+			if ( id < 0 ) {
+				msg += 'Cannot find user ' + usrid + '. ';
+			}
+			else if ( owners.indexOf(id) >= 0 ) {
+				msg += 'Cannot mindjail owner ' + usrid + '. ';
+				id = -1;
+			}
+
+			return id;
+		}).forEach( ban );
+
+		return msg;
+
+		function ban ( id ) {
+			if ( id < 0 ) {
+				return;
+			}
+
+			if ( bot.banlist.contains(id) ) {
+				msg += 'User ' + id + ' already in mindjail. ';
+			}
+			else {
+				bot.banlist.add( id );
+				msg += 'User ' + id + ' added to mindjail. ';
+			}
+		}
+	},
+
+	unban : function ( args ) {
+		var msg = '',
+		toBan = args.parse().map(function ( usrid ) {
+			var id = Number( usrid );
+			//name provided instead of id
+			if ( /\D/.test(usrid) ) {
+				id = findUserid( usrid );
+			}
+
+			if ( id < 0 ) {
+				msg += 'Cannot find user ' + usrid + '. ';
+			}
+
+			return Number( id );
+		}).forEach( unban );
+
+		return msg;
+
+		function unban ( id ) {
+			if ( !bot.banlist.contains(id) ) {
+				msg += 'User ' + id + ' isn\'t in mindjail. ';
+			}
+			else {
+				bot.banlist.remove( id );
+				msg += 'User ' + id + ' freed from mindjail. ';
+			}
+		}
+	},
+
 	regex : function ( args ) {
 		var parts = args.parse(),
 			what = parts[ 0 ], pattern = parts[ 1 ], flags = parts[ 2 ] || '';
@@ -156,34 +223,19 @@ var commands = {
 
 	user : function ( args ) {
 		var props = args.replace( ' ', '' ),
-			usrid = props || args.get( 'user_id' );
+			usrid = props || args.get( 'user_id' ), id = usrid;
 
 		//check for searching by username, which here just means "there's no
 		// digit in there"
-		if ( /^\D+$/.test(usrid) ) {
-			var users = [].slice.call( document
-				.getElementById( 'sidebar' )
-				.getElementsByClassName( 'user-container' ) );
+		if ( /^\D$/.test(usrid) ) {
+			id = findUserid( usrid );
 
-			//grab a list of user ids
-			var ids = users.map(function ( container ) {
-				return container.id.match( /\d+/ )[ 0 ];
-			});
-			//and a list of their names
-			var names = users.map(function ( container ) {
-				return container.getElementsByTagName( 'img' )[ 0 ].title;
-			});
-
-			var index = names.indexOf(usrid);
-			if ( index > -1 ) {
-				usrid = ids[ index ];
-			}
-			else {
+			if ( id < 0 ) {
 				return 'Can\'t find user ' + usrid + ' in this chatroom.';
 			}
 		}
 
-		args.directreply( 'http://stackoverflow.com/users/' + usrid );
+		args.directreply( 'http://stackoverflow.com/users/' + id );
 	},
 
 	listcommands : function () {
@@ -413,8 +465,13 @@ return function parse ( args, extraVars ) {
 			fillerArgs = parse( fillerArgs, extraVars )
 				.split( ',' ).invoke( 'trim' );
 
-			console.log( filler, fillerArgs, '/parse func call');
+			bot.log( filler, fillerArgs, '/parse func call');
 			ret += funcs[ filler ].apply( null, fillerArgs );
+		}
+
+		//it's passed as an extra function
+		else if ( extraVars.hasOwnProperty(filler) && extraVars[filler].apply ) {
+			ret += extraVars[ filler ].apply( null, fillerArgs );
 		}
 
 		return ret;
@@ -440,7 +497,7 @@ return function parse ( args, extraVars ) {
 			ret += variables[ filler ]( args );
 		}
 		//it's part of the argument variables
-		else if ( args.get(filler) ) {
+		else if ( args.get && args.get(filler) ) {
 			ret += args.get( filler );
 		}
 		//it's not defined
@@ -484,7 +541,7 @@ return function ( args ) {
 
 	//check if the user wants to reply to a message
 	var direct = false, msgObj = args.get();
-	if ( /\d+$/.test(replyTo) ) {
+	if ( /^\d+$/.test(replyTo) ) {
 		msgObj.message_id = replyTo;
 		direct = true;
 	}
@@ -795,13 +852,39 @@ Object.keys( commands ).forEach(function ( cmdName ) {
 	});
 });
 
-//only allow specific users to use /die and /live
-bot.commands.die.permissions.use = bot.commands.live.permissions.use = [
+var owners = [
 	419970, //Raynos
 	342129, //Matt McDonald
 	170224, //Ivo Wetzel
 	94197,  //Andy E
 	617762  //me (Zirak)
 ];
+//only allow specific users to use certain commands
+[ 'die', 'live', 'ban', 'unban' ].forEach(function ( cmdName ) {
+	bot.commands[ cmdName ].permissions.use = owners;
+});
+
+//utility functions used in some commands
+function findUserid ( username ) {
+	var users = [].slice.call( document
+					.getElementById( 'sidebar' )
+					.getElementsByClassName( 'user-container' )
+				);
+
+	//grab a list of user ids
+	var ids = users.map(function ( container ) {
+		return container.id.match( /\d+/ )[ 0 ];
+	});
+	//and a list of their names
+	var names = users.map(function ( container ) {
+		return container.getElementsByTagName( 'img' )[ 0 ].title;
+	});
+
+	var idx = names.indexOf( username );
+	if ( idx < 0 ) {
+		return idx;
+	}
+	return Number( ids[idx] );
+}
 
 }());

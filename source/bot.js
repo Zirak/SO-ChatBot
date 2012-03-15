@@ -250,6 +250,13 @@ var bot = window.bot = {
 
 		bot.log( msg, 'parseMessage valid' );
 
+		if ( this.banlist.contains(msgObj.user_id) ) {
+			bot.log( msgObj, 'parseMessage banned' );
+			//TODO: remove this after testing, and push if block up
+			msg.reply( 'You iz in mindjail' );
+			return;
+		}
+
 		try {
 			//it's a command
 			if ( msg.startsWith('/') ) {
@@ -451,6 +458,23 @@ var bot = window.bot = {
 	},
 	continue : function () {
 		this.stopped = false;
+	}
+};
+
+bot.banlist = [];
+bot.banlist.contains = function ( item ) {
+	return this.indexOf( item ) >= 0;
+};
+bot.banlist.add = function ( item ) {
+	return this.push( item );
+};
+bot.banlist.remove = function ( item ) {
+	var idx = this.indexOf( item );
+	if ( idx >= 0 ) {
+		return this.splice( idx, 1 );
+	}
+	else {
+		return null;
 	}
 };
 
