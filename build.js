@@ -62,6 +62,7 @@ var build = {
 	addFile : function ( filePath, idx ) {
 		if ( !this.filterer(filePath) ) {
 			build.print( 'rejected ' + filePath );
+			this.totalFiles--;
 			return;
 		}
 
