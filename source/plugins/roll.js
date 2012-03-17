@@ -140,7 +140,6 @@ var parser = {
 
 		function execute ( token, index ) {
 			var last = this.operatorStack[ index + 1 ];
-			console.log( token, last, index );
 
 			//last one is more important than we are
 			if ( last && last.precedence > token.precedence ) {
@@ -198,16 +197,30 @@ var parser = {
 	},
 
 	operate : function ( index ) {
-		if ( typeof index === 'undefined' ) {
-			index = this.operatorStack.length - 1;
-		}
-
+		//grab the two numbers we care about
+		//since the source string looks like: 2 + 1
+		// and the index param is actually the index of the operator to use,
+		// we grab the index-th number and the index-th+1 number
+		//in the above example, index = 0, we grab numberStack[0] and
+		// numberStack[1]
 		var couplet = this.numberStack.slice( index, index + 2 );
-		console.log( couplet.slice(), index, this.numberStack.slice() );
-
+		//in addition to the numbers we operate on, there's also a dice-roll
+		// operator, so we take it into consideration
 		couplet.push( this.rolls );
 
+		//arr.splice removes items and returns the removed items as an array
+		//we remove the index-th item from the operatorStack and grab its
+		// "value", which is the operator symbol (+, * etc)
+		//when we have that value, we grab the corresponding operator object
 		var op = operators[ this.operatorStack.splice(index, 1)[0].value ];
+
+		//arr.splice, as well as removing items, can also add items
+		//so, we slice-n-dice at the two numbers, grab the result of executing
+		// the operator, and add that result where we finished slicing
+		//for example:
+		// [0, 1, 2].splice( 0, 2, 42 )
+		//will make the array look like
+		// [42, 2]
 		this.numberStack.splice( index, 2, op.exec.apply(null, couplet) );
 	},
 

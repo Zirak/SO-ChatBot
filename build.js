@@ -13,6 +13,7 @@ var build = {
 
 	allTogetherNow : [],
 	totalFiles : 0,
+	filesAdded : 0,
 
 	tempFile : null,
 	totalSize : 0,
@@ -36,30 +37,30 @@ var build = {
 
 		this.totalFiles = names.length;
 		names.forEach(function ( path, idx ) {
-			this.add( this.mainFolder + path, idx );
+			this.add( this.mainFolder + path, this.allTogetherNow, idx );
 		}, this );
 	},
 
-	add : function ( path, idx ) {
-		fs.stat( path, decide );
+	add : function ( path, filesArray, idx ) {
+		fs.stat( path, branch );
 
 		var that = this;
-		function decide ( err, stat ) {
+		function branch ( err, stat ) {
 			if ( err ) {
 				throw err;
 			}
 
 			if ( stat.isDirectory() ) {
-				that.addDirectory( path, idx );
+				that.addDirectory( path, filesArray, idx );
 			}
 			else if ( stat.isFile() ) {
 				that.totalSize += stat.size;
-				that.addFile( path, idx );
+				that.addFile( path, filesArray, idx );
 			}
 		}
 	},
 
-	addFile : function ( filePath, idx ) {
+	addFile : function ( filePath, filesArray, idx ) {
 		if ( !this.filterer(filePath) ) {
 			build.print( 'rejected ' + filePath );
 			this.totalFiles--;
@@ -71,12 +72,13 @@ var build = {
 		// after it to the right
 		var that = this;
 		preprocessor( filePath, function ( data ) {
-			that.allTogetherNow.splice( idx, 0, data );
+			filesArray[ idx ] = data;
+			that.filesAdded++;
 			that.addComplete();
 		});
 	},
 
-	addDirectory : function ( dirPath, idx ) {
+	addDirectory : function ( dirPath, filesArray, idx ) {
 		var that = this;
 		fs.readdir( dirPath, function ( err, files ) {
 			if ( err ) {
@@ -85,9 +87,10 @@ var build = {
 
 			//-1 because the folder itself was included in the initial count
 			that.totalFiles += files.length - 1;
+			var arr = filesArray[ idx ] = [];
 
-			files.forEach(function ( subpath ) {
-				that.add( dirPath + subpath, idx++ );
+			files.forEach(function ( subpath, idx ) {
+				that.add( dirPath + subpath, arr, idx );
 			});
 		});
 	},
@@ -106,15 +109,82 @@ var build = {
 	},
 
 	addComplete : function () {
-		if ( this.allTogetherNow.length >= this.totalFiles ) {
+		if ( this.filesAdded >= this.totalFiles ) {
 			build.print( 'all files added' );
-			var code = this.allTogetherNow.join( '\n;\n' );
+			var code = this.buildFinalCodeString();
 
 			this.write( code );
 
 			if ( this.doMinify ) {
 				minifier.minify( code, this.minEndCallback );
 			}
+		}
+	},
+
+	buildFinalCodeString : function () {
+		return concat( this.allTogetherNow );
+
+		function concat ( filesArray ) {
+			return filesArray.reduce(function ( ret, file ) {
+
+				//we're dealing with a directory
+				if ( Array.isArray(file) ) {
+					return ret + concat( file );
+				}
+
+				//a regular file
+				return ret + file + '\n;\n';
+			}, '');
+		}
+	}
+};
+
+var minifier = {
+	outputName : 'master.min.js',
+	outputSize : 0,
+
+	minify : function ( code, callback ) {
+		build.print( '\nminifying...' );
+
+		var opts = {
+			host : 'marijnhaverbeke.nl',
+			path : '/uglifyjs',
+			method : 'POST',
+			headers : {
+				'Content-Type' : 'application/x-www-form-urlencoded'
+			}
+		};
+		var data = {
+			//the semi-colon is to be sure no weird things will happen with
+			// anonym-functions executing other anonym-functions...
+			'js_code' : code,
+			'utf8' : true
+		};
+
+		var writeStream = fs.createWriteStream(
+			this.outputName,
+			{flags : 'w', encoding : 'utf8'}
+		);
+
+		var that = this;
+
+		var req = http.request( opts, function ( resp ) {
+			resp.setEncoding( 'utf8' );
+
+			resp.on( 'data', write );
+
+			resp.on( 'end', function () {
+				writeStream.end();
+
+				callback( that.outputName, that.outputSize );
+			});
+		});
+
+		req.end( querystring.stringify(data) );
+
+		function write ( data ) {
+			writeStream.write( data );
+			that.outputSize += data.length;
 		}
 	}
 };
@@ -205,56 +275,6 @@ var preprocessor = function ( filePath, cb ) {
 
 	function finish () {
 		cb( source );
-	}
-};
-
-var minifier = {
-	outputName : 'master.min.js',
-	outputSize : 0,
-
-	minify : function ( code, callback ) {
-		build.print( '\nminifying...' );
-
-		var opts = {
-			host : 'marijnhaverbeke.nl',
-			path : '/uglifyjs',
-			method : 'POST',
-			headers : {
-				'Content-Type' : 'application/x-www-form-urlencoded'
-			}
-		};
-		var data = {
-			//the semi-colon is to be sure no weird things will happen with
-			// anonym-functions executing other anonym-functions...
-			'js_code' : code,
-			'utf8' : true
-		};
-
-		var writeStream = fs.createWriteStream(
-			this.outputName,
-			{flags : 'w', encoding : 'utf8'}
-		);
-
-		var that = this;
-
-		var req = http.request( opts, function ( resp ) {
-			resp.setEncoding( 'utf8' );
-
-			resp.on( 'data', write );
-
-			resp.on( 'end', function () {
-				writeStream.end();
-
-				callback( that.outputName, that.outputSize );
-			});
-		});
-
-		req.end( querystring.stringify(data) );
-
-		function write ( data ) {
-			writeStream.write( data );
-			that.outputSize += data.length;
-		}
 	}
 };
 
