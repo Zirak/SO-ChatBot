@@ -454,8 +454,6 @@ bot.banlist.remove = function ( item ) {
 	}
 };
 
-//#build parseCommandArgs.js
-
 bot.Command = function ( cmd ) {
 	cmd.name = cmd.name.toLowerCase();
 
