@@ -145,9 +145,10 @@ var IO = window.IO = {
 		};
 	}()),
 
-	loadScript : function ( url ) {
+	loadScript : function ( url, cb ) {
 		var script = document.createElement( 'script' );
 		script.src = url;
+		script.onload = cb;
 		document.head.appendChild( script );
 	}
 };
@@ -226,7 +227,6 @@ return function ( html ) {
 
 ////bot start
 var bot = window.bot = {
-	name : 'Zirak',
 	invocationPattern : '!!',
 
 	roomid : parseFloat( location.pathname.match(/\d+/)[0] ),
@@ -246,7 +246,7 @@ var bot = window.bot = {
 
 		var msg = IO.decodehtml(msgObj.content);
 		msg = msg.slice( this.invocationPattern.length ).trim();
-		msg = this.makeMessage( msg, msgObj );
+		msg = this.Message( msg, msgObj );
 
 		bot.log( msg, 'parseMessage valid' );
 
@@ -313,7 +313,7 @@ var bot = window.bot = {
 
 		bot.log( cmdObj, 'parseCommand calling' );
 
-		var args = this.makeMessage(
+		var args = this.Message(
 			//+ 1 is for the / in the message
 			msg.slice( commandName.length + 1 ).trim(),
 			msg.get()
@@ -414,33 +414,9 @@ var bot = window.bot = {
 
 	//some awesome in function form
 	addCommand : function ( cmd ) {
-		cmd.name = cmd.name.toLowerCase();
-
-		cmd.permissions = cmd.permissions || {};
-		cmd.permissions.use = cmd.permissions.use || 'ALL';
-		cmd.permissions.del = cmd.permissions.del || 'NONE';
-
-		cmd.description = cmd.description || '';
-
-		cmd.canUse = function ( usrid ) {
-			var use = this.permissions.use;
-			return use === 'ALL' || use !== 'NONE' &&
-				use.indexOf( usrid ) > -1;
-		};
-
-		cmd.canDel = function ( usrid ) {
-			var del = this.permissions.del;
-			return del !== 'NONE' && del === 'ALL' ||
-				del.indexOf( usrid ) > -1;
-		};
-
-		cmd.exec = function () {
-			return this.fun.apply( this.thisArg, arguments );
-		};
-
-		cmd.del = function () {
-			delete bot.commands[ cmd.name ];
-		};
+		if ( !cmd.exec || !cmd.del ) {
+			cmd = this.Command( cmd );
+		}
 
 		this.commands[ cmd.name ] = cmd;
 		this.commandDictionary.trie.add( cmd.name );
@@ -478,169 +454,41 @@ bot.banlist.remove = function ( item ) {
 	}
 };
 
-bot.parseCommandArgs = (function () {
+//#build parseCommandArgs.js
 
-//the different states, not nearly enough to represent a female humanoid
-var S_DATA         = 0,
-	S_SINGLE_QUOTE = 1,
-	S_DOUBLE_QUOTE = 2,
-	S_NEW          = 3;
+bot.Command = function ( cmd ) {
+	cmd.name = cmd.name.toLowerCase();
 
-//and constants representing constant special chars (why aren't I special? ;_;)
-var CH_SINGLE_QUOTE = '\'',
-	CH_DOUBLE_QUOTE = '\"';
+	cmd.permissions = cmd.permissions || {};
+	cmd.permissions.use = cmd.permissions.use || 'ALL';
+	cmd.permissions.del = cmd.permissions.del || 'NONE';
 
-/*
-the "scheme" roughly looks like this:
-  args -> arg <sep> arg <sep> arg ... | Ø
-  arg  -> singleQuotedString | doubleQuotedString | string | Ø
+	cmd.description = cmd.description || '';
 
-  singleQuotedString -> 'string'
-  doubleQuotedString -> "string"
-  string -> char char char ... | Ø
-  char -> anyCharacter | <escaper>anyCharacter | Ø
+	cmd.canUse = function ( usrid ) {
+		var use = this.permissions.use;
+		return use === 'ALL' || use !== 'NONE' &&
+			use.indexOf( usrid ) > -1;
+	};
 
-Ø is the empty string
-*/
+	cmd.canDel = function ( usrid ) {
+		var del = this.permissions.del;
+		return del !== 'NONE' && del === 'ALL' ||
+			del.indexOf( usrid ) > -1;
+	};
 
-//the bad boy in the hood
-//I dunno what kind of parser this is, so I can't flaunt it or taunt with it,
-// but it was fun to make
-var parser = {
+	cmd.exec = function () {
+		return this.fun.apply( this.thisArg, arguments );
+	};
 
-	parse : function ( source, sep, esc ) {
-		//initializations are safe fun for the whole family!
-		var ret = [], arg;
+	cmd.del = function () {
+		delete bot.commands[ cmd.name ];
+	};
 
-		this.source = source;
-		this.pos = 0;
-		this.length = source.length;
-		this.state = S_DATA;
-
-		this.escaper = esc || '~';
-		this.separator = sep || ' ';
-
-		//let the parsing commence!
-		while ( this.pos < this.length ) {
-			arg = this.nextArg();
-
-			//only add the next arg if it's actually something
-			if ( arg ) {
-				ret.push( arg );
-			}
-		}
-
-		//oh noez! errorz!
-		if ( this.state !== S_DATA ) {
-			var errMsg = '';
-
-			if ( this.state === S_SINGLE_QUOTE ) {
-				errMsg = 'Expected ' + CH_SINGLE_QUOTE;
-			}
-			else if ( this.state === S_DOUBLE_QUOTE ) {
-				errMsg = 'Expected ' + CH_DOUBLE_QUOTE;
-			}
-
-			var up = new Error( 'Unexpected end of input. ' + errMsg );
-			up.column = this.pos;
-
-			throw up; //problem?
-		}
-
-		return ret;
-	},
-
-	//fetches the next argument (see the "scheme" at the top)
-	nextArg : function () {
-		var lexeme = '', ch;
-		this.state = S_DATA;
-
-		while ( true ) {
-			ch = this.nextChar();
-			if ( ch === null || this.state === S_NEW ) {
-				break;
-			}
-
-			lexeme += ch;
-		}
-
-		return lexeme;
-	},
-
-	nextChar : function ( escape ) {
-		var ch = this.source[ this.pos ];
-		this.pos++;
-
-		if ( !ch ) {
-			return null;
-		}
-
-		if ( escape ) {
-			return ch;
-		}
-
-		//l'escaping!
-		else if ( ch === this.escaper ) {
-			return this.nextChar( true );
-		}
-
-		//IM IN YO STRINGZ EATING YO CHARS
-		// a.k.a string handling starts roughly here
-
-		//single quotes are teh rulez
-		else if ( ch === CH_SINGLE_QUOTE ) {
-			//we're already inside a double-quoted string, it's just another
-			// char for us
-			if ( this.state === S_DOUBLE_QUOTE ) {
-				return ch;
-			}
-
-			//start your stringines!
-			else if ( this.state !== S_SINGLE_QUOTE ) {
-				this.state = S_SINGLE_QUOTE;
-			}
-
-			//end your stringiness!
-			else {
-				this.state = S_DATA;
-			}
-
-			return this.nextChar();
-		}
-
-		//exactly the same, just with double-quotes, which aren't quite as teh
-		// rulez
-		else if ( ch === CH_DOUBLE_QUOTE ) {
-			if ( this.state === S_SINGLE_QUOTE ) {
-				return ch;
-			}
-
-			else if ( this.state !== S_DOUBLE_QUOTE ) {
-				this.state = S_DOUBLE_QUOTE;
-			}
-
-			else {
-				this.state = S_DATA;
-			}
-
-			return this.nextChar();
-		}
-
-		//encountered a separator and you're in data-mode!? ay digity!
-		else if ( ch === this.separator && this.state === S_DATA ) {
-			this.state = S_NEW;
-		}
-
-		return ch;
-	}
+	return cmd;
 };
 
-return function () {
-	return parser.parse.apply( parser, arguments );
-};
-}());
-
-bot.makeMessage = function ( text, msgObj ) {
+bot.Message = function ( text, msgObj ) {
 	//"casting" to object so that it can be extended with cool stuff and
 	// still be treated like a string
 	var ret = Object( text );
@@ -763,18 +611,22 @@ var polling = {
 		resp = JSON.parse( resp );
 
 		var that = this;
+		//each key will be in the form of rROOMID
 		Object.keys( resp ).forEach(function ( key ) {
 			var msgObj = resp[ key ];
 
+			//t is a...something important
 			if ( msgObj.t ) {
 				that.times[ key ] = msgObj.t;
 			}
 
+			//e is an array of events, what is referred to in the bot as msgObj
 			if ( msgObj.e ) {
 				msgObj.e.forEach( that.handleMessageObject, that );
 			}
 		});
 
+		//handle all the input
 		IO.in.flush();
 	},
 
@@ -792,8 +644,11 @@ var polling = {
 				.slice( 0, msg.content.lastIndexOf('</div>') )
 				.replace( tag, '' );
 
+			//iterate over each line
 			multiline.split( '<br>' ).forEach(function ( line ) {
 				line = line.trim();
+
+				//and treat it as if it were a separate message
 				this.handleMessageObject(
 					Object.merge( msg, { content : line })
 				);
@@ -808,6 +663,7 @@ var polling = {
 
 	loopage : function () {
 		var that = this;
+
 		setTimeout(function () {
 			that.poll();
 			that.loopage();
@@ -939,6 +795,27 @@ Object.defineProperty( Array.prototype, 'invoke', {
 	configurable : true,
 	writable : true
 });
+
+//async memoizer
+Function.prototype.memoizeAsync = function ( cb, thisArg ) {
+	var cache = Object.create( null ), fun = this;
+
+	return function ( hash ) {
+		if ( cache[hash] ) {
+			return cache[ hash ];
+		}
+		//turn arguments into an array
+		var args = [].slice.call( arguments );
+
+		//and push the callback to it
+		args.push(function ( res ) {
+			cache[ hash ] = res;
+			cb.apply( thisArg, arguments );
+		});
+
+		return fun.apply( this, args );
+	};
+};
 ////utility end
 
 //a Trie suggestion dictionary, made by Esailija

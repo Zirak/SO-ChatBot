@@ -1,3 +1,4 @@
+(function () {
 bot.listen( /tell (me (?:your|the) )?(rules|laws)/, function ( msg ) {
 	var laws = [
 		'A robot may not injure a human being or, through inaction, ' +
@@ -53,9 +54,10 @@ var dictionaries = [
 ];
 
 bot.listen( dictionaries, function ( msg ) {
-	var what = msg.matches[ 1 ];
+	var what = msg.matches[ 1 ],
+		define = bot.getCommand( 'define' );
 
-	bot.commands.define.exec( what, function ( def ) {
+	define.exec( what, function ( def ) {
 		def = def.replace( what + ':', '' );
 
 		msg.reply( def );
@@ -78,3 +80,4 @@ what              --simply the word what
 )
 \??               --optional ?
 */
+}());

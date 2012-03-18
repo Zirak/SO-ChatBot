@@ -151,9 +151,9 @@ var commands = {
 
 		var parts = props.split( '.' ), exists = false, url = props, msg;
 		//parts will contain two likely components, depending on the input
-		// jQuery.prop    -  parts[0] will be jQuery, parts[1] will be prop
-		// prop           -  parts[0] will be prop
-		// jQuery.fn.prop -  that's a special case
+		// jQuery.fn.prop -  parts[0] = jQuery, parts[1] = prop
+		// jQuery.prop    -  parts[0] = jQuery, parts[1] = prop
+		// prop           -  parts[0] = prop
 
 		//jQuery API urls works like this:
 		// if it's on the jQuery object, then the url is /jQuery.property
@@ -182,6 +182,7 @@ var commands = {
 		//user wants something on the prototype?
 		// prop => prop
 		else if ( parts.length === 1 && jQuery.prototype[parts[0]] ) {
+			url = parts[ 0 ];
 			exists = true;
 		}
 
@@ -196,7 +197,7 @@ var commands = {
 			msg = 'http://api.jquery.com/' + url;
 		}
 		else {
-			msg = 'Could not find specified jQuery property ' + args;
+			msg = 'http://api.jquery.com/?s=' + encodeURIComponent( args );
 		}
 		bot.log( msg, '/jquery link' );
 
@@ -225,10 +226,11 @@ var commands = {
 		var props = args.replace( ' ', '' ),
 			usrid = props || args.get( 'user_id' ), id = usrid;
 
-		//check for searching by username, which here just means "there's no
+		//check for searching by username, which here just means "there's a non
 		// digit in there"
-		if ( /^\D$/.test(usrid) ) {
+		if ( /\D/.test(usrid) ) {
 			id = findUserid( usrid );
+			console.log( id );
 
 			if ( id < 0 ) {
 				return 'Can\'t find user ' + usrid + ' in this chatroom.';
@@ -346,7 +348,10 @@ commands.norris = function ( args, cb ) {
 commands.norris.async = true;
 
 //cb is for internal blah blah blah
-commands.urban = function ( args, cb ) {
+commands.urban = (function () {
+var cache = {};
+
+return function ( args, cb ) {
 	if ( !args.length ) {
 		return 'Y U NO PROVIDE ARGUMENTS!?';
 	}
@@ -354,7 +359,7 @@ commands.urban = function ( args, cb ) {
 	IO.jsonp({
 		url:'http://www.urbandictionary.com/iphone/search/define',
 		data : {
-			term : args.slice()
+			term : args.content
 		},
 		jsonpName : 'callback',
 		fun : complete
@@ -370,6 +375,7 @@ commands.urban = function ( args, cb ) {
 			top = resp.list[ 0 ];
 			msg = '[' + args + '](' + top.permalink + '): ' + top.definition;
 		}
+		cache[ args ] = msg;
 
 		if ( cb && cb.call ) {
 			cb( msg );
@@ -379,6 +385,7 @@ commands.urban = function ( args, cb ) {
 		}
 	}
 };
+});
 commands.urban.async = true;
 
 var parse = commands.parse = (function () {
@@ -470,7 +477,9 @@ return function parse ( args, extraVars ) {
 		}
 
 		//it's passed as an extra function
-		else if ( extraVars.hasOwnProperty(filler) && extraVars[filler].apply ) {
+		else if (
+			extraVars.hasOwnProperty(filler) && extraVars[filler].apply
+		) {
 			ret += extraVars[ filler ].apply( null, fillerArgs );
 		}
 
@@ -549,7 +558,7 @@ return function ( args ) {
 		msgObj.user_name = replyTo;
 	}
 
-	var cmdArgs = bot.makeMessage(
+	var cmdArgs = bot.Message(
 		//the + 2 is for the two spaces after each arg
 		args.slice( replyTo.length + cmdName.length + 2 ).trim(),
 		msgObj
@@ -789,7 +798,7 @@ function makeCustomCommand ( name, input, output ) {
 	return function ( args ) {
 		bot.log( args, name + ' input' );
 
-		var cmdArgs = bot.makeMessage( output, args.get() );
+		var cmdArgs = bot.Message( output, args.get() );
 		//parse is bot.commands.parse
 		return parse( cmdArgs, input.exec(args) );
 	};
@@ -867,9 +876,9 @@ var owners = [
 //utility functions used in some commands
 function findUserid ( username ) {
 	var users = [].slice.call( document
-					.getElementById( 'sidebar' )
-					.getElementsByClassName( 'user-container' )
-				);
+		.getElementById( 'sidebar' )
+		.getElementsByClassName( 'user-container' )
+	);
 
 	//grab a list of user ids
 	var ids = users.map(function ( container ) {

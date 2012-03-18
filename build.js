@@ -5,7 +5,7 @@ var fs = require( 'fs' ),
 
 //some file IO done synchronously because I'm a fat lazy bastard
 var build = {
-	mainFolder : './source/',
+	//mainFolder : './source/',
 	outputName : 'master.js',
 	outputMin  : 'master.min.js',
 
@@ -20,6 +20,9 @@ var build = {
 	outputSize : 0,
 
 	start : function ( names, filterer, end, minEnd ) {
+		if ( !Array.isArray(names) ) {
+			names = [ names ];
+		}
 		this.filterer = filterer || function () { return true; };
 
 		this.endCallback = end || function () {
@@ -37,7 +40,7 @@ var build = {
 
 		this.totalFiles = names.length;
 		names.forEach(function ( path, idx ) {
-			this.add( this.mainFolder + path, this.allTogetherNow, idx );
+			this.add( path, this.allTogetherNow, idx );
 		}, this );
 	},
 
@@ -80,6 +83,11 @@ var build = {
 
 	addDirectory : function ( dirPath, filesArray, idx ) {
 		var that = this;
+		//add a trailing slash if it's not already included
+		if ( dirPath.lastIndexOf('/') !== dirPath.length-1 ) {
+			dirPath += '/';
+		}
+
 		fs.readdir( dirPath, function ( err, files ) {
 			if ( err ) {
 				throw err;
@@ -221,7 +229,7 @@ var preprocessor = function ( filePath, cb ) {
 
 		//check to see if you're at the beginning of a line or at the beginning
 		// of the file
-		var offset, targetName = '';
+		var offset, targetName = '', targetPath;
 
 		if ( index === 0 || source[index-1] === '\n' ) {
 			offset = index + instruction.length;
@@ -236,24 +244,28 @@ var preprocessor = function ( filePath, cb ) {
 				targetName += source[ offset++ ];
 			}
 
+			targetPath = path.resolve( path.dirname(filePath), targetName );
+
 			//check to see if the file requested exists
-			path.exists( targetName, function ( exists ) {
+			path.exists( targetPath, function ( exists ) {
 				if ( !exists ) {
 					throw new Error(
-						'Cannot #build unexisting file ' + targetName +
+						'Cannot #build unexisting file ' + targetPath +
 						' (in ' + filePath + ')'
 					);
 				}
 
-				embedFile( targetName );
+				embedFile( targetPath );
 			});
 		}
+		//nothing to do here, moving along
 		else {
 			next();
 		}
 
-		function embedFile ( targetName ) {
-			fs.readFile( targetName, 'utf8', function ( err, data ) {
+		function embedFile ( targetPath ) {
+			var base = path.basename( targetPath );
+			fs.readFile( targetPath, 'utf8', function ( err, data ) {
 				if ( err ) {
 					throw err;
 				}
@@ -266,7 +278,7 @@ var preprocessor = function ( filePath, cb ) {
 					source.slice( 0, index ) +
 					data +
 					source.slice(
-						index + instruction.length + targetName.length
+						index + instruction.length + base.length
 					);
 				next();
 			});
@@ -288,16 +300,8 @@ if ( process.argv.indexOf('no-min') > -1 ) {
 	build.doMinify = false;
 }
 
-//array of files/folders, relative to build.mainFolder,
-// which is by default ./source/
-var blocks = [
-	'bot.js',
-	'commands.js',
-	'listeners.js',
-	'plugins/'
-];
 build.start(
-	blocks,
+	'./source/',
 	function ( fileName ) {
 		return (
 			//only .js files

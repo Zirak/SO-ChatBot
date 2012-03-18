@@ -13,7 +13,7 @@ var spec = function ( args ) {
 
 	bot.log( matches, '/spec done' );
 	if ( !matches.length ) {
-		return 'Nothing found in spec';
+		return args + ' could not be found in spec';
 	}
 	return matches.join( ', ' );
 };
