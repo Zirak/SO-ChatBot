@@ -18,7 +18,9 @@ var commands = {
 			return args + ': ' + desc;
 		}
 
-		return 'https://github.com/Titani/SO-ChatBot/blob/master/README.md';
+		return (
+			'https://github.com/Titani/SO-ChatBot/wiki/Interacting-with-the-bot'
+		);
 	},
 
 	live : function () {
