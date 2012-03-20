@@ -387,7 +387,7 @@ return function ( args, cb ) {
 		}
 	}
 };
-});
+}());
 commands.urban.async = true;
 
 var parse = commands.parse = (function () {
