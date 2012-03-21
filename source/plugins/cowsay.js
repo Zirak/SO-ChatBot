@@ -3,13 +3,13 @@
 //in the "template", E is for eye, T for Tongue
 //it looks more like a donkey who was involved in a sledgehammer accident
 // because of escaping and newlines
-var cow = "\n\
-        \\   ^__^\n\
-         \\  (E)\\_______\n\
-            (__)\\       )\\/\\\n\
-             T ||----w |\n\
-                ||     ||\
-";
+var cow = ["",
+"        \\   ^__^"              ,
+"         \\  (E)\\_______"      ,
+"            (__)\\       )\\/\\",
+"             T ||----w |"       ,
+"                ||     ||"
+].join("\n");
 
 
 function prettyBalloon ( message ) {
