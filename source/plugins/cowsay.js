@@ -109,8 +109,12 @@ function cowsay ( message, len, eyes, tongue ) {
 bot.addCommand({
 	name : 'cowsay',
 	fun : function ( args ) {
+		if ( !args.content ) {
+			return 'Telepathic module not loaded, please specify your demands' +
+				' in textual format.';
+		}
 		args.respond(
-			args.codify( cowsay(args) )
+			args.codify( cowsay(args.content) )
 		);
 	},
 	permissions : {
