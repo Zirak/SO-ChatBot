@@ -1,12 +1,13 @@
-(function () {
-var defaults = {
-	e : 'oo',
-	T : '  ',
-	t : false,
-	W : 40
-};
+var moo = (function () {
 
 var cowsay = {
+
+	defaults : {
+		e : 'oo',
+		T : '  ',
+		t : false,
+		W : 40
+	},
 
 	//in the "template", e is for eye, T for Tongue, L for bubble-Line
 	//it looks more like a donkey who was involved in a sledgehammer accident
@@ -21,13 +22,22 @@ var cowsay = {
 		'                ||     ||'
 	].join( '\n' ),
 
+	//message is the text to moo, opts is an optional object, mimicking the
+	// cowsay command arguments:
+	//   e  => eyes
+	//   T  => tongue
+	//   t  => is the cow thinking?
+	//   W  => word-wrapping width
+	//defaults specified in cowsay.defaults
 	moo : function ( message, opts ) {
-		this.eyes     = opts.e.slice( 0, 2 );
-		this.tongue   = opts.T.slice( 0, 2 );
+		var defs = this.defaults;
+
+		this.eyes     = rightPad( opts.e || defs.e, 2 ).slice( 0, 2 );
+		this.tongue   = rightPad( opts.T || defs.T, 2 ).slice( 0, 2 );
 		this.line     = opts.t ? 'O' : '\\';
 		this.thinking = opts.t;
 
-		this.message  = wordWrap( message, opts.W );
+		this.message  = wordWrap( message, opts.W || defs.W );
 
 		//cowsay is actually the result of breeding a balloon and a cow
 		return this.makeBalloon() + this.makeCow();
@@ -35,9 +45,9 @@ var cowsay = {
 
 	makeCow : function () {
 		return this.cow
-			.replace( 'e', this.eyes )
-			.replace( 'T', this.tongue )
-			.replace( new RegExp('L', 'g'), this.line );
+			.replace( /e/g, this.eyes )
+			.replace( /T/g, this.tongue )
+			.replace( /L/g, this.line );
 	},
 
 	makeBalloon : function () {
@@ -74,6 +84,8 @@ var cowsay = {
 				padders = border.slice( -2 );
 			}
 
+			//return the message, padded with spaces to the right as to fit
+			// with the border, enclosed
 			return padders[ 0 ] + ' ' +
 				rightPad( line, longest ) + ' ' +
 				padders[ 1 ];
@@ -85,16 +97,23 @@ var cowsay = {
 		return balloon.join( '\n' );
 	},
 
+	//choose the borders to use for the balloon
 	chooseBorders : function ( lineCount ) {
-		if ( this.thinking ) {
-			return [ '(', ')', '(', ')', '(', ')' ];
-		}
-
 		var border;
-		if ( lineCount === 1 ) {
+
+		//thought bubbles always look the same
+		if ( this.thinking ) {
+			border = [ '(', ')', '(', ')', '(', ')' ];
+		}
+		//single line messages are enclosed in < > and have no other borders
+		// < mooosage >
+		else if ( lineCount === 1 ) {
 			border = [ '<', '>' ];
 		}
-		//good enough
+		//multi-line messages have diaganol borders and straight walls
+		// / moosage line 1 \
+		// | moosage line 2 |
+		// \ moosage line 3 /
 		else {
 			border = [ '/', '\\', '\\', '/', '|', '|' ];
 		}
@@ -130,6 +149,13 @@ function rightPad ( str, len, padder ) {
 	return str;
 }
 
+
+return function () {
+	return cowsay.moo.apply( cowsay, arguments );
+};
+
+}());
+
 bot.listen(
 	/cow(think|say)\s(?:([eT])=(.{0,2})\s)?(?:([eT])=(.{0,2})\s)?(.+)/,
 
@@ -146,15 +172,11 @@ bot.listen(
 				opts[ args[i] ] = args[ i + 1 ];
 			}
 		}
-		console.log( opts );
+
 		//cowsay or cowthink?
 		opts.t = msg.matches[ 1 ] === 'think';
-		opts = Object.merge( defaults, opts );
-		console.log( opts );
 
-		var cowreact = cowsay.moo( msg.matches.slice(-1)[0], opts );
+		var cowreact = moo( msg.matches.slice(-1)[0], opts );
 		msg.respond( msg.codify(cowreact) );
 	}
 );
-
-}());
