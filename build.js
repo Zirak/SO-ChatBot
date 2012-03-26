@@ -71,10 +71,11 @@ var build = {
 		}
 
 		build.print( 'adding ' + filePath );
-		//add the file contents as the idx'th item, pushing everything there and
-		// after it to the right
+		//add the file contents as the idx'th item, pushing everything there
+		// and after it to the right
 		var that = this;
 		preprocessor( filePath, function ( data ) {
+			console.log( filePath );
 			filesArray[ idx ] = data;
 			that.filesAdded++;
 			that.addComplete();
@@ -97,9 +98,11 @@ var build = {
 			that.totalFiles += files.length - 1;
 			var arr = filesArray[ idx ] = [];
 
-			files.forEach(function ( subpath, idx ) {
+			files.forEach( add );
+
+			function add ( subpath, idx ) {
 				that.add( dirPath + subpath, arr, idx );
-			});
+			}
 		});
 	},
 
@@ -126,6 +129,7 @@ var build = {
 			if ( this.doMinify ) {
 				minifier.minify( code, this.minEndCallback );
 			}
+			code = null;
 		}
 	},
 
@@ -133,16 +137,17 @@ var build = {
 		return concat( this.allTogetherNow );
 
 		function concat ( filesArray ) {
-			return filesArray.reduce(function ( ret, file ) {
+			return filesArray.map( push ).join( '\n;\n' );
+		}
 
-				//we're dealing with a directory
-				if ( Array.isArray(file) ) {
-					return ret + concat( file );
-				}
+		function push ( suspect ) {
+			//we're dealing with a directory
+			if ( Array.isArray(suspect) ) {
+				return concat( suspect );
+			}
 
-				//a regular file
-				return ret + file + '\n;\n';
-			}, '');
+			//a regular file
+			return suspect;
 		}
 	}
 };
@@ -155,18 +160,16 @@ var minifier = {
 		build.print( '\nminifying...' );
 
 		var opts = {
-			host : 'marijnhaverbeke.nl',
-			path : '/uglifyjs',
-			method : 'POST',
+			host    : 'marijnhaverbeke.nl',
+			path    : '/uglifyjs',
+			method  : 'POST',
 			headers : {
 				'Content-Type' : 'application/x-www-form-urlencoded'
 			}
 		};
 		var data = {
-			//the semi-colon is to be sure no weird things will happen with
-			// anonym-functions executing other anonym-functions...
 			'js_code' : code,
-			'utf8' : true
+			'utf8'    : true
 		};
 
 		var writeStream = fs.createWriteStream(
@@ -197,99 +200,130 @@ var minifier = {
 	}
 };
 
-var preprocessor = function ( filePath, cb ) {
-	var lastIndex = 0, index,
-		source,
-		instruction = '//#build ';
+var preprocessor = (function () {
 
-	fs.readFile( filePath, 'utf8', function ( err, data ) {
-		if ( err ) {
-			throw err;
-		}
-		source = data;
+var preprocessor = {
+	lastIndex : 0,
+	index : 0,
+	instruction : '//#build ',
+	source : '',
+	filePath : '',
 
-		preprocess(function cont () {
-			//this is the continuation function, which is called when either
-			// the processor finished doing its job, or if the processor
-			// skipped a match for any reason.
-			// it sets the index for the next match to begin with, and
-			// calls the preprocess function again. recursion ftw
-			lastIndex = index + instruction.length;
-			preprocess( cont );
+	exec : function ( filePath, cb ) {
+		this.endCallback = cb;
+		this.filePath = filePath;
+
+		var that = this;
+		fs.readFile( filePath, 'utf8', function ( err, data ) {
+			if ( err ) {
+				throw err;
+			}
+			that.source = data;
+			that.preprocess();
 		});
-	});
+	},
 
-	function preprocess ( next ) {
-		index = source.indexOf( instruction, lastIndex );
+	preprocess : function () {
+		this.index = this.source.indexOf( this.instruction, this.lastIndex );
 
-		if ( index < 0 ) {
-			finish();
+		if ( this.index < 0 ) {
+			this.endCallback( this.source );
 			return;
 		}
 
 		//check to see if you're at the beginning of a line or at the beginning
 		// of the file
-		var offset, targetName = '', targetPath;
+		var targetName, targetPath;
 
-		if ( index === 0 || source[index-1] === '\n' ) {
-			offset = index + instruction.length;
+		if (
+			this.index === 0 || this.source[this.index-1] === '\n'
+		) {
+			targetName = this.fetchFilename();
+			targetPath = path.resolve(
+				path.dirname( this.filePath ), targetName
+			);
 
-			//capture the filename:
-			//#build blah.js
-			//       [-----]  <-- this part, everything until a newline or EOF
-			while (
-				source[offset] &&
-				source[offset] !== '\n' && source[offset] !== '\r'
-			) {
-				targetName += source[ offset++ ];
-			}
-
-			targetPath = path.resolve( path.dirname(filePath), targetName );
-
-			//check to see if the file requested exists
-			path.exists( targetPath, function ( exists ) {
-				if ( !exists ) {
-					throw new Error(
-						'Cannot #build unexisting file ' + targetPath +
-						' (in ' + filePath + ')'
-					);
-				}
-
-				embedFile( targetPath );
-			});
+			this.readTarget( targetPath );
 		}
 		//nothing to do here, moving along
 		else {
-			next();
+			this.continuation();
+		}
+	},
+
+	embedFile : function ( targetPath ) {
+		var base = path.basename( targetPath ),
+			that = this;
+
+		fs.readFile( targetPath, 'utf8', function ( err, data ) {
+			if ( err ) {
+				throw err;
+			}
+
+			//replace the comment with the file content
+			//TODO: make this better
+			//this seems INCREDIBLY inefficient, and should be replaced with
+			// some better solution
+			that.source =
+				that.source.slice( 0, that.index ) +
+				data +
+				that.source.slice(
+					that.index + that.instruction.length + base.length
+				);
+
+			that.continuation();
+		});
+	},
+
+	readTarget : function ( targetPath ) {
+		var that = this;
+		//check to see if the file requested exists
+		path.exists( targetPath, function ( exists ) {
+			if ( !exists ) {
+				throw new Error(
+					'Cannot #build unexisting file ' + targetPath +
+						' (in ' + this.filePath + ')'
+				);
+			}
+
+			that.embedFile( targetPath );
+		});
+	},
+
+	fetchFilename : function () {
+		var ret = '',
+			offset = this.index + this.instruction.length;
+
+		//capture the filename:
+		//#build blah.js
+		//       [-----]  <-- this part, everything until a newline or EOF
+		while (
+			this.source[offset] &&
+			this.source[offset] !== '\n' &&
+			this.source[offset] !== '\r'
+		) {
+			ret += this.source[ offset++ ];
 		}
 
-		function embedFile ( targetPath ) {
-			var base = path.basename( targetPath );
-			fs.readFile( targetPath, 'utf8', function ( err, data ) {
-				if ( err ) {
-					throw err;
-				}
+		return ret;
+	},
 
-				//replace the comment with the file content
-				//TODO: make this better
-				//this seems INCREDIBLY inefficient, and should be replaced with
-				// some better solution
-				source =
-					source.slice( 0, index ) +
-					data +
-					source.slice(
-						index + instruction.length + base.length
-					);
-				next();
-			});
-		}
-	}
-
-	function finish () {
-		cb( source );
+	continuation : function () {
+		//this is the continuation function, which is called when either
+		// the processor finished doing its job, or if the processor
+		// skipped a match for any reason.
+		// it sets the index for the next match to begin with, and
+		// calls the preprocess function again. recursion ftw
+		this.lastIndex = this.index + this.instruction.length;
+		this.preprocess();
 	}
 };
 
+return function () {
+	var processor = Object.create( preprocessor );
+	return processor.exec.apply( processor, arguments );
+};
+}());
 build.print = function ( out, overrideVerbose ) {
 	if ( !this.verbose || overrideVerbose ) {
 		console.log( out );

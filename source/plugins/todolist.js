@@ -1,3 +1,4 @@
+(function () {
 var list = JSON.parse( localStorage.getItem('todo') || '{}' );
 
 var userlist = function ( usrid ) {
@@ -9,20 +10,18 @@ var userlist = function ( usrid ) {
 
 	return {
 		get : function ( count ) {
-			return usr.map(function ( item, index ) {
+			return usr.slice( count ).map(function ( item, index ) {
 				return '(' + (index+1) + ')' + item;
 			}).join( ', ' );
 		},
 
 		add : function ( item ) {
 			usr.push( item );
-
 			return true;
 		},
 
 		remove : function ( item ) {
 			toRemove.push( usr.indexOf(item) );
-
 			return true;
 		},
 		removeByIndex : function ( idx ) {
@@ -93,13 +92,13 @@ var todo = function ( args ) {
 		});
 
 		if ( res ) {
-			ret = 'Items added.';
+			ret = 'Item(s) added.';
 		}
 
 		bot.log( ret, 'todo add' );
 	}
 
-	else if ( action === 'remove' ) {
+	else if ( action === 'rem' ) {
 		res = items.every(function ( item ) {
 
 			if ( /^\d+$/.test(item) ) {
@@ -117,10 +116,10 @@ var todo = function ( args ) {
 		});
 
 		if ( res ) {
-			ret = 'Items removed.';
+			ret = 'Item(s) removed.';
 		}
 
-		bot.log( ret, 'todo remove' );
+		bot.log( ret, 'todo rem' );
 	}
 	//not a valid action
 	else {
@@ -142,8 +141,10 @@ bot.addCommand({
 		del : 'NONE'
 	},
 	description : 'Your personal todo list. ' +
-		'`/get [count]` retrieves everything or count items. ' +
-		'`/add [items]` adds n-items to your todo list (make sure items ' +
+		'`get [count]` retrieves everything or count items. ' +
+		'`add [items]` adds n-items to your todo list (make sure items ' +
 			'with spaces are wrapped in quotes) ' +
-		'`/remove [indices]` removes items specified by indice'
+		'`rem [indices]` removes items specified by indice'
 });
+
+}());

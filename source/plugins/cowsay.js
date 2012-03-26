@@ -24,14 +24,16 @@ var cowsay = {
 
 	//message is the text to moo, opts is an optional object, mimicking the
 	// cowsay command arguments:
-	//   e  => eyes
-	//   T  => tongue
-	//   t  => is the cow thinking?
-	//   W  => word-wrapping width
+	//   e  =>  eyes
+	//   T  =>  tongue
+	//   t  =>  is the cow thinking?
+	//   W  =>  word-wrapping width
 	//defaults specified in cowsay.defaults
 	moo : function ( message, opts ) {
 		var defs = this.defaults;
 
+		//the eyes and tongue should be exactly 2 characters
+		//if the ones the user gave are too short, pad'em
 		this.eyes     = rightPad( opts.e || defs.e, 2 ).slice( 0, 2 );
 		this.tongue   = rightPad( opts.T || defs.T, 2 ).slice( 0, 2 );
 		this.line     = opts.t ? 'O' : '\\';
@@ -69,6 +71,7 @@ var cowsay = {
 		//the border of the speech bubble
 			border = this.chooseBorders( lineCount );
 
+		//for every line of the message...
 		var balloon = message.map(function ( line, idx ) {
 			var padders;
 			//top left and top right
@@ -85,14 +88,16 @@ var cowsay = {
 			}
 
 			//return the message, padded with spaces to the right as to fit
-			// with the border, enclosed
-			return padders[ 0 ] + ' ' +
+			// with the border, enclosed in the matching borders
+			return (
+				padders[ 0 ] + ' ' +
 				rightPad( line, longest ) + ' ' +
-				padders[ 1 ];
+				padders[ 1 ]
+			);
 		});
 
 		balloon.unshift( ' ' + topLine );
-		balloon.push( ' ' + btmLine );
+		balloon.push   ( ' ' + btmLine );
 
 		return balloon.join( '\n' );
 	},
@@ -102,6 +107,8 @@ var cowsay = {
 		var border;
 
 		//thought bubbles always look the same
+		// ( moosage line 1 )
+		// ( moosage line 2 )
 		if ( this.thinking ) {
 			border = [ '(', ')', '(', ')', '(', ')' ];
 		}
@@ -124,10 +131,10 @@ var cowsay = {
 
 
 function wordWrap ( str, len ) {
-	var lineLen = 0,
-		ret = [];
+	var lineLen = 0;
+	return str.split( ' ' ).reduce( handleWord, '' );
 
-	return str.split( ' ' ).reduce(function ( ret, word ) {
+	function handleWord ( ret, word ) {
 		var wordLen = word.length;
 
 		//let the wrapping...commence!
@@ -138,7 +145,7 @@ function wordWrap ( str, len ) {
 		lineLen += wordLen + 1; //+1 for the space we now add
 
 		return ret + word + ' ';
-	}, '' );
+	}
 }
 
 function rightPad ( str, len, padder ) {

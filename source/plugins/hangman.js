@@ -18,13 +18,14 @@ var randomWord = function ( cb ) {
 var game = {
 
 	//the dude is just a template to be filled with parts
-	dude :
-		"  +---+\n" +
-		"  |   |\n" +
-		"  |  413\n" +
-		"  |   2\n" +
-		"  |  5 6\n" +
-		"__+__\n",
+	dude : [
+		'  +---+' ,
+		'  |   |' ,
+		'  |  413',
+		'  |   2' ,
+		'  |  5 6',
+		'__+__'
+	].join( '\n' ),
 
 	parts : [ '', 'O', '|', '/', '\\', '/', '\\' ],
 
@@ -43,17 +44,21 @@ var game = {
 
 	receiveMessage : function ( msg ) {
 		this.msg = msg;
+
 		if ( this.end ) {
 			this.new();
 		}
-		else {
+		if ( msg.content ) {
 			return this.handleGuess( msg );
 		}
 	},
 
 	new : function () {
 		var that = this;
+
 		randomWord(function ( word ) {
+			bot.log( word + ' /hang random' );
+
 			game.word = word;
 			that.revealed = new Array( word.length + 1 ).join( '-' );
 			that.guesses = [];
@@ -67,22 +72,9 @@ var game = {
 		});
 	},
 
-	register : function () {
-		this.unregister(); //to make sure it's not added multiple times
-		IO.register( 'beforeoutput', this.buildOutput, this );
-
-		this.end = false;
-	},
-	unregister : function () {
-		IO.unregister( 'beforeoutput', this.buildOutput );
-
-		this.end = true;
-	},
-
 	handleGuess : function ( msg ) {
-		var guess = msg.slice();
+		var guess = msg.slice().toLowerCase();
 		bot.log( guess, 'handleGuess' );
-		guess = guess.toLowerCase();
 
 		if ( !this.validGuessRegex.test(guess) ) {
 			return 'Only alphanumeric and whitespace characters allowed';
@@ -94,22 +86,19 @@ var game = {
 		}
 
 		//or if it's the wrong length
-		if ( this.word.length < guess.length ) {
-			return guess + ' is longer than what you\'re after!';
+		if ( guess.length < this.word.length ) {
+			return guess + ' is shorter than the word.';
 		}
 
 		//replace all occurences of guest within the hidden word with their
 		// actual characters
 		var indexes = this.word.indexesOf( guess );
-		if ( indexes.length ) {
-
-			indexes.forEach(function ( index ) {
-				this.uncoverPart( guess, index );
-			}, this);
-		}
+		indexes.forEach(function ( index ) {
+			this.uncoverPart( guess, index );
+		}, this);
 
 		//not found in secret word, penalize the evil doers!
-		else {
+		if ( !indexes.length ) {
 			this.guessNum++;
 		}
 
@@ -122,6 +111,7 @@ var game = {
 		if ( this.loseCheck() ) {
 			return this.lose();
 		}
+
 		if ( this.winCheck() ) {
 			return this.win();
 		}
@@ -129,29 +119,25 @@ var game = {
 
 	//unearth a portion of the secret word
 	uncoverPart : function ( guess, startIndex ) {
-		var revealed = '';
-
-		revealed += this.revealed.slice( 0, startIndex );
-		revealed += guess;
-		revealed += this.revealed.slice( startIndex + guess.length );
-
-		this.revealed = revealed;
+		this.revealed =
+			this.revealed.slice( 0, startIndex ) +
+			guess +
+			this.revealed.slice( startIndex + guess.length );
 	},
 
 	//attach the hangman drawing to the already guessed list and to the
 	// revealed portion of the secret word
 	preparePrint : function () {
-		var hangy = '', that = this;
+		var that = this;
 
 		//replace the placeholders in the dude with body parts
-		hangy += this.dude.replace( /\d/g, function ( part ) {
+		var dude = this.dude.replace( /\d/g, function ( part ) {
 			return part > that.guessNum ? ' ' : that.parts[ part ];
 		});
 
-		hangy += this.guesses.sort().join( ', ' ) + '\n';
-		hangy += this.revealed;
+		var belowDude = this.guesses.sort().join( ', ' ) + '\n' + this.revealed;
 
-		hangy = this.msg.codify( hangy );
+		var hangy = this.msg.codify( dude + belowDude );
 		bot.log( hangy, this.msg );
 		this.msg.respond( hangy );
 	},
@@ -162,18 +148,30 @@ var game = {
 		return 'Correct! The phrase is ' + this.word + '.';
 	},
 
-	winCheck : function () {
-		return this.word === this.revealed;
-	},
-
 	//lose the game. less bitter messages? maybe.
 	lose : function () {
 		this.unregister();
 		return 'You people suck. The phrase was ' + this.word;
 	},
 
+	winCheck : function () {
+		return this.word === this.revealed;
+	},
+
 	loseCheck : function () {
 		return this.guessNum >= this.maxGuess;
+	},
+
+	register : function () {
+		this.unregister(); //to make sure it's not added multiple times
+		IO.register( 'beforeoutput', this.buildOutput, this );
+
+		this.end = false;
+	},
+	unregister : function () {
+		IO.unregister( 'beforeoutput', this.buildOutput );
+
+		this.end = true;
 	},
 
 	buildOutput : function () {

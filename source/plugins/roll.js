@@ -16,18 +16,21 @@ var operators = {
 			return a + b;
 		}
 	},
+
 	'-' : {
 		precedence : 1,
 		exec : function ( a, b ) {
 			return a - b;
 		}
 	},
+
 	'*' : {
 		precedence : 2,
 		exec : function ( a, b ) {
 			return a * b;
 		}
 	},
+
 	'/' : {
 		precedence : 2,
 		exec : function ( a, b ) {
@@ -37,6 +40,7 @@ var operators = {
 			return a / b;
 		}
 	},
+
 	'd' : {
 		precedence : 3,
 		exec : function ( rolls, sides, rollsSoFar ) {
@@ -94,12 +98,12 @@ var parser = {
 
 	//take the source string, and break it down into tokens
 	tokenize : function () {
-		var token, last;
+		var token, last, ch;
 
 		for ( ; this.pos < this.len; this.pos++ ) {
-			this.lookahead = this.source[ this.pos ];
+			ch = this.lookahead = this.source[ this.pos ];
 
-			if ( whitespace.hasOwnProperty(this.lookahead) ) {
+			if ( whitespace.hasOwnProperty(ch) ) {
 				continue;
 			}
 
@@ -131,9 +135,11 @@ var parser = {
 	execute : function () {
 		var idx;
 
-		while ( (idx = this.operatorStack.length) ) {
+		while ( idx = this.operatorStack.length ) {
 			//execute, BACKWARDS! OH THE INSANITY
 			while ( 0 <=-- idx ) {
+				//.call is used so that `this` in execute will still refer to
+				// the parser
 				execute.call( this, this.operatorStack[idx], idx );
 			}
 		}
@@ -262,8 +268,7 @@ var roll = function ( args ) {
 	}
 
 	var res = parsePrecedence( args );
-
-	return res.rolls.join() + ' => ' + res.total;
+	return res.rolls + ' => ' + res.total;
 };
 
 bot.addCommand({

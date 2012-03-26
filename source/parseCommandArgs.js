@@ -1,3 +1,6 @@
+(function () {
+"use strict";
+
 var target;
 if ( typeof bot !== 'undefined' ) {
 	target = bot;
@@ -12,6 +15,8 @@ else {
 target.parseCommandArgs = (function () {
 
 //the different states, not nearly enough to represent a female humanoid
+//you know you're building something fancy when it has constants with undescores
+// in their name
 var S_DATA         = 0,
 	S_SINGLE_QUOTE = 1,
 	S_DOUBLE_QUOTE = 2,
@@ -41,16 +46,27 @@ var parser = {
 
 	parse : function ( source, sep, esc ) {
 		//initializations are safe fun for the whole family!
-		var ret = [], arg;
-
+		//later-edit: the above comment is one of the weirdest I've ever written
 		this.source = source;
 		this.pos = 0;
 		this.length = source.length;
 		this.state = S_DATA;
+		this.lookahead = '';
 
 		this.escaper = esc || '~';
 		this.separator = sep || ' ';
 
+		var args = this.tokenize();
+
+		//oh noez! errorz!
+		if ( this.state !== S_DATA ) {
+			this.throwFinishError();
+		}
+
+		return args;
+	},
+
+	tokenize : function () {
 		//let the parsing commence!
 		while ( this.pos < this.length ) {
 			arg = this.nextArg();
@@ -60,25 +76,6 @@ var parser = {
 				ret.push( arg );
 			}
 		}
-
-		//oh noez! errorz!
-		if ( this.state !== S_DATA ) {
-			var errMsg = '';
-
-			if ( this.state === S_SINGLE_QUOTE ) {
-				errMsg = 'Expected ' + CH_SINGLE_QUOTE;
-			}
-			else if ( this.state === S_DOUBLE_QUOTE ) {
-				errMsg = 'Expected ' + CH_DOUBLE_QUOTE;
-			}
-
-			var up = new Error( 'Unexpected end of input. ' + errMsg );
-			up.column = this.pos;
-
-			throw up; //problem?
-		}
-
-		return ret;
 	},
 
 	//fetches the next argument (see the "scheme" at the top)
@@ -99,7 +96,7 @@ var parser = {
 	},
 
 	nextChar : function ( escape ) {
-		var ch = this.source[ this.pos ];
+		var ch = this.lookahead = this.source[ this.pos ];
 		this.pos++;
 
 		if ( !ch ) {
@@ -115,58 +112,90 @@ var parser = {
 			return this.nextChar( true );
 		}
 
-		//IM IN YO STRINGZ EATING YO CHARS
-		// a.k.a string handling starts roughly here
+		//encountered a separator and you're in data-mode!? ay digity!
+		else if ( ch === this.separator && this.state === S_DATA ) {
+			this.state = S_NEW;
+			return ch;
+		}
+
+		return this.string();
+	},
+
+	//IM IN YO STRINGZ EATING YO CHARS
+	// a.k.a string handling starts roughly here
+	string : function () {
+		var ch = this.lookahead;
 
 		//single quotes are teh rulez
-		else if ( ch === CH_SINGLE_QUOTE ) {
-			//we're already inside a double-quoted string, it's just another
-			// char for us
-			if ( this.state === S_DOUBLE_QUOTE ) {
-				return ch;
-			}
-
-			//start your stringines!
-			else if ( this.state !== S_SINGLE_QUOTE ) {
-				this.state = S_SINGLE_QUOTE;
-			}
-
-			//end your stringiness!
-			else {
-				this.state = S_DATA;
-			}
-
-			return this.nextChar();
+		if ( ch === CH_SINGLE_QUOTE ) {
+			return this.singleQuotedString();
 		}
 
 		//exactly the same, just with double-quotes, which aren't quite as teh
 		// rulez
 		else if ( ch === CH_DOUBLE_QUOTE ) {
-			if ( this.state === S_SINGLE_QUOTE ) {
-				return ch;
-			}
-
-			else if ( this.state !== S_DOUBLE_QUOTE ) {
-				this.state = S_DOUBLE_QUOTE;
-			}
-
-			else {
-				this.state = S_DATA;
-			}
-
-			return this.nextChar();
-		}
-
-		//encountered a separator and you're in data-mode!? ay digity!
-		else if ( ch === this.separator && this.state === S_DATA ) {
-			this.state = S_NEW;
+			return this.doubleQuotedString();
 		}
 
 		return ch;
+	},
+
+	singleQuotedString : function () {
+		//we're already inside a double-quoted string, it's just another
+		// char for us
+		if ( this.state === S_DOUBLE_QUOTE ) {
+			return this.lookahead;
+		}
+
+		//start your stringines!
+		else if ( this.state !== S_SINGLE_QUOTE ) {
+			this.state = S_SINGLE_QUOTE;
+		}
+
+		//end your stringiness!
+		else {
+			this.state = S_DATA;
+		}
+
+		return this.nextChar();
+	},
+
+	doubleQuotedString : function () {
+		if ( this.state === S_SINGLE_QUOTE ) {
+			return this.lookahead;
+		}
+
+		else if ( this.state !== S_DOUBLE_QUOTE ) {
+			this.state = S_DOUBLE_QUOTE;
+		}
+
+		else {
+			this.state = S_DATA;
+		}
+
+		return this.nextChar();
+	},
+
+	throwFinishError : function () {
+		var errMsg = '';
+
+		if ( this.state === S_SINGLE_QUOTE ) {
+			errMsg = 'Expected ' + CH_SINGLE_QUOTE;
+		}
+		else if ( this.state === S_DOUBLE_QUOTE ) {
+			errMsg = 'Expected ' + CH_DOUBLE_QUOTE;
+		}
+
+		var up = new Error( 'Unexpected end of input: ' + errMsg );
+		up.column = this.pos;
+
+		throw up; //problem?
 	}
 };
 
 return function () {
 	return parser.parse.apply( parser, arguments );
 };
+}());
+
 }());

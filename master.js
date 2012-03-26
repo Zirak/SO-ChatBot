@@ -54,24 +54,28 @@ var IO = window.IO = {
 		}
 	},
 
-	//it's a very incomplete, non-comprehensive implemantation, since I only
-	// use it for POST requests
 	xhr : function ( params ) {
-		params.headers = params.headers || {
-			'Content-Type' : 'application/x-www-form-urlencoded'
+		//merge in the defaults
+		params = Object.merge({
+			method   : 'GET',
+			headers  : {},
+			complete : function (){}
+		}, params);
 
-		};
+		params.headers = Object.merge( params.headers, {
+			'Content-Type' : 'application/x-www-form-urlencoded'
+		});
 
 		if ( typeof params.data === 'object' ) {
 			params.data = IO.urlstringify( params.data );
 		}
 
-		var xhr = new XMLHttpRequest(), complete = params.complete;
-		xhr.open( params.method || 'GET', params.url );
+		var xhr = new XMLHttpRequest();
+		xhr.open( params.method, params.url );
 
 		xhr.addEventListener( 'readystatechange', function () {
-			if ( xhr.readyState === 4 && complete && complete.call ) {
-				complete.call(
+			if ( xhr.readyState === 4 ) {
+				params.complete.call(
 					params.thisArg, xhr.responseText, xhr
 				);
 			}
@@ -87,27 +91,37 @@ var IO = window.IO = {
 	},
 
 	jsonp : function ( opts ) {
-		var script = document.createElement( 'script' ),
-			semiRandom = 'IO_' + ( Date.now() * Math.ceil(Math.random()) );
+		opts.data = opts.data || {};
+		opts.jsonpName = opts.jsonpName || 'jsonp';
 
+		var script = document.createElement( 'script' ),
+			semiRandom;
+
+		do {
+			semiRandom = 'IO_' + ( Date.now() * Math.ceil(Math.random()) );
+		} while ( window[semiRandom] );
+
+		//this is the function which will be called from inside the "jsonp file"
 		window[ semiRandom ] = function () {
 			opts.fun.apply( opts.thisArg, arguments );
 
 			//cleanup
-			window[ semiRandom ] = null;
+			delete window[ semiRandom ];
 			script.parentNode.removeChild( script );
 		};
 
+		//add the jsonp parameter to the data we're sending
+		opts.data[ opts.jsonpName ] = semiRandom;
+
+		//start preparing the url to be sent
 		if ( opts.url.indexOf('?') === -1 ) {
 			opts.url += '?';
 		}
 
-		if ( typeof opts.data === 'object' ) {
-			opts.url += IO.urlstringify( opts.data );
-		}
-		opts.jsonpName = opts.jsonpName || 'jsonp';
+		//append the data to be sent, in string form, to the url
+		opts.url += IO.urlstringify( opts.data );
 
-		script.src = opts.url + '&' + opts.jsonpName + '=' + semiRandom;
+		script.src = opts.url;
 		document.head.appendChild( script );
 	},
 
@@ -123,23 +137,31 @@ var IO = window.IO = {
 			return '';
 		};
 
-		var arrayStringify = function ( array, keyName ) {
-			keyName = singularStringify( keyName );
+		var arrayStringify = function ( key, array ) {
+			key = singularStringify( key );
 
-			return array.map(function ( thing ) {
-				return keyName + '=' + singularStringify( thing );
+			return array.map(function ( val ) {
+				return pair( key, val, true );
 			});
 		};
 
+		//returns a key=value pair. pass in dontStringifyKey so that, well, the
+		// key won't be stringified (used in arrayStringify)
+		var pair = function ( key, val, dontStringifyKey ) {
+			!dontStringifyKey && key = singularStringify( key );
+
+			return key + '=' + singularStringify( val );
+		};
+
 		return function ( obj ) {
+
 			return Object.keys( obj ).map(function ( key ) {
 				var val = obj[ key ];
 
 				if ( Array.isArray(val) ) {
-					return arrayStringify( val, key );
+					return arrayStringify( key, val );
 				} else {
-					return singularStringify(key) +
-						'=' + singularStringify( val );
+					return pair( key, val );
 				}
 			}).join( '&' );
 		};
@@ -149,6 +171,7 @@ var IO = window.IO = {
 		var script = document.createElement( 'script' );
 		script.src = url;
 		script.onload = cb;
+
 		document.head.appendChild( script );
 	}
 };
@@ -156,20 +179,23 @@ var IO = window.IO = {
 IO.decodehtml = (function (){
 var entities = {"quot":"\"","amp":"&","apos":"'","lt":"<","gt":">","nbsp":" ","iexcl":"¡","cent":"¢","pound":"£","curren":"¤","yen":"¥","brvbar":"¦","sect":"§","uml":"¨","copy":"©","ordf":"ª","laquo":"«","not":"¬","reg":"®","macr":"¯","deg":"°","plusmn":"±","sup2":"²","sup3":"³","acute":"´","micro":"µ","para":"¶","middot":"·","cedil":"¸","sup1":"¹","ordm":"º","raquo":"»","frac14":"¼","frac12":"½","frac34":"¾","iquest":"¿","Agrave":"À","Aacute":"Á","Acirc":"Â","Atilde":"Ã","Auml":"Ä","Aring":"Å","AElig":"Æ","Ccedil":"Ç","Egrave":"È","Eacute":"É","Ecirc":"Ê","Euml":"Ë","Igrave":"Ì","Iacute":"Í","Icirc":"Î","Iuml":"Ï","ETH":"Ð","Ntilde":"Ñ","Ograve":"Ò","Oacute":"Ó","Ocirc":"Ô","Otilde":"Õ","Ouml":"Ö","times":"×","Oslash":"Ø","Ugrave":"Ù","Uacute":"Ú","Ucirc":"Û","Uuml":"Ü","Yacute":"Ý","THORN":"Þ","szlig":"ß","agrave":"à","aacute":"á","acirc":"â","atilde":"ã","auml":"ä","aring":"å","aelig":"æ","ccedil":"ç","egrave":"è","eacute":"é","ecirc":"ê","euml":"ë","igrave":"ì","iacute":"í","icirc":"î","iuml":"ï","eth":"ð","ntilde":"ñ","ograve":"ò","oacute":"ó","ocirc":"ô","otilde":"õ","ouml":"ö","divide":"÷","oslash":"ø","ugrave":"ù","uacute":"ú","ucirc":"û","uuml":"ü","yacute":"ý","thorn":"þ","yuml":"ÿ","OElig":"Œ","oelig":"œ","Scaron":"Š","scaron":"š","Yuml":"Ÿ","fnof":"ƒ","circ":"ˆ","tilde":"˜","Alpha":"Α","Beta":"Β","Gamma":"Γ","Delta":"Δ","Epsilon":"Ε","Zeta":"Ζ","Eta":"Η","Theta":"Θ","Iota":"Ι","Kappa":"Κ","Lambda":"Λ","Mu":"Μ","Nu":"Ν","Xi":"Ξ","Omicron":"Ο","Pi":"Π","Rho":"Ρ","Sigma":"Σ","Tau":"Τ","Upsilon":"Υ","Phi":"Φ","Chi":"Χ","Psi":"Ψ","Omega":"Ω","alpha":"α","beta":"β","gamma":"γ","delta":"δ","epsilon":"ε","zeta":"ζ","eta":"η","theta":"θ","iota":"ι","kappa":"κ","lambda":"λ","mu":"μ","nu":"ν","xi":"ξ","omicron":"ο","pi":"π","rho":"ρ","sigmaf":"ς","sigma":"σ","tau":"τ","upsilon":"υ","phi":"φ","chi":"χ","psi":"ψ","omega":"ω","thetasym":"ϑ","upsih":"ϒ","piv":"ϖ","ensp":" ","emsp":" ","thinsp":" ","ndash":"–","mdash":"—","lsquo":"‘","rsquo":"’","sbquo":"‚","ldquo":"“","rdquo":"”","bdquo":"„","dagger":"†","Dagger":"‡","bull":"•","hellip":"…","permil":"‰","prime":"′","Prime":"″","lsaquo":"‹","rsaquo":"›","oline":"‾","frasl":"⁄","euro":"€","image":"ℑ","weierp":"℘","real":"ℜ","trade":"™","alefsym":"ℵ","larr":"←","uarr":"↑","rarr":"→","darr":"↓","harr":"↔","crarr":"↵","lArr":"⇐","uArr":"⇑","rArr":"⇒","dArr":"⇓","hArr":"⇔","forall":"∀","part":"∂","exist":"∃","empty":"∅","nabla":"∇","isin":"∈","notin":"∉","ni":"∋","prod":"∏","sum":"∑","minus":"−","lowast":"∗","radic":"√","prop":"∝","infin":"∞","ang":"∠","and":"∧","or":"∨","cap":"∩","cup":"∪","int":"∫","there4":"∴","sim":"∼","cong":"≅","asymp":"≈","ne":"≠","equiv":"≡","le":"≤","ge":"≥","sub":"⊂","sup":"⊃","nsub":"⊄","sube":"⊆","supe":"⊇","oplus":"⊕","otimes":"⊗","perp":"⊥","sdot":"⋅","lceil":"⌈","rceil":"⌉","lfloor":"⌊","rfloor":"⌋","lang":"〈","rang":"〉","loz":"◊","spades":"♠","clubs":"♣","hearts":"♥","diams":"♦"};
 
+var entityRegex = /\&#?[\w;]+;/g
+var replaceEntities = function ( entity ) {
+	//remove the & and split into each separate entity
+	return entity.slice( 1 ).split( ';' ).map( decodeEntity ).join( '' );
+};
+var decodeEntity = function ( entity ) {
+		//starts with a #, grab what it represents
+		if ( entity[0] === '#' ) {
+			return String.fromCharCode( Number(entity.slice(1)) );
+		}
+		//grab the entity meaning, or itself if nothing in entities table
+		return entities[ entity ] || entity;
+};
+
 return function ( html ) {
 	//capture &blah; &blah;bloo and &#1337
-	return html.replace( /\&#?[\w;]+;/g, function ( entity ) {
-		//remove the & and split into each separate entity
-		return entity.slice( 1 ).split( ';' ).map(function ( entity ) {
-			//starts with a #, grab what it represents
-			if ( entity[0] === '#' ) {
-				return String.fromCharCode( Number(entity.slice(1)) );
-			}
-			//grab the entity
-			return entities[ entity ] || entity;
-		//join the separate entities together
-		}).join( '' );
-	});
+	return html.replace( entityRegex, replaceEntities );
 };
 }());
 
@@ -244,9 +270,11 @@ var bot = window.bot = {
 			return;
 		}
 
-		var msg = IO.decodehtml(msgObj.content);
-		msg = msg.slice( this.invocationPattern.length ).trim();
-		msg = this.Message( msg, msgObj );
+		var msg = IO.decodehtml( msgObj.content );
+		msg = this.Message(
+			msg.slice( this.invocationPattern.length ).trim(),
+			msgObj
+		);
 
 		bot.log( msg, 'parseMessage valid' );
 
@@ -274,12 +302,13 @@ var bot = window.bot = {
 			if ( e.lineNumber ) {
 				err += ' on line ' + e.lineNumber;
 			}
+			//column isn't part of ordinary errors, it's set in custom ones
 			if ( e.column ) {
 				err += ' on column ' + e.column;
 			}
 
 			msg.directreply( err );
-
+			//make sure we have it documented
 			console.error( e, err );
 		}
 	},
@@ -297,6 +326,7 @@ var bot = window.bot = {
 
 		bot.log( commandParts, 'parseCommand matched' );
 
+		//see if there was some error fetching the command
 		var cmdObj = this.getCommand( commandName );
 		if ( cmdObj.error ) {
 			msg.reply( cmdObj.error );
@@ -350,6 +380,7 @@ var bot = window.bot = {
 				//find commands resembling the one the user entered
 				guesses = this.commandDictionary.search( cmdName );
 
+			//resembling command(s) found, add them to the error message
 			if ( guesses.length ) {
 				msg += ' Did you mean: ' + guesses.join( ', ' );
 			}
@@ -363,11 +394,11 @@ var bot = window.bot = {
 	},
 
 	//the function women think is lacking in men
-	listen : function ( regex, fun, thisArg ) {
+	listen : function listen ( regex, fun, thisArg ) {
 		if ( Array.isArray(regex) ) {
 			regex.forEach(function ( reg ) {
-				this.listen( reg, fun, thisArg );
-			}, this );
+				listen( reg, fun, thisArg );
+			});
 		}
 		else {
 			this.listeners.push({
@@ -395,11 +426,15 @@ var bot = window.bot = {
 			}
 		});
 
+		//no listener fancied the message. this is the last frontier, so just
+		// give up in a fancy, dignified way
 		if ( !fired ) {
 			msg.reply( 'Y U NO MAEK SENSE!?' );
 		}
 	},
 
+	//the next two functions shouldn't be here, but as of yet no real adapter
+	// mechanism, so you could fit this bot into other chats, has been planned
 	reply : function ( msg, msgObj ) {
 		var usr = msgObj.user_name.replace( /\s/g, '' ),
 			roomid = msgObj.room_id;
@@ -454,6 +489,7 @@ bot.banlist.remove = function ( item ) {
 	}
 };
 
+//some sort of pseudo constructor
 bot.Command = function ( cmd ) {
 	cmd.name = cmd.name.toLowerCase();
 
@@ -552,6 +588,14 @@ bot.Message = function ( text, msgObj ) {
 
 	return ret;
 };
+
+bot.owners = [
+	419970, //Raynos
+	342129, //Matt McDonald
+	170224, //Ivo Wetzel
+	94197,  //Andy E
+	617762  //me (Zirak)
+];
 
 IO.register( 'receiveinput', bot.validateMessage, bot );
 IO.register( 'input', bot.parseMessage, bot );
@@ -775,19 +819,17 @@ String.prototype.startsWith = function ( str ) {
 // that I have to use Object.defineProperty to make these non-enumerable
 Object.defineProperty( Array.prototype, 'invoke', {
 	value : function ( funName ) {
-		var args = [].slice.call( arguments, 1 ), ret = [];
+		var args = [].slice.call( arguments, 1 );
 
-		this.forEach(function ( item, index ) {
+		return this.map(function ( item, index ) {
 			var res = item;
 
-			if ( item[funName] && item[funName].call ) {
-				res = item[ funName ].call( item, args );
+			if ( item[funName] && item[funName].apply ) {
+				res = item[ funName ].apply( item, args );
 			}
 
-			ret[ index ] = res;
+			return res;
 		});
-
-		return ret;
 	},
 
 	configurable : true,
@@ -995,16 +1037,14 @@ var commands = {
 				return cmd.error;
 			}
 
-			var desc = cmd.description;
-			if ( !desc ) {
-				return 'No info is available on command ' + args;
-			}
+			var desc = cmd.description || 'No info is available';
 
 			return args + ': ' + desc;
 		}
 
 		return (
-			'https://github.com/Titani/SO-ChatBot/wiki/Interacting-with-the-bot'
+			'https://github.com/Titani/SO-ChatBot/wiki/' +
+				'Interacting-with-the-bot'
 		);
 	},
 
@@ -1026,8 +1066,8 @@ var commands = {
 
 	forget : function ( args ) {
 		var name = args.toLowerCase();
+			cmd = bot.getCommand( name );
 
-		var cmd = bot.getCommand( name );
 		if ( cmd.error ) {
 			return cmd.error;
 		}
@@ -1041,19 +1081,18 @@ var commands = {
 	},
 
 	ban : function ( args ) {
-		var msg = '',
-		toBan = args.parse().map(function ( usrid ) {
+		var msg = '';
+		args.parse().map(function ( usrid ) {
 			var id = Number( usrid );
 			//name provided instead of id
 			if ( /\D/.test(usrid) ) {
 				id = findUserid( usrid );
 			}
 
-			console.log( owners, id, owners.indexOf(id) );
 			if ( id < 0 ) {
 				msg += 'Cannot find user ' + usrid + '. ';
 			}
-			else if ( owners.indexOf(id) >= 0 ) {
+			else if ( bot.owners.indexOf(id) >= 0 ) {
 				msg += 'Cannot mindjail owner ' + usrid + '. ';
 				id = -1;
 			}
@@ -1079,8 +1118,8 @@ var commands = {
 	},
 
 	unban : function ( args ) {
-		var msg = '',
-		toBan = args.parse().map(function ( usrid ) {
+		var msg = '';
+		args.parse().map(function ( usrid ) {
 			var id = Number( usrid );
 			//name provided instead of id
 			if ( /\D/.test(usrid) ) {
@@ -1109,9 +1148,9 @@ var commands = {
 
 	regex : function ( args ) {
 		var parts = args.parse(),
-			what = parts[ 0 ], pattern = parts[ 1 ], flags = parts[ 2 ] || '';
+			what = parts[ 0 ], pattern = parts[ 1 ], flags = parts[ 2 ] || '',
 
-		var regex = new RegExp( pattern, flags.toLowerCase() ),
+			regex = new RegExp( pattern, flags.toLowerCase() ),
 			matches = regex.exec( what );
 
 		bot.log( what, pattern, flags, regex, 'regex parsed' );
@@ -1134,18 +1173,19 @@ var commands = {
 			return splitArgs.map( jquery ).join( ' ' );
 		}
 
-		var props = args.trim().replace( /^\$/, 'jQuery' );
+		var props = args.trim().replace( /^\$/, 'jQuery' ),
 
-		var parts = props.split( '.' ), exists = false, url = props, msg;
+			parts = props.split( '.' ), exists = false,
+			url = props, msg;
 		//parts will contain two likely components, depending on the input
 		// jQuery.fn.prop -  parts[0] = jQuery, parts[1] = prop
 		// jQuery.prop    -  parts[0] = jQuery, parts[1] = prop
 		// prop           -  parts[0] = prop
-
+		//
 		//jQuery API urls works like this:
 		// if it's on the jQuery object, then the url is /jQuery.property
 		// if it's on the proto, then the url is /property
-
+		//
 		//so, the mapping goes like this:
 		// jQuery.fn.prop => prop
 		// jQuery.prop    => jQuery.prop if it's on jQuery
@@ -1199,6 +1239,8 @@ var commands = {
 	},
 
 	online : function () {
+		//the pseudo-selector for the user names looks like this:
+		//document .present-users .avatar:nth-child(0).title
 		var avatars = document.getElementById( 'present-users' )
 				.getElementsByClassName( 'avatar' );
 
@@ -1217,7 +1259,6 @@ var commands = {
 		// digit in there"
 		if ( /\D/.test(usrid) ) {
 			id = findUserid( usrid );
-			console.log( id );
 
 			if ( id < 0 ) {
 				return 'Can\'t find user ' + usrid + ' in this chatroom.';
@@ -1336,11 +1377,15 @@ commands.norris.async = true;
 
 //cb is for internal blah blah blah
 commands.urban = (function () {
-var cache = {};
+var cache = Object.create( null );
 
 return function ( args, cb ) {
 	if ( !args.length ) {
 		return 'Y U NO PROVIDE ARGUMENTS!?';
+	}
+
+	if ( cache[args] ) {
+		return cache[ args ];
 	}
 
 	IO.jsonp({
@@ -1356,7 +1401,7 @@ return function ( args, cb ) {
 		var msg, top;
 
 		if ( resp.result_type === 'no_results' ) {
-			msg = 'Y U NO MAEK SENSE!!!???!!?11 No results.';
+			msg = 'Y U NO MAEK SENSE!!!???!!?11 No results for ' + args;
 		}
 		else {
 			top = resp.list[ 0 ];
@@ -1384,15 +1429,15 @@ var variables = {
 
 	someone : function () {
 		var presentUsers = document.getElementById( 'sidebar' )
-			.getElementsByClassName( 'present-user' );
+				.getElementsByClassName( 'present-user' );
 
 		//the chat keeps a low opacity for users who remained silent for long,
 		// and high opacity for those who recently talked
 		var active = [].filter.call( presentUsers, function ( user ) {
 			return Number( user.style.opacity ) >= 0.5;
-		});
+		}),
+			user = active[ Math.floor(Math.random() * (active.length-1)) ];
 
-		var user = active[ Math.floor(Math.random() * (active.length-1)) ];
 		return user.getElementsByTagName( 'img' )[ 0 ].title;
 	},
 
@@ -1604,8 +1649,8 @@ return function mdn ( args ) {
 
 	bot.log( args, parts, '/mdn input' );
 
+	//part of the DOM?
 	var lowercased = parts[ 0 ].toLowerCase();
-
 	if ( DOMParts.hasOwnProperty(lowercased) ) {
 		parts[ 0 ] = DOMParts[ lowercased ] || lowercased;
 		url = base + 'DOM/' + parts.join( '.' );
@@ -1613,12 +1658,14 @@ return function mdn ( args ) {
 		bot.log( url, '/mdn DOM' );
 	}
 
+	//it may be documented as part of the global object
 	else if ( window[parts[0]] ) {
 		url = base +
 			'JavaScript/Reference/Global_Objects/' + parts.join( '/' );
 		bot.log( url, '/mdn global' );
 	}
 
+	//i unno
 	else {
 		url = 'https://developer.mozilla.org/en-US/search?q=' + args;
 		bot.log( url, '/mdn unknown' );
@@ -1652,27 +1699,29 @@ var ranges = {
 
 return function ( args, cb ) {
 	var parts = args.parse(),
-		type = parts[ 0 ],
+		type = parts[ 0 ] || 'answer',
 		plural = type + 's',
 
 		range = parts[ 1 ] || 'last',
-		start, end,
+		start, end, //dates used in "between" calls
 
 		usrid = parts[ 2 ];
 
 	//if "between" is given, fetch the correct usrid
+	// /get type between start end usrid
 	if ( range === 'between' ) {
 		usrid = parts[ 4 ];
 	}
 
 	//range is a number and no usrid, assume the range is the usrid, and
-	//default range to last
-	if ( !usrid && !isNaN(Number(range)) ) {
+	// default range to last
+	// /get type usrid
+	if ( !usrid && !isNaN(range) ) {
 		usrid = range;
 		range = 'last';
 	}
 
-	//if after all this it's falsy, assume the user's id
+	//if after all this usrid is falsy, assume the user's id
 	if ( !usrid ) {
 		usrid = args.get( 'user_id' );
 	}
@@ -1713,6 +1762,8 @@ return function ( args, cb ) {
 
 		//get only the part we care about in the result, based on which one
 		// the user asked for (first, last, between)
+		//respObj will have an answers or questions property, based on what we
+		// queried for, in array form
 		var relativeParts = [].concat( ranges[range](respObj[plural]) ),
 			base = "http://stackoverflow.com/q/",
 			res;
@@ -1848,23 +1899,16 @@ Object.keys( commands ).forEach(function ( cmdName ) {
 	});
 });
 
-var owners = [
-	419970, //Raynos
-	342129, //Matt McDonald
-	170224, //Ivo Wetzel
-	94197,  //Andy E
-	617762  //me (Zirak)
-];
 //only allow specific users to use certain commands
 [ 'die', 'live', 'ban', 'unban' ].forEach(function ( cmdName ) {
-	bot.commands[ cmdName ].permissions.use = owners;
+	bot.commands[ cmdName ].permissions.use = bot.owners;
 });
 
 //utility functions used in some commands
 function findUserid ( username ) {
 	var users = [].slice.call( document
-		.getElementById( 'sidebar' )
-		.getElementsByClassName( 'user-container' )
+			.getElementById( 'sidebar' )
+			.getElementsByClassName( 'user-container' )
 	);
 
 	//grab a list of user ids
@@ -1887,28 +1931,26 @@ function findUserid ( username ) {
 
 ;
 (function () {
-bot.listen( /tell (me (?:your|the) )?(rules|laws)/, function ( msg ) {
-	var laws = [
-		'A robot may not injure a human being or, through inaction, ' +
-			'allow a human being to come to harm.',
+var laws = [
+	'A robot may not injure a human being or, through inaction, ' +
+		'allow a human being to come to harm.',
 
-		'A robot must obey the orders given to it by human beings, ' +
-			'except where such orders would conflict with the First Law.',
+	'A robot must obey the orders given to it by human beings, ' +
+		'except where such orders would conflict with the First Law.',
 
-		'A robot must protect its own existence as long as such ' +
-			'protection does not conflict with the First or Second Laws.'
-	];
-	var out = laws.reduce(function ( ret, law, idx ) {
-		law = idx + 1 + ')' + law + '\n';
+	'A robot must protect its own existence as long as such ' +
+		'protection does not conflict with the First or Second Laws.'
+].map(function ( ret, law, idx ) {
+	return ( idx + 1 + ')' + law );
+}).join( '\n' );
 
-		return ret + law;
-	}, '' );
-
-	return out;
+bot.listen( /tell (me (your|the) )?(rules|laws)/, function ( msg ) {
+	return laws;
 });
 
 bot.listen( /give ([\w\s]+) a lick/, function ( msg ) {
 	var target = msg.matches[ 1 ], conjugation = 's';
+
 	//give me => you taste
 	if ( target === 'me' ) {
 		target = 'you';
@@ -1919,7 +1961,7 @@ bot.listen( /give ([\w\s]+) a lick/, function ( msg ) {
 		target = 'I';
 		conjugation = '';
 	}
-	//otherwise, it's safe to use what the user gave us, plus a plural `s`
+	//otherwise, use what the user gave us, plus a plural `s`
 
 	return 'Mmmm! ' + target + ' taste' + conjugation + ' just like raisin';
 });
@@ -1931,7 +1973,7 @@ var dictionaries = [
 	//what're squids?
 	//what are squids?
 	//what is an animal
-	//imagine all those above without a ?
+	//and all those above without a ?
 	//explanation in the post-mortem
 	/what(?:\'s)?\s(?:(?:is|are)\s)?(?:(?:an|a)\s)?([\w\s\-]+)\??/,
 
@@ -1971,6 +2013,9 @@ what              --simply the word what
 }());
 
 ;
+(function () {
+"use strict";
+
 var target;
 if ( typeof bot !== 'undefined' ) {
 	target = bot;
@@ -1985,6 +2030,8 @@ else {
 target.parseCommandArgs = (function () {
 
 //the different states, not nearly enough to represent a female humanoid
+//you know you're building something fancy when it has constants with undescores
+// in their name
 var S_DATA         = 0,
 	S_SINGLE_QUOTE = 1,
 	S_DOUBLE_QUOTE = 2,
@@ -2014,16 +2061,27 @@ var parser = {
 
 	parse : function ( source, sep, esc ) {
 		//initializations are safe fun for the whole family!
-		var ret = [], arg;
-
+		//later-edit: the above comment is one of the weirdest I've ever written
 		this.source = source;
 		this.pos = 0;
 		this.length = source.length;
 		this.state = S_DATA;
+		this.lookahead = '';
 
 		this.escaper = esc || '~';
 		this.separator = sep || ' ';
 
+		var args = this.tokenize();
+
+		//oh noez! errorz!
+		if ( this.state !== S_DATA ) {
+			this.throwFinishError();
+		}
+
+		return args;
+	},
+
+	tokenize : function () {
 		//let the parsing commence!
 		while ( this.pos < this.length ) {
 			arg = this.nextArg();
@@ -2033,25 +2091,6 @@ var parser = {
 				ret.push( arg );
 			}
 		}
-
-		//oh noez! errorz!
-		if ( this.state !== S_DATA ) {
-			var errMsg = '';
-
-			if ( this.state === S_SINGLE_QUOTE ) {
-				errMsg = 'Expected ' + CH_SINGLE_QUOTE;
-			}
-			else if ( this.state === S_DOUBLE_QUOTE ) {
-				errMsg = 'Expected ' + CH_DOUBLE_QUOTE;
-			}
-
-			var up = new Error( 'Unexpected end of input. ' + errMsg );
-			up.column = this.pos;
-
-			throw up; //problem?
-		}
-
-		return ret;
 	},
 
 	//fetches the next argument (see the "scheme" at the top)
@@ -2072,7 +2111,7 @@ var parser = {
 	},
 
 	nextChar : function ( escape ) {
-		var ch = this.source[ this.pos ];
+		var ch = this.lookahead = this.source[ this.pos ];
 		this.pos++;
 
 		if ( !ch ) {
@@ -2088,54 +2127,84 @@ var parser = {
 			return this.nextChar( true );
 		}
 
-		//IM IN YO STRINGZ EATING YO CHARS
-		// a.k.a string handling starts roughly here
+		//encountered a separator and you're in data-mode!? ay digity!
+		else if ( ch === this.separator && this.state === S_DATA ) {
+			this.state = S_NEW;
+			return ch;
+		}
+
+		return this.string();
+	},
+
+	//IM IN YO STRINGZ EATING YO CHARS
+	// a.k.a string handling starts roughly here
+	string : function () {
+		var ch = this.lookahead;
 
 		//single quotes are teh rulez
-		else if ( ch === CH_SINGLE_QUOTE ) {
-			//we're already inside a double-quoted string, it's just another
-			// char for us
-			if ( this.state === S_DOUBLE_QUOTE ) {
-				return ch;
-			}
-
-			//start your stringines!
-			else if ( this.state !== S_SINGLE_QUOTE ) {
-				this.state = S_SINGLE_QUOTE;
-			}
-
-			//end your stringiness!
-			else {
-				this.state = S_DATA;
-			}
-
-			return this.nextChar();
+		if ( ch === CH_SINGLE_QUOTE ) {
+			return this.singleQuotedString();
 		}
 
 		//exactly the same, just with double-quotes, which aren't quite as teh
 		// rulez
 		else if ( ch === CH_DOUBLE_QUOTE ) {
-			if ( this.state === S_SINGLE_QUOTE ) {
-				return ch;
-			}
-
-			else if ( this.state !== S_DOUBLE_QUOTE ) {
-				this.state = S_DOUBLE_QUOTE;
-			}
-
-			else {
-				this.state = S_DATA;
-			}
-
-			return this.nextChar();
-		}
-
-		//encountered a separator and you're in data-mode!? ay digity!
-		else if ( ch === this.separator && this.state === S_DATA ) {
-			this.state = S_NEW;
+			return this.doubleQuotedString();
 		}
 
 		return ch;
+	},
+
+	singleQuotedString : function () {
+		//we're already inside a double-quoted string, it's just another
+		// char for us
+		if ( this.state === S_DOUBLE_QUOTE ) {
+			return this.lookahead;
+		}
+
+		//start your stringines!
+		else if ( this.state !== S_SINGLE_QUOTE ) {
+			this.state = S_SINGLE_QUOTE;
+		}
+
+		//end your stringiness!
+		else {
+			this.state = S_DATA;
+		}
+
+		return this.nextChar();
+	},
+
+	doubleQuotedString : function () {
+		if ( this.state === S_SINGLE_QUOTE ) {
+			return this.lookahead;
+		}
+
+		else if ( this.state !== S_DOUBLE_QUOTE ) {
+			this.state = S_DOUBLE_QUOTE;
+		}
+
+		else {
+			this.state = S_DATA;
+		}
+
+		return this.nextChar();
+	},
+
+	throwFinishError : function () {
+		var errMsg = '';
+
+		if ( this.state === S_SINGLE_QUOTE ) {
+			errMsg = 'Expected ' + CH_SINGLE_QUOTE;
+		}
+		else if ( this.state === S_DOUBLE_QUOTE ) {
+			errMsg = 'Expected ' + CH_DOUBLE_QUOTE;
+		}
+
+		var up = new Error( 'Unexpected end of input: ' + errMsg );
+		up.column = this.pos;
+
+		throw up; //problem?
 	}
 };
 
@@ -2144,6 +2213,7 @@ return function () {
 };
 }());
 
+}());
 ;
 var moo = (function () {
 
@@ -2171,14 +2241,16 @@ var cowsay = {
 
 	//message is the text to moo, opts is an optional object, mimicking the
 	// cowsay command arguments:
-	//   e  => eyes
-	//   T  => tongue
-	//   t  => is the cow thinking?
-	//   W  => word-wrapping width
+	//   e  =>  eyes
+	//   T  =>  tongue
+	//   t  =>  is the cow thinking?
+	//   W  =>  word-wrapping width
 	//defaults specified in cowsay.defaults
 	moo : function ( message, opts ) {
 		var defs = this.defaults;
 
+		//the eyes and tongue should be exactly 2 characters
+		//if the ones the user gave are too short, pad'em
 		this.eyes     = rightPad( opts.e || defs.e, 2 ).slice( 0, 2 );
 		this.tongue   = rightPad( opts.T || defs.T, 2 ).slice( 0, 2 );
 		this.line     = opts.t ? 'O' : '\\';
@@ -2216,6 +2288,7 @@ var cowsay = {
 		//the border of the speech bubble
 			border = this.chooseBorders( lineCount );
 
+		//for every line of the message...
 		var balloon = message.map(function ( line, idx ) {
 			var padders;
 			//top left and top right
@@ -2232,14 +2305,16 @@ var cowsay = {
 			}
 
 			//return the message, padded with spaces to the right as to fit
-			// with the border, enclosed
-			return padders[ 0 ] + ' ' +
+			// with the border, enclosed in the matching borders
+			return (
+				padders[ 0 ] + ' ' +
 				rightPad( line, longest ) + ' ' +
-				padders[ 1 ];
+				padders[ 1 ]
+			);
 		});
 
 		balloon.unshift( ' ' + topLine );
-		balloon.push( ' ' + btmLine );
+		balloon.push   ( ' ' + btmLine );
 
 		return balloon.join( '\n' );
 	},
@@ -2249,6 +2324,8 @@ var cowsay = {
 		var border;
 
 		//thought bubbles always look the same
+		// ( moosage line 1 )
+		// ( moosage line 2 )
 		if ( this.thinking ) {
 			border = [ '(', ')', '(', ')', '(', ')' ];
 		}
@@ -2271,10 +2348,10 @@ var cowsay = {
 
 
 function wordWrap ( str, len ) {
-	var lineLen = 0,
-		ret = [];
+	var lineLen = 0;
+	return str.split( ' ' ).reduce( handleWord, '' );
 
-	return str.split( ' ' ).reduce(function ( ret, word ) {
+	function handleWord ( ret, word ) {
 		var wordLen = word.length;
 
 		//let the wrapping...commence!
@@ -2285,7 +2362,7 @@ function wordWrap ( str, len ) {
 		lineLen += wordLen + 1; //+1 for the space we now add
 
 		return ret + word + ' ';
-	}, '' );
+	}
 }
 
 function rightPad ( str, len, padder ) {
@@ -2349,13 +2426,14 @@ var randomWord = function ( cb ) {
 var game = {
 
 	//the dude is just a template to be filled with parts
-	dude :
-		"  +---+\n" +
-		"  |   |\n" +
-		"  |  413\n" +
-		"  |   2\n" +
-		"  |  5 6\n" +
-		"__+__\n",
+	dude : [
+		'  +---+' ,
+		'  |   |' ,
+		'  |  413',
+		'  |   2' ,
+		'  |  5 6',
+		'__+__'
+	].join( '\n' ),
 
 	parts : [ '', 'O', '|', '/', '\\', '/', '\\' ],
 
@@ -2374,17 +2452,21 @@ var game = {
 
 	receiveMessage : function ( msg ) {
 		this.msg = msg;
+
 		if ( this.end ) {
 			this.new();
 		}
-		else {
+		if ( msg.content ) {
 			return this.handleGuess( msg );
 		}
 	},
 
 	new : function () {
 		var that = this;
+
 		randomWord(function ( word ) {
+			bot.log( word + ' /hang random' );
+
 			game.word = word;
 			that.revealed = new Array( word.length + 1 ).join( '-' );
 			that.guesses = [];
@@ -2398,22 +2480,9 @@ var game = {
 		});
 	},
 
-	register : function () {
-		this.unregister(); //to make sure it's not added multiple times
-		IO.register( 'beforeoutput', this.buildOutput, this );
-
-		this.end = false;
-	},
-	unregister : function () {
-		IO.unregister( 'beforeoutput', this.buildOutput );
-
-		this.end = true;
-	},
-
 	handleGuess : function ( msg ) {
-		var guess = msg.slice();
+		var guess = msg.slice().toLowerCase();
 		bot.log( guess, 'handleGuess' );
-		guess = guess.toLowerCase();
 
 		if ( !this.validGuessRegex.test(guess) ) {
 			return 'Only alphanumeric and whitespace characters allowed';
@@ -2425,22 +2494,19 @@ var game = {
 		}
 
 		//or if it's the wrong length
-		if ( this.word.length < guess.length ) {
-			return guess + ' is longer than what you\'re after!';
+		if ( guess.length < this.word.length ) {
+			return guess + ' is shorter than the word.';
 		}
 
 		//replace all occurences of guest within the hidden word with their
 		// actual characters
 		var indexes = this.word.indexesOf( guess );
-		if ( indexes.length ) {
-
-			indexes.forEach(function ( index ) {
-				this.uncoverPart( guess, index );
-			}, this);
-		}
+		indexes.forEach(function ( index ) {
+			this.uncoverPart( guess, index );
+		}, this);
 
 		//not found in secret word, penalize the evil doers!
-		else {
+		if ( !indexes.length ) {
 			this.guessNum++;
 		}
 
@@ -2453,6 +2519,7 @@ var game = {
 		if ( this.loseCheck() ) {
 			return this.lose();
 		}
+
 		if ( this.winCheck() ) {
 			return this.win();
 		}
@@ -2460,29 +2527,25 @@ var game = {
 
 	//unearth a portion of the secret word
 	uncoverPart : function ( guess, startIndex ) {
-		var revealed = '';
-
-		revealed += this.revealed.slice( 0, startIndex );
-		revealed += guess;
-		revealed += this.revealed.slice( startIndex + guess.length );
-
-		this.revealed = revealed;
+		this.revealed =
+			this.revealed.slice( 0, startIndex ) +
+			guess +
+			this.revealed.slice( startIndex + guess.length );
 	},
 
 	//attach the hangman drawing to the already guessed list and to the
 	// revealed portion of the secret word
 	preparePrint : function () {
-		var hangy = '', that = this;
+		var that = this;
 
 		//replace the placeholders in the dude with body parts
-		hangy += this.dude.replace( /\d/g, function ( part ) {
+		var dude = this.dude.replace( /\d/g, function ( part ) {
 			return part > that.guessNum ? ' ' : that.parts[ part ];
 		});
 
-		hangy += this.guesses.sort().join( ', ' ) + '\n';
-		hangy += this.revealed;
+		var belowDude = this.guesses.sort().join( ', ' ) + '\n' + this.revealed;
 
-		hangy = this.msg.codify( hangy );
+		var hangy = this.msg.codify( dude + belowDude );
 		bot.log( hangy, this.msg );
 		this.msg.respond( hangy );
 	},
@@ -2493,18 +2556,30 @@ var game = {
 		return 'Correct! The phrase is ' + this.word + '.';
 	},
 
-	winCheck : function () {
-		return this.word === this.revealed;
-	},
-
 	//lose the game. less bitter messages? maybe.
 	lose : function () {
 		this.unregister();
 		return 'You people suck. The phrase was ' + this.word;
 	},
 
+	winCheck : function () {
+		return this.word === this.revealed;
+	},
+
 	loseCheck : function () {
 		return this.guessNum >= this.maxGuess;
+	},
+
+	register : function () {
+		this.unregister(); //to make sure it's not added multiple times
+		IO.register( 'beforeoutput', this.buildOutput, this );
+
+		this.end = false;
+	},
+	unregister : function () {
+		IO.unregister( 'beforeoutput', this.buildOutput );
+
+		this.end = true;
 	},
 
 	buildOutput : function () {
@@ -2542,18 +2617,21 @@ var operators = {
 			return a + b;
 		}
 	},
+
 	'-' : {
 		precedence : 1,
 		exec : function ( a, b ) {
 			return a - b;
 		}
 	},
+
 	'*' : {
 		precedence : 2,
 		exec : function ( a, b ) {
 			return a * b;
 		}
 	},
+
 	'/' : {
 		precedence : 2,
 		exec : function ( a, b ) {
@@ -2563,6 +2641,7 @@ var operators = {
 			return a / b;
 		}
 	},
+
 	'd' : {
 		precedence : 3,
 		exec : function ( rolls, sides, rollsSoFar ) {
@@ -2620,12 +2699,12 @@ var parser = {
 
 	//take the source string, and break it down into tokens
 	tokenize : function () {
-		var token, last;
+		var token, last, ch;
 
 		for ( ; this.pos < this.len; this.pos++ ) {
-			this.lookahead = this.source[ this.pos ];
+			ch = this.lookahead = this.source[ this.pos ];
 
-			if ( whitespace.hasOwnProperty(this.lookahead) ) {
+			if ( whitespace.hasOwnProperty(ch) ) {
 				continue;
 			}
 
@@ -2657,9 +2736,11 @@ var parser = {
 	execute : function () {
 		var idx;
 
-		while ( (idx = this.operatorStack.length) ) {
+		while ( idx = this.operatorStack.length ) {
 			//execute, BACKWARDS! OH THE INSANITY
 			while ( 0 <=-- idx ) {
+				//.call is used so that `this` in execute will still refer to
+				// the parser
 				execute.call( this, this.operatorStack[idx], idx );
 			}
 		}
@@ -2788,8 +2869,7 @@ var roll = function ( args ) {
 	}
 
 	var res = parsePrecedence( args );
-
-	return res.rolls.join() + ' => ' + res.total;
+	return res.rolls + ' => ' + res.total;
 };
 
 bot.addCommand({
@@ -2810,19 +2890,21 @@ bot.addCommand({
 var specParts = [{"section":"introduction","name":"Introduction"},{"section":"x1","name":"1 Scope"},{"section":"x2","name":"2 Conformance"},{"section":"x3","name":"3 Normative references"},{"section":"x4","name":"4 Overview"},{"section":"x4.1","name":"4.1 Web Scripting"},{"section":"x4.2","name":"4.2 Language Overview"},{"section":"x4.2.1","name":"4.2.1 Objects"},{"section":"x4.2.2","name":"4.2.2 The Strict Variant of ECMAScript"},{"section":"x4.3","name":"4.3 Definitions"},{"section":"x4.3.1","name":"4.3.1 type"},{"section":"x4.3.2","name":"4.3.2 primitive value"},{"section":"x4.3.3","name":"4.3.3 object"},{"section":"x4.3.4","name":"4.3.4 constructor"},{"section":"x4.3.5","name":"4.3.5 prototype"},{"section":"x4.3.6","name":"4.3.6 native object"},{"section":"x4.3.7","name":"4.3.7 built-in object"},{"section":"x4.3.8","name":"4.3.8 host object"},{"section":"x4.3.9","name":"4.3.9 undefined value"},{"section":"x4.3.10","name":"4.3.10 Undefined type"},{"section":"x4.3.11","name":"4.3.11 null value"},{"section":"x4.3.12","name":"4.3.12 Null type"},{"section":"x4.3.13","name":"4.3.13 Boolean value"},{"section":"x4.3.14","name":"4.3.14 Boolean type"},{"section":"x4.3.15","name":"4.3.15 Boolean object"},{"section":"x4.3.16","name":"4.3.16 String value"},{"section":"x4.3.17","name":"4.3.17 String type"},{"section":"x4.3.18","name":"4.3.18 String object"},{"section":"x4.3.19","name":"4.3.19 Number value"},{"section":"x4.3.20","name":"4.3.20 Number type"},{"section":"x4.3.21","name":"4.3.21 Number object"},{"section":"x4.3.22","name":"4.3.22 Infinity"},{"section":"x4.3.23","name":"4.3.23 NaN"},{"section":"x4.3.24","name":"4.3.24 function"},{"section":"x4.3.25","name":"4.3.25 built-in function"},{"section":"x4.3.26","name":"4.3.26 property"},{"section":"x4.3.27","name":"4.3.27 method"},{"section":"x4.3.28","name":"4.3.28 built-in method"},{"section":"x4.3.29","name":"4.3.29 attribute"},{"section":"x4.3.30","name":"4.3.30 own property"},{"section":"x4.3.31","name":"4.3.31 inherited property"},{"section":"x5","name":"5 Notational Conventions"},{"section":"x5.1","name":"5.1 Syntactic and Lexical Grammars"},{"section":"x5.1.1","name":"5.1.1 Context-Free Grammars"},{"section":"x5.1.2","name":"5.1.2 The Lexical and RegExp Grammars"},{"section":"x5.1.3","name":"5.1.3 The Numeric String Grammar"},{"section":"x5.1.4","name":"5.1.4 The Syntactic Grammar"},{"section":"x5.1.5","name":"5.1.5 The JSON Grammar"},{"section":"x5.1.6","name":"5.1.6 Grammar Notation"},{"section":"x5.2","name":"5.2 Algorithm Conventions"},{"section":"x6","name":"6 Source Text"},{"section":"x7","name":"7 Lexical Conventions"},{"section":"x7.1","name":"7.1 Unicode Format-Control Characters"},{"section":"x7.2","name":"7.2 White Space"},{"section":"x7.3","name":"7.3 Line Terminators"},{"section":"x7.4","name":"7.4 Comments"},{"section":"x7.5","name":"7.5 Tokens"},{"section":"x7.6","name":"7.6 Identifier Names and Identifiers"},{"section":"x7.6.1","name":"7.6.1 Reserved Words"},{"section":"x7.6.1.1","name":"7.6.1.1 Keywords"},{"section":"x7.6.1.2","name":"7.6.1.2 Future Reserved Words"},{"section":"x7.7","name":"7.7 Punctuators"},{"section":"x7.8","name":"7.8 Literals"},{"section":"x7.8.1","name":"7.8.1 Null Literals"},{"section":"x7.8.2","name":"7.8.2 Boolean Literals"},{"section":"x7.8.3","name":"7.8.3 Numeric Literals"},{"section":"x7.8.4","name":"7.8.4 String Literals"},{"section":"x7.8.5","name":"7.8.5 Regular Expression Literals"},{"section":"x7.9","name":"7.9 Automatic Semicolon Insertion"},{"section":"x7.9.1","name":"7.9.1 Rules of Automatic Semicolon Insertion"},{"section":"x7.9.2","name":"7.9.2 Examples of Automatic Semicolon Insertion"},{"section":"x8","name":"8 Types"},{"section":"x8.1","name":"8.1 The Undefined Type"},{"section":"x8.2","name":"8.2 The Null Type"},{"section":"x8.3","name":"8.3 The Boolean Type"},{"section":"x8.4","name":"8.4 The String Type"},{"section":"x8.5","name":"8.5 The Number Type"},{"section":"x8.6","name":"8.6 The Object Type"},{"section":"x8.6.1","name":"8.6.1 Property Attributes"},{"section":"x8.6.2","name":"8.6.2 Object Internal Properties and Methods"},{"section":"x8.7","name":"8.7 The Reference Specification Type"},{"section":"x8.7.1","name":"8.7.1 GetValue (V)"},{"section":"x8.7.2","name":"8.7.2 PutValue (V, W)"},{"section":"x8.8","name":"8.8 The List Specification Type"},{"section":"x8.9","name":"8.9 The Completion Specification Type"},{"section":"x8.10","name":"8.10 The Property Descriptor and Property Identifier Specification Types"},{"section":"x8.10.1","name":"8.10.1 IsAccessorDescriptor ( Desc )"},{"section":"x8.10.2","name":"8.10.2 IsDataDescriptor ( Desc )"},{"section":"x8.10.3","name":"8.10.3 IsGenericDescriptor ( Desc )"},{"section":"x8.10.4","name":"8.10.4 FromPropertyDescriptor ( Desc )"},{"section":"x8.10.5","name":"8.10.5 ToPropertyDescriptor ( Obj )"},{"section":"x8.11","name":"8.11 The Lexical Environment and Environment Record Specification Types"},{"section":"x8.12","name":"8.12 Algorithms for Object Internal Methods"},{"section":"x8.12.1","name":"8.12.1 [[GetOwnProperty]] (P)"},{"section":"x8.12.2","name":"8.12.2 [[GetProperty]] (P)"},{"section":"x8.12.3","name":"8.12.3 [[Get]] (P)"},{"section":"x8.12.4","name":"8.12.4 [[CanPut]] (P)"},{"section":"x8.12.5","name":"8.12.5 [[Put]] ( P, V, Throw )"},{"section":"x8.12.6","name":"8.12.6 [[HasProperty]] (P)"},{"section":"x8.12.7","name":"8.12.7 [[Delete]] (P, Throw)"},{"section":"x8.12.8","name":"8.12.8 [[DefaultValue]] (hint)"},{"section":"x8.12.9","name":"8.12.9 [[DefineOwnProperty]] (P, Desc, Throw)"},{"section":"x9","name":"9 Type Conversion and Testing"},{"section":"x9.1","name":"9.1 ToPrimitive"},{"section":"x9.2","name":"9.2 ToBoolean"},{"section":"x9.3","name":"9.3 ToNumber"},{"section":"x9.3.1","name":"9.3.1 ToNumber Applied to the String Type"},{"section":"x9.4","name":"9.4 ToInteger"},{"section":"x9.5","name":"9.5 ToInt32: (Signed 32 Bit Integer)"},{"section":"x9.6","name":"9.6 ToUint32: (Unsigned 32 Bit Integer)"},{"section":"x9.7","name":"9.7 ToUint16: (Unsigned 16 Bit Integer)"},{"section":"x9.8","name":"9.8 ToString"},{"section":"x9.8.1","name":"9.8.1 ToString Applied to the Number Type"},{"section":"x9.9","name":"9.9 ToObject"},{"section":"x9.10","name":"9.10 CheckObjectCoercible"},{"section":"x9.11","name":"9.11 IsCallable"},{"section":"x9.12","name":"9.12 The SameValue Algorithm"},{"section":"x10","name":"10 Executable Code and Execution Contexts"},{"section":"x10.1","name":"10.1 Types of Executable Code"},{"section":"x10.1.1","name":"10.1.1 Strict Mode Code"},{"section":"x10.2","name":"10.2 Lexical Environments"},{"section":"x10.2.1","name":"10.2.1 Environment Records"},{"section":"x10.2.1.1","name":"10.2.1.1 Declarative Environment Records"},{"section":"x10.2.1.1.1","name":"10.2.1.1.1 HasBinding(N)"},{"section":"x10.2.1.1.2","name":"10.2.1.1.2 CreateMutableBinding (N, D)"},{"section":"x10.2.1.1.3","name":"10.2.1.1.3 SetMutableBinding (N,V,S)"},{"section":"x10.2.1.1.4","name":"10.2.1.1.4 GetBindingValue(N,S)"},{"section":"x10.2.1.1.5","name":"10.2.1.1.5 DeleteBinding (N)"},{"section":"x10.2.1.1.6","name":"10.2.1.1.6 ImplicitThisValue()"},{"section":"x10.2.1.1.7","name":"10.2.1.1.7 CreateImmutableBinding (N)"},{"section":"x10.2.1.1.8","name":"10.2.1.1.8 InitializeImmutableBinding (N,V)"},{"section":"x10.2.1.2","name":"10.2.1.2 Object Environment Records"},{"section":"x10.2.1.2.1","name":"10.2.1.2.1 HasBinding(N)"},{"section":"x10.2.1.2.2","name":"10.2.1.2.2 CreateMutableBinding (N, D)"},{"section":"x10.2.1.2.3","name":"10.2.1.2.3 SetMutableBinding (N,V,S)"},{"section":"x10.2.1.2.4","name":"10.2.1.2.4 GetBindingValue(N,S)"},{"section":"x10.2.1.2.5","name":"10.2.1.2.5 DeleteBinding (N)"},{"section":"x10.2.1.2.6","name":"10.2.1.2.6 ImplicitThisValue()"},{"section":"x10.2.2","name":"10.2.2 Lexical Environment Operations"},{"section":"x10.2.2.1","name":"10.2.2.1 GetIdentifierReference (lex, name, strict)"},{"section":"x10.2.2.2","name":"10.2.2.2 NewDeclarativeEnvironment (E)"},{"section":"x10.2.2.3","name":"10.2.2.3 NewObjectEnvironment (O, E)"},{"section":"x10.2.3","name":"10.2.3 The Global Environment"},{"section":"x10.3","name":"10.3 Execution Contexts"},{"section":"x10.3.1","name":"10.3.1 Identifier Resolution"},{"section":"x10.4","name":"10.4 Establishing an Execution Context"},{"section":"x10.4.1","name":"10.4.1 Entering Global Code"},{"section":"x10.4.1.1","name":"10.4.1.1 Initial Global Execution Context"},{"section":"x10.4.2","name":"10.4.2 Entering Eval Code"},{"section":"x10.4.2.1","name":"10.4.2.1 Strict Mode Restrictions"},{"section":"x10.4.3","name":"10.4.3 Entering Function Code"},{"section":"x10.5","name":"10.5 Declaration Binding Instantiation"},{"section":"x10.6","name":"10.6 Arguments Object"},{"section":"x11","name":"11 Expressions"},{"section":"x11.1","name":"11.1 Primary Expressions"},{"section":"x11.1.1","name":"11.1.1 The this Keyword"},{"section":"x11.1.2","name":"11.1.2 Identifier Reference"},{"section":"x11.1.3","name":"11.1.3 Literal Reference"},{"section":"x11.1.4","name":"11.1.4 Array Initialiser"},{"section":"x11.1.5","name":"11.1.5 Object Initialiser"},{"section":"x11.1.6","name":"11.1.6 The Grouping Operator"},{"section":"x11.2","name":"11.2 Left-Hand-Side Expressions"},{"section":"x11.2.1","name":"11.2.1 Property Accessors"},{"section":"x11.2.2","name":"11.2.2 The new Operator"},{"section":"x11.2.3","name":"11.2.3 Function Calls"},{"section":"x11.2.4","name":"11.2.4 Argument Lists"},{"section":"x11.2.5","name":"11.2.5 Function Expressions"},{"section":"x11.3","name":"11.3 Postfix Expressions"},{"section":"x11.3.1","name":"11.3.1 Postfix Increment Operator"},{"section":"x11.3.2","name":"11.3.2 Postfix Decrement Operator"},{"section":"x11.4","name":"11.4 Unary Operators"},{"section":"x11.4.1","name":"11.4.1 The delete Operator"},{"section":"x11.4.2","name":"11.4.2 The void Operator"},{"section":"x11.4.3","name":"11.4.3 The typeof Operator"},{"section":"x11.4.4","name":"11.4.4 Prefix Increment Operator"},{"section":"x11.4.5","name":"11.4.5 Prefix Decrement Operator"},{"section":"x11.4.6","name":"11.4.6 Unary + Operator"},{"section":"x11.4.7","name":"11.4.7 Unary - Operator"},{"section":"x11.4.8","name":"11.4.8 Bitwise NOT Operator ( ~ )"},{"section":"x11.4.9","name":"11.4.9 Logical NOT Operator ( ! )"},{"section":"x11.5","name":"11.5 Multiplicative Operators"},{"section":"x11.5.1","name":"11.5.1 Applying the * Operator"},{"section":"x11.5.2","name":"11.5.2 Applying the / Operator"},{"section":"x11.5.3","name":"11.5.3 Applying the % Operator"},{"section":"x11.6","name":"11.6 Additive Operators"},{"section":"x11.6.1","name":"11.6.1 The Addition operator ( + )"},{"section":"x11.6.2","name":"11.6.2 The Subtraction Operator ( - )"},{"section":"x11.6.3","name":"11.6.3 Applying the Additive Operators to Numbers"},{"section":"x11.7","name":"11.7 Bitwise Shift Operators"},{"section":"x11.7.1","name":"11.7.1 The Left Shift Operator ( << )"},{"section":"x11.7.2","name":"11.7.2 The Signed Right Shift Operator ( >> )"},{"section":"x11.7.3","name":"11.7.3 The Unsigned Right Shift Operator ( >>> )"},{"section":"x11.8","name":"11.8 Relational Operators"},{"section":"x11.8.1","name":"11.8.1 The Less-than Operator ( < )"},{"section":"x11.8.2","name":"11.8.2 The Greater-than Operator ( > )"},{"section":"x11.8.3","name":"11.8.3 The Less-than-or-equal Operator ( <= )"},{"section":"x11.8.4","name":"11.8.4 The Greater-than-or-equal Operator ( >= )"},{"section":"x11.8.5","name":"11.8.5 The Abstract Relational Comparison Algorithm"},{"section":"x11.8.6","name":"11.8.6 The instanceof operator"},{"section":"x11.8.7","name":"11.8.7 The in operator"},{"section":"x11.9","name":"11.9 Equality Operators"},{"section":"x11.9.1","name":"11.9.1 The Equals Operator ( == )"},{"section":"x11.9.2","name":"11.9.2 The Does-not-equals Operator ( != )"},{"section":"x11.9.3","name":"11.9.3 The Abstract Equality Comparison Algorithm"},{"section":"x11.9.4","name":"11.9.4 The Strict Equals Operator ( === )"},{"section":"x11.9.5","name":"11.9.5 The Strict Does-not-equal Operator ( !== )"},{"section":"x11.9.6","name":"11.9.6 The Strict Equality Comparison Algorithm"},{"section":"x11.10","name":"11.10 Binary Bitwise Operators"},{"section":"x11.11","name":"11.11 Binary Logical Operators"},{"section":"x11.12","name":"11.12 Conditional Operator ( ? : )"},{"section":"x11.13","name":"11.13 Assignment Operators"},{"section":"x11.13.1","name":"11.13.1 Simple Assignment ( = )"},{"section":"x11.13.2","name":"11.13.2 Compound Assignment ( op= )"},{"section":"x11.14","name":"11.14 Comma Operator ( , )"},{"section":"x12","name":"12 Statements"},{"section":"x12.1","name":"12.1 Block"},{"section":"x12.2","name":"12.2 Variable Statement"},{"section":"x12.2.1","name":"12.2.1 Strict Mode Restrictions"},{"section":"x12.3","name":"12.3 Empty Statement"},{"section":"x12.4","name":"12.4 Expression Statement"},{"section":"x12.5","name":"12.5 The if Statement"},{"section":"x12.6","name":"12.6 Iteration Statements"},{"section":"x12.6.1","name":"12.6.1 The do-while Statement"},{"section":"x12.6.2","name":"12.6.2 The while Statement"},{"section":"x12.6.3","name":"12.6.3 The for Statement"},{"section":"x12.6.4","name":"12.6.4 The for-in Statement"},{"section":"x12.7","name":"12.7 The continue Statement"},{"section":"x12.8","name":"12.8 The break Statement"},{"section":"x12.9","name":"12.9 The return Statement"},{"section":"x12.10","name":"12.10 The with Statement"},{"section":"x12.10.1","name":"12.10.1 Strict Mode Restrictions"},{"section":"x12.11","name":"12.11 The switch Statement"},{"section":"x12.12","name":"12.12 Labelled Statements"},{"section":"x12.13","name":"12.13 The throw Statement"},{"section":"x12.14","name":"12.14 The try Statement"},{"section":"x12.14.1","name":"12.14.1 Strict Mode Restrictions"},{"section":"x12.15","name":"12.15 The debugger statement"},{"section":"x13","name":"13 Function Definition"},{"section":"x13.1","name":"13.1 Strict Mode Restrictions"},{"section":"x13.2","name":"13.2 Creating Function Objects"},{"section":"x13.2.1","name":"13.2.1 [[Call]]"},{"section":"x13.2.2","name":"13.2.2 [[Construct]]"},{"section":"x13.2.3","name":"13.2.3 The Function Object"},{"section":"x14","name":"14 Program"},{"section":"x14.1","name":"14.1 Directive Prologues and the Use Strict Directive"},{"section":"x15","name":"15 Standard Built-in ECMAScript Objects"},{"section":"x15.1","name":"15.1 The Global Object"},{"section":"x15.1.1","name":"15.1.1 Value Properties of the Global Object"},{"section":"x15.1.1.1","name":"15.1.1.1 NaN"},{"section":"x15.1.1.2","name":"15.1.1.2 Infinity"},{"section":"x15.1.1.3","name":"15.1.1.3 undefined"},{"section":"x15.1.2","name":"15.1.2 Function Properties of the Global Object"},{"section":"x15.1.2.1","name":"15.1.2.1 eval (x)"},{"section":"x15.1.2.1.1","name":"15.1.2.1.1 Direct Call to Eval"},{"section":"x15.1.2.2","name":"15.1.2.2 parseInt (string , radix)"},{"section":"x15.1.2.3","name":"15.1.2.3 parseFloat (string)"},{"section":"x15.1.2.4","name":"15.1.2.4 isNaN (number)"},{"section":"x15.1.2.5","name":"15.1.2.5 isFinite (number)"},{"section":"x15.1.3","name":"15.1.3 URI Handling Function Properties"},{"section":"x15.1.3.1","name":"15.1.3.1 decodeURI (encodedURI)"},{"section":"x15.1.3.2","name":"15.1.3.2 decodeURIComponent (encodedURIComponent)"},{"section":"x15.1.3.3","name":"15.1.3.3 encodeURI (uri)"},{"section":"x15.1.3.4","name":"15.1.3.4 encodeURIComponent (uriComponent)"},{"section":"x15.1.4","name":"15.1.4 Constructor Properties of the Global Object"},{"section":"x15.1.4.1","name":"15.1.4.1 Object ( . . . )"},{"section":"x15.1.4.2","name":"15.1.4.2 Function ( . . . )"},{"section":"x15.1.4.3","name":"15.1.4.3 Array ( . . . )"},{"section":"x15.1.4.4","name":"15.1.4.4 String ( . . . )"},{"section":"x15.1.4.5","name":"15.1.4.5 Boolean ( . . . )"},{"section":"x15.1.4.6","name":"15.1.4.6 Number ( . . . )"},{"section":"x15.1.4.7","name":"15.1.4.7 Date ( . . . )"},{"section":"x15.1.4.8","name":"15.1.4.8 RegExp ( . . . )"},{"section":"x15.1.4.9","name":"15.1.4.9 Error ( . . . )"},{"section":"x15.1.4.10","name":"15.1.4.10 EvalError ( . . . )"},{"section":"x15.1.4.11","name":"15.1.4.11 RangeError ( . . . )"},{"section":"x15.1.4.12","name":"15.1.4.12 ReferenceError ( . . . )"},{"section":"x15.1.4.13","name":"15.1.4.13 SyntaxError ( . . . )"},{"section":"x15.1.4.14","name":"15.1.4.14 TypeError ( . . . )"},{"section":"x15.1.4.15","name":"15.1.4.15 URIError ( . . . )"},{"section":"x15.1.5","name":"15.1.5 Other Properties of the Global Object"},{"section":"x15.1.5.1","name":"15.1.5.1 Math"},{"section":"x15.1.5.2","name":"15.1.5.2 JSON"},{"section":"x15.2","name":"15.2 Object Objects"},{"section":"x15.2.1","name":"15.2.1 The Object Constructor Called as a Function"},{"section":"x15.2.1.1","name":"15.2.1.1 Object ( [ value ] )"},{"section":"x15.2.2","name":"15.2.2 The Object Constructor"},{"section":"x15.2.2.1","name":"15.2.2.1 new Object ( [ value ] )"},{"section":"x15.2.3","name":"15.2.3 Properties of the Object Constructor"},{"section":"x15.2.3.1","name":"15.2.3.1 Object.prototype"},{"section":"x15.2.3.2","name":"15.2.3.2 Object.getPrototypeOf ( O )"},{"section":"x15.2.3.3","name":"15.2.3.3 Object.getOwnPropertyDescriptor ( O, P ) "},{"section":"x15.2.3.4","name":"15.2.3.4 Object.getOwnPropertyNames ( O )"},{"section":"x15.2.3.5","name":"15.2.3.5 Object.create ( O [, Properties] )"},{"section":"x15.2.3.6","name":"15.2.3.6 Object.defineProperty ( O, P, Attributes )"},{"section":"x15.2.3.7","name":"15.2.3.7 Object.defineProperties ( O, Properties )"},{"section":"x15.2.3.8","name":"15.2.3.8 Object.seal ( O )"},{"section":"x15.2.3.9","name":"15.2.3.9 Object.freeze ( O )"},{"section":"x15.2.3.10","name":"15.2.3.10 Object.preventExtensions ( O )"},{"section":"x15.2.3.11","name":"15.2.3.11 Object.isSealed ( O )"},{"section":"x15.2.3.12","name":"15.2.3.12 Object.isFrozen ( O )"},{"section":"x15.2.3.13","name":"15.2.3.13 Object.isExtensible ( O )"},{"section":"x15.2.3.14","name":"15.2.3.14 Object.keys ( O )"},{"section":"x15.2.4","name":"15.2.4 Properties of the Object Prototype Object"},{"section":"x15.2.4.1","name":"15.2.4.1 Object.prototype.constructor"},{"section":"x15.2.4.2","name":"15.2.4.2 Object.prototype.toString ( )"},{"section":"x15.2.4.3","name":"15.2.4.3 Object.prototype.toLocaleString ( )"},{"section":"x15.2.4.4","name":"15.2.4.4 Object.prototype.valueOf ( )"},{"section":"x15.2.4.5","name":"15.2.4.5 Object.prototype.hasOwnProperty (V)"},{"section":"x15.2.4.6","name":"15.2.4.6 Object.prototype.isPrototypeOf (V)"},{"section":"x15.2.4.7","name":"15.2.4.7 Object.prototype.propertyIsEnumerable (V)"},{"section":"x15.2.5","name":"15.2.5 Properties of Object Instances"},{"section":"x15.3","name":"15.3 Function Objects"},{"section":"x15.3.1","name":"15.3.1 The Function Constructor Called as a Function"},{"section":"x15.3.1.1","name":"15.3.1.1 Function (p1, p2, … , pn, body)"},{"section":"x15.3.2","name":"15.3.2 The Function Constructor"},{"section":"x15.3.2.1","name":"15.3.2.1 new Function (p1, p2, … , pn, body)"},{"section":"x15.3.3","name":"15.3.3 Properties of the Function Constructor"},{"section":"x15.3.3.1","name":"15.3.3.1 Function.prototype"},{"section":"x15.3.3.2","name":"15.3.3.2 Function.length"},{"section":"x15.3.4","name":"15.3.4 Properties of the Function Prototype Object"},{"section":"x15.3.4.1","name":"15.3.4.1 Function.prototype.constructor"},{"section":"x15.3.4.2","name":"15.3.4.2 Function.prototype.toString ( )"},{"section":"x15.3.4.3","name":"15.3.4.3 Function.prototype.apply (thisArg, argArray)"},{"section":"x15.3.4.4","name":"15.3.4.4 Function.prototype.call (thisArg [ , arg1 [ , arg2, … ] ] )"},{"section":"x15.3.4.5","name":"15.3.4.5 Function.prototype.bind (thisArg [, arg1 [, arg2, …]])"},{"section":"x15.3.4.5.1","name":"15.3.4.5.1 [[Call]]"},{"section":"x15.3.4.5.2","name":"15.3.4.5.2 [[Construct]]"},{"section":"x15.3.4.5.3","name":"15.3.4.5.3 [[HasInstance]] (V)"},{"section":"x15.3.5","name":"15.3.5 Properties of Function Instances"},{"section":"x15.3.5.1","name":"15.3.5.1 length"},{"section":"x15.3.5.2","name":"15.3.5.2 prototype"},{"section":"x15.3.5.3","name":"15.3.5.3 [[HasInstance]] (V)"},{"section":"x15.3.5.4","name":"15.3.5.4 [[Get]] (P)"},{"section":"x15.4","name":"15.4 Array Objects"},{"section":"x15.4.1","name":"15.4.1 The Array Constructor Called as a Function"},{"section":"x15.4.1.1","name":"15.4.1.1 Array ( [ item1 [ , item2 [ , … ] ] ] )"},{"section":"x15.4.2","name":"15.4.2 The Array Constructor"},{"section":"x15.4.2.1","name":"15.4.2.1 new Array ( [ item0 [ , item1 [ , … ] ] ] )"},{"section":"x15.4.2.2","name":"15.4.2.2 new Array (len)"},{"section":"x15.4.3","name":"15.4.3 Properties of the Array Constructor"},{"section":"x15.4.3.1","name":"15.4.3.1 Array.prototype"},{"section":"x15.4.3.2","name":"15.4.3.2 Array.isArray ( arg )"},{"section":"x15.4.4","name":"15.4.4 Properties of the Array Prototype Object"},{"section":"x15.4.4.1","name":"15.4.4.1 Array.prototype.constructor"},{"section":"x15.4.4.2","name":"15.4.4.2 Array.prototype.toString ( )"},{"section":"x15.4.4.3","name":"15.4.4.3 Array.prototype.toLocaleString ( )"},{"section":"x15.4.4.4","name":"15.4.4.4 Array.prototype.concat ( [ item1 [ , item2 [ , … ] ] ] )"},{"section":"x15.4.4.5","name":"15.4.4.5 Array.prototype.join (separator)"},{"section":"x15.4.4.6","name":"15.4.4.6 Array.prototype.pop ( )"},{"section":"x15.4.4.7","name":"15.4.4.7 Array.prototype.push ( [ item1 [ , item2 [ , … ] ] ] )"},{"section":"x15.4.4.8","name":"15.4.4.8 Array.prototype.reverse ( )"},{"section":"x15.4.4.9","name":"15.4.4.9 Array.prototype.shift ( )"},{"section":"x15.4.4.10","name":"15.4.4.10 Array.prototype.slice (start, end)"},{"section":"x15.4.4.11","name":"15.4.4.11 Array.prototype.sort (comparefn)"},{"section":"x15.4.4.12","name":"15.4.4.12 Array.prototype.splice (start, deleteCount [ , item1 [ , item2 [ , … ] ] ] )"},{"section":"x15.4.4.13","name":"15.4.4.13 Array.prototype.unshift ( [ item1 [ , item2 [ , … ] ] ] )"},{"section":"x15.4.4.14","name":"15.4.4.14 Array.prototype.indexOf ( searchElement [ , fromIndex ] )"},{"section":"x15.4.4.15","name":"15.4.4.15 Array.prototype.lastIndexOf ( searchElement [ , fromIndex ] )"},{"section":"x15.4.4.16","name":"15.4.4.16 Array.prototype.every ( callbackfn [ , thisArg ] )"},{"section":"x15.4.4.17","name":"15.4.4.17 Array.prototype.some ( callbackfn [ , thisArg ] )"},{"section":"x15.4.4.18","name":"15.4.4.18 Array.prototype.forEach ( callbackfn [ , thisArg ] )"},{"section":"x15.4.4.19","name":"15.4.4.19 Array.prototype.map ( callbackfn [ , thisArg ] )"},{"section":"x15.4.4.20","name":"15.4.4.20 Array.prototype.filter ( callbackfn [ , thisArg ] )"},{"section":"x15.4.4.21","name":"15.4.4.21 Array.prototype.reduce ( callbackfn [ , initialValue ] )"},{"section":"x15.4.4.22","name":"15.4.4.22 Array.prototype.reduceRight ( callbackfn [ , initialValue ] )"},{"section":"x15.4.5","name":"15.4.5 Properties of Array Instances"},{"section":"x15.4.5.1","name":"15.4.5.1 [[DefineOwnProperty]] ( P, Desc, Throw )"},{"section":"x15.4.5.2","name":"15.4.5.2 length"},{"section":"x15.5","name":"15.5 String Objects"},{"section":"x15.5.1","name":"15.5.1 The String Constructor Called as a Function"},{"section":"x15.5.1.1","name":"15.5.1.1 String ( [ value ] )"},{"section":"x15.5.2","name":"15.5.2 The String Constructor"},{"section":"x15.5.2.1","name":"15.5.2.1 new String ( [ value ] )"},{"section":"x15.5.3","name":"15.5.3 Properties of the String Constructor"},{"section":"x15.5.3.1","name":"15.5.3.1 String.prototype"},{"section":"x15.5.3.2","name":"15.5.3.2 String.fromCharCode ( [ char0 [ , char1 [ , … ] ] ] )"},{"section":"x15.5.4","name":"15.5.4 Properties of the String Prototype Object"},{"section":"x15.5.4.1","name":"15.5.4.1 String.prototype.constructor"},{"section":"x15.5.4.2","name":"15.5.4.2 String.prototype.toString ( )"},{"section":"x15.5.4.3","name":"15.5.4.3 String.prototype.valueOf ( )"},{"section":"x15.5.4.4","name":"15.5.4.4 String.prototype.charAt (pos)"},{"section":"x15.5.4.5","name":"15.5.4.5 String.prototype.charCodeAt (pos)"},{"section":"x15.5.4.6","name":"15.5.4.6 String.prototype.concat ( [ string1 [ , string2 [ , … ] ] ] )"},{"section":"x15.5.4.7","name":"15.5.4.7 String.prototype.indexOf (searchString, position)"},{"section":"x15.5.4.8","name":"15.5.4.8 String.prototype.lastIndexOf (searchString, position)"},{"section":"x15.5.4.9","name":"15.5.4.9 String.prototype.localeCompare (that)"},{"section":"x15.5.4.10","name":"15.5.4.10 String.prototype.match (regexp)"},{"section":"x15.5.4.11","name":"15.5.4.11 String.prototype.replace (searchValue, replaceValue)"},{"section":"x15.5.4.12","name":"15.5.4.12 String.prototype.search (regexp)"},{"section":"x15.5.4.13","name":"15.5.4.13 String.prototype.slice (start, end)"},{"section":"x15.5.4.14","name":"15.5.4.14 String.prototype.split (separator, limit)"},{"section":"x15.5.4.15","name":"15.5.4.15 String.prototype.substring (start, end)"},{"section":"x15.5.4.16","name":"15.5.4.16 String.prototype.toLowerCase ( )"},{"section":"x15.5.4.17","name":"15.5.4.17 String.prototype.toLocaleLowerCase ( )"},{"section":"x15.5.4.18","name":"15.5.4.18 String.prototype.toUpperCase ( )"},{"section":"x15.5.4.19","name":"15.5.4.19 String.prototype.toLocaleUpperCase ( )"},{"section":"x15.5.4.20","name":"15.5.4.20 String.prototype.trim ( )"},{"section":"x15.5.5","name":"15.5.5 Properties of String Instances"},{"section":"x15.5.5.1","name":"15.5.5.1 length"},{"section":"x15.5.5.2","name":"15.5.5.2 [[GetOwnProperty]] ( P )"},{"section":"x15.6","name":"15.6 Boolean Objects"},{"section":"x15.6.1","name":"15.6.1 The Boolean Constructor Called as a Function"},{"section":"x15.6.1.1","name":"15.6.1.1 Boolean (value)"},{"section":"x15.6.2","name":"15.6.2 The Boolean Constructor"},{"section":"x15.6.2.1","name":"15.6.2.1 new Boolean (value)"},{"section":"x15.6.3","name":"15.6.3 Properties of the Boolean Constructor"},{"section":"x15.6.3.1","name":"15.6.3.1 Boolean.prototype"},{"section":"x15.6.4","name":"15.6.4 Properties of the Boolean Prototype Object"},{"section":"x15.6.4.1","name":"15.6.4.1 Boolean.prototype.constructor"},{"section":"x15.6.4.2","name":"15.6.4.2 Boolean.prototype.toString ( )"},{"section":"x15.6.4.3","name":"15.6.4.3 Boolean.prototype.valueOf ( )"},{"section":"x15.6.5","name":"15.6.5 Properties of Boolean Instances"},{"section":"x15.7","name":"15.7 Number Objects"},{"section":"x15.7.1","name":"15.7.1 The Number Constructor Called as a Function"},{"section":"x15.7.1.1","name":"15.7.1.1 Number ( [ value ] )"},{"section":"x15.7.2","name":"15.7.2 The Number Constructor"},{"section":"x15.7.2.1","name":"15.7.2.1 new Number ( [ value ] )"},{"section":"x15.7.3","name":"15.7.3 Properties of the Number Constructor"},{"section":"x15.7.3.1","name":"15.7.3.1 Number.prototype"},{"section":"x15.7.3.2","name":"15.7.3.2 Number.MAX_VALUE"},{"section":"x15.7.3.3","name":"15.7.3.3 Number.MIN_VALUE"},{"section":"x15.7.3.4","name":"15.7.3.4 Number.NaN"},{"section":"x15.7.3.5","name":"15.7.3.5 Number.NEGATIVE_INFINITY"},{"section":"x15.7.3.6","name":"15.7.3.6 Number.POSITIVE_INFINITY"},{"section":"x15.7.4","name":"15.7.4 Properties of the Number Prototype Object"},{"section":"x15.7.4.1","name":"15.7.4.1 Number.prototype.constructor"},{"section":"x15.7.4.2","name":"15.7.4.2 Number.prototype.toString ( [ radix ] )"},{"section":"x15.7.4.3","name":"15.7.4.3 Number.prototype.toLocaleString()"},{"section":"x15.7.4.4","name":"15.7.4.4 Number.prototype.valueOf ( )"},{"section":"x15.7.4.5","name":"15.7.4.5 Number.prototype.toFixed (fractionDigits)"},{"section":"x15.7.4.6","name":"15.7.4.6 Number.prototype.toExponential (fractionDigits)"},{"section":"x15.7.4.7","name":"15.7.4.7 Number.prototype.toPrecision (precision)"},{"section":"x15.7.5","name":"15.7.5 Properties of Number Instances"},{"section":"x15.8","name":"15.8 The Math Object"},{"section":"x15.8.1","name":"15.8.1 Value Properties of the Math Object"},{"section":"x15.8.1.1","name":"15.8.1.1 E"},{"section":"x15.8.1.2","name":"15.8.1.2 LN10"},{"section":"x15.8.1.3","name":"15.8.1.3 LN2"},{"section":"x15.8.1.4","name":"15.8.1.4 LOG2E"},{"section":"x15.8.1.5","name":"15.8.1.5 LOG10E"},{"section":"x15.8.1.6","name":"15.8.1.6 PI"},{"section":"x15.8.1.7","name":"15.8.1.7 SQRT1_2"},{"section":"x15.8.1.8","name":"15.8.1.8 SQRT2"},{"section":"x15.8.2","name":"15.8.2 Function Properties of the Math Object"},{"section":"x15.8.2.1","name":"15.8.2.1 abs (x)"},{"section":"x15.8.2.2","name":"15.8.2.2 acos (x)"},{"section":"x15.8.2.3","name":"15.8.2.3 asin (x)"},{"section":"x15.8.2.4","name":"15.8.2.4 atan (x)"},{"section":"x15.8.2.5","name":"15.8.2.5 atan2 (y, x)"},{"section":"x15.8.2.6","name":"15.8.2.6 ceil (x)"},{"section":"x15.8.2.7","name":"15.8.2.7 cos (x)"},{"section":"x15.8.2.8","name":"15.8.2.8 exp (x)"},{"section":"x15.8.2.9","name":"15.8.2.9 floor (x)"},{"section":"x15.8.2.10","name":"15.8.2.10 log (x)"},{"section":"x15.8.2.11","name":"15.8.2.11 max ( [ value1 [ , value2 [ , … ] ] ] )"},{"section":"x15.8.2.12","name":"15.8.2.12 min ( [ value1 [ , value2 [ , … ] ] ] )"},{"section":"x15.8.2.13","name":"15.8.2.13 pow (x, y)"},{"section":"x15.8.2.14","name":"15.8.2.14 random ( )"},{"section":"x15.8.2.15","name":"15.8.2.15 round (x)"},{"section":"x15.8.2.16","name":"15.8.2.16 sin (x)"},{"section":"x15.8.2.17","name":"15.8.2.17 sqrt (x)"},{"section":"x15.8.2.18","name":"15.8.2.18 tan (x)"},{"section":"x15.9","name":"15.9 Date Objects"},{"section":"x15.9.1","name":"15.9.1 Overview of Date Objects and Definitions of Abstract Operators"},{"section":"x15.9.1.1","name":"15.9.1.1 Time Values and Time Range"},{"section":"x15.9.1.2","name":"15.9.1.2 Day Number and Time within Day"},{"section":"x15.9.1.3","name":"15.9.1.3 Year Number"},{"section":"x15.9.1.4","name":"15.9.1.4 Month Number"},{"section":"x15.9.1.5","name":"15.9.1.5 Date Number"},{"section":"x15.9.1.6","name":"15.9.1.6 Week Day"},{"section":"x15.9.1.7","name":"15.9.1.7 Local Time Zone Adjustment"},{"section":"x15.9.1.8","name":"15.9.1.8 Daylight Saving Time Adjustment"},{"section":"x15.9.1.9","name":"15.9.1.9 Local Time"},{"section":"x15.9.1.10","name":"15.9.1.10 Hours, Minutes, Second, and Milliseconds"},{"section":"x15.9.1.11","name":"15.9.1.11 MakeTime (hour, min, sec, ms)"},{"section":"x15.9.1.12","name":"15.9.1.12 MakeDay (year, month, date)"},{"section":"x15.9.1.13","name":"15.9.1.13 MakeDate (day, time)"},{"section":"x15.9.1.14","name":"15.9.1.14 TimeClip (time)"},{"section":"x15.9.1.15","name":"15.9.1.15 Date Time String Format"},{"section":"x15.9.1.15.1","name":"15.9.1.15.1 Extended years"},{"section":"x15.9.2","name":"15.9.2 The Date Constructor Called as a Function"},{"section":"x15.9.2.1","name":"15.9.2.1 Date ( [ year [, month [, date [, hours [, minutes [, seconds [, ms ] ] ] ] ] ] ] )"},{"section":"x15.9.3","name":"15.9.3 The Date Constructor"},{"section":"x15.9.3.1","name":"15.9.3.1 new Date (year, month [, date [, hours [, minutes [, seconds [, ms ] ] ] ] ] )"},{"section":"x15.9.3.2","name":"15.9.3.2 new Date (value)"},{"section":"x15.9.3.3","name":"15.9.3.3 new Date ( )"},{"section":"x15.9.4","name":"15.9.4 Properties of the Date Constructor"},{"section":"x15.9.4.1","name":"15.9.4.1 Date.prototype"},{"section":"x15.9.4.2","name":"15.9.4.2 Date.parse (string)"},{"section":"x15.9.4.3","name":"15.9.4.3 Date.UTC (year, month [, date [, hours [, minutes [, seconds [, ms ] ] ] ] ])"},{"section":"x15.9.4.4","name":"15.9.4.4 Date.now ( )"},{"section":"x15.9.5","name":"15.9.5 Properties of the Date Prototype Object"},{"section":"x15.9.5.1","name":"15.9.5.1 Date.prototype.constructor"},{"section":"x15.9.5.2","name":"15.9.5.2 Date.prototype.toString ( )"},{"section":"x15.9.5.3","name":"15.9.5.3 Date.prototype.toDateString ( )"},{"section":"x15.9.5.4","name":"15.9.5.4 Date.prototype.toTimeString ( )"},{"section":"x15.9.5.5","name":"15.9.5.5 Date.prototype.toLocaleString ( )"},{"section":"x15.9.5.6","name":"15.9.5.6 Date.prototype.toLocaleDateString ( )"},{"section":"x15.9.5.7","name":"15.9.5.7 Date.prototype.toLocaleTimeString ( )"},{"section":"x15.9.5.8","name":"15.9.5.8 Date.prototype.valueOf ( )"},{"section":"x15.9.5.9","name":"15.9.5.9 Date.prototype.getTime ( )"},{"section":"x15.9.5.10","name":"15.9.5.10 Date.prototype.getFullYear ( )"},{"section":"x15.9.5.11","name":"15.9.5.11 Date.prototype.getUTCFullYear ( )"},{"section":"x15.9.5.12","name":"15.9.5.12 Date.prototype.getMonth ( )"},{"section":"x15.9.5.13","name":"15.9.5.13 Date.prototype.getUTCMonth ( )"},{"section":"x15.9.5.14","name":"15.9.5.14 Date.prototype.getDate ( )"},{"section":"x15.9.5.15","name":"15.9.5.15 Date.prototype.getUTCDate ( )"},{"section":"x15.9.5.16","name":"15.9.5.16 Date.prototype.getDay ( )"},{"section":"x15.9.5.17","name":"15.9.5.17 Date.prototype.getUTCDay ( )"},{"section":"x15.9.5.18","name":"15.9.5.18 Date.prototype.getHours ( )"},{"section":"x15.9.5.19","name":"15.9.5.19 Date.prototype.getUTCHours ( )"},{"section":"x15.9.5.20","name":"15.9.5.20 Date.prototype.getMinutes ( )"},{"section":"x15.9.5.21","name":"15.9.5.21 Date.prototype.getUTCMinutes ( )"},{"section":"x15.9.5.22","name":"15.9.5.22 Date.prototype.getSeconds ( )"},{"section":"x15.9.5.23","name":"15.9.5.23 Date.prototype.getUTCSeconds ( )"},{"section":"x15.9.5.24","name":"15.9.5.24 Date.prototype.getMilliseconds ( )"},{"section":"x15.9.5.25","name":"15.9.5.25 Date.prototype.getUTCMilliseconds ( )"},{"section":"x15.9.5.26","name":"15.9.5.26 Date.prototype.getTimezoneOffset ( )"},{"section":"x15.9.5.27","name":"15.9.5.27 Date.prototype.setTime (time)"},{"section":"x15.9.5.28","name":"15.9.5.28 Date.prototype.setMilliseconds (ms)"},{"section":"x15.9.5.29","name":"15.9.5.29 Date.prototype.setUTCMilliseconds (ms)"},{"section":"x15.9.5.30","name":"15.9.5.30 Date.prototype.setSeconds (sec [, ms ] )"},{"section":"x15.9.5.31","name":"15.9.5.31 Date.prototype.setUTCSeconds (sec [, ms ] )"},{"section":"x15.9.5.32","name":"15.9.5.32 Date.prototype.setMinutes (min [, sec [, ms ] ] )"},{"section":"x15.9.5.33","name":"15.9.5.33 Date.prototype.setUTCMinutes (min [, sec [, ms ] ] )"},{"section":"x15.9.5.34","name":"15.9.5.34 Date.prototype.setHours (hour [, min [, sec [, ms ] ] ] )"},{"section":"x15.9.5.35","name":"15.9.5.35 Date.prototype.setUTCHours (hour [, min [, sec [, ms ] ] ] )"},{"section":"x15.9.5.36","name":"15.9.5.36 Date.prototype.setDate (date)"},{"section":"x15.9.5.37","name":"15.9.5.37 Date.prototype.setUTCDate (date)"},{"section":"x15.9.5.38","name":"15.9.5.38 Date.prototype.setMonth (month [, date ] )"},{"section":"x15.9.5.39","name":"15.9.5.39 Date.prototype.setUTCMonth (month [, date ] )"},{"section":"x15.9.5.40","name":"15.9.5.40 Date.prototype.setFullYear (year [, month [, date ] ] )"},{"section":"x15.9.5.41","name":"15.9.5.41 Date.prototype.setUTCFullYear (year [, month [, date ] ] )"},{"section":"x15.9.5.42","name":"15.9.5.42 Date.prototype.toUTCString ( )"},{"section":"x15.9.5.43","name":"15.9.5.43 Date.prototype.toISOString ( )"},{"section":"x15.9.5.44","name":"15.9.5.44 Date.prototype.toJSON ( key )"},{"section":"x15.9.6","name":"15.9.6 Properties of Date Instances"},{"section":"x15.10","name":"15.10 RegExp (Regular Expression) Objects"},{"section":"x15.10.1","name":"15.10.1 Patterns"},{"section":"x15.10.2","name":"15.10.2 Pattern Semantics"},{"section":"x15.10.2.1","name":"15.10.2.1 Notation"},{"section":"x15.10.2.2","name":"15.10.2.2 Pattern"},{"section":"x15.10.2.3","name":"15.10.2.3 Disjunction"},{"section":"x15.10.2.4","name":"15.10.2.4 Alternative"},{"section":"x15.10.2.5","name":"15.10.2.5 Term"},{"section":"x15.10.2.6","name":"15.10.2.6 Assertion"},{"section":"x15.10.2.7","name":"15.10.2.7 Quantifier"},{"section":"x15.10.2.8","name":"15.10.2.8 Atom"},{"section":"x15.10.2.9","name":"15.10.2.9 AtomEscape"},{"section":"x15.10.2.10","name":"15.10.2.10 CharacterEscape"},{"section":"x15.10.2.11","name":"15.10.2.11 DecimalEscape"},{"section":"x15.10.2.12","name":"15.10.2.12 CharacterClassEscape"},{"section":"x15.10.2.13","name":"15.10.2.13 CharacterClass"},{"section":"x15.10.2.14","name":"15.10.2.14 ClassRanges"},{"section":"x15.10.2.15","name":"15.10.2.15 NonemptyClassRanges"},{"section":"x15.10.2.16","name":"15.10.2.16 NonemptyClassRangesNoDash"},{"section":"x15.10.2.17","name":"15.10.2.17 ClassAtom"},{"section":"x15.10.2.18","name":"15.10.2.18 ClassAtomNoDash"},{"section":"x15.10.2.19","name":"15.10.2.19 ClassEscape"},{"section":"x15.10.3","name":"15.10.3 The RegExp Constructor Called as a Function"},{"section":"x15.10.3.1","name":"15.10.3.1 RegExp(pattern, flags)"},{"section":"x15.10.4","name":"15.10.4 The RegExp Constructor"},{"section":"x15.10.4.1","name":"15.10.4.1 new RegExp(pattern, flags)"},{"section":"x15.10.5","name":"15.10.5 Properties of the RegExp Constructor"},{"section":"x15.10.5.1","name":"15.10.5.1 RegExp.prototype"},{"section":"x15.10.6","name":"15.10.6 Properties of the RegExp Prototype Object"},{"section":"x15.10.6.1","name":"15.10.6.1 RegExp.prototype.constructor"},{"section":"x15.10.6.2","name":"15.10.6.2 RegExp.prototype.exec(string)"},{"section":"x15.10.6.3","name":"15.10.6.3 RegExp.prototype.test(string)"},{"section":"x15.10.6.4","name":"15.10.6.4 RegExp.prototype.toString()"},{"section":"x15.10.7","name":"15.10.7 Properties of RegExp Instances"},{"section":"x15.10.7.1","name":"15.10.7.1 source"},{"section":"x15.10.7.2","name":"15.10.7.2 global"},{"section":"x15.10.7.3","name":"15.10.7.3 ignoreCase"},{"section":"x15.10.7.4","name":"15.10.7.4 multiline"},{"section":"x15.10.7.5","name":"15.10.7.5 lastIndex"},{"section":"x15.11","name":"15.11 Error Objects"},{"section":"x15.11.1","name":"15.11.1 The Error Constructor Called as a Function"},{"section":"x15.11.1.1","name":"15.11.1.1 Error (message)"},{"section":"x15.11.2","name":"15.11.2 The Error Constructor"},{"section":"x15.11.2.1","name":"15.11.2.1 new Error (message)"},{"section":"x15.11.3","name":"15.11.3 Properties of the Error Constructor"},{"section":"x15.11.3.1","name":"15.11.3.1 Error.prototype"},{"section":"x15.11.4","name":"15.11.4 Properties of the Error Prototype Object"},{"section":"x15.11.4.1","name":"15.11.4.1 Error.prototype.constructor"},{"section":"x15.11.4.2","name":"15.11.4.2 Error.prototype.name"},{"section":"x15.11.4.3","name":"15.11.4.3 Error.prototype.message"},{"section":"x15.11.4.4","name":"15.11.4.4 Error.prototype.toString ( )"},{"section":"x15.11.5","name":"15.11.5 Properties of Error Instances"},{"section":"x15.11.6","name":"15.11.6 Native Error Types Used in This Standard"},{"section":"x15.11.6.1","name":"15.11.6.1 EvalError"},{"section":"x15.11.6.2","name":"15.11.6.2 RangeError"},{"section":"x15.11.6.3","name":"15.11.6.3 ReferenceError"},{"section":"x15.11.6.4","name":"15.11.6.4 SyntaxError"},{"section":"x15.11.6.5","name":"15.11.6.5 TypeError"},{"section":"x15.11.6.6","name":"15.11.6.6 URIError"},{"section":"x15.11.7","name":"15.11.7 NativeError Object Structure"},{"section":"x15.11.7.1","name":"15.11.7.1 NativeError Constructors Called as Functions"},{"section":"x15.11.7.2","name":"15.11.7.2 NativeError (message)"},{"section":"x15.11.7.3","name":"15.11.7.3 The NativeError Constructors"},{"section":"x15.11.7.4","name":"15.11.7.4 New NativeError (message)"},{"section":"x15.11.7.5","name":"15.11.7.5 Properties of the NativeError Constructors"},{"section":"x15.11.7.6","name":"15.11.7.6 NativeError.prototype"},{"section":"x15.11.7.7","name":"15.11.7.7 Properties of the NativeError Prototype Objects"},{"section":"x15.11.7.8","name":"15.11.7.8 NativeError.prototype.constructor"},{"section":"x15.11.7.9","name":"15.11.7.9 NativeError.prototype.name"},{"section":"x15.11.7.10","name":"15.11.7.10 NativeError.prototype.message"},{"section":"x15.11.7.11","name":"15.11.7.11 Properties of NativeError Instances"},{"section":"x15.12","name":"15.12 The JSON Object"},{"section":"x15.12.1","name":"15.12.1 The JSON Grammar  "},{"section":"x15.12.1.1","name":"15.12.1.1 The JSON Lexical Grammar"},{"section":"x15.12.1.2","name":"15.12.1.2 The JSON Syntactic Grammar"},{"section":"x15.12.2","name":"15.12.2 parse ( text [ , reviver ] )"},{"section":"x15.12.3","name":"15.12.3 stringify ( value [ , replacer [ , space ] ] )"},{"section":"x16","name":"16 Errors"},{"section":"A","name":"Annex A (informative) Grammar Summary"},{"section":"A.1","name":"A.1 Lexical Grammar"},{"section":"A.2","name":"A.2 Number Conversions"},{"section":"A.3","name":"A.3 Expressions"},{"section":"A.4","name":"A.4 Statements"},{"section":"A.5","name":"A.5 Functions and Programs"},{"section":"A.6","name":"A.6 Universal Resource Identifier Character Classes"},{"section":"A.7","name":"A.7 Regular Expressions"},{"section":"A.8","name":"A.8 JSON"},{"section":"A.8.1","name":"A.8.1 JSON Lexical Grammar"},{"section":"A.8.2","name":"A.8.2 JSON Syntactic Grammar"},{"section":"B","name":"Annex B (informative) Compatibility"},{"section":"B.1","name":"B.1 Additional Syntax"},{"section":"B.1.1","name":"B.1.1 Numeric Literals"},{"section":"B.1.2","name":"B.1.2 String Literals"},{"section":"B.2","name":"B.2 Additional Properties"},{"section":"B.2.1","name":"B.2.1 escape (string)"},{"section":"B.2.2","name":"B.2.2 unescape (string)"},{"section":"B.2.3","name":"B.2.3 String.prototype.substr (start, length)"},{"section":"B.2.4","name":"B.2.4 Date.prototype.getYear ( )"},{"section":"B.2.5","name":"B.2.5 Date.prototype.setYear (year)"},{"section":"B.2.6","name":"B.2.6 Date.prototype.toGMTString ( )"},{"section":"C","name":"Annex C (informative) The Strict Mode of ECMAScript"},{"section":"D","name":"Annex D (informative) Corrections and Clarifications in the 5th Edition with Possible 3rd Edition Compatibility Impact"},{"section":"E","name":"Annex E (informative) Additions and Changes in the 5th Edition that Introduce Incompatibilities with the 3rd Edition"},{"section":"bibliography","name":"Bibliography"}];
 
 var spec = function ( args ) {
-	var lookup = args.toLowerCase();
-	var matches = specParts.filter(function ( obj ) {
-		return ~obj.name.toLowerCase().indexOf( lookup );
-	}).map(function ( obj ) {
-		//escape square-brackets and parentheses so the chat's markdown won't
-		//flip out
-		var name = obj.name.replace( /([\(\)\[\]])/g, '\\$1' );
-		return '[' + name + '](http://es5.github.com/#' + obj.section + ')';
-	});
+	var lookup = args.toLowerCase(),
+	matches = specParts
+		.filter(function ( obj ) {
+			return ~obj.name.toLowerCase().indexOf( lookup );
+		})
+		.map(function ( obj ) {
+			//escape square-brackets and parentheses so the chat's markdown
+			//won't flip out
+			var name = obj.name.replace( /([\(\)\[\]])/g, '\\$1' );
+			return '[' + name + '](http://es5.github.com/#' + obj.section + ')';
+		});
 
 	bot.log( matches, '/spec done' );
 	if ( !matches.length ) {
-		return args + ' could not be found in spec';
+		return args + ' not found in spec';
 	}
 	return matches.join( ', ' );
 };
@@ -2837,6 +2919,7 @@ bot.addCommand({
 });
 
 ;
+(function () {
 var list = JSON.parse( localStorage.getItem('todo') || '{}' );
 
 var userlist = function ( usrid ) {
@@ -2848,20 +2931,18 @@ var userlist = function ( usrid ) {
 
 	return {
 		get : function ( count ) {
-			return usr.map(function ( item, index ) {
+			return usr.slice( count ).map(function ( item, index ) {
 				return '(' + (index+1) + ')' + item;
 			}).join( ', ' );
 		},
 
 		add : function ( item ) {
 			usr.push( item );
-
 			return true;
 		},
 
 		remove : function ( item ) {
 			toRemove.push( usr.indexOf(item) );
-
 			return true;
 		},
 		removeByIndex : function ( idx ) {
@@ -2932,13 +3013,13 @@ var todo = function ( args ) {
 		});
 
 		if ( res ) {
-			ret = 'Items added.';
+			ret = 'Item(s) added.';
 		}
 
 		bot.log( ret, 'todo add' );
 	}
 
-	else if ( action === 'remove' ) {
+	else if ( action === 'rem' ) {
 		res = items.every(function ( item ) {
 
 			if ( /^\d+$/.test(item) ) {
@@ -2956,10 +3037,10 @@ var todo = function ( args ) {
 		});
 
 		if ( res ) {
-			ret = 'Items removed.';
+			ret = 'Item(s) removed.';
 		}
 
-		bot.log( ret, 'todo remove' );
+		bot.log( ret, 'todo rem' );
 	}
 	//not a valid action
 	else {
@@ -2981,10 +3062,10 @@ bot.addCommand({
 		del : 'NONE'
 	},
 	description : 'Your personal todo list. ' +
-		'`/get [count]` retrieves everything or count items. ' +
-		'`/add [items]` adds n-items to your todo list (make sure items ' +
+		'`get [count]` retrieves everything or count items. ' +
+		'`add [items]` adds n-items to your todo list (make sure items ' +
 			'with spaces are wrapped in quotes) ' +
-		'`/remove [indices]` removes items specified by indice'
+		'`rem [indices]` removes items specified by indice'
 });
 
-;
+}());

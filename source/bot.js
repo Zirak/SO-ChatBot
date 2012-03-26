@@ -54,24 +54,28 @@ var IO = window.IO = {
 		}
 	},
 
-	//it's a very incomplete, non-comprehensive implemantation, since I only
-	// use it for POST requests
 	xhr : function ( params ) {
-		params.headers = params.headers || {
-			'Content-Type' : 'application/x-www-form-urlencoded'
+		//merge in the defaults
+		params = Object.merge({
+			method   : 'GET',
+			headers  : {},
+			complete : function (){}
+		}, params);
 
-		};
+		params.headers = Object.merge( params.headers, {
+			'Content-Type' : 'application/x-www-form-urlencoded'
+		});
 
 		if ( typeof params.data === 'object' ) {
 			params.data = IO.urlstringify( params.data );
 		}
 
-		var xhr = new XMLHttpRequest(), complete = params.complete;
-		xhr.open( params.method || 'GET', params.url );
+		var xhr = new XMLHttpRequest();
+		xhr.open( params.method, params.url );
 
 		xhr.addEventListener( 'readystatechange', function () {
-			if ( xhr.readyState === 4 && complete && complete.call ) {
-				complete.call(
+			if ( xhr.readyState === 4 ) {
+				params.complete.call(
 					params.thisArg, xhr.responseText, xhr
 				);
 			}
@@ -87,27 +91,37 @@ var IO = window.IO = {
 	},
 
 	jsonp : function ( opts ) {
-		var script = document.createElement( 'script' ),
-			semiRandom = 'IO_' + ( Date.now() * Math.ceil(Math.random()) );
+		opts.data = opts.data || {};
+		opts.jsonpName = opts.jsonpName || 'jsonp';
 
+		var script = document.createElement( 'script' ),
+			semiRandom;
+
+		do {
+			semiRandom = 'IO_' + ( Date.now() * Math.ceil(Math.random()) );
+		} while ( window[semiRandom] );
+
+		//this is the function which will be called from inside the "jsonp file"
 		window[ semiRandom ] = function () {
 			opts.fun.apply( opts.thisArg, arguments );
 
 			//cleanup
-			window[ semiRandom ] = null;
+			delete window[ semiRandom ];
 			script.parentNode.removeChild( script );
 		};
 
+		//add the jsonp parameter to the data we're sending
+		opts.data[ opts.jsonpName ] = semiRandom;
+
+		//start preparing the url to be sent
 		if ( opts.url.indexOf('?') === -1 ) {
 			opts.url += '?';
 		}
 
-		if ( typeof opts.data === 'object' ) {
-			opts.url += IO.urlstringify( opts.data );
-		}
-		opts.jsonpName = opts.jsonpName || 'jsonp';
+		//append the data to be sent, in string form, to the url
+		opts.url += IO.urlstringify( opts.data );
 
-		script.src = opts.url + '&' + opts.jsonpName + '=' + semiRandom;
+		script.src = opts.url;
 		document.head.appendChild( script );
 	},
 
@@ -123,23 +137,31 @@ var IO = window.IO = {
 			return '';
 		};
 
-		var arrayStringify = function ( array, keyName ) {
-			keyName = singularStringify( keyName );
+		var arrayStringify = function ( key, array ) {
+			key = singularStringify( key );
 
-			return array.map(function ( thing ) {
-				return keyName + '=' + singularStringify( thing );
+			return array.map(function ( val ) {
+				return pair( key, val, true );
 			});
 		};
 
+		//returns a key=value pair. pass in dontStringifyKey so that, well, the
+		// key won't be stringified (used in arrayStringify)
+		var pair = function ( key, val, dontStringifyKey ) {
+			!dontStringifyKey && key = singularStringify( key );
+
+			return key + '=' + singularStringify( val );
+		};
+
 		return function ( obj ) {
+
 			return Object.keys( obj ).map(function ( key ) {
 				var val = obj[ key ];
 
 				if ( Array.isArray(val) ) {
-					return arrayStringify( val, key );
+					return arrayStringify( key, val );
 				} else {
-					return singularStringify(key) +
-						'=' + singularStringify( val );
+					return pair( key, val );
 				}
 			}).join( '&' );
 		};
@@ -149,6 +171,7 @@ var IO = window.IO = {
 		var script = document.createElement( 'script' );
 		script.src = url;
 		script.onload = cb;
+
 		document.head.appendChild( script );
 	}
 };
@@ -156,20 +179,23 @@ var IO = window.IO = {
 IO.decodehtml = (function (){
 var entities = {"quot":"\"","amp":"&","apos":"'","lt":"<","gt":">","nbsp":" ","iexcl":"¡","cent":"¢","pound":"£","curren":"¤","yen":"¥","brvbar":"¦","sect":"§","uml":"¨","copy":"©","ordf":"ª","laquo":"«","not":"¬","reg":"®","macr":"¯","deg":"°","plusmn":"±","sup2":"²","sup3":"³","acute":"´","micro":"µ","para":"¶","middot":"·","cedil":"¸","sup1":"¹","ordm":"º","raquo":"»","frac14":"¼","frac12":"½","frac34":"¾","iquest":"¿","Agrave":"À","Aacute":"Á","Acirc":"Â","Atilde":"Ã","Auml":"Ä","Aring":"Å","AElig":"Æ","Ccedil":"Ç","Egrave":"È","Eacute":"É","Ecirc":"Ê","Euml":"Ë","Igrave":"Ì","Iacute":"Í","Icirc":"Î","Iuml":"Ï","ETH":"Ð","Ntilde":"Ñ","Ograve":"Ò","Oacute":"Ó","Ocirc":"Ô","Otilde":"Õ","Ouml":"Ö","times":"×","Oslash":"Ø","Ugrave":"Ù","Uacute":"Ú","Ucirc":"Û","Uuml":"Ü","Yacute":"Ý","THORN":"Þ","szlig":"ß","agrave":"à","aacute":"á","acirc":"â","atilde":"ã","auml":"ä","aring":"å","aelig":"æ","ccedil":"ç","egrave":"è","eacute":"é","ecirc":"ê","euml":"ë","igrave":"ì","iacute":"í","icirc":"î","iuml":"ï","eth":"ð","ntilde":"ñ","ograve":"ò","oacute":"ó","ocirc":"ô","otilde":"õ","ouml":"ö","divide":"÷","oslash":"ø","ugrave":"ù","uacute":"ú","ucirc":"û","uuml":"ü","yacute":"ý","thorn":"þ","yuml":"ÿ","OElig":"Œ","oelig":"œ","Scaron":"Š","scaron":"š","Yuml":"Ÿ","fnof":"ƒ","circ":"ˆ","tilde":"˜","Alpha":"Α","Beta":"Β","Gamma":"Γ","Delta":"Δ","Epsilon":"Ε","Zeta":"Ζ","Eta":"Η","Theta":"Θ","Iota":"Ι","Kappa":"Κ","Lambda":"Λ","Mu":"Μ","Nu":"Ν","Xi":"Ξ","Omicron":"Ο","Pi":"Π","Rho":"Ρ","Sigma":"Σ","Tau":"Τ","Upsilon":"Υ","Phi":"Φ","Chi":"Χ","Psi":"Ψ","Omega":"Ω","alpha":"α","beta":"β","gamma":"γ","delta":"δ","epsilon":"ε","zeta":"ζ","eta":"η","theta":"θ","iota":"ι","kappa":"κ","lambda":"λ","mu":"μ","nu":"ν","xi":"ξ","omicron":"ο","pi":"π","rho":"ρ","sigmaf":"ς","sigma":"σ","tau":"τ","upsilon":"υ","phi":"φ","chi":"χ","psi":"ψ","omega":"ω","thetasym":"ϑ","upsih":"ϒ","piv":"ϖ","ensp":" ","emsp":" ","thinsp":" ","ndash":"–","mdash":"—","lsquo":"‘","rsquo":"’","sbquo":"‚","ldquo":"“","rdquo":"”","bdquo":"„","dagger":"†","Dagger":"‡","bull":"•","hellip":"…","permil":"‰","prime":"′","Prime":"″","lsaquo":"‹","rsaquo":"›","oline":"‾","frasl":"⁄","euro":"€","image":"ℑ","weierp":"℘","real":"ℜ","trade":"™","alefsym":"ℵ","larr":"←","uarr":"↑","rarr":"→","darr":"↓","harr":"↔","crarr":"↵","lArr":"⇐","uArr":"⇑","rArr":"⇒","dArr":"⇓","hArr":"⇔","forall":"∀","part":"∂","exist":"∃","empty":"∅","nabla":"∇","isin":"∈","notin":"∉","ni":"∋","prod":"∏","sum":"∑","minus":"−","lowast":"∗","radic":"√","prop":"∝","infin":"∞","ang":"∠","and":"∧","or":"∨","cap":"∩","cup":"∪","int":"∫","there4":"∴","sim":"∼","cong":"≅","asymp":"≈","ne":"≠","equiv":"≡","le":"≤","ge":"≥","sub":"⊂","sup":"⊃","nsub":"⊄","sube":"⊆","supe":"⊇","oplus":"⊕","otimes":"⊗","perp":"⊥","sdot":"⋅","lceil":"⌈","rceil":"⌉","lfloor":"⌊","rfloor":"⌋","lang":"〈","rang":"〉","loz":"◊","spades":"♠","clubs":"♣","hearts":"♥","diams":"♦"};
 
+var entityRegex = /\&#?[\w;]+;/g
+var replaceEntities = function ( entity ) {
+	//remove the & and split into each separate entity
+	return entity.slice( 1 ).split( ';' ).map( decodeEntity ).join( '' );
+};
+var decodeEntity = function ( entity ) {
+		//starts with a #, grab what it represents
+		if ( entity[0] === '#' ) {
+			return String.fromCharCode( Number(entity.slice(1)) );
+		}
+		//grab the entity meaning, or itself if nothing in entities table
+		return entities[ entity ] || entity;
+};
+
 return function ( html ) {
 	//capture &blah; &blah;bloo and &#1337
-	return html.replace( /\&#?[\w;]+;/g, function ( entity ) {
-		//remove the & and split into each separate entity
-		return entity.slice( 1 ).split( ';' ).map(function ( entity ) {
-			//starts with a #, grab what it represents
-			if ( entity[0] === '#' ) {
-				return String.fromCharCode( Number(entity.slice(1)) );
-			}
-			//grab the entity
-			return entities[ entity ] || entity;
-		//join the separate entities together
-		}).join( '' );
-	});
+	return html.replace( entityRegex, replaceEntities );
 };
 }());
 
@@ -244,9 +270,11 @@ var bot = window.bot = {
 			return;
 		}
 
-		var msg = IO.decodehtml(msgObj.content);
-		msg = msg.slice( this.invocationPattern.length ).trim();
-		msg = this.Message( msg, msgObj );
+		var msg = IO.decodehtml( msgObj.content );
+		msg = this.Message(
+			msg.slice( this.invocationPattern.length ).trim(),
+			msgObj
+		);
 
 		bot.log( msg, 'parseMessage valid' );
 
@@ -274,12 +302,13 @@ var bot = window.bot = {
 			if ( e.lineNumber ) {
 				err += ' on line ' + e.lineNumber;
 			}
+			//column isn't part of ordinary errors, it's set in custom ones
 			if ( e.column ) {
 				err += ' on column ' + e.column;
 			}
 
 			msg.directreply( err );
-
+			//make sure we have it documented
 			console.error( e, err );
 		}
 	},
@@ -297,6 +326,7 @@ var bot = window.bot = {
 
 		bot.log( commandParts, 'parseCommand matched' );
 
+		//see if there was some error fetching the command
 		var cmdObj = this.getCommand( commandName );
 		if ( cmdObj.error ) {
 			msg.reply( cmdObj.error );
@@ -350,6 +380,7 @@ var bot = window.bot = {
 				//find commands resembling the one the user entered
 				guesses = this.commandDictionary.search( cmdName );
 
+			//resembling command(s) found, add them to the error message
 			if ( guesses.length ) {
 				msg += ' Did you mean: ' + guesses.join( ', ' );
 			}
@@ -363,11 +394,11 @@ var bot = window.bot = {
 	},
 
 	//the function women think is lacking in men
-	listen : function ( regex, fun, thisArg ) {
+	listen : function listen ( regex, fun, thisArg ) {
 		if ( Array.isArray(regex) ) {
 			regex.forEach(function ( reg ) {
-				this.listen( reg, fun, thisArg );
-			}, this );
+				listen( reg, fun, thisArg );
+			});
 		}
 		else {
 			this.listeners.push({
@@ -395,11 +426,15 @@ var bot = window.bot = {
 			}
 		});
 
+		//no listener fancied the message. this is the last frontier, so just
+		// give up in a fancy, dignified way
 		if ( !fired ) {
 			msg.reply( 'Y U NO MAEK SENSE!?' );
 		}
 	},
 
+	//the next two functions shouldn't be here, but as of yet no real adapter
+	// mechanism, so you could fit this bot into other chats, has been planned
 	reply : function ( msg, msgObj ) {
 		var usr = msgObj.user_name.replace( /\s/g, '' ),
 			roomid = msgObj.room_id;
@@ -454,6 +489,7 @@ bot.banlist.remove = function ( item ) {
 	}
 };
 
+//some sort of pseudo constructor
 bot.Command = function ( cmd ) {
 	cmd.name = cmd.name.toLowerCase();
 
@@ -552,6 +588,14 @@ bot.Message = function ( text, msgObj ) {
 
 	return ret;
 };
+
+bot.owners = [
+	419970, //Raynos
+	342129, //Matt McDonald
+	170224, //Ivo Wetzel
+	94197,  //Andy E
+	617762  //me (Zirak)
+];
 
 IO.register( 'receiveinput', bot.validateMessage, bot );
 IO.register( 'input', bot.parseMessage, bot );
@@ -775,19 +819,17 @@ String.prototype.startsWith = function ( str ) {
 // that I have to use Object.defineProperty to make these non-enumerable
 Object.defineProperty( Array.prototype, 'invoke', {
 	value : function ( funName ) {
-		var args = [].slice.call( arguments, 1 ), ret = [];
+		var args = [].slice.call( arguments, 1 );
 
-		this.forEach(function ( item, index ) {
+		return this.map(function ( item, index ) {
 			var res = item;
 
-			if ( item[funName] && item[funName].call ) {
-				res = item[ funName ].call( item, args );
+			if ( item[funName] && item[funName].apply ) {
+				res = item[ funName ].apply( item, args );
 			}
 
-			ret[ index ] = res;
+			return res;
 		});
-
-		return ret;
 	},
 
 	configurable : true,

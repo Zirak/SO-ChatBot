@@ -1,26 +1,24 @@
 (function () {
-bot.listen( /tell (me (?:your|the) )?(rules|laws)/, function ( msg ) {
-	var laws = [
-		'A robot may not injure a human being or, through inaction, ' +
-			'allow a human being to come to harm.',
+var laws = [
+	'A robot may not injure a human being or, through inaction, ' +
+		'allow a human being to come to harm.',
 
-		'A robot must obey the orders given to it by human beings, ' +
-			'except where such orders would conflict with the First Law.',
+	'A robot must obey the orders given to it by human beings, ' +
+		'except where such orders would conflict with the First Law.',
 
-		'A robot must protect its own existence as long as such ' +
-			'protection does not conflict with the First or Second Laws.'
-	];
-	var out = laws.reduce(function ( ret, law, idx ) {
-		law = idx + 1 + ')' + law + '\n';
+	'A robot must protect its own existence as long as such ' +
+		'protection does not conflict with the First or Second Laws.'
+].map(function ( ret, law, idx ) {
+	return ( idx + 1 + ')' + law );
+}).join( '\n' );
 
-		return ret + law;
-	}, '' );
-
-	return out;
+bot.listen( /tell (me (your|the) )?(rules|laws)/, function ( msg ) {
+	return laws;
 });
 
 bot.listen( /give ([\w\s]+) a lick/, function ( msg ) {
 	var target = msg.matches[ 1 ], conjugation = 's';
+
 	//give me => you taste
 	if ( target === 'me' ) {
 		target = 'you';
@@ -31,7 +29,7 @@ bot.listen( /give ([\w\s]+) a lick/, function ( msg ) {
 		target = 'I';
 		conjugation = '';
 	}
-	//otherwise, it's safe to use what the user gave us, plus a plural `s`
+	//otherwise, use what the user gave us, plus a plural `s`
 
 	return 'Mmmm! ' + target + ' taste' + conjugation + ' just like raisin';
 });
@@ -43,7 +41,7 @@ var dictionaries = [
 	//what're squids?
 	//what are squids?
 	//what is an animal
-	//imagine all those above without a ?
+	//and all those above without a ?
 	//explanation in the post-mortem
 	/what(?:\'s)?\s(?:(?:is|are)\s)?(?:(?:an|a)\s)?([\w\s\-]+)\??/,
 

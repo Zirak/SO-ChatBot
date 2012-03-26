@@ -10,16 +10,14 @@ var commands = {
 				return cmd.error;
 			}
 
-			var desc = cmd.description;
-			if ( !desc ) {
-				return 'No info is available on command ' + args;
-			}
+			var desc = cmd.description || 'No info is available';
 
 			return args + ': ' + desc;
 		}
 
 		return (
-			'https://github.com/Titani/SO-ChatBot/wiki/Interacting-with-the-bot'
+			'https://github.com/Titani/SO-ChatBot/wiki/' +
+				'Interacting-with-the-bot'
 		);
 	},
 
@@ -41,8 +39,8 @@ var commands = {
 
 	forget : function ( args ) {
 		var name = args.toLowerCase();
+			cmd = bot.getCommand( name );
 
-		var cmd = bot.getCommand( name );
 		if ( cmd.error ) {
 			return cmd.error;
 		}
@@ -56,19 +54,18 @@ var commands = {
 	},
 
 	ban : function ( args ) {
-		var msg = '',
-		toBan = args.parse().map(function ( usrid ) {
+		var msg = '';
+		args.parse().map(function ( usrid ) {
 			var id = Number( usrid );
 			//name provided instead of id
 			if ( /\D/.test(usrid) ) {
 				id = findUserid( usrid );
 			}
 
-			console.log( owners, id, owners.indexOf(id) );
 			if ( id < 0 ) {
 				msg += 'Cannot find user ' + usrid + '. ';
 			}
-			else if ( owners.indexOf(id) >= 0 ) {
+			else if ( bot.owners.indexOf(id) >= 0 ) {
 				msg += 'Cannot mindjail owner ' + usrid + '. ';
 				id = -1;
 			}
@@ -94,8 +91,8 @@ var commands = {
 	},
 
 	unban : function ( args ) {
-		var msg = '',
-		toBan = args.parse().map(function ( usrid ) {
+		var msg = '';
+		args.parse().map(function ( usrid ) {
 			var id = Number( usrid );
 			//name provided instead of id
 			if ( /\D/.test(usrid) ) {
@@ -124,9 +121,9 @@ var commands = {
 
 	regex : function ( args ) {
 		var parts = args.parse(),
-			what = parts[ 0 ], pattern = parts[ 1 ], flags = parts[ 2 ] || '';
+			what = parts[ 0 ], pattern = parts[ 1 ], flags = parts[ 2 ] || '',
 
-		var regex = new RegExp( pattern, flags.toLowerCase() ),
+			regex = new RegExp( pattern, flags.toLowerCase() ),
 			matches = regex.exec( what );
 
 		bot.log( what, pattern, flags, regex, 'regex parsed' );
@@ -149,18 +146,19 @@ var commands = {
 			return splitArgs.map( jquery ).join( ' ' );
 		}
 
-		var props = args.trim().replace( /^\$/, 'jQuery' );
+		var props = args.trim().replace( /^\$/, 'jQuery' ),
 
-		var parts = props.split( '.' ), exists = false, url = props, msg;
+			parts = props.split( '.' ), exists = false,
+			url = props, msg;
 		//parts will contain two likely components, depending on the input
 		// jQuery.fn.prop -  parts[0] = jQuery, parts[1] = prop
 		// jQuery.prop    -  parts[0] = jQuery, parts[1] = prop
 		// prop           -  parts[0] = prop
-
+		//
 		//jQuery API urls works like this:
 		// if it's on the jQuery object, then the url is /jQuery.property
 		// if it's on the proto, then the url is /property
-
+		//
 		//so, the mapping goes like this:
 		// jQuery.fn.prop => prop
 		// jQuery.prop    => jQuery.prop if it's on jQuery
@@ -214,6 +212,8 @@ var commands = {
 	},
 
 	online : function () {
+		//the pseudo-selector for the user names looks like this:
+		//document .present-users .avatar:nth-child(0).title
 		var avatars = document.getElementById( 'present-users' )
 				.getElementsByClassName( 'avatar' );
 
@@ -232,7 +232,6 @@ var commands = {
 		// digit in there"
 		if ( /\D/.test(usrid) ) {
 			id = findUserid( usrid );
-			console.log( id );
 
 			if ( id < 0 ) {
 				return 'Can\'t find user ' + usrid + ' in this chatroom.';
@@ -351,11 +350,15 @@ commands.norris.async = true;
 
 //cb is for internal blah blah blah
 commands.urban = (function () {
-var cache = {};
+var cache = Object.create( null );
 
 return function ( args, cb ) {
 	if ( !args.length ) {
 		return 'Y U NO PROVIDE ARGUMENTS!?';
+	}
+
+	if ( cache[args] ) {
+		return cache[ args ];
 	}
 
 	IO.jsonp({
@@ -371,7 +374,7 @@ return function ( args, cb ) {
 		var msg, top;
 
 		if ( resp.result_type === 'no_results' ) {
-			msg = 'Y U NO MAEK SENSE!!!???!!?11 No results.';
+			msg = 'Y U NO MAEK SENSE!!!???!!?11 No results for ' + args;
 		}
 		else {
 			top = resp.list[ 0 ];
@@ -399,15 +402,15 @@ var variables = {
 
 	someone : function () {
 		var presentUsers = document.getElementById( 'sidebar' )
-			.getElementsByClassName( 'present-user' );
+				.getElementsByClassName( 'present-user' );
 
 		//the chat keeps a low opacity for users who remained silent for long,
 		// and high opacity for those who recently talked
 		var active = [].filter.call( presentUsers, function ( user ) {
 			return Number( user.style.opacity ) >= 0.5;
-		});
+		}),
+			user = active[ Math.floor(Math.random() * (active.length-1)) ];
 
-		var user = active[ Math.floor(Math.random() * (active.length-1)) ];
 		return user.getElementsByTagName( 'img' )[ 0 ].title;
 	},
 
@@ -619,8 +622,8 @@ return function mdn ( args ) {
 
 	bot.log( args, parts, '/mdn input' );
 
+	//part of the DOM?
 	var lowercased = parts[ 0 ].toLowerCase();
-
 	if ( DOMParts.hasOwnProperty(lowercased) ) {
 		parts[ 0 ] = DOMParts[ lowercased ] || lowercased;
 		url = base + 'DOM/' + parts.join( '.' );
@@ -628,12 +631,14 @@ return function mdn ( args ) {
 		bot.log( url, '/mdn DOM' );
 	}
 
+	//it may be documented as part of the global object
 	else if ( window[parts[0]] ) {
 		url = base +
 			'JavaScript/Reference/Global_Objects/' + parts.join( '/' );
 		bot.log( url, '/mdn global' );
 	}
 
+	//i unno
 	else {
 		url = 'https://developer.mozilla.org/en-US/search?q=' + args;
 		bot.log( url, '/mdn unknown' );
@@ -667,27 +672,29 @@ var ranges = {
 
 return function ( args, cb ) {
 	var parts = args.parse(),
-		type = parts[ 0 ],
+		type = parts[ 0 ] || 'answer',
 		plural = type + 's',
 
 		range = parts[ 1 ] || 'last',
-		start, end,
+		start, end, //dates used in "between" calls
 
 		usrid = parts[ 2 ];
 
 	//if "between" is given, fetch the correct usrid
+	// /get type between start end usrid
 	if ( range === 'between' ) {
 		usrid = parts[ 4 ];
 	}
 
 	//range is a number and no usrid, assume the range is the usrid, and
-	//default range to last
-	if ( !usrid && !isNaN(Number(range)) ) {
+	// default range to last
+	// /get type usrid
+	if ( !usrid && !isNaN(range) ) {
 		usrid = range;
 		range = 'last';
 	}
 
-	//if after all this it's falsy, assume the user's id
+	//if after all this usrid is falsy, assume the user's id
 	if ( !usrid ) {
 		usrid = args.get( 'user_id' );
 	}
@@ -728,6 +735,8 @@ return function ( args, cb ) {
 
 		//get only the part we care about in the result, based on which one
 		// the user asked for (first, last, between)
+		//respObj will have an answers or questions property, based on what we
+		// queried for, in array form
 		var relativeParts = [].concat( ranges[range](respObj[plural]) ),
 			base = "http://stackoverflow.com/q/",
 			res;
@@ -863,23 +872,16 @@ Object.keys( commands ).forEach(function ( cmdName ) {
 	});
 });
 
-var owners = [
-	419970, //Raynos
-	342129, //Matt McDonald
-	170224, //Ivo Wetzel
-	94197,  //Andy E
-	617762  //me (Zirak)
-];
 //only allow specific users to use certain commands
 [ 'die', 'live', 'ban', 'unban' ].forEach(function ( cmdName ) {
-	bot.commands[ cmdName ].permissions.use = owners;
+	bot.commands[ cmdName ].permissions.use = bot.owners;
 });
 
 //utility functions used in some commands
 function findUserid ( username ) {
 	var users = [].slice.call( document
-		.getElementById( 'sidebar' )
-		.getElementsByClassName( 'user-container' )
+			.getElementById( 'sidebar' )
+			.getElementsByClassName( 'user-container' )
 	);
 
 	//grab a list of user ids
