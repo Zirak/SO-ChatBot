@@ -148,7 +148,7 @@ var IO = window.IO = {
 		//returns a key=value pair. pass in dontStringifyKey so that, well, the
 		// key won't be stringified (used in arrayStringify)
 		var pair = function ( key, val, dontStringifyKey ) {
-			!dontStringifyKey && key = singularStringify( key );
+			!dontStringifyKey && ( key = singularStringify(key) );
 
 			return key + '=' + singularStringify( val );
 		};
@@ -179,7 +179,7 @@ var IO = window.IO = {
 IO.decodehtml = (function (){
 var entities = {"quot":"\"","amp":"&","apos":"'","lt":"<","gt":">","nbsp":" ","iexcl":"¡","cent":"¢","pound":"£","curren":"¤","yen":"¥","brvbar":"¦","sect":"§","uml":"¨","copy":"©","ordf":"ª","laquo":"«","not":"¬","reg":"®","macr":"¯","deg":"°","plusmn":"±","sup2":"²","sup3":"³","acute":"´","micro":"µ","para":"¶","middot":"·","cedil":"¸","sup1":"¹","ordm":"º","raquo":"»","frac14":"¼","frac12":"½","frac34":"¾","iquest":"¿","Agrave":"À","Aacute":"Á","Acirc":"Â","Atilde":"Ã","Auml":"Ä","Aring":"Å","AElig":"Æ","Ccedil":"Ç","Egrave":"È","Eacute":"É","Ecirc":"Ê","Euml":"Ë","Igrave":"Ì","Iacute":"Í","Icirc":"Î","Iuml":"Ï","ETH":"Ð","Ntilde":"Ñ","Ograve":"Ò","Oacute":"Ó","Ocirc":"Ô","Otilde":"Õ","Ouml":"Ö","times":"×","Oslash":"Ø","Ugrave":"Ù","Uacute":"Ú","Ucirc":"Û","Uuml":"Ü","Yacute":"Ý","THORN":"Þ","szlig":"ß","agrave":"à","aacute":"á","acirc":"â","atilde":"ã","auml":"ä","aring":"å","aelig":"æ","ccedil":"ç","egrave":"è","eacute":"é","ecirc":"ê","euml":"ë","igrave":"ì","iacute":"í","icirc":"î","iuml":"ï","eth":"ð","ntilde":"ñ","ograve":"ò","oacute":"ó","ocirc":"ô","otilde":"õ","ouml":"ö","divide":"÷","oslash":"ø","ugrave":"ù","uacute":"ú","ucirc":"û","uuml":"ü","yacute":"ý","thorn":"þ","yuml":"ÿ","OElig":"Œ","oelig":"œ","Scaron":"Š","scaron":"š","Yuml":"Ÿ","fnof":"ƒ","circ":"ˆ","tilde":"˜","Alpha":"Α","Beta":"Β","Gamma":"Γ","Delta":"Δ","Epsilon":"Ε","Zeta":"Ζ","Eta":"Η","Theta":"Θ","Iota":"Ι","Kappa":"Κ","Lambda":"Λ","Mu":"Μ","Nu":"Ν","Xi":"Ξ","Omicron":"Ο","Pi":"Π","Rho":"Ρ","Sigma":"Σ","Tau":"Τ","Upsilon":"Υ","Phi":"Φ","Chi":"Χ","Psi":"Ψ","Omega":"Ω","alpha":"α","beta":"β","gamma":"γ","delta":"δ","epsilon":"ε","zeta":"ζ","eta":"η","theta":"θ","iota":"ι","kappa":"κ","lambda":"λ","mu":"μ","nu":"ν","xi":"ξ","omicron":"ο","pi":"π","rho":"ρ","sigmaf":"ς","sigma":"σ","tau":"τ","upsilon":"υ","phi":"φ","chi":"χ","psi":"ψ","omega":"ω","thetasym":"ϑ","upsih":"ϒ","piv":"ϖ","ensp":" ","emsp":" ","thinsp":" ","ndash":"–","mdash":"—","lsquo":"‘","rsquo":"’","sbquo":"‚","ldquo":"“","rdquo":"”","bdquo":"„","dagger":"†","Dagger":"‡","bull":"•","hellip":"…","permil":"‰","prime":"′","Prime":"″","lsaquo":"‹","rsaquo":"›","oline":"‾","frasl":"⁄","euro":"€","image":"ℑ","weierp":"℘","real":"ℜ","trade":"™","alefsym":"ℵ","larr":"←","uarr":"↑","rarr":"→","darr":"↓","harr":"↔","crarr":"↵","lArr":"⇐","uArr":"⇑","rArr":"⇒","dArr":"⇓","hArr":"⇔","forall":"∀","part":"∂","exist":"∃","empty":"∅","nabla":"∇","isin":"∈","notin":"∉","ni":"∋","prod":"∏","sum":"∑","minus":"−","lowast":"∗","radic":"√","prop":"∝","infin":"∞","ang":"∠","and":"∧","or":"∨","cap":"∩","cup":"∪","int":"∫","there4":"∴","sim":"∼","cong":"≅","asymp":"≈","ne":"≠","equiv":"≡","le":"≤","ge":"≥","sub":"⊂","sup":"⊃","nsub":"⊄","sube":"⊆","supe":"⊇","oplus":"⊕","otimes":"⊗","perp":"⊥","sdot":"⋅","lceil":"⌈","rceil":"⌉","lfloor":"⌊","rfloor":"⌋","lang":"〈","rang":"〉","loz":"◊","spades":"♠","clubs":"♣","hearts":"♥","diams":"♦"};
 
-var entityRegex = /\&#?[\w;]+;/g
+var entityRegex = /\&#?[\w;]+;/g;
 var replaceEntities = function ( entity ) {
 	//remove the & and split into each separate entity
 	return entity.slice( 1 ).split( ';' ).map( decodeEntity ).join( '' );
@@ -394,11 +394,11 @@ var bot = window.bot = {
 	},
 
 	//the function women think is lacking in men
-	listen : function listen ( regex, fun, thisArg ) {
+	listen : function ( regex, fun, thisArg ) {
 		if ( Array.isArray(regex) ) {
 			regex.forEach(function ( reg ) {
-				listen( reg, fun, thisArg );
-			});
+				this.listen( reg, fun, thisArg );
+			}, this);
 		}
 		else {
 			this.listeners.push({
@@ -602,6 +602,79 @@ IO.register( 'input', bot.parseMessage, bot );
 ////bot ends
 
 ////utility start
+//small utility functions
+Object.merge = function () {
+	return [].reduce.call( arguments, function ( ret, merger ) {
+
+		Object.keys( merger ).forEach(function ( key ) {
+			ret[ key ] = merger[ key ];
+		});
+
+		return ret;
+	}, {} );
+};
+
+String.prototype.indexesOf = function ( str, fromIndex ) {
+	//since we also use index to tell indexOf from where to begin, and since
+	// telling it to begin from where it found the match will cause it to just
+	// match it again and again, inside the indexOf we do `index + 1`
+	// to compensate for that 1, we need to subtract 1 from the original
+	// starting position
+	var index = ( fromIndex || 0 ) - 1,
+		ret = [];
+
+	while ( (index = this.indexOf(str, index + 1)) > -1 ) {
+		ret.push( index );
+	}
+
+	return ret;
+};
+String.prototype.startsWith = function ( str ) {
+	return this.indexOf( str ) === 0;
+};
+
+//SO chat uses an unfiltered for...in to iterate over an array somewhere, so
+// that I have to use Object.defineProperty to make these non-enumerable
+Object.defineProperty( Array.prototype, 'invoke', {
+	value : function ( funName ) {
+		var args = [].slice.call( arguments, 1 );
+
+		return this.map(function ( item, index ) {
+			var res = item;
+
+			if ( item[funName] && item[funName].apply ) {
+				res = item[ funName ].apply( item, args );
+			}
+
+			return res;
+		});
+	},
+
+	configurable : true,
+	writable : true
+});
+
+//async memoizer
+Function.prototype.memoizeAsync = function ( cb, thisArg ) {
+	var cache = Object.create( null ), fun = this;
+
+	return function ( hash ) {
+		if ( cache[hash] ) {
+			return cache[ hash ];
+		}
+		//turn arguments into an array
+		var args = [].slice.call( arguments );
+
+		//and push the callback to it
+		args.push(function ( res ) {
+			cache[ hash ] = res;
+			cb.apply( thisArg, arguments );
+		});
+
+		return fun.apply( this, args );
+	};
+};
+
 var polling = {
 	//used in the SO chat requests, dunno exactly what for, but guessing it's
 	// the latest id or something like that
@@ -783,79 +856,6 @@ output.timer = setInterval( output.loopage, 5000 );
 
 IO.register( 'output', output.build, output );
 IO.register( 'afteroutput', output.send, output );
-
-//small utility functions
-Object.merge = function () {
-	return [].reduce.call( arguments, function ( ret, merger ) {
-
-		Object.keys( merger ).forEach(function ( key ) {
-			ret[ key ] = merger[ key ];
-		});
-
-		return ret;
-	}, {} );
-};
-
-String.prototype.indexesOf = function ( str, fromIndex ) {
-	//since we also use index to tell indexOf from where to begin, and since
-	// telling it to begin from where it found the match will cause it to just
-	// match it again and again, inside the indexOf we do `index + 1`
-	// to compensate for that 1, we need to subtract 1 from the original
-	// starting position
-	var index = ( fromIndex || 0 ) - 1,
-		ret = [];
-
-	while ( (index = this.indexOf(str, index + 1)) > -1 ) {
-		ret.push( index );
-	}
-
-	return ret;
-};
-String.prototype.startsWith = function ( str ) {
-	return this.indexOf( str ) === 0;
-};
-
-//SO chat uses an unfiltered for...in to iterate over an array somewhere, so
-// that I have to use Object.defineProperty to make these non-enumerable
-Object.defineProperty( Array.prototype, 'invoke', {
-	value : function ( funName ) {
-		var args = [].slice.call( arguments, 1 );
-
-		return this.map(function ( item, index ) {
-			var res = item;
-
-			if ( item[funName] && item[funName].apply ) {
-				res = item[ funName ].apply( item, args );
-			}
-
-			return res;
-		});
-	},
-
-	configurable : true,
-	writable : true
-});
-
-//async memoizer
-Function.prototype.memoizeAsync = function ( cb, thisArg ) {
-	var cache = Object.create( null ), fun = this;
-
-	return function ( hash ) {
-		if ( cache[hash] ) {
-			return cache[ hash ];
-		}
-		//turn arguments into an array
-		var args = [].slice.call( arguments );
-
-		//and push the callback to it
-		args.push(function ( res ) {
-			cache[ hash ] = res;
-			cb.apply( thisArg, arguments );
-		});
-
-		return fun.apply( this, args );
-	};
-};
 ////utility end
 
 //a Trie suggestion dictionary, made by Esailija

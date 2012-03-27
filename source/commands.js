@@ -38,7 +38,7 @@ var commands = {
 	},
 
 	forget : function ( args ) {
-		var name = args.toLowerCase();
+		var name = args.toLowerCase(),
 			cmd = bot.getCommand( name );
 
 		if ( cmd.error ) {
@@ -265,12 +265,11 @@ return function ( args, cb ) {
 			format : 'json'
 		};
 
-	duckyAPI += IO.urlstringify( params );
-
 	IO.jsonp({
 		//talk to the duck!
 		url : duckyAPI,
 		fun : finishCall,
+		data : params,
 		jsonpName : 'callback'
 	});
 
@@ -708,21 +707,25 @@ return function ( args, cb ) {
 		return 'Invalid range specifier ' + range;
 	}
 
-	var url = 'http://api.stackoverflow.com/1.1/users/' + usrid + '/' +
-			plural + '?sort=creation';
+	var url = 'http://api.stackoverflow.com/1.1/users/' + usrid + '/' + plural,
+		params = {
+			sort : 'creation'
+		};
 
-	bot.log( url, '/get building url' );
+	bot.log( url, params, '/get building url' );
 
 	if ( range === 'between' ) {
 		start = Date.parse( parts[2] );
 		end = Date.parse( parts[3] );
-		url += '&fromdate=' + start + '&todate=' + end;
+		params.fromdate = start;
+		params.todate = end;
 
-		bot.log( url, '/get building url between' );
+		bot.log( url, params, '/get building url between' );
 	}
 
 	IO.jsonp({
 		url : url,
+		data : params,
 		fun : parseResponse
 	});
 

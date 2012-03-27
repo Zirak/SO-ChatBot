@@ -67,6 +67,8 @@ var parser = {
 	},
 
 	tokenize : function () {
+		var arg, ret = [];
+
 		//let the parsing commence!
 		while ( this.pos < this.length ) {
 			arg = this.nextArg();
@@ -76,6 +78,8 @@ var parser = {
 				ret.push( arg );
 			}
 		}
+
+		return ret;
 	},
 
 	//fetches the next argument (see the "scheme" at the top)
