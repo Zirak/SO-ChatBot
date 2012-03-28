@@ -60,13 +60,14 @@ var IO = window.IO = {
 			method   : 'GET',
 			headers  : {},
 			complete : function (){}
-		}, params);
+		}, params );
 
-		params.headers = Object.merge( params.headers, {
+		params.headers = Object.merge({
 			'Content-Type' : 'application/x-www-form-urlencoded'
-		});
+		}, params.headers );
 
-		if ( typeof params.data === 'object' ) {
+		//if the data is an object, and not a fakey String object, dress it up
+		if ( typeof params.data === 'object' && !params.data.charAt ) {
 			params.data = IO.urlstringify( params.data );
 		}
 
