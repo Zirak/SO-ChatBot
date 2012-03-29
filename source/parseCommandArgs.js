@@ -15,8 +15,8 @@ else {
 target.parseCommandArgs = (function () {
 
 //the different states, not nearly enough to represent a female humanoid
-//you know you're building something fancy when it has constants with undescores
-// in their name
+//you know you're building something fancy when it has constants with
+// undescores in their name
 var S_DATA         = 0,
 	S_SINGLE_QUOTE = 1,
 	S_DOUBLE_QUOTE = 2,
@@ -46,7 +46,8 @@ var parser = {
 
 	parse : function ( source, sep, esc ) {
 		//initializations are safe fun for the whole family!
-		//later-edit: the above comment is one of the weirdest I've ever written
+		//later-edit: the above comment is one of the weirdest I've ever
+		// written
 		this.source = source;
 		this.pos = 0;
 		this.length = source.length;

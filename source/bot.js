@@ -102,7 +102,7 @@ var IO = window.IO = {
 			semiRandom = 'IO_' + ( Date.now() * Math.ceil(Math.random()) );
 		} while ( window[semiRandom] );
 
-		//this is the function which will be called from inside the "jsonp file"
+		//this is the callback function, called from the "jsonp file"
 		window[ semiRandom ] = function () {
 			opts.fun.apply( opts.thisArg, arguments );
 
@@ -149,7 +149,9 @@ var IO = window.IO = {
 		//returns a key=value pair. pass in dontStringifyKey so that, well, the
 		// key won't be stringified (used in arrayStringify)
 		var pair = function ( key, val, dontStringifyKey ) {
-			!dontStringifyKey && ( key = singularStringify(key) );
+			if ( !dontStringifyKey ) {
+				key = singularStringify( key );
+			}
 
 			return key + '=' + singularStringify( val );
 		};
@@ -440,12 +442,12 @@ var bot = window.bot = {
 		var usr = msgObj.user_name.replace( /\s/g, '' ),
 			roomid = msgObj.room_id;
 
-		output.add( '@' + usr + ' ' + msg, roomid );
+		this.adapter.out.add( '@' + usr + ' ' + msg, roomid );
 	},
 
 	directreply : function ( msg, msgObj ) {
 		var msgid = msgObj.message_id, roomid = msgObj.room_id;
-		output.add( ':' + msgid + ' ' + msg, roomid );
+		this.adapter.out.add( ':' + msgid + ' ' + msg, roomid );
 	},
 
 	//some awesome in function form
@@ -531,7 +533,7 @@ bot.Message = function ( text, msgObj ) {
 
 	var deliciousObject = {
 		respond : function ( resp ) {
-			output.add( resp, msgObj.room_id );
+			bot.adapter.out.add( resp, msgObj.room_id );
 		},
 
 		reply : function ( resp, usrname ) {
@@ -542,20 +544,23 @@ bot.Message = function ( text, msgObj ) {
 		directreply : function ( resp, msgid ) {
 			msgid = msgid || msgObj.message_id;
 
-			bot.directreply( resp, Object.merge(msgObj, {message_id : msgid}) );
+			bot.directreply(
+				resp,
+				Object.merge( msgObj, { message_id : msgid } )
+			);
 		},
 
 		codify : function ( msg ) {
 			var tab = '    ',
 				spacified = msg.replace( '\t', tab ),
-				lines = spacified.split( /[\n\r]/g );
+				lines = spacified.split( /[\r\n]/g );
 
-			return lines.reduce(function ( ret, line ) {
+			return lines.map(function ( line ) {
 				if ( !line.startsWith(tab) ) {
 					line = tab + line;
 				}
-				return ret + line + '\n';
-			}, '' );
+				return line;
+			}).join( '\n' );
 		},
 
 		parse : function () {
@@ -600,427 +605,13 @@ bot.owners = [
 
 IO.register( 'receiveinput', bot.validateMessage, bot );
 IO.register( 'input', bot.parseMessage, bot );
+
+//#build util.js
+//#build adapter.js
+//#build parseCommandArgs.js
+//#build suggestionDict.js
+
+//#build commands.js
+//#build listeners.js
 ////bot ends
-
-////utility start
-//small utility functions
-Object.merge = function () {
-	return [].reduce.call( arguments, function ( ret, merger ) {
-
-		Object.keys( merger ).forEach(function ( key ) {
-			ret[ key ] = merger[ key ];
-		});
-
-		return ret;
-	}, {} );
-};
-
-String.prototype.indexesOf = function ( str, fromIndex ) {
-	//since we also use index to tell indexOf from where to begin, and since
-	// telling it to begin from where it found the match will cause it to just
-	// match it again and again, inside the indexOf we do `index + 1`
-	// to compensate for that 1, we need to subtract 1 from the original
-	// starting position
-	var index = ( fromIndex || 0 ) - 1,
-		ret = [];
-
-	while ( (index = this.indexOf(str, index + 1)) > -1 ) {
-		ret.push( index );
-	}
-
-	return ret;
-};
-String.prototype.startsWith = function ( str ) {
-	return this.indexOf( str ) === 0;
-};
-
-//SO chat uses an unfiltered for...in to iterate over an array somewhere, so
-// that I have to use Object.defineProperty to make these non-enumerable
-Object.defineProperty( Array.prototype, 'invoke', {
-	value : function ( funName ) {
-		var args = [].slice.call( arguments, 1 );
-
-		return this.map(function ( item, index ) {
-			var res = item;
-
-			if ( item[funName] && item[funName].apply ) {
-				res = item[ funName ].apply( item, args );
-			}
-
-			return res;
-		});
-	},
-
-	configurable : true,
-	writable : true
-});
-
-//async memoizer
-Function.prototype.memoizeAsync = function ( cb, thisArg ) {
-	var cache = Object.create( null ), fun = this;
-
-	return function ( hash ) {
-		if ( cache[hash] ) {
-			return cache[ hash ];
-		}
-		//turn arguments into an array
-		var args = [].slice.call( arguments );
-
-		//and push the callback to it
-		args.push(function ( res ) {
-			cache[ hash ] = res;
-			cb.apply( thisArg, arguments );
-		});
-
-		return fun.apply( this, args );
-	};
-};
-
-var polling = {
-	//used in the SO chat requests, dunno exactly what for, but guessing it's
-	// the latest id or something like that
-	times : {},
-
-	pollInterval : 5000,
-
-	init : function () {
-		var that = this,
-			roomid = location.pathname.match( /\d+/ )[ 0 ];
-
-		IO.xhr({
-			url : '/chats/' + roomid + '/events/',
-			data : fkey({
-				since : 0,
-				mode : 'Messages',
-				msgCount : 0
-			}),
-			method : 'POST',
-			complete : finish
-		});
-
-		function finish ( resp ) {
-			resp = JSON.parse( resp );
-			bot.log( resp );
-
-			that.times[ 'r' + roomid ] = resp.time;
-
-			that.loopage();
-		}
-	},
-
-	poll : function () {
-		var that = this;
-
-		IO.xhr({
-			url : '/events',
-			data : fkey( that.times ),
-			method : 'POST',
-			complete : that.pollComplete,
-			thisArg : that
-		});
-	},
-
-	pollComplete : function ( resp ) {
-		if ( !resp ) {
-			return;
-		}
-		resp = JSON.parse( resp );
-
-		var that = this;
-		//each key will be in the form of rROOMID
-		Object.keys( resp ).forEach(function ( key ) {
-			var msgObj = resp[ key ];
-
-			//t is a...something important
-			if ( msgObj.t ) {
-				that.times[ key ] = msgObj.t;
-			}
-
-			//e is an array of events, what is referred to in the bot as msgObj
-			if ( msgObj.e ) {
-				msgObj.e.forEach( that.handleMessageObject, that );
-			}
-		});
-
-		//handle all the input
-		IO.in.flush();
-	},
-
-	handleMessageObject : function ( msg ) {
-		//event_type of 1 means new message, 2 means edited message
-		if ( msg.event_type !== 1 && msg.event_type !== 2 ) {
-			return;
-		}
-
-		//check for a multiline message
-		var multiline, tag = '<div class=\'full\'>';
-		if ( msg.content.startsWith(tag) ) {
-			//remove the enclosing tag
-			multiline = msg.content
-				.slice( 0, msg.content.lastIndexOf('</div>') )
-				.replace( tag, '' );
-
-			//iterate over each line
-			multiline.split( '<br>' ).forEach(function ( line ) {
-				line = line.trim();
-
-				//and treat it as if it were a separate message
-				this.handleMessageObject(
-					Object.merge( msg, { content : line })
-				);
-			}, this );
-
-			return;
-		}
-
-		//add the message to the input buffer
-		IO.in.receive( msg );
-	},
-
-	loopage : function () {
-		var that = this;
-
-		setTimeout(function () {
-			that.poll();
-			that.loopage();
-		}, this.pollInterval );
-	}
-};
-polling.init();
-
-var output = {
-	messages : {},
-
-	//add a message to the output queue
-	add : function ( msg, roomid ) {
-		roomid = roomid || bot.roomid;
-		IO.out.receive({
-			text : msg + '\n',
-			room : roomid
-		});
-	},
-
-	//build the final output
-	build : function ( obj ) {
-		if ( !this.messages[obj.room] ) {
-			this.messages[ obj.room ] = '';
-		}
-		this.messages[ obj.room ] += obj.text;
-	},
-
-	//and send output to all the good boys and girls
-	send : function () {
-		//unless the bot's stopped. in which case, it should shut the fudge up
-		// the freezer and never let it out. not until it can talk again. what
-		// was I intending to say?
-		if ( !bot.stopped ) {
-			Object.keys( this.messages ).forEach(function ( room ) {
-				var message = this.messages[ room ];
-
-				if ( !message ) {
-					return;
-				}
-
-				this.sendToRoom( message, room );
-			}, this );
-		}
-
-		this.messages = {};
-	},
-
-	sendToRoom : function ( text, room ) {
-		IO.xhr({
-			url : '/chats/' + room + '/messages/new',
-			data : {
-				text : text,
-				fkey : fkey().fkey
-			},
-			method : 'POST',
-			complete : complete
-		});
-
-		function complete ( resp, xhr ) {
-			bot.log( xhr.status );
-
-			//conflict, wait for next round to send message
-			if ( xhr.status === 409 ) {
-				output.add( text, room );
-			}
-		}
-	},
-
-	loopage : function () {
-		IO.out.flush();
-	}
-};
-output.timer = setInterval( output.loopage, 5000 );
-
-IO.register( 'output', output.build, output );
-IO.register( 'afteroutput', output.send, output );
-////utility end
-
-//a Trie suggestion dictionary, made by Esailija
-// http://stackoverflow.com/users/995876/esailija
-//used in the "command not found" message to show you closest commands
-var SuggestionDictionary = (function () {
-
-function TrieNode() {
-	this.word = null;
-	this.children = {};
-}
-
-TrieNode.prototype.add = function( word ) {
-	var node = this, char, i = 0;
-
-	while( char = word.charAt(i++) ) {
-
-		if( !( char in node.children ) ) {
-			node.children[char] = new TrieNode();
-		}
-
-		node = node.children[char];
-
-	}
-
-	node.word = word;
-};
-
-
-//Having a small maxCost will increase performance greatly, experiment with
-//values of 1-3
-function SuggestionDictionary( maxCost ) {
-	if( !( this instanceof SuggestionDictionary ) ) {
-		throw new TypeError( "Illegal function call" );
-	}
-
-	maxCost = parseInt( maxCost, 10 );
-
-	if( isNaN( maxCost ) || maxCost < 1 ) {
-		throw new TypeError( "maxCost must be an integer > 1 " );
-	}
-
-	this.maxCost = maxCost;
-	this.trie = new TrieNode();
-}
-
-SuggestionDictionary.prototype = {
-
-	constructor: SuggestionDictionary,
-
-	build: function( words ) {
-		if( !Array.isArray( words ) ) {
-			throw new TypeError( "Cannot build a dictionary from "+words );
-		}
-
-		this.trie = new TrieNode();
-
-		words.forEach(function ( word ) {
-			this.trie.add( word );
-		}, this);
-	},
-
-	__sortfn: function( a, b ) {
-		return a[1] - b[1];
-	},
-
-	search: function( word ) {
-		word = word.valueOf();
-		var r;
-
-		if( typeof word !== "string" ) {
-			throw new TypeError( "Cannot search "+word );
-		}
-
-		if( this.trie == null ) {
-			throw new TypeError( "Cannot search, dictionary isn't built yet" );
-		}
-
-		r = search( word, this.maxCost, this.trie );
-		//r will be array of arrays:
-		//["word", cost], ["word2", cost2], ["word3", cost3] , ..
-
-		r.sort( this.__sortfn ); //Sort the results in order of least cost
-
-
-		return r.map(function ( subarr ) {
-			return subarr[ 0 ];
-		});
-	}
-};
-
-function range( x, y ) {
-	var r = [], i, l, start;
-
-	if( y == null ) {
-		start = 0;
-		l = x;
-	}
-	else {
-		start = x;
-		l = y-start;
-	}
-
-	for( i = 0; i < l; ++i ) {
-		r[i] = start++;
-	}
-
-	return r;
-
-}
-
-function search( word, maxCost, trie ) {
-	var results = [],
-	currentRow = range( word.length + 1 );
-
-
-	for( var letter in trie.children ) {
-		searchRecursive(
-			trie.children[letter], letter, word, currentRow, results, maxCost
-		);
-	}
-
-	return results;
-}
-
-
-function searchRecursive( node, letter, word, previousRow, results, maxCost ) {
-	var columns = word.length + 1,
-	currentRow = [previousRow[0] + 1],
-	i, insertCost, deleteCost, replaceCost, last;
-
-	for( i = 1; i < columns; ++i ) {
-
-		insertCost = currentRow[i-1] + 1;
-		deleteCost = previousRow[i] + 1;
-
-		if( word.charAt( i-1 ) !== letter ) {
-			replaceCost = previousRow[i-1]+1;
-
-		}
-		else {
-			replaceCost = previousRow[i-1];
-		}
-
-		currentRow.push( Math.min( insertCost, deleteCost, replaceCost ) );
-	}
-
-	last = currentRow[currentRow.length-1];
-	if( last <= maxCost && node.word !== null ) {
-		results.push( [node.word, last] );
-	}
-
-	if( Math.min.apply( Math, currentRow ) <= maxCost ) {
-		for( letter in node.children ) {
-			searchRecursive(
-				node.children[letter], letter, word, currentRow,
-				results, maxCost
-			);
-		}
-	}
-}
-
-return SuggestionDictionary;
-}());
-bot.commandDictionary = new SuggestionDictionary( 3 );
-
 }());

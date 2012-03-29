@@ -5,7 +5,6 @@ var fs = require( 'fs' ),
 
 //some file IO done synchronously because I'm a fat lazy bastard
 var build = {
-	//mainFolder : './source/',
 	outputName : 'master.js',
 	outputMin  : 'master.min.js',
 
@@ -335,7 +334,10 @@ if ( process.argv.indexOf('no-min') > -1 ) {
 }
 
 build.start(
-	'./source/',
+	[
+		'./source/bot.js',
+		'./source/plugins/'
+	],
 	function ( fileName ) {
 		return (
 			//only .js files

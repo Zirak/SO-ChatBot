@@ -102,7 +102,7 @@ var IO = window.IO = {
 			semiRandom = 'IO_' + ( Date.now() * Math.ceil(Math.random()) );
 		} while ( window[semiRandom] );
 
-		//this is the function which will be called from inside the "jsonp file"
+		//this is the callback function, called from the "jsonp file"
 		window[ semiRandom ] = function () {
 			opts.fun.apply( opts.thisArg, arguments );
 
@@ -149,7 +149,9 @@ var IO = window.IO = {
 		//returns a key=value pair. pass in dontStringifyKey so that, well, the
 		// key won't be stringified (used in arrayStringify)
 		var pair = function ( key, val, dontStringifyKey ) {
-			!dontStringifyKey && ( key = singularStringify(key) );
+			if ( !dontStringifyKey ) {
+				key = singularStringify( key );
+			}
 
 			return key + '=' + singularStringify( val );
 		};
@@ -440,12 +442,12 @@ var bot = window.bot = {
 		var usr = msgObj.user_name.replace( /\s/g, '' ),
 			roomid = msgObj.room_id;
 
-		output.add( '@' + usr + ' ' + msg, roomid );
+		this.adapter.out.add( '@' + usr + ' ' + msg, roomid );
 	},
 
 	directreply : function ( msg, msgObj ) {
 		var msgid = msgObj.message_id, roomid = msgObj.room_id;
-		output.add( ':' + msgid + ' ' + msg, roomid );
+		this.adapter.out.add( ':' + msgid + ' ' + msg, roomid );
 	},
 
 	//some awesome in function form
@@ -531,7 +533,7 @@ bot.Message = function ( text, msgObj ) {
 
 	var deliciousObject = {
 		respond : function ( resp ) {
-			output.add( resp, msgObj.room_id );
+			bot.adapter.out.add( resp, msgObj.room_id );
 		},
 
 		reply : function ( resp, usrname ) {
@@ -542,20 +544,23 @@ bot.Message = function ( text, msgObj ) {
 		directreply : function ( resp, msgid ) {
 			msgid = msgid || msgObj.message_id;
 
-			bot.directreply( resp, Object.merge(msgObj, {message_id : msgid}) );
+			bot.directreply(
+				resp,
+				Object.merge( msgObj, { message_id : msgid } )
+			);
 		},
 
 		codify : function ( msg ) {
 			var tab = '    ',
 				spacified = msg.replace( '\t', tab ),
-				lines = spacified.split( /[\n\r]/g );
+				lines = spacified.split( /[\r\n]/g );
 
-			return lines.reduce(function ( ret, line ) {
+			return lines.map(function ( line ) {
 				if ( !line.startsWith(tab) ) {
 					line = tab + line;
 				}
-				return ret + line + '\n';
-			}, '' );
+				return line;
+			}).join( '\n' );
 		},
 
 		parse : function () {
@@ -600,9 +605,7 @@ bot.owners = [
 
 IO.register( 'receiveinput', bot.validateMessage, bot );
 IO.register( 'input', bot.parseMessage, bot );
-////bot ends
 
-////utility start
 //small utility functions
 Object.merge = function () {
 	return [].reduce.call( arguments, function ( ret, merger ) {
@@ -676,7 +679,10 @@ Function.prototype.memoizeAsync = function ( cb, thisArg ) {
 	};
 };
 
-var polling = {
+(function () {
+bot.adapter = {};
+
+var polling = bot.adapter.in = {
 	//used in the SO chat requests, dunno exactly what for, but guessing it's
 	// the latest id or something like that
 	times : {},
@@ -753,28 +759,28 @@ var polling = {
 		}
 
 		//check for a multiline message
-		var multiline, tag = '<div class=\'full\'>';
-		if ( msg.content.startsWith(tag) ) {
-			//remove the enclosing tag
-			multiline = msg.content
-				.slice( 0, msg.content.lastIndexOf('</div>') )
-				.replace( tag, '' );
-
-			//iterate over each line
-			multiline.split( '<br>' ).forEach(function ( line ) {
-				line = line.trim();
-
-				//and treat it as if it were a separate message
-				this.handleMessageObject(
-					Object.merge( msg, { content : line })
-				);
-			}, this );
-
+		if ( msg.content.startsWith('<div class=\'full\'>') ) {
+			this.handleMultilineMessage( msg );
 			return;
 		}
 
 		//add the message to the input buffer
 		IO.in.receive( msg );
+	},
+
+	handleMultilineMessage : function ( msg ) {
+		//remove the enclosing tag
+		var multiline = msg.content
+			.slice( 0, msg.content.lastIndexOf('</div>') )
+			.replace( '<div class=\'full\'>', '' );
+
+		//iterate over each line
+		multiline.split( '<br>' ).forEach(function ( line ) {
+			//and treat it as if it were a separate message
+			this.handleMessageObject(
+				Object.merge( msg, { content : line.trim() })
+			);
+		}, this );
 	},
 
 	loopage : function () {
@@ -788,7 +794,7 @@ var polling = {
 };
 polling.init();
 
-var output = {
+var output = bot.adapter.out = {
 	messages : {},
 
 	//add a message to the output queue
@@ -857,7 +863,214 @@ output.timer = setInterval( output.loopage, 5000 );
 
 IO.register( 'output', output.build, output );
 IO.register( 'afteroutput', output.send, output );
-////utility end
+}());
+
+(function () {
+"use strict";
+
+var target;
+if ( typeof bot !== 'undefined' ) {
+	target = bot;
+}
+else if ( typeof exports !== 'undefined' ) {
+	target = exports;
+}
+else {
+	target = window;
+}
+
+target.parseCommandArgs = (function () {
+
+//the different states, not nearly enough to represent a female humanoid
+//you know you're building something fancy when it has constants with
+// undescores in their name
+var S_DATA         = 0,
+	S_SINGLE_QUOTE = 1,
+	S_DOUBLE_QUOTE = 2,
+	S_NEW          = 3;
+
+//and constants representing constant special chars (why aren't I special? ;_;)
+var CH_SINGLE_QUOTE = '\'',
+	CH_DOUBLE_QUOTE = '\"';
+
+/*
+the "scheme" roughly looks like this:
+  args -> arg <sep> arg <sep> arg ... | Ø
+  arg  -> singleQuotedString | doubleQuotedString | string | Ø
+
+  singleQuotedString -> 'string'
+  doubleQuotedString -> "string"
+  string -> char char char ... | Ø
+  char -> anyCharacter | <escaper>anyCharacter | Ø
+
+Ø is the empty string
+*/
+
+//the bad boy in the hood
+//I dunno what kind of parser this is, so I can't flaunt it or taunt with it,
+// but it was fun to make
+var parser = {
+
+	parse : function ( source, sep, esc ) {
+		//initializations are safe fun for the whole family!
+		//later-edit: the above comment is one of the weirdest I've ever
+		// written
+		this.source = source;
+		this.pos = 0;
+		this.length = source.length;
+		this.state = S_DATA;
+		this.lookahead = '';
+
+		this.escaper = esc || '~';
+		this.separator = sep || ' ';
+
+		var args = this.tokenize();
+
+		//oh noez! errorz!
+		if ( this.state !== S_DATA ) {
+			this.throwFinishError();
+		}
+
+		return args;
+	},
+
+	tokenize : function () {
+		var arg, ret = [];
+
+		//let the parsing commence!
+		while ( this.pos < this.length ) {
+			arg = this.nextArg();
+
+			//only add the next arg if it's actually something
+			if ( arg ) {
+				ret.push( arg );
+			}
+		}
+
+		return ret;
+	},
+
+	//fetches the next argument (see the "scheme" at the top)
+	nextArg : function () {
+		var lexeme = '', ch;
+		this.state = S_DATA;
+
+		while ( true ) {
+			ch = this.nextChar();
+			if ( ch === null || this.state === S_NEW ) {
+				break;
+			}
+
+			lexeme += ch;
+		}
+
+		return lexeme;
+	},
+
+	nextChar : function ( escape ) {
+		var ch = this.lookahead = this.source[ this.pos ];
+		this.pos++;
+
+		if ( !ch ) {
+			return null;
+		}
+
+		if ( escape ) {
+			return ch;
+		}
+
+		//l'escaping!
+		else if ( ch === this.escaper ) {
+			return this.nextChar( true );
+		}
+
+		//encountered a separator and you're in data-mode!? ay digity!
+		else if ( ch === this.separator && this.state === S_DATA ) {
+			this.state = S_NEW;
+			return ch;
+		}
+
+		return this.string();
+	},
+
+	//IM IN YO STRINGZ EATING YO CHARS
+	// a.k.a string handling starts roughly here
+	string : function () {
+		var ch = this.lookahead;
+
+		//single quotes are teh rulez
+		if ( ch === CH_SINGLE_QUOTE ) {
+			return this.singleQuotedString();
+		}
+
+		//exactly the same, just with double-quotes, which aren't quite as teh
+		// rulez
+		else if ( ch === CH_DOUBLE_QUOTE ) {
+			return this.doubleQuotedString();
+		}
+
+		return ch;
+	},
+
+	singleQuotedString : function () {
+		//we're already inside a double-quoted string, it's just another
+		// char for us
+		if ( this.state === S_DOUBLE_QUOTE ) {
+			return this.lookahead;
+		}
+
+		//start your stringines!
+		else if ( this.state !== S_SINGLE_QUOTE ) {
+			this.state = S_SINGLE_QUOTE;
+		}
+
+		//end your stringiness!
+		else {
+			this.state = S_DATA;
+		}
+
+		return this.nextChar();
+	},
+
+	doubleQuotedString : function () {
+		if ( this.state === S_SINGLE_QUOTE ) {
+			return this.lookahead;
+		}
+
+		else if ( this.state !== S_DOUBLE_QUOTE ) {
+			this.state = S_DOUBLE_QUOTE;
+		}
+
+		else {
+			this.state = S_DATA;
+		}
+
+		return this.nextChar();
+	},
+
+	throwFinishError : function () {
+		var errMsg = '';
+
+		if ( this.state === S_SINGLE_QUOTE ) {
+			errMsg = 'Expected ' + CH_SINGLE_QUOTE;
+		}
+		else if ( this.state === S_DOUBLE_QUOTE ) {
+			errMsg = 'Expected ' + CH_DOUBLE_QUOTE;
+		}
+
+		var up = new Error( 'Unexpected end of input: ' + errMsg );
+		up.column = this.pos;
+
+		throw up; //problem?
+	}
+};
+
+return function () {
+	return parser.parse.apply( parser, arguments );
+};
+}());
+
+}());
 
 //a Trie suggestion dictionary, made by Esailija
 // http://stackoverflow.com/users/995876/esailija
@@ -884,7 +1097,6 @@ TrieNode.prototype.add = function( word ) {
 
 	node.word = word;
 };
-
 
 //Having a small maxCost will increase performance greatly, experiment with
 //values of 1-3
@@ -931,7 +1143,7 @@ SuggestionDictionary.prototype = {
 			throw new TypeError( "Cannot search "+word );
 		}
 
-		if( this.trie == null ) {
+		if( this.trie === undefined ) {
 			throw new TypeError( "Cannot search, dictionary isn't built yet" );
 		}
 
@@ -951,7 +1163,7 @@ SuggestionDictionary.prototype = {
 function range( x, y ) {
 	var r = [], i, l, start;
 
-	if( y == null ) {
+	if( y === undefined ) {
 		start = 0;
 		l = x;
 	}
@@ -973,11 +1185,11 @@ function search( word, maxCost, trie ) {
 	currentRow = range( word.length + 1 );
 
 
-	for( var letter in trie.children ) {
+	Object.keys( trie.children ).forEach(function ( letter ) {
 		searchRecursive(
 			trie.children[letter], letter, word, currentRow, results, maxCost
 		);
-	}
+	});
 
 	return results;
 }
@@ -1010,12 +1222,12 @@ function searchRecursive( node, letter, word, previousRow, results, maxCost ) {
 	}
 
 	if( Math.min.apply( Math, currentRow ) <= maxCost ) {
-		for( letter in node.children ) {
+		Object.keys( node.children ).forEach(function ( letter ) {
 			searchRecursive(
 				node.children[letter], letter, word, currentRow,
 				results, maxCost
 			);
-		}
+		});
 	}
 }
 
@@ -1023,9 +1235,7 @@ return SuggestionDictionary;
 }());
 bot.commandDictionary = new SuggestionDictionary( 3 );
 
-}());
 
-;
 (function () {
 "use strict";
 
@@ -1933,7 +2143,6 @@ function findUserid ( username ) {
 
 }());
 
-;
 (function () {
 var laws = [
 	'A robot may not injure a human being or, through inaction, ' +
@@ -2016,212 +2225,9 @@ what              --simply the word what
 */
 }());
 
-;
-(function () {
-"use strict";
-
-var target;
-if ( typeof bot !== 'undefined' ) {
-	target = bot;
-}
-else if ( typeof exports !== 'undefined' ) {
-	target = exports;
-}
-else {
-	target = window;
-}
-
-target.parseCommandArgs = (function () {
-
-//the different states, not nearly enough to represent a female humanoid
-//you know you're building something fancy when it has constants with undescores
-// in their name
-var S_DATA         = 0,
-	S_SINGLE_QUOTE = 1,
-	S_DOUBLE_QUOTE = 2,
-	S_NEW          = 3;
-
-//and constants representing constant special chars (why aren't I special? ;_;)
-var CH_SINGLE_QUOTE = '\'',
-	CH_DOUBLE_QUOTE = '\"';
-
-/*
-the "scheme" roughly looks like this:
-  args -> arg <sep> arg <sep> arg ... | Ø
-  arg  -> singleQuotedString | doubleQuotedString | string | Ø
-
-  singleQuotedString -> 'string'
-  doubleQuotedString -> "string"
-  string -> char char char ... | Ø
-  char -> anyCharacter | <escaper>anyCharacter | Ø
-
-Ø is the empty string
-*/
-
-//the bad boy in the hood
-//I dunno what kind of parser this is, so I can't flaunt it or taunt with it,
-// but it was fun to make
-var parser = {
-
-	parse : function ( source, sep, esc ) {
-		//initializations are safe fun for the whole family!
-		//later-edit: the above comment is one of the weirdest I've ever written
-		this.source = source;
-		this.pos = 0;
-		this.length = source.length;
-		this.state = S_DATA;
-		this.lookahead = '';
-
-		this.escaper = esc || '~';
-		this.separator = sep || ' ';
-
-		var args = this.tokenize();
-
-		//oh noez! errorz!
-		if ( this.state !== S_DATA ) {
-			this.throwFinishError();
-		}
-
-		return args;
-	},
-
-	tokenize : function () {
-		var arg, ret = [];
-
-		//let the parsing commence!
-		while ( this.pos < this.length ) {
-			arg = this.nextArg();
-
-			//only add the next arg if it's actually something
-			if ( arg ) {
-				ret.push( arg );
-			}
-		}
-
-		return ret;
-	},
-
-	//fetches the next argument (see the "scheme" at the top)
-	nextArg : function () {
-		var lexeme = '', ch;
-		this.state = S_DATA;
-
-		while ( true ) {
-			ch = this.nextChar();
-			if ( ch === null || this.state === S_NEW ) {
-				break;
-			}
-
-			lexeme += ch;
-		}
-
-		return lexeme;
-	},
-
-	nextChar : function ( escape ) {
-		var ch = this.lookahead = this.source[ this.pos ];
-		this.pos++;
-
-		if ( !ch ) {
-			return null;
-		}
-
-		if ( escape ) {
-			return ch;
-		}
-
-		//l'escaping!
-		else if ( ch === this.escaper ) {
-			return this.nextChar( true );
-		}
-
-		//encountered a separator and you're in data-mode!? ay digity!
-		else if ( ch === this.separator && this.state === S_DATA ) {
-			this.state = S_NEW;
-			return ch;
-		}
-
-		return this.string();
-	},
-
-	//IM IN YO STRINGZ EATING YO CHARS
-	// a.k.a string handling starts roughly here
-	string : function () {
-		var ch = this.lookahead;
-
-		//single quotes are teh rulez
-		if ( ch === CH_SINGLE_QUOTE ) {
-			return this.singleQuotedString();
-		}
-
-		//exactly the same, just with double-quotes, which aren't quite as teh
-		// rulez
-		else if ( ch === CH_DOUBLE_QUOTE ) {
-			return this.doubleQuotedString();
-		}
-
-		return ch;
-	},
-
-	singleQuotedString : function () {
-		//we're already inside a double-quoted string, it's just another
-		// char for us
-		if ( this.state === S_DOUBLE_QUOTE ) {
-			return this.lookahead;
-		}
-
-		//start your stringines!
-		else if ( this.state !== S_SINGLE_QUOTE ) {
-			this.state = S_SINGLE_QUOTE;
-		}
-
-		//end your stringiness!
-		else {
-			this.state = S_DATA;
-		}
-
-		return this.nextChar();
-	},
-
-	doubleQuotedString : function () {
-		if ( this.state === S_SINGLE_QUOTE ) {
-			return this.lookahead;
-		}
-
-		else if ( this.state !== S_DOUBLE_QUOTE ) {
-			this.state = S_DOUBLE_QUOTE;
-		}
-
-		else {
-			this.state = S_DATA;
-		}
-
-		return this.nextChar();
-	},
-
-	throwFinishError : function () {
-		var errMsg = '';
-
-		if ( this.state === S_SINGLE_QUOTE ) {
-			errMsg = 'Expected ' + CH_SINGLE_QUOTE;
-		}
-		else if ( this.state === S_DOUBLE_QUOTE ) {
-			errMsg = 'Expected ' + CH_DOUBLE_QUOTE;
-		}
-
-		var up = new Error( 'Unexpected end of input: ' + errMsg );
-		up.column = this.pos;
-
-		throw up; //problem?
-	}
-};
-
-return function () {
-	return parser.parse.apply( parser, arguments );
-};
+////bot ends
 }());
 
-}());
 ;
 var moo = (function () {
 
