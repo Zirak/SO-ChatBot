@@ -2245,7 +2245,7 @@ function makeWorkerExecuteSomeCode( code, callback ) {
     }, 1000 );
 }
 
-bot.listener(
+bot.listen(
 	/^\>(.+)$/,
 	function ( msg ) {
 		var maxLen = 1024;
