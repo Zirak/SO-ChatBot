@@ -247,15 +247,15 @@ var commands = {
 	}
 };
 
-//cb is for internal usage by other commands/listeners
 commands.define = (function () {
-var cache = {};
+var cache = Object.create( null );
 
+//cb is for internal usage by other commands/listeners
 return function ( args, cb ) {
 	//we already defined it, grab from memory
 	//unless you have alzheimer
 	//in which case, you have bigger problems
-	if ( cache.hasOwnProperty(args) ) {
+	if ( cache[args] ) {
 		return finish( cache[args] );
 	}
 
@@ -334,7 +334,7 @@ commands.norris = function ( args, cb ) {
 			msg = 'Chuck Norris is too awesome for this API. Try again.';
 		}
 		else {
-			msg = IO.decodehtml( resp.value.joke );
+			msg = IO.decodehtmlEntities( resp.value.joke );
 		}
 
 		if ( cb && cb.call ) {
@@ -357,7 +357,7 @@ return function ( args, cb ) {
 	}
 
 	if ( cache[args] ) {
-		return cache[ args ];
+		return finish( cache[args] );
 	}
 
 	IO.jsonp({
@@ -381,6 +381,10 @@ return function ( args, cb ) {
 		}
 		cache[ args ] = msg;
 
+		finish( msg );
+	}
+
+	function finish ( def ) {
 		if ( cb && cb.call ) {
 			cb( msg );
 		}
@@ -621,6 +625,12 @@ return function mdn ( args ) {
 
 	bot.log( args, parts, '/mdn input' );
 
+	//mdn urls never have something.prototype.property, but always
+	// something.property
+	if ( parts[1] === 'prototype' ) {
+		parts.split( 1, 1 );
+	}
+
 	//part of the DOM?
 	var lowercased = parts[ 0 ].toLowerCase();
 	if ( DOMParts.hasOwnProperty(lowercased) ) {
@@ -789,7 +799,6 @@ return function ( args ) {
 
 	bot.log( commandParts, '/learn parsed' );
 
-	saveCommand( command );
 	addCustomCommand( command.name, command.input, command.output );
 	return 'Command ' + command.name + ' learned';
 };
@@ -840,28 +849,6 @@ function checkCommand ( cmd ) {
 
 	return error;
 }
-
-//save the learnt command into localStorage
-function saveCommand ( cmd ) {
-	var storageKey = 'bot-commands',
-		commands = JSON.parse( localStorage[storageKey] || '[]' );
-
-	commands.push( cmd );
-	localStorage[ storageKey ] = JSON.stringify( commands );
-}
-//load the learnt commands from localStorage
-function loadCommands ( ) {
-	var storageKey = 'bot-commands',
-		commands = JSON.parse( localStorage[storageKey] || '[]' );
-
-	commands.forEach(function ( cmd ) {
-		if ( !bot.commandExists(cmd.name) ) {
-			addCustomCommand( cmd.name, cmd.input, cmd.output );
-		}
-	});
-}
-
-loadCommands();
 }());
 
 Object.keys( commands ).forEach(function ( cmdName ) {
