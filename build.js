@@ -342,6 +342,8 @@ build.start(
 		return (
 			//only .js files
 			path.extname( fileName ) === '.js' &&
+			//no web-workers
+			fileName.indexOf( 'Worker' ) === -1 &&
 			//no backup files
 			fileName.indexOf( '~' ) === -1 &&
 			fileName.indexOf( '#' ) !== 0
