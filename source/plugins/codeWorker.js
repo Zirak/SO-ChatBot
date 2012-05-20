@@ -45,7 +45,7 @@ Object.getOwnPropertyNames( global ).forEach( function( prop ) {
     if( !wl.hasOwnProperty( prop ) ) {
         Object.defineProperty( global, prop, {
             get : function() {
-                throw new Error( "Security Exception: cannot access "+prop);
+                throw "Security Exception: cannot access "+prop;
                 return 1;
             }, 
             configurable : false
@@ -57,7 +57,7 @@ Object.getOwnPropertyNames( global.__proto__ ).forEach( function( prop ) {
     if( !wl.hasOwnProperty( prop ) ) {
         Object.defineProperty( global.__proto__, prop, {
             get : function() {
-                throw new Error( "Security Exception: cannot access "+prop);
+                throw "Security Exception: cannot access "+prop;
                 return 1;
             }, 
             configurable : false
@@ -65,19 +65,60 @@ Object.getOwnPropertyNames( global.__proto__ ).forEach( function( prop ) {
     }
 });
 
+(function(){
+    var cvalues = [];
+    
+    var console = {
+        log: function(){
+            cvalues = cvalues.concat( [].slice.call( arguments ) );
+        }
+    };
 
+    function objToResult( obj ) {
+        var result = obj;
+        switch( typeof result ) {
+            case "string":
+                return '"' + result + '"';
+                break;
+            case "number":
+            case "boolean":
+            case "undefined":
+            case "null":
+            case "function":
+                return result + "";
+                break;
+            case "object":
+                if( !result ) {
+                    return "null";
+                }
+                else {
+                    var type = ({}).toString.call( result );
+                    return type + " " + JSON.stringify(result);
+                }
+                break;
 
-
-onmessage = function( event ) {
-    "use strict";
-    var code = event.data.code;
-    var result;
-    try {
-        result = eval( '"use strict";\n'+code );
+        }
+        
     }
-    catch(e){
-        result = e.toString();
-    }
-    postMessage( "(" + typeof result + ")" + " " + result );
-};
 
+    onmessage = function( event ) {
+        "use strict";
+        var code = event.data.code;
+        var result;
+        try {
+            result = eval( '"use strict";\n'+code );
+        }
+        catch(e) {
+            postMessage( e.toString() );
+            return;
+        }
+        result = objToResult( result );
+        if( cvalues && cvalues.length ) {
+            result = result + cvalues.map( function( value, index ) {
+                return "Console log "+(index+1)+":" + objToResult(value);
+            }).join(" ");
+        }
+        postMessage( result );
+    };
+
+})();
