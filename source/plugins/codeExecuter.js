@@ -20,6 +20,7 @@ function makeWorkerExecuteSomeCode( code, callback ) {
     worker.addEventListener( "message", function(event) {
         clearTimeout(timeout);
         callback( event.data );
+        worker.terminate();
     });
 
     worker.postMessage({
