@@ -65,6 +65,25 @@ Object.getOwnPropertyNames( global.__proto__ ).forEach( function( prop ) {
     }
 });
 
+Object.defineProperty( Array.prototype, "join", {
+
+    writable: false,
+    configurable: false,
+    enumrable: false,
+
+    value: function(old){
+        return function(arg){
+            if( this.length > 500 || (arg && arg.length > 500 ) ) {
+                throw "Exception: too many items";
+            }
+            
+            return old.apply( this, arguments );
+        };
+    }(Array.prototype.join)
+
+});
+
+
 (function(){
     var cvalues = [];
     
@@ -91,9 +110,19 @@ Object.getOwnPropertyNames( global.__proto__ ).forEach( function( prop ) {
                 if( !result ) {
                     return "null";
                 }
-                else {
+                else if( result.constructor === Object || result.constructor === Array ) {
                     var type = ({}).toString.call( result );
-                    return type + " " + JSON.stringify(result);
+                    var stringified;
+                    try {
+                        stringified = JSON.stringify(result);
+                    }
+                    catch(e) {
+                        return ""+e;
+                    }
+                    return type + " " + stringified;
+                }
+                else {
+                    return ({}).toString.call( result );
                 }
                 break;
 
@@ -115,10 +144,10 @@ Object.getOwnPropertyNames( global.__proto__ ).forEach( function( prop ) {
         result = objToResult( result );
         if( cvalues && cvalues.length ) {
             result = result + cvalues.map( function( value, index ) {
-                return "Console log "+(index+1)+":" + objToResult(value);
-            }).join(" ");
+                return "\nLogged "+(index+1)+":" + objToResult(value);
+            }).join("");
         }
-        postMessage( result );
+        postMessage( (""+result).substr(0,400) );
     };
 
 })();
