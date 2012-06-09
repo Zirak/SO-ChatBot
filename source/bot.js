@@ -57,8 +57,8 @@ var IO = window.IO = {
 	xhr : function ( params ) {
 		//merge in the defaults
 		params = Object.merge({
-			method   : 'GET',
-			headers  : {},
+			method	 : 'GET',
+			headers	 : {},
 			complete : function (){}
 		}, params );
 
@@ -293,11 +293,18 @@ var bot = window.bot = {
 			if ( msg.startsWith('/') ) {
 				bot.log( msg, 'parseMessage command' );
 				this.parseCommand( msg );
-				return;
+			}
+
+			//it wants to execute some code
+			if ( msg.startsWith('>') ) {
+				bot.log( msg, 'parseMessage code' );
+				this.eval( msg );
 			}
 
 			//see if some hobo listener wants this
-			this.callListeners( msg );
+			else {
+				this.callListeners( msg );
+			}
 		}
 		catch ( e ) {
 			var err = 'Could not process input. Error: ' + e.message;
@@ -492,6 +499,85 @@ bot.banlist.remove = function ( item ) {
 	}
 };
 
+//execute arbitrary js code in a relatively safe environment
+bot.eval = function ( msg ) {
+	var workerCode = atob( 'dmFyIGdsb2JhbCA9IHRoaXM7IC8qbW9zdCBleHRyYSBmdW5jdGlvbnMgY291bGQgYmUgcG9zc2libHkgdW5zYWZlKi8gdmFyIHdoaXRleSA9IHsgJ3NlbGYnOiAxLCAnb25tZXNzYWdlJzogMSwgJ3Bvc3RNZXNzYWdlJzogMSwgJ2dsb2JhbCc6IDEsICd3aGl0ZXknOiAxLCAnZXZhbCc6IDEsICdBcnJheSc6IDEsICdCb29sZWFuJzogMSwgJ0RhdGUnOiAxLCAnRnVuY3Rpb24nOiAxLCAnTnVtYmVyJyA6IDEsICdPYmplY3QnOiAxLCAnUmVnRXhwJzogMSwgJ1N0cmluZyc6IDEsICdFcnJvcic6IDEsICdFdmFsRXJyb3InOiAxLCAnUmFuZ2VFcnJvcic6IDEsICdSZWZlcmVuY2VFcnJvcic6IDEsICdTeW50YXhFcnJvcic6IDEsICdUeXBlRXJyb3InOiAxLCAnVVJJRXJyb3InOiAxLCAnZGVjb2RlVVJJJzogMSwgJ2RlY29kZVVSSUNvbXBvbmVudCc6IDEsICdlbmNvZGVVUkknOiAxLCAnZW5jb2RlVVJJQ29tcG9uZW50JzogMSwgJ2lzRmluaXRlJzogMSwgJ2lzTmFOJzogMSwgJ3BhcnNlRmxvYXQnOiAxLCAncGFyc2VJbnQnOiAxLCAnSW5maW5pdHknOiAxLCAnSlNPTic6IDEsICdNYXRoJzogMSwgJ05hTic6IDEsICd1bmRlZmluZWQnOiAxIH07IFsgZ2xvYmFsLCBnbG9iYWwuX19wcm90b19fIF0uZm9yRWFjaChmdW5jdGlvbiAoIG9iaiApIHsgT2JqZWN0LmdldE93blByb3BlcnR5TmFtZXMoIG9iaiApLmZvckVhY2goZnVuY3Rpb24oIHByb3AgKSB7IGlmKCAhd2hpdGV5Lmhhc093blByb3BlcnR5KCBwcm9wICkgKSB7IE9iamVjdC5kZWZpbmVQcm9wZXJ0eSggb2JqLCBwcm9wLCB7IGdldCA6IGZ1bmN0aW9uKCkgeyB0aHJvdyAnU2VjdXJpdHkgRXhjZXB0aW9uOiBDYW5ub3QgYWNjZXNzICcgKyBwcm9wOyByZXR1cm4gMTsgfSwgY29uZmlndXJhYmxlIDogZmFsc2UgfSk7IH0gfSk7IH0pOyBPYmplY3QuZGVmaW5lUHJvcGVydHkoIEFycmF5LnByb3RvdHlwZSwgJ2pvaW4nLCB7IHdyaXRhYmxlOiBmYWxzZSwgY29uZmlndXJhYmxlOiBmYWxzZSwgZW51bXJhYmxlOiBmYWxzZSwgdmFsdWU6IChmdW5jdGlvbiggb2xkICl7IHJldHVybiBmdW5jdGlvbiggYXJnICl7IGlmKCB0aGlzLmxlbmd0aCA+IDUwMCB8fCAoYXJnICYmIGFyZy5sZW5ndGggPiA1MDAgKSApIHsgdGhyb3cgJ0V4Y2VwdGlvbjogdG9vIG1hbnkgaXRlbXMnOyB9IHJldHVybiBvbGQuYXBwbHkoIHRoaXMsIGFyZ3VtZW50cyApOyB9OyB9KEFycmF5LnByb3RvdHlwZS5qb2luKSkgfSk7IChmdW5jdGlvbigpeyAidXNlIHN0cmljdCI7IHZhciBjb25zb2xlID0geyBfaXRlbXMgOiBbXSwgbG9nOiBmdW5jdGlvbigpeyBjb25zb2xlLl9pdGVtcy5wdXNoLmFwcGx5KCBjb25zb2xlLl9pdGVtcywgYXJndW1lbnRzICk7IH0gfTsgc2VsZi5vbm1lc3NhZ2UgPSBmdW5jdGlvbiggZXZlbnQgKSB7ICd1c2Ugc3RyaWN0JzsgdmFyIGNvZGUgPSBldmVudC5kYXRhLmNvZGUsIHJlc3VsdDsgdHJ5IHsgcmVzdWx0ID0gZXZhbCggJyJ1c2Ugc3RyaWN0IjtcbicrY29kZSApOyB9IGNhdGNoICggZSApIHsgcmVzdWx0ID0gZS50b1N0cmluZygpOyB9IHBvc3RNZXNzYWdlKHsgYW5zd2VyIDogcmVzdWx0LCBsb2cgOiBjb25zb2xlLl9pdGVtcyB9KTsgfTsgfSkoKTs=' );
+
+	var BlobBuilder = window.WebKitBlobBuilder,
+		blobBuilder = new BlobBuilder(),
+		URL = window.webkitURL,
+		blob, workerURL;
+
+	blobBuilder.append( workerCode );
+	blob = blobBuilder.getBlob( 'text/javascript');
+	workerURL = URL.createObjectURL( blob );
+
+	var timeout,
+		code = msg.content.substr( 1 );
+
+	code = ( code + '' ).replace( /[^\u0000-\u00FF]/g, '' );
+	var worker = new Worker( workerURL );
+
+	worker.addEventListener( 'message', function ( event ) {
+		clearTimeout( timeout );
+
+		finish( dressUpAnswer(event.data) );
+		worker.terminate();
+	});
+
+	worker.postMessage({
+		code: code
+	});
+
+	timeout = window.setTimeout( function() {
+		finish( 'Maximum execution time exceeded' );
+		worker.terminate();
+	}, 50 );
+
+	function finish ( result ) {
+		msg.directreply( result );
+	}
+
+	function dressUpAnswer ( answerObj ) {
+		var answer = answerObj.answer,
+			log = answerObj.log,
+
+			result = objToResult( answer );
+
+		if ( result.length > 400 ) {
+			result = '(snip) ' + result.slice( 400 );
+		}
+
+		if ( log && log.length ) {
+			result += ' Logged: ';
+
+			result += log.map(function( value, index ) {
+				return objToResult( value );
+			}).join( ', ' );
+		}
+
+		return result;
+	}
+
+	function objToResult ( result ) {
+		var ret;
+
+		//JSON.stringify( undefined ) === undefined, cutting around that
+		if ( result === undefined ) {
+			return 'undefined';
+		}
+
+		try {
+			ret = JSON.stringify( result );
+		}
+		catch ( e ) {
+			ret = e.toString();
+		}
+
+		return ret;
+	}
+};
+
 //some sort of pseudo constructor
 bot.Command = function ( cmd ) {
 	cmd.name = cmd.name.toLowerCase();
@@ -551,7 +637,7 @@ bot.Message = function ( text, msgObj ) {
 		},
 
 		codify : function ( msg ) {
-			var tab = '    ',
+			var tab = '	   ',
 				spacified = msg.replace( '\t', tab ),
 				lines = spacified.split( /[\r\n]/g );
 
@@ -605,8 +691,8 @@ bot.owners = [
 	419970, //Raynos
 	342129, //Matt McDonald
 	170224, //Ivo Wetzel
-	94197,  //Andy E
-	617762  //me (Zirak)
+	94197,	//Andy E
+	617762	//me (Zirak)
 ];
 
 IO.register( 'receiveinput', bot.validateMessage, bot );
