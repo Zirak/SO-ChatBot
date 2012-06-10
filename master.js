@@ -296,7 +296,7 @@ var bot = window.bot = {
 			}
 
 			//it wants to execute some code
-			if ( msg.startsWith('>') ) {
+			else if ( msg.startsWith('>') ) {
 				bot.log( msg, 'parseMessage code' );
 				this.eval( msg );
 			}
@@ -694,6 +694,9 @@ bot.owners = [
 	94197,	//Andy E
 	617762	//me (Zirak)
 ];
+bot.isOwner = function ( usrid ) {
+	return this.owners.indexOf( usrid ) > -1;
+};
 
 IO.register( 'receiveinput', bot.validateMessage, bot );
 IO.register( 'input', bot.parseMessage, bot );
@@ -1395,7 +1398,7 @@ var commands = {
 			if ( id < 0 ) {
 				msg += 'Cannot find user ' + usrid + '. ';
 			}
-			else if ( bot.owners.indexOf(id) >= 0 ) {
+			else if ( bot.isOwner(id) >= 0 ) {
 				msg += 'Cannot mindjail owner ' + usrid + '. ';
 				id = -1;
 			}
@@ -2310,6 +2313,55 @@ what              --simply the word what
 ;
 
 ;
+(function () {
+if ( !localStorage.bot_alias ) {
+	localStorage.bot_alias = JSON.stringify( {} );
+}
+
+var dict = JSON.parse( localStorage.bot_alias );
+
+bot.listen( /\~([\w\-_]+)(?:\s?(=)(=)?\s?(.+))?/, function ( msg ) {
+	var name = msg.matches[ 1 ];
+
+	//check to see if it's an assignment
+	// msg.matches[2] is the optional =
+	if ( msg.matches[2] ) {
+		return save( msg );
+	}
+	else {
+		return dict[ name ] || 'Nothing found for ' + name;
+	}
+});
+
+function save ( msg ) {
+	var name = msg.matches[ 1 ],
+		force  = msg.matches[ 3 ],
+		exists = !!dict[ name ],
+		authorized = false;
+
+	//only owners can force new values
+	if ( exists && force ) {
+		authorized = bot.isOwner( msg.get('user_id') );
+	}
+	else if ( !exists ) {
+		authorized = true;
+	}
+
+	if ( !authorized ) {
+		return 'You are not allowed to do this, young padawan';
+	}
+
+	var value = msg.matches[ 4 ];
+	if ( !value ) {
+		return 'Provide a value for the alias';
+	}
+
+	dict[ name ] = value;
+	localStorage.bot_alias = JSON.stringify( dict );
+	return 'Saved alias ' + name;
+}
+
+}());
 
 ;
 

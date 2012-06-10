@@ -296,7 +296,7 @@ var bot = window.bot = {
 			}
 
 			//it wants to execute some code
-			if ( msg.startsWith('>') ) {
+			else if ( msg.startsWith('>') ) {
 				bot.log( msg, 'parseMessage code' );
 				this.eval( msg );
 			}
@@ -694,6 +694,9 @@ bot.owners = [
 	94197,	//Andy E
 	617762	//me (Zirak)
 ];
+bot.isOwner = function ( usrid ) {
+	return this.owners.indexOf( usrid ) > -1;
+};
 
 IO.register( 'receiveinput', bot.validateMessage, bot );
 IO.register( 'input', bot.parseMessage, bot );

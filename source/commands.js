@@ -65,7 +65,7 @@ var commands = {
 			if ( id < 0 ) {
 				msg += 'Cannot find user ' + usrid + '. ';
 			}
-			else if ( bot.owners.indexOf(id) >= 0 ) {
+			else if ( bot.isOwner(id) >= 0 ) {
 				msg += 'Cannot mindjail owner ' + usrid + '. ';
 				id = -1;
 			}
