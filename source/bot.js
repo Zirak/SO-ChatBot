@@ -57,8 +57,8 @@ var IO = window.IO = {
 	xhr : function ( params ) {
 		//merge in the defaults
 		params = Object.merge({
-			method	 : 'GET',
-			headers	 : {},
+			method   : 'GET',
+			headers  : {},
 			complete : function (){}
 		}, params );
 

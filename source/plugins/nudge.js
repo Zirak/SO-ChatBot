@@ -55,7 +55,7 @@ function addNudge ( delay, msg, msgObj ) {
 		time    : inMS
 	};
 	nudges.push( nudge );
-	console.log( nudge, nudges, '/nudge register')
+	console.log( nudge, nudges, '/nudge register' );
 
 	return 'Nudge registered.';
 }

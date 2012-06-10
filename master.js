@@ -57,8 +57,8 @@ var IO = window.IO = {
 	xhr : function ( params ) {
 		//merge in the defaults
 		params = Object.merge({
-			method	 : 'GET',
-			headers	 : {},
+			method   : 'GET',
+			headers  : {},
 			complete : function (){}
 		}, params );
 
@@ -1354,6 +1354,10 @@ var commands = {
 		);
 	},
 
+	listen : function ( msg ) {
+		return bot.callListeners( msg );
+	},
+
 	live : function () {
 		if ( !bot.stopped ) {
 			return 'I\'m not dead! Honest!';
@@ -2184,6 +2188,55 @@ function checkCommand ( cmd ) {
 }
 }());
 
+var descriptions = {
+	help : 'Fetches documentation for given command, or general help article.' +
+		'/help [cmdName]',
+
+	listen : 'Forwards the message to the listen API (as if called without' +
+		'the /)',
+
+	live : 'Resurrects the bot if it\'s down',
+
+	die  : 'Kills the bot',
+
+	forget : 'Forgets a given command. /forget cmdName',
+
+	ban : 'Bans a user from using a bot. /ban usr_id|usr_name',
+
+	unban : 'Removes a user from bot\'s mindjail. /unban usr_id|usr_name',
+
+	regex : 'Executes a regex against text input. /regex text regex [flags]',
+
+	jquery : 'Fetches documentation link from jQuery API. /jquery what',
+
+	choose : '"Randomly" choose an option given. /choose option0 option1 ...',
+
+	online : 'Echoes list of users online in the bot\'s chatroom',
+
+	user : 'Fetches user-link for specified user. /user usr_id|usr_name',
+
+	listcommands : 'This seems pretty obvious',
+
+	define : 'Fetches definition for a given word. /define something',
+
+	norris : 'Random chuck norris joke!',
+
+	urban : 'Fetches UrbanDictionary definition. /urban something',
+
+	parse : 'Returns result of "parsing" message according to the bot\'s mini' +
+		'-macro capabilities',
+
+	tell : 'Redirect command result to user/message.' +
+		'/tell msg_id|usr_name cmdName [cmdArgs]',
+
+	mdn : 'Fetches mdn documentation. /mdn what',
+
+	get : '', //I can't intelligibly explain this in a sentence
+
+	learn : 'Teach the bot a command.' +
+		'/learn cmdName cmdOutputMacro [cmdInputRegex]'
+};
+
 Object.keys( commands ).forEach(function ( cmdName ) {
 	bot.addCommand({
 		name : cmdName,
@@ -2191,6 +2244,7 @@ Object.keys( commands ).forEach(function ( cmdName ) {
 		permissions : {
 			del : 'NONE'
 		},
+		description : descriptions[ cmdName ],
 		async : commands[ cmdName ].async
 	});
 });
@@ -2809,7 +2863,7 @@ function addNudge ( delay, msg, msgObj ) {
 		time    : inMS
 	};
 	nudges.push( nudge );
-	console.log( nudge, nudges, '/nudge register')
+	console.log( nudge, nudges, '/nudge register' );
 
 	return 'Nudge registered.';
 }
