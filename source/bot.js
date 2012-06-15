@@ -523,7 +523,7 @@ bot.eval = function ( msg ) {
 
 	worker.postMessage({
 		code : msg.content.substr( 1 )
-			.replace( /[^\u0000-\u00FF]/g, '' );
+			.replace( /[^\u0000-\u00FF]/g, '' )
 	});
 
 	timeout = window.setTimeout( function() {
