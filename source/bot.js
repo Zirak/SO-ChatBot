@@ -439,7 +439,7 @@ var bot = window.bot = {
 		//no listener fancied the message. this is the last frontier, so just
 		// give up in a fancy, dignified way
 		if ( !fired ) {
-			msg.reply( 'Y U NO MAEK SENSE!?' );
+			msg.reply( 'Y U NO MAEK SENSE!? Could not understand ' + msg );
 		}
 	},
 
@@ -513,28 +513,25 @@ bot.eval = function ( msg ) {
 	workerURL = URL.createObjectURL( blob );
 
 	var timeout,
-		code = msg.content.substr( 1 );
-
-	code = ( code + '' ).replace( /[^\u0000-\u00FF]/g, '' );
-	var worker = new Worker( workerURL );
+		worker = new Worker( workerURL );
 
 	worker.addEventListener( 'message', function ( event ) {
 		clearTimeout( timeout );
 
 		finish( dressUpAnswer(event.data) );
-		worker.terminate();
 	});
 
 	worker.postMessage({
-		code: code
+		code : msg.content.substr( 1 )
+			.replace( /[^\u0000-\u00FF]/g, '' );
 	});
 
 	timeout = window.setTimeout( function() {
 		finish( 'Maximum execution time exceeded' );
-		worker.terminate();
 	}, 50 );
 
 	function finish ( result ) {
+		worker.terminate();
 		msg.directreply( result );
 	}
 
@@ -542,7 +539,7 @@ bot.eval = function ( msg ) {
 		var answer = answerObj.answer,
 			log = answerObj.log,
 
-			result = objToResult( answer );
+			result = '`' + objToResult( answer ) + '`';
 
 		if ( result.length > 400 ) {
 			result = '(snip) ' + result.slice( 400 );
@@ -552,7 +549,7 @@ bot.eval = function ( msg ) {
 			result += ' Logged: ';
 
 			result += log.map(function( value, index ) {
-				return objToResult( value );
+				return '`' + objToResult( value ) + '`';
 			}).join( ', ' );
 		}
 

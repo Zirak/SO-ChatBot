@@ -857,7 +857,7 @@ function checkCommand ( cmd ) {
 
 var descriptions = {
 	help : 'Fetches documentation for given command, or general help article.' +
-		'/help [cmdName]',
+		' /help [cmdName]',
 
 	listen : 'Forwards the message to the listen API (as if called without' +
 		'the /)',
@@ -894,14 +894,14 @@ var descriptions = {
 		'-macro capabilities',
 
 	tell : 'Redirect command result to user/message.' +
-		'/tell msg_id|usr_name cmdName [cmdArgs]',
+		' /tell msg_id|usr_name cmdName [cmdArgs]',
 
 	mdn : 'Fetches mdn documentation. /mdn what',
 
 	get : '', //I can't intelligibly explain this in a sentence
 
 	learn : 'Teach the bot a command.' +
-		'/learn cmdName cmdOutputMacro [cmdInputRegex]'
+		' /learn cmdName cmdOutputMacro [cmdInputRegex]'
 };
 
 Object.keys( commands ).forEach(function ( cmdName ) {
