@@ -183,7 +183,7 @@ var IO = window.IO = {
 IO.decodehtmlEntities = (function (){
 var entities = {"quot":"\"","amp":"&","apos":"'","lt":"<","gt":">","nbsp":" ","iexcl":"¡","cent":"¢","pound":"£","curren":"¤","yen":"¥","brvbar":"¦","sect":"§","uml":"¨","copy":"©","ordf":"ª","laquo":"«","not":"¬","reg":"®","macr":"¯","deg":"°","plusmn":"±","sup2":"²","sup3":"³","acute":"´","micro":"µ","para":"¶","middot":"·","cedil":"¸","sup1":"¹","ordm":"º","raquo":"»","frac14":"¼","frac12":"½","frac34":"¾","iquest":"¿","Agrave":"À","Aacute":"Á","Acirc":"Â","Atilde":"Ã","Auml":"Ä","Aring":"Å","AElig":"Æ","Ccedil":"Ç","Egrave":"È","Eacute":"É","Ecirc":"Ê","Euml":"Ë","Igrave":"Ì","Iacute":"Í","Icirc":"Î","Iuml":"Ï","ETH":"Ð","Ntilde":"Ñ","Ograve":"Ò","Oacute":"Ó","Ocirc":"Ô","Otilde":"Õ","Ouml":"Ö","times":"×","Oslash":"Ø","Ugrave":"Ù","Uacute":"Ú","Ucirc":"Û","Uuml":"Ü","Yacute":"Ý","THORN":"Þ","szlig":"ß","agrave":"à","aacute":"á","acirc":"â","atilde":"ã","auml":"ä","aring":"å","aelig":"æ","ccedil":"ç","egrave":"è","eacute":"é","ecirc":"ê","euml":"ë","igrave":"ì","iacute":"í","icirc":"î","iuml":"ï","eth":"ð","ntilde":"ñ","ograve":"ò","oacute":"ó","ocirc":"ô","otilde":"õ","ouml":"ö","divide":"÷","oslash":"ø","ugrave":"ù","uacute":"ú","ucirc":"û","uuml":"ü","yacute":"ý","thorn":"þ","yuml":"ÿ","OElig":"Œ","oelig":"œ","Scaron":"Š","scaron":"š","Yuml":"Ÿ","fnof":"ƒ","circ":"ˆ","tilde":"˜","Alpha":"Α","Beta":"Β","Gamma":"Γ","Delta":"Δ","Epsilon":"Ε","Zeta":"Ζ","Eta":"Η","Theta":"Θ","Iota":"Ι","Kappa":"Κ","Lambda":"Λ","Mu":"Μ","Nu":"Ν","Xi":"Ξ","Omicron":"Ο","Pi":"Π","Rho":"Ρ","Sigma":"Σ","Tau":"Τ","Upsilon":"Υ","Phi":"Φ","Chi":"Χ","Psi":"Ψ","Omega":"Ω","alpha":"α","beta":"β","gamma":"γ","delta":"δ","epsilon":"ε","zeta":"ζ","eta":"η","theta":"θ","iota":"ι","kappa":"κ","lambda":"λ","mu":"μ","nu":"ν","xi":"ξ","omicron":"ο","pi":"π","rho":"ρ","sigmaf":"ς","sigma":"σ","tau":"τ","upsilon":"υ","phi":"φ","chi":"χ","psi":"ψ","omega":"ω","thetasym":"ϑ","upsih":"ϒ","piv":"ϖ","ensp":" ","emsp":" ","thinsp":" ","ndash":"–","mdash":"—","lsquo":"‘","rsquo":"’","sbquo":"‚","ldquo":"“","rdquo":"”","bdquo":"„","dagger":"†","Dagger":"‡","bull":"•","hellip":"…","permil":"‰","prime":"′","Prime":"″","lsaquo":"‹","rsaquo":"›","oline":"‾","frasl":"⁄","euro":"€","image":"ℑ","weierp":"℘","real":"ℜ","trade":"™","alefsym":"ℵ","larr":"←","uarr":"↑","rarr":"→","darr":"↓","harr":"↔","crarr":"↵","lArr":"⇐","uArr":"⇑","rArr":"⇒","dArr":"⇓","hArr":"⇔","forall":"∀","part":"∂","exist":"∃","empty":"∅","nabla":"∇","isin":"∈","notin":"∉","ni":"∋","prod":"∏","sum":"∑","minus":"−","lowast":"∗","radic":"√","prop":"∝","infin":"∞","ang":"∠","and":"∧","or":"∨","cap":"∩","cup":"∪","int":"∫","there4":"∴","sim":"∼","cong":"≅","asymp":"≈","ne":"≠","equiv":"≡","le":"≤","ge":"≥","sub":"⊂","sup":"⊃","nsub":"⊄","sube":"⊆","supe":"⊇","oplus":"⊕","otimes":"⊗","perp":"⊥","sdot":"⋅","lceil":"⌈","rceil":"⌉","lfloor":"⌊","rfloor":"⌋","lang":"〈","rang":"〉","loz":"◊","spades":"♠","clubs":"♣","hearts":"♥","diams":"♦"};
 
-var entityRegex = /\&#?[\w;]+;/g;
+var entityRegex = /\&#?[\w;]+?;/g;
 var replaceEntities = function ( entities ) {
 	//remove the & and split into each separate entity
 	return entities.slice( 1 ).split( ';' ).map( decodeEntity ).join( '' );
@@ -214,7 +214,6 @@ return function ( html ) {
 			IO.fire( 'receive' + fullName, obj );
 
 			if ( IO.preventDefault ) {
-				bot.log( obj, 'preventDefault' );
 				return this;
 			}
 
@@ -266,6 +265,7 @@ var bot = window.bot = {
 	listeners : [],
 
 	parseMessage : function ( msgObj ) {
+		msgObj = this.adapter.transform( msgObj );
 		bot.log( msgObj, 'parseMessage input' );
 
 		if ( !this.validateMessage(msgObj) ) {
@@ -366,7 +366,7 @@ var bot = window.bot = {
 	},
 
 	validateMessage : function ( msgObj ) {
-		var msg = msgObj.content.toLowerCase().trim();
+		var msg = msgObj.content.trim();
 
 		//all we really care about
 		return msg.startsWith( this.invocationPattern );
@@ -380,27 +380,26 @@ var bot = window.bot = {
 	//if a command named cmdName exists, it returns that command object
 	//otherwise, it returns an object with an error message property
 	getCommand : function ( cmdName ) {
-		if ( !this.commandExists(cmdName) ) {
-			//set the error margin according to the length
-			this.commandDictionary.maxCost = Math.floor(
-				cmdName.length / 5 + 1
-			);
+		if ( this.commandExists(cmdName) ) {
+			return this.commands[ cmdName ];
+		}
+		//set the error margin according to the length
+		this.commandDictionary.maxCost = Math.floor(
+			cmdName.length / 5 + 1
+		);
 
-			var msg = 'Command ' + cmdName + ' does not exist.',
-				//find commands resembling the one the user entered
-				guesses = this.commandDictionary.search( cmdName );
+		var msg = 'Command ' + cmdName + ' does not exist.',
+		//find commands resembling the one the user entered
+		guesses = this.commandDictionary.search( cmdName );
 
-			//resembling command(s) found, add them to the error message
-			if ( guesses.length ) {
-				msg += ' Did you mean: ' + guesses.join( ', ' );
-			}
-
-			return {
-				error : msg
-			};
+		//resembling command(s) found, add them to the error message
+		if ( guesses.length ) {
+			msg += ' Did you mean: ' + guesses.join( ', ' );
 		}
 
-		return this.commands[ cmdName ];
+		return {
+			error : msg
+		};
 	},
 
 	//the function women think is lacking in men
@@ -446,15 +445,13 @@ var bot = window.bot = {
 	//the next two functions shouldn't be here, but as of yet no real adapter
 	// mechanism, so you could fit this bot into other chats, has been planned
 	reply : function ( msg, msgObj ) {
-		var usr = msgObj.user_name.replace( /\s/g, '' ),
-			roomid = msgObj.room_id;
-
-		this.adapter.out.add( '@' + usr + ' ' + msg, roomid );
+		var reply = this.adapter.reply( msg, msgObj );
+		this.adapter.out.add( reply, msgObj.room_id );
 	},
 
 	directreply : function ( msg, msgObj ) {
-		var msgid = msgObj.message_id, roomid = msgObj.room_id;
-		this.adapter.out.add( ':' + msgid + ' ' + msg, roomid );
+		var reply = this.adapter.directreply( msg, msgObj );
+		this.adapter.out.add( reply, msgObj.room_id );
 	},
 
 	//some awesome in function form
@@ -634,22 +631,11 @@ bot.Message = function ( text, msgObj ) {
 		},
 
 		codify : function ( msg ) {
-			var tab = '	   ',
-				spacified = msg.replace( '\t', tab ),
-				lines = spacified.split( /[\r\n]/g );
-
-			return lines.map(function ( line ) {
-				if ( !line.startsWith(tab) ) {
-					line = tab + line;
-				}
-				return line;
-			}).join( '\n' );
+			return bot.adapter.codify( msg );
 		},
 
-		//escape characters meaningful to the chat, such as parentheses
-		//full list of escaped characters: `*_()[]
 		escape : function ( msg ) {
-			return msg.replace( /([`\*_\(\)\[\]])/g, '\\$1' );
+			return bot.adapter.escape( msg );
 		},
 
 		parse : function ( msg ) {
@@ -695,7 +681,6 @@ bot.isOwner = function ( usrid ) {
 	return this.owners.indexOf( usrid ) > -1;
 };
 
-IO.register( 'receiveinput', bot.validateMessage, bot );
 IO.register( 'input', bot.parseMessage, bot );
 
 //small utility functions
@@ -772,18 +757,70 @@ Function.prototype.memoizeAsync = function ( cb, thisArg ) {
 };
 
 (function () {
-bot.adapter = {};
+bot.adapter = {
+	//a pretty crucial function. accepts the msgObj we know nothing about,
+	// and returns an object with these properties:
+	//  user_name, user_id, room_id, content
+	// and any other properties, as the abstraction sees fit
+	//since the bot was designed around the SO chat message object, in this
+	// case, we simply do nothing
+	transform : function ( msgObj ) {
+		return msgObj;
+	},
 
+	//escape characters meaningful to the chat, such as parentheses
+	//full list of escaped characters: `*_()[]
+	escape : function ( msg ) {
+		return msg.replace( /([`\*_\(\)\[\]])/g, '\\$1' );
+	},
+
+	//receives a msg and the msgObj, and returns a message which will be
+	// recognized as a reply to a user
+	reply : function ( msg, msgObj ) {
+		var usr = msgObj.user_name.replace( /\s/g, '' );
+		return '@' + usr + ' ' + msg;
+	},
+	//again, receives msg and msgObj, returns a message which is a reply to
+	// another message
+	directreply : function ( msg, msgObj ) {
+		return ':' + msgObj.message_id + ' ' + msg;
+	},
+
+	//receives text and turns it into a codified version
+	//codified is ambiguous for a simple reason: it means nicely-aligned and
+	// mono-spaced. in SO chat, it handles it for us nicely; in others, more
+	// clever methods may need to be taken
+	codify : function ( msg ) {
+		var tab = '    ',
+			spacified = msg.replace( '\t', tab ),
+			lines = spacified.split( /[\r\n]/g );
+
+		if ( lines.length === 1 ) {
+			return '`' + lines[ 0 ] + '`';
+		}
+
+		return lines.map(function ( line ) {
+			if ( !line.startsWith(tab) ) {
+				line = tab + line;
+			}
+			return line;
+		}).join( '\n' );
+	}
+};
+
+//the input is not used by the bot directly, so you can implement it however
+// you like
 var polling = bot.adapter.in = {
 	//used in the SO chat requests, dunno exactly what for, but guessing it's
-	// the latest id or something like that
+	// the latest id or something like that. could also be the time last
+	// sent, which is why I called it times at the beginning. or something.
 	times : {},
 
-	pollInterval : 5000,
+	interval : 5000,
 
 	init : function () {
 		var that = this,
-			roomid = location.pathname.match( /\d+/ )[ 0 ];
+			roomid = bot.roomid;
 
 		IO.xhr({
 			url : '/chats/' + roomid + '/events/',
@@ -863,7 +900,9 @@ var polling = bot.adapter.in = {
 	handleMultilineMessage : function ( msg ) {
 		//remove the enclosing tag
 		var multiline = msg.content
+			//slice upto the beginning of the ending tag
 			.slice( 0, msg.content.lastIndexOf('</div>') )
+			//and strip away the beginning tag
 			.replace( '<div class=\'full\'>', '' );
 
 		//iterate over each line
@@ -881,12 +920,15 @@ var polling = bot.adapter.in = {
 		setTimeout(function () {
 			that.poll();
 			that.loopage();
-		}, this.pollInterval );
+		}, this.interval );
 	}
 };
-polling.init();
 
+//the output is expected to have only one method: add, which receives a message
+// and the room_id. everything else is up to the implementation.
 var output = bot.adapter.out = {
+	interval : polling.interval + 500,
+
 	messages : {},
 
 	//add a message to the output queue
@@ -906,7 +948,10 @@ var output = bot.adapter.out = {
 		this.messages[ obj.room ] += obj.text;
 	},
 
-	//and send output to all the good boys and girls
+	//send output to all the good boys and girls
+	//no messages for naughty kids
+	//...what's red and sits in the corner?
+	//a naughty strawberry
 	send : function () {
 		//unless the bot's stopped. in which case, it should shut the fudge up
 		// the freezer and never let it out. not until it can talk again. what
@@ -926,9 +971,11 @@ var output = bot.adapter.out = {
 		this.messages = {};
 	},
 
-	sendToRoom : function ( text, room ) {
+	//what's brown and sticky?
+	//a stick
+	sendToRoom : function ( text, roomid ) {
 		IO.xhr({
-			url : '/chats/' + room + '/messages/new',
+			url : '/chats/' + roomid + '/messages/new',
 			data : {
 				text : text,
 				fkey : fkey().fkey
@@ -942,19 +989,33 @@ var output = bot.adapter.out = {
 
 			//conflict, wait for next round to send message
 			if ( xhr.status === 409 ) {
-				output.add( text, room );
+				output.add( text, roomid );
+			}
+			//server error, usually caused by message being too long
+			else if ( xhr.status === 500 ) {
+				output.add( 'Server error (status 500) occured', roomid );
 			}
 		}
 	},
 
+	//what do you call a boomerang which doesn't return?
+	//a stick
 	loopage : function () {
-		IO.out.flush();
+		var that = this;
+		setTimeout(function () {
+			IO.out.flush();
+			that.loopage();
+		}, this.interval );
 	}
 };
-output.timer = setInterval( output.loopage, 5000 );
-
+//what's orange and sounds like a parrot?
+//a carrot
 IO.register( 'output', output.build, output );
 IO.register( 'afteroutput', output.send, output );
+
+//two guys walk into a bar. the bartender asks them "is this some kind of joke?"
+polling.init();
+output.loopage();
 }());
 
 (function () {
@@ -1720,10 +1781,10 @@ return function ( args, cb ) {
 
 	function finish ( def ) {
 		if ( cb && cb.call ) {
-			cb( msg );
+			cb( def );
 		}
 		else {
-			args.reply( msg );
+			args.reply( def );
 		}
 	}
 };

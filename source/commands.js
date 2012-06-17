@@ -390,10 +390,10 @@ return function ( args, cb ) {
 
 	function finish ( def ) {
 		if ( cb && cb.call ) {
-			cb( msg );
+			cb( def );
 		}
 		else {
-			args.reply( msg );
+			args.reply( def );
 		}
 	}
 };

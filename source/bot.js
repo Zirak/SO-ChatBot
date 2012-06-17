@@ -214,7 +214,6 @@ return function ( html ) {
 			IO.fire( 'receive' + fullName, obj );
 
 			if ( IO.preventDefault ) {
-				bot.log( obj, 'preventDefault' );
 				return this;
 			}
 
@@ -266,6 +265,7 @@ var bot = window.bot = {
 	listeners : [],
 
 	parseMessage : function ( msgObj ) {
+		msgObj = this.adapter.transform( msgObj );
 		bot.log( msgObj, 'parseMessage input' );
 
 		if ( !this.validateMessage(msgObj) ) {
@@ -366,7 +366,7 @@ var bot = window.bot = {
 	},
 
 	validateMessage : function ( msgObj ) {
-		var msg = msgObj.content.toLowerCase().trim();
+		var msg = msgObj.content.trim();
 
 		//all we really care about
 		return msg.startsWith( this.invocationPattern );
@@ -380,27 +380,26 @@ var bot = window.bot = {
 	//if a command named cmdName exists, it returns that command object
 	//otherwise, it returns an object with an error message property
 	getCommand : function ( cmdName ) {
-		if ( !this.commandExists(cmdName) ) {
-			//set the error margin according to the length
-			this.commandDictionary.maxCost = Math.floor(
-				cmdName.length / 5 + 1
-			);
+		if ( this.commandExists(cmdName) ) {
+			return this.commands[ cmdName ];
+		}
+		//set the error margin according to the length
+		this.commandDictionary.maxCost = Math.floor(
+			cmdName.length / 5 + 1
+		);
 
-			var msg = 'Command ' + cmdName + ' does not exist.',
-				//find commands resembling the one the user entered
-				guesses = this.commandDictionary.search( cmdName );
+		var msg = 'Command ' + cmdName + ' does not exist.',
+		//find commands resembling the one the user entered
+		guesses = this.commandDictionary.search( cmdName );
 
-			//resembling command(s) found, add them to the error message
-			if ( guesses.length ) {
-				msg += ' Did you mean: ' + guesses.join( ', ' );
-			}
-
-			return {
-				error : msg
-			};
+		//resembling command(s) found, add them to the error message
+		if ( guesses.length ) {
+			msg += ' Did you mean: ' + guesses.join( ', ' );
 		}
 
-		return this.commands[ cmdName ];
+		return {
+			error : msg
+		};
 	},
 
 	//the function women think is lacking in men
@@ -446,15 +445,13 @@ var bot = window.bot = {
 	//the next two functions shouldn't be here, but as of yet no real adapter
 	// mechanism, so you could fit this bot into other chats, has been planned
 	reply : function ( msg, msgObj ) {
-		var usr = msgObj.user_name.replace( /\s/g, '' ),
-			roomid = msgObj.room_id;
-
-		this.adapter.out.add( '@' + usr + ' ' + msg, roomid );
+		var reply = this.adapter.reply( msg, msgObj );
+		this.adapter.out.add( reply, msgObj.room_id );
 	},
 
 	directreply : function ( msg, msgObj ) {
-		var msgid = msgObj.message_id, roomid = msgObj.room_id;
-		this.adapter.out.add( ':' + msgid + ' ' + msg, roomid );
+		var reply = this.adapter.directreply( msg, msgObj );
+		this.adapter.out.add( reply, msgObj.room_id );
 	},
 
 	//some awesome in function form
@@ -634,22 +631,11 @@ bot.Message = function ( text, msgObj ) {
 		},
 
 		codify : function ( msg ) {
-			var tab = '	   ',
-				spacified = msg.replace( '\t', tab ),
-				lines = spacified.split( /[\r\n]/g );
-
-			return lines.map(function ( line ) {
-				if ( !line.startsWith(tab) ) {
-					line = tab + line;
-				}
-				return line;
-			}).join( '\n' );
+			return bot.adapter.codify( msg );
 		},
 
-		//escape characters meaningful to the chat, such as parentheses
-		//full list of escaped characters: `*_()[]
 		escape : function ( msg ) {
-			return msg.replace( /([`\*_\(\)\[\]])/g, '\\$1' );
+			return bot.adapter.escape( msg );
 		},
 
 		parse : function ( msg ) {
@@ -695,7 +681,6 @@ bot.isOwner = function ( usrid ) {
 	return this.owners.indexOf( usrid ) > -1;
 };
 
-IO.register( 'receiveinput', bot.validateMessage, bot );
 IO.register( 'input', bot.parseMessage, bot );
 
 //#build util.js
