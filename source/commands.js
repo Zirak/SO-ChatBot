@@ -603,24 +603,63 @@ return function ( args ) {
 commands.mdn = (function () {
 
 // https://developer.mozilla.org/Special:Tags?tag=DOM
-//a lowercaseObjectName => DOMobjectName object, where a falsy value
-// means to just use lowercaseObjectName
-var DOMParts = {
-	'document' : '',
-	'element'  : '',
-	'event'    : '',
-	'form'     : '',
-	'node'     : 'Node',
-	'nodelist' : 'NodeList',
-	'range'    : '',
-	'text'     : 'Text',
-	'window'   : ''
-};
+//these may only work in Chrome, but who cares?
+//an array of DOM objects mdn has special links for
+var DOMParts = [
+	{
+		name  : 'node',
+		mdn   : 'Node',
+		proto : Node.prototype
+	},
+	{
+		name  : 'element',
+		proto : Element.prototype
+	},
+	{
+		name  : 'nodelist',
+		mdn   : 'NodeList',
+		proto : NodeList.prototype
+	},
+	{
+		name  : 'form',
+		//I could not find a way to get an actual copy of HTMLFormCollection
+		// with all the properties (elements, name, acceptCharset etc) in it
+		//document.createElement('form') is close, but also responds to many
+		// other properties
+		proto : {
+			elements : true, name : true, acceptCharset : true, action : true,
+			enctype : true, encoding : true, method : true, submit : true,
+			reset : true, length : true, target : true
+		}
+	},
+	{
+		name  : 'document',
+		proto : document
+	},
+	{
+		name  : 'text',
+		mdn   : 'Text',
+		proto : Text.prototype
+	}
+];
+
+function whichDOMPart ( suspect, prop ) {
+	var part;
+	suspect = suspect.toLowerCase();
+	for ( var i = 0, len = DOMParts.length; i < len; ++i ) {
+		part = DOMParts[ i ];
+		if ( part.name === suspect && part.proto.hasOwnProperty(prop) ) {
+			return DOMParts[ i ];
+		}
+	}
+}
 
 return function mdn ( args ) {
-	var splitArgs = args.split( ' ' );
-	if ( splitArgs.length > 1 ) {
-		return splitArgs.map( mdn ).join( ' ' );
+	var parsed = args.parse();
+	if ( parsed.length > 1 ) {
+		return parsed.map(function ( arg ) {
+			return '[' + args.escape(arg) + '](' + mdn( arg ) + ')'
+		}).join( ', ' );
 	}
 
 	var parts = args.trim().split( '.' ),
@@ -632,13 +671,13 @@ return function mdn ( args ) {
 	//mdn urls never have something.prototype.property, but always
 	// something.property
 	if ( parts[1] === 'prototype' ) {
-		parts.split( 1, 1 );
+		parts.splice( 1, 1 );
 	}
 
 	//part of the DOM?
-	var lowercased = parts[ 0 ].toLowerCase();
-	if ( DOMParts.hasOwnProperty(lowercased) ) {
-		parts[ 0 ] = DOMParts[ lowercased ] || lowercased;
+	var DOMPart = whichDOMPart( parts[0], parts[1] );
+	if ( DOMPart ) {
+		parts[ 0 ] = DOMPart.mdn || DOMPart.name;
 		url = base + 'DOM/' + parts.join( '.' );
 
 		bot.log( url, '/mdn DOM' );
@@ -653,7 +692,8 @@ return function mdn ( args ) {
 
 	//i unno
 	else {
-		url = 'https://developer.mozilla.org/en-US/search?q=' + args;
+		url = 'https://developer.mozilla.org/en-US/search?q=' +
+			encodeURIComponent( args );
 		bot.log( url, '/mdn unknown' );
 	}
 
