@@ -561,6 +561,10 @@ bot.eval = function ( msg ) {
 			return 'undefined';
 		}
 
+		if ( typeof result === 'function' ) {
+			return result.toString();
+		}
+
 		try {
 			ret = JSON.stringify( result );
 		}
@@ -638,8 +642,24 @@ bot.Message = function ( text, msgObj ) {
 			return bot.adapter.escape( msg );
 		},
 
-		parse : function ( msg ) {
-			return bot.parseCommandArgs( msg || text );
+		//parse() parses the original message
+		//parse( true ) also turns every match result to a Message
+		//parse( msgToParse ) parses msgToParse
+		//parse( msgToParse, true ) combination of the above
+		parse : function ( msg, map ) {
+			if ( !!msg === msg ) {
+				map = msg;
+				msg = text;
+			}
+			var parsed = bot.parseCommandArgs( msg || text );
+
+			if ( !map ) {
+				return parsed;
+			}
+
+			return parsed.map(function ( part ) {
+				return bot.Message( part, msgObj )
+			});
 		},
 
 		//execute a regexp against the text, saving it inside the object

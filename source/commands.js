@@ -145,9 +145,9 @@ var commands = {
 
 	jquery : function jquery ( args ) {
 		//check to see if more than one thing is requested
-		var splitArgs = args.split( ' ' );
-		if ( splitArgs.length > 1 ) {
-			return splitArgs.map( jquery ).join( ' ' );
+		var parsed = args.parse( true );
+		if ( parsed.length > 1 ) {
+			return parsed.map( jquery ).join( ' ' );
 		}
 
 		var props = args.trim().replace( /^\$/, 'jQuery' ),
@@ -654,19 +654,12 @@ function whichDOMPart ( suspect, prop ) {
 	}
 }
 
-return function mdn ( args ) {
-	var parsed = args.parse();
-	if ( parsed.length > 1 ) {
-		return parsed.map(function ( arg ) {
-			return '[' + args.escape(arg) + '](' + mdn( arg ) + ')'
-		}).join( ', ' );
-	}
-
-	var parts = args.trim().split( '.' ),
+function mdn ( what ) {
+	var parts = what.trim().split( '.' ),
 		base = 'https://developer.mozilla.org/en/',
 		url;
 
-	bot.log( args, parts, '/mdn input' );
+	bot.log( what, parts, '/mdn input' );
 
 	//mdn urls never have something.prototype.property, but always
 	// something.property
@@ -693,11 +686,15 @@ return function mdn ( args ) {
 	//i unno
 	else {
 		url = 'https://developer.mozilla.org/en-US/search?q=' +
-			encodeURIComponent( args );
+			encodeURIComponent( what );
 		bot.log( url, '/mdn unknown' );
 	}
 
 	return url;
+}
+
+return function ( args ) {
+	return args.parse().map( mdn ).join( ' ' );
 };
 }());
 
