@@ -277,6 +277,7 @@ bot.addCommand({
 	permissions : {
 		del : 'NONE'
 	},
+
 	description : [
 		'Roll dice in DnD notation. `MdN` rolls `M` `N`-sided dice',
 		'`MdN+X` rolls as said above, and adds `X` to the result'  ,

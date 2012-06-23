@@ -2,7 +2,7 @@
 (function () {
 //collection of nudges; msgObj, time left and the message itself
 var nudges = [],
-	interval = bot.adapter.in.pollInterval || 5000;
+	interval = bot.adapter.in.interval || 5000;
 
 function update () {
 	var now = Date.now();
@@ -65,7 +65,11 @@ bot.addCommand({
 	fun  : nudgeCommand,
 	permissions : {
 		del : 'NONE'
-	}
+	},
+
+	description : 'Register a nudge after an interval. ' +
+		'`/nudge intervalInMinutes message`, or the listener, ' +
+		'`nudge|remind|poke me? in? intervalInMinutes message'
 });
 
 bot.listen(/(?:nudge|remind|poke)\s(?:me\s)?(?:in\s)?(\d+m?)\s?(.*)$/,

@@ -336,6 +336,7 @@ if ( process.argv.indexOf('no-min') > -1 ) {
 build.start(
 	[
 		'./source/bot.js',
+		'./source/adapter.js',
 		'./source/plugins/'
 	],
 	function ( fileName ) {

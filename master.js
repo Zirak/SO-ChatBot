@@ -143,7 +143,7 @@ var IO = window.IO = {
 
 			return array.map(function ( val ) {
 				return pair( key, val, true );
-			});
+			}).join( '&' );
 		};
 
 		//returns a key=value pair. pass in dontStringifyKey so that, well, the
@@ -183,18 +183,25 @@ var IO = window.IO = {
 IO.decodehtmlEntities = (function (){
 var entities = {"quot":"\"","amp":"&","apos":"'","lt":"<","gt":">","nbsp":" ","iexcl":"¡","cent":"¢","pound":"£","curren":"¤","yen":"¥","brvbar":"¦","sect":"§","uml":"¨","copy":"©","ordf":"ª","laquo":"«","not":"¬","reg":"®","macr":"¯","deg":"°","plusmn":"±","sup2":"²","sup3":"³","acute":"´","micro":"µ","para":"¶","middot":"·","cedil":"¸","sup1":"¹","ordm":"º","raquo":"»","frac14":"¼","frac12":"½","frac34":"¾","iquest":"¿","Agrave":"À","Aacute":"Á","Acirc":"Â","Atilde":"Ã","Auml":"Ä","Aring":"Å","AElig":"Æ","Ccedil":"Ç","Egrave":"È","Eacute":"É","Ecirc":"Ê","Euml":"Ë","Igrave":"Ì","Iacute":"Í","Icirc":"Î","Iuml":"Ï","ETH":"Ð","Ntilde":"Ñ","Ograve":"Ò","Oacute":"Ó","Ocirc":"Ô","Otilde":"Õ","Ouml":"Ö","times":"×","Oslash":"Ø","Ugrave":"Ù","Uacute":"Ú","Ucirc":"Û","Uuml":"Ü","Yacute":"Ý","THORN":"Þ","szlig":"ß","agrave":"à","aacute":"á","acirc":"â","atilde":"ã","auml":"ä","aring":"å","aelig":"æ","ccedil":"ç","egrave":"è","eacute":"é","ecirc":"ê","euml":"ë","igrave":"ì","iacute":"í","icirc":"î","iuml":"ï","eth":"ð","ntilde":"ñ","ograve":"ò","oacute":"ó","ocirc":"ô","otilde":"õ","ouml":"ö","divide":"÷","oslash":"ø","ugrave":"ù","uacute":"ú","ucirc":"û","uuml":"ü","yacute":"ý","thorn":"þ","yuml":"ÿ","OElig":"Œ","oelig":"œ","Scaron":"Š","scaron":"š","Yuml":"Ÿ","fnof":"ƒ","circ":"ˆ","tilde":"˜","Alpha":"Α","Beta":"Β","Gamma":"Γ","Delta":"Δ","Epsilon":"Ε","Zeta":"Ζ","Eta":"Η","Theta":"Θ","Iota":"Ι","Kappa":"Κ","Lambda":"Λ","Mu":"Μ","Nu":"Ν","Xi":"Ξ","Omicron":"Ο","Pi":"Π","Rho":"Ρ","Sigma":"Σ","Tau":"Τ","Upsilon":"Υ","Phi":"Φ","Chi":"Χ","Psi":"Ψ","Omega":"Ω","alpha":"α","beta":"β","gamma":"γ","delta":"δ","epsilon":"ε","zeta":"ζ","eta":"η","theta":"θ","iota":"ι","kappa":"κ","lambda":"λ","mu":"μ","nu":"ν","xi":"ξ","omicron":"ο","pi":"π","rho":"ρ","sigmaf":"ς","sigma":"σ","tau":"τ","upsilon":"υ","phi":"φ","chi":"χ","psi":"ψ","omega":"ω","thetasym":"ϑ","upsih":"ϒ","piv":"ϖ","ensp":" ","emsp":" ","thinsp":" ","ndash":"–","mdash":"—","lsquo":"‘","rsquo":"’","sbquo":"‚","ldquo":"“","rdquo":"”","bdquo":"„","dagger":"†","Dagger":"‡","bull":"•","hellip":"…","permil":"‰","prime":"′","Prime":"″","lsaquo":"‹","rsaquo":"›","oline":"‾","frasl":"⁄","euro":"€","image":"ℑ","weierp":"℘","real":"ℜ","trade":"™","alefsym":"ℵ","larr":"←","uarr":"↑","rarr":"→","darr":"↓","harr":"↔","crarr":"↵","lArr":"⇐","uArr":"⇑","rArr":"⇒","dArr":"⇓","hArr":"⇔","forall":"∀","part":"∂","exist":"∃","empty":"∅","nabla":"∇","isin":"∈","notin":"∉","ni":"∋","prod":"∏","sum":"∑","minus":"−","lowast":"∗","radic":"√","prop":"∝","infin":"∞","ang":"∠","and":"∧","or":"∨","cap":"∩","cup":"∪","int":"∫","there4":"∴","sim":"∼","cong":"≅","asymp":"≈","ne":"≠","equiv":"≡","le":"≤","ge":"≥","sub":"⊂","sup":"⊃","nsub":"⊄","sube":"⊆","supe":"⊇","oplus":"⊕","otimes":"⊗","perp":"⊥","sdot":"⋅","lceil":"⌈","rceil":"⌉","lfloor":"⌊","rfloor":"⌋","lang":"〈","rang":"〉","loz":"◊","spades":"♠","clubs":"♣","hearts":"♥","diams":"♦"};
 
-var entityRegex = /\&#?[\w;]+?;/g;
+/*
+  &       -all entities start with &
+  #?      -charcode entities (&#208; is Ð for instance)
+  [\w;]   -capture an entity (alphanumeric,separated by ;)
+  +?      -capture entities until there aint no more (don't get the trailing ;)
+  ;       -trailing ;
+*/
+var entityRegex = /&#?[\w;]+?;/g;
 var replaceEntities = function ( entities ) {
 	//remove the & and split into each separate entity
 	return entities.slice( 1 ).split( ';' ).map( decodeEntity ).join( '' );
 };
 var decodeEntity = function ( entity ) {
-		//starts with a #, grab the charcode value
-		if ( entity[0] === '#' ) {
-			return String.fromCharCode( Number(entity.slice(1)) );
-		}
+	//starts with a #, grab the charcode value
+	if ( entity[0] === '#' ) {
+		return String.fromCharCode( Number(entity.slice(1)) );
+	}
 
-		return entities[ entity ] || entity;
+	return entities[ entity ] || entity;
 };
 
 return function ( html ) {
@@ -266,7 +273,6 @@ var bot = window.bot = {
 
 	parseMessage : function ( msgObj ) {
 		msgObj = this.adapter.transform( msgObj );
-		bot.log( msgObj, 'parseMessage input' );
 
 		if ( !this.validateMessage(msgObj) ) {
 			bot.log( msgObj, 'parseMessage invalid' );
@@ -291,13 +297,11 @@ var bot = window.bot = {
 		try {
 			//it's a command
 			if ( msg.startsWith('/') ) {
-				bot.log( msg, 'parseMessage command' );
 				this.parseCommand( msg );
 			}
 
 			//it wants to execute some code
 			else if ( msg.startsWith('>') ) {
-				bot.log( msg, 'parseMessage code' );
 				this.eval( msg );
 			}
 
@@ -438,7 +442,9 @@ var bot = window.bot = {
 		//no listener fancied the message. this is the last frontier, so just
 		// give up in a fancy, dignified way
 		if ( !fired ) {
-			msg.reply( 'Y U NO MAEK SENSE!? Could not understand ' + msg );
+			msg.reply(
+				'Y U NO MAEK SENSE!? Could not understand `' + msg + '`'
+			);
 		}
 	},
 
@@ -497,18 +503,23 @@ bot.banlist.remove = function ( item ) {
 };
 
 //execute arbitrary js code in a relatively safe environment
-bot.eval = function ( msg ) {
+bot.eval = (function ( msg ) {
+
+var workerURL = (function () {
+	//you can see the actual code in the codeWorker.js file
 	var workerCode = atob( 'dmFyIGdsb2JhbCA9IHRoaXM7IC8qbW9zdCBleHRyYSBmdW5jdGlvbnMgY291bGQgYmUgcG9zc2libHkgdW5zYWZlKi8gdmFyIHdoaXRleSA9IHsgJ3NlbGYnOiAxLCAnb25tZXNzYWdlJzogMSwgJ3Bvc3RNZXNzYWdlJzogMSwgJ2dsb2JhbCc6IDEsICd3aGl0ZXknOiAxLCAnZXZhbCc6IDEsICdBcnJheSc6IDEsICdCb29sZWFuJzogMSwgJ0RhdGUnOiAxLCAnRnVuY3Rpb24nOiAxLCAnTnVtYmVyJyA6IDEsICdPYmplY3QnOiAxLCAnUmVnRXhwJzogMSwgJ1N0cmluZyc6IDEsICdFcnJvcic6IDEsICdFdmFsRXJyb3InOiAxLCAnUmFuZ2VFcnJvcic6IDEsICdSZWZlcmVuY2VFcnJvcic6IDEsICdTeW50YXhFcnJvcic6IDEsICdUeXBlRXJyb3InOiAxLCAnVVJJRXJyb3InOiAxLCAnZGVjb2RlVVJJJzogMSwgJ2RlY29kZVVSSUNvbXBvbmVudCc6IDEsICdlbmNvZGVVUkknOiAxLCAnZW5jb2RlVVJJQ29tcG9uZW50JzogMSwgJ2lzRmluaXRlJzogMSwgJ2lzTmFOJzogMSwgJ3BhcnNlRmxvYXQnOiAxLCAncGFyc2VJbnQnOiAxLCAnSW5maW5pdHknOiAxLCAnSlNPTic6IDEsICdNYXRoJzogMSwgJ05hTic6IDEsICd1bmRlZmluZWQnOiAxIH07IFsgZ2xvYmFsLCBnbG9iYWwuX19wcm90b19fIF0uZm9yRWFjaChmdW5jdGlvbiAoIG9iaiApIHsgT2JqZWN0LmdldE93blByb3BlcnR5TmFtZXMoIG9iaiApLmZvckVhY2goZnVuY3Rpb24oIHByb3AgKSB7IGlmKCAhd2hpdGV5Lmhhc093blByb3BlcnR5KCBwcm9wICkgKSB7IE9iamVjdC5kZWZpbmVQcm9wZXJ0eSggb2JqLCBwcm9wLCB7IGdldCA6IGZ1bmN0aW9uKCkgeyB0aHJvdyAnU2VjdXJpdHkgRXhjZXB0aW9uOiBDYW5ub3QgYWNjZXNzICcgKyBwcm9wOyByZXR1cm4gMTsgfSwgY29uZmlndXJhYmxlIDogZmFsc2UgfSk7IH0gfSk7IH0pOyBPYmplY3QuZGVmaW5lUHJvcGVydHkoIEFycmF5LnByb3RvdHlwZSwgJ2pvaW4nLCB7IHdyaXRhYmxlOiBmYWxzZSwgY29uZmlndXJhYmxlOiBmYWxzZSwgZW51bXJhYmxlOiBmYWxzZSwgdmFsdWU6IChmdW5jdGlvbiggb2xkICl7IHJldHVybiBmdW5jdGlvbiggYXJnICl7IGlmKCB0aGlzLmxlbmd0aCA+IDUwMCB8fCAoYXJnICYmIGFyZy5sZW5ndGggPiA1MDAgKSApIHsgdGhyb3cgJ0V4Y2VwdGlvbjogdG9vIG1hbnkgaXRlbXMnOyB9IHJldHVybiBvbGQuYXBwbHkoIHRoaXMsIGFyZ3VtZW50cyApOyB9OyB9KEFycmF5LnByb3RvdHlwZS5qb2luKSkgfSk7IChmdW5jdGlvbigpeyAidXNlIHN0cmljdCI7IHZhciBjb25zb2xlID0geyBfaXRlbXMgOiBbXSwgbG9nOiBmdW5jdGlvbigpeyBjb25zb2xlLl9pdGVtcy5wdXNoLmFwcGx5KCBjb25zb2xlLl9pdGVtcywgYXJndW1lbnRzICk7IH0gfTsgc2VsZi5vbm1lc3NhZ2UgPSBmdW5jdGlvbiggZXZlbnQgKSB7ICd1c2Ugc3RyaWN0JzsgdmFyIGNvZGUgPSBldmVudC5kYXRhLmNvZGUsIHJlc3VsdDsgdHJ5IHsgcmVzdWx0ID0gZXZhbCggJyJ1c2Ugc3RyaWN0IjtcbicrY29kZSApOyB9IGNhdGNoICggZSApIHsgcmVzdWx0ID0gZS50b1N0cmluZygpOyB9IHBvc3RNZXNzYWdlKHsgYW5zd2VyIDogcmVzdWx0LCBsb2cgOiBjb25zb2xlLl9pdGVtcyB9KTsgfTsgfSkoKTs=' );
 
 	var BlobBuilder = window.WebKitBlobBuilder,
 		blobBuilder = new BlobBuilder(),
 		URL = window.webkitURL,
-		blob, workerURL;
+		blob;
 
 	blobBuilder.append( workerCode );
 	blob = blobBuilder.getBlob( 'text/javascript');
-	workerURL = URL.createObjectURL( blob );
+	return URL.createObjectURL( blob );
+}());
 
+return function () {
 	var timeout,
 		worker = new Worker( workerURL );
 
@@ -575,6 +586,7 @@ bot.eval = function ( msg ) {
 		return ret;
 	}
 };
+})();
 
 //some sort of pseudo constructor
 bot.Command = function ( cmd ) {
@@ -775,268 +787,6 @@ Function.prototype.memoizeAsync = function ( cb, thisArg ) {
 		return fun.apply( this, args );
 	};
 };
-
-(function () {
-bot.adapter = {
-	//a pretty crucial function. accepts the msgObj we know nothing about,
-	// and returns an object with these properties:
-	//  user_name, user_id, room_id, content
-	// and any other properties, as the abstraction sees fit
-	//since the bot was designed around the SO chat message object, in this
-	// case, we simply do nothing
-	transform : function ( msgObj ) {
-		return msgObj;
-	},
-
-	//escape characters meaningful to the chat, such as parentheses
-	//full list of escaped characters: `*_()[]
-	escape : function ( msg ) {
-		return msg.replace( /([`\*_\(\)\[\]])/g, '\\$1' );
-	},
-
-	//receives a msg and the msgObj, and returns a message which will be
-	// recognized as a reply to a user
-	reply : function ( msg, msgObj ) {
-		var usr = msgObj.user_name.replace( /\s/g, '' );
-		return '@' + usr + ' ' + msg;
-	},
-	//again, receives msg and msgObj, returns a message which is a reply to
-	// another message
-	directreply : function ( msg, msgObj ) {
-		return ':' + msgObj.message_id + ' ' + msg;
-	},
-
-	//receives text and turns it into a codified version
-	//codified is ambiguous for a simple reason: it means nicely-aligned and
-	// mono-spaced. in SO chat, it handles it for us nicely; in others, more
-	// clever methods may need to be taken
-	codify : function ( msg ) {
-		var tab = '    ',
-			spacified = msg.replace( '\t', tab ),
-			lines = spacified.split( /[\r\n]/g );
-
-		if ( lines.length === 1 ) {
-			return '`' + lines[ 0 ] + '`';
-		}
-
-		return lines.map(function ( line ) {
-			if ( !line.startsWith(tab) ) {
-				line = tab + line;
-			}
-			return line;
-		}).join( '\n' );
-	}
-};
-
-//the input is not used by the bot directly, so you can implement it however
-// you like
-var polling = bot.adapter.in = {
-	//used in the SO chat requests, dunno exactly what for, but guessing it's
-	// the latest id or something like that. could also be the time last
-	// sent, which is why I called it times at the beginning. or something.
-	times : {},
-
-	interval : 5000,
-
-	init : function () {
-		var that = this,
-			roomid = bot.roomid;
-
-		IO.xhr({
-			url : '/chats/' + roomid + '/events/',
-			data : fkey({
-				since : 0,
-				mode : 'Messages',
-				msgCount : 0
-			}),
-			method : 'POST',
-			complete : finish
-		});
-
-		function finish ( resp ) {
-			resp = JSON.parse( resp );
-			bot.log( resp );
-
-			that.times[ 'r' + roomid ] = resp.time;
-
-			that.loopage();
-		}
-	},
-
-	poll : function () {
-		var that = this;
-
-		IO.xhr({
-			url : '/events',
-			data : fkey( that.times ),
-			method : 'POST',
-			complete : that.pollComplete,
-			thisArg : that
-		});
-	},
-
-	pollComplete : function ( resp ) {
-		if ( !resp ) {
-			return;
-		}
-		resp = JSON.parse( resp );
-
-		var that = this;
-		//each key will be in the form of rROOMID
-		Object.keys( resp ).forEach(function ( key ) {
-			var msgObj = resp[ key ];
-
-			//t is a...something important
-			if ( msgObj.t ) {
-				that.times[ key ] = msgObj.t;
-			}
-
-			//e is an array of events, what is referred to in the bot as msgObj
-			if ( msgObj.e ) {
-				msgObj.e.forEach( that.handleMessageObject, that );
-			}
-		});
-
-		//handle all the input
-		IO.in.flush();
-	},
-
-	handleMessageObject : function ( msg ) {
-		//event_type of 1 means new message, 2 means edited message
-		if ( msg.event_type !== 1 && msg.event_type !== 2 ) {
-			return;
-		}
-
-		//check for a multiline message
-		if ( msg.content.startsWith('<div class=\'full\'>') ) {
-			this.handleMultilineMessage( msg );
-			return;
-		}
-
-		//add the message to the input buffer
-		IO.in.receive( msg );
-	},
-
-	handleMultilineMessage : function ( msg ) {
-		//remove the enclosing tag
-		var multiline = msg.content
-			//slice upto the beginning of the ending tag
-			.slice( 0, msg.content.lastIndexOf('</div>') )
-			//and strip away the beginning tag
-			.replace( '<div class=\'full\'>', '' );
-
-		//iterate over each line
-		multiline.split( '<br>' ).forEach(function ( line ) {
-			//and treat it as if it were a separate message
-			this.handleMessageObject(
-				Object.merge( msg, { content : line.trim() })
-			);
-		}, this );
-	},
-
-	loopage : function () {
-		var that = this;
-
-		setTimeout(function () {
-			that.poll();
-			that.loopage();
-		}, this.interval );
-	}
-};
-
-//the output is expected to have only one method: add, which receives a message
-// and the room_id. everything else is up to the implementation.
-var output = bot.adapter.out = {
-	interval : polling.interval + 500,
-
-	messages : {},
-
-	//add a message to the output queue
-	add : function ( msg, roomid ) {
-		roomid = roomid || bot.roomid;
-		IO.out.receive({
-			text : msg + '\n',
-			room : roomid
-		});
-	},
-
-	//build the final output
-	build : function ( obj ) {
-		if ( !this.messages[obj.room] ) {
-			this.messages[ obj.room ] = '';
-		}
-		this.messages[ obj.room ] += obj.text;
-	},
-
-	//send output to all the good boys and girls
-	//no messages for naughty kids
-	//...what's red and sits in the corner?
-	//a naughty strawberry
-	send : function () {
-		//unless the bot's stopped. in which case, it should shut the fudge up
-		// the freezer and never let it out. not until it can talk again. what
-		// was I intending to say?
-		if ( !bot.stopped ) {
-			Object.keys( this.messages ).forEach(function ( room ) {
-				var message = this.messages[ room ];
-
-				if ( !message ) {
-					return;
-				}
-
-				this.sendToRoom( message, room );
-			}, this );
-		}
-
-		this.messages = {};
-	},
-
-	//what's brown and sticky?
-	//a stick
-	sendToRoom : function ( text, roomid ) {
-		IO.xhr({
-			url : '/chats/' + roomid + '/messages/new',
-			data : {
-				text : text,
-				fkey : fkey().fkey
-			},
-			method : 'POST',
-			complete : complete
-		});
-
-		function complete ( resp, xhr ) {
-			bot.log( xhr.status );
-
-			//conflict, wait for next round to send message
-			if ( xhr.status === 409 ) {
-				output.add( text, roomid );
-			}
-			//server error, usually caused by message being too long
-			else if ( xhr.status === 500 ) {
-				output.add( 'Server error (status 500) occured', roomid );
-			}
-		}
-	},
-
-	//what do you call a boomerang which doesn't return?
-	//a stick
-	loopage : function () {
-		var that = this;
-		setTimeout(function () {
-			IO.out.flush();
-			that.loopage();
-		}, this.interval );
-	}
-};
-//what's orange and sounds like a parrot?
-//a carrot
-IO.register( 'output', output.build, output );
-IO.register( 'afteroutput', output.send, output );
-
-//two guys walk into a bar. the bartender asks them "is this some kind of joke?"
-polling.init();
-output.loopage();
-}());
 
 (function () {
 "use strict";
@@ -2480,6 +2230,269 @@ what              --simply the word what
 }());
 
 ;
+(function () {
+bot.adapter = {
+	//a pretty crucial function. accepts the msgObj we know nothing about,
+	// and returns an object with these properties:
+	//  user_name, user_id, room_id, content
+	// and any other properties, as the abstraction sees fit
+	//since the bot was designed around the SO chat message object, in this
+	// case, we simply do nothing
+	transform : function ( msgObj ) {
+		return msgObj;
+	},
+
+	//escape characters meaningful to the chat, such as parentheses
+	//full list of escaped characters: `*_()[]
+	escape : function ( msg ) {
+		return msg.replace( /([`\*_\(\)\[\]])/g, '\\$1' );
+	},
+
+	//receives a msg and the msgObj, and returns a message which will be
+	// recognized as a reply to a user
+	reply : function ( msg, msgObj ) {
+		var usr = msgObj.user_name.replace( /\s/g, '' );
+		return '@' + usr + ' ' + msg;
+	},
+	//again, receives msg and msgObj, returns a message which is a reply to
+	// another message
+	directreply : function ( msg, msgObj ) {
+		return ':' + msgObj.message_id + ' ' + msg;
+	},
+
+	//receives text and turns it into a codified version
+	//codified is ambiguous for a simple reason: it means nicely-aligned and
+	// mono-spaced. in SO chat, it handles it for us nicely; in others, more
+	// clever methods may need to be taken
+	codify : function ( msg ) {
+		var tab = '    ',
+			spacified = msg.replace( '\t', tab ),
+			lines = spacified.split( /[\r\n]/g );
+
+		if ( lines.length === 1 ) {
+			return '`' + lines[ 0 ] + '`';
+		}
+
+		return lines.map(function ( line ) {
+			if ( !line.startsWith(tab) ) {
+				line = tab + line;
+			}
+			return line;
+		}).join( '\n' );
+	}
+};
+
+//the input is not used by the bot directly, so you can implement it however
+// you like
+var polling = bot.adapter.in = {
+	//used in the SO chat requests, dunno exactly what for, but guessing it's
+	// the latest id or something like that. could also be the time last
+	// sent, which is why I called it times at the beginning. or something.
+	times : {},
+
+	interval : 5000,
+
+	init : function () {
+		var that = this,
+			roomid = bot.roomid;
+
+		IO.xhr({
+			url : '/chats/' + roomid + '/events/',
+			data : fkey({
+				since : 0,
+				mode : 'Messages',
+				msgCount : 0
+			}),
+			method : 'POST',
+			complete : finish
+		});
+
+		function finish ( resp ) {
+			resp = JSON.parse( resp );
+			bot.log( resp );
+
+			that.times[ 'r' + roomid ] = resp.time;
+
+			that.loopage();
+		}
+	},
+
+	poll : function () {
+		var that = this;
+
+		IO.xhr({
+			url : '/events',
+			data : fkey( that.times ),
+			method : 'POST',
+			complete : that.pollComplete,
+			thisArg : that
+		});
+	},
+
+	pollComplete : function ( resp ) {
+		if ( !resp ) {
+			return;
+		}
+		resp = JSON.parse( resp );
+
+		var that = this;
+		//each key will be in the form of rROOMID
+		Object.keys( resp ).forEach(function ( key ) {
+			var msgObj = resp[ key ];
+
+			//t is a...something important
+			if ( msgObj.t ) {
+				that.times[ key ] = msgObj.t;
+			}
+
+			//e is an array of events, what is referred to in the bot as msgObj
+			if ( msgObj.e ) {
+				msgObj.e.forEach( that.handleMessageObject, that );
+			}
+		});
+
+		//handle all the input
+		IO.in.flush();
+	},
+
+	handleMessageObject : function ( msg ) {
+		//event_type of 1 means new message, 2 means edited message
+		if ( msg.event_type !== 1 && msg.event_type !== 2 ) {
+			return;
+		}
+
+		//check for a multiline message
+		if ( msg.content.startsWith('<div class=\'full\'>') ) {
+			this.handleMultilineMessage( msg );
+			return;
+		}
+
+		//add the message to the input buffer
+		IO.in.receive( msg );
+	},
+
+	handleMultilineMessage : function ( msg ) {
+		//remove the enclosing tag
+		var multiline = msg.content
+			//slice upto the beginning of the ending tag
+			.slice( 0, msg.content.lastIndexOf('</div>') )
+			//and strip away the beginning tag
+			.replace( '<div class=\'full\'>', '' );
+
+		//iterate over each line
+		multiline.split( '<br>' ).forEach(function ( line ) {
+			//and treat it as if it were a separate message
+			this.handleMessageObject(
+				Object.merge( msg, { content : line.trim() })
+			);
+		}, this );
+	},
+
+	loopage : function () {
+		var that = this;
+
+		setTimeout(function () {
+			that.poll();
+			that.loopage();
+		}, this.interval );
+	}
+};
+
+//the output is expected to have only one method: add, which receives a message
+// and the room_id. everything else is up to the implementation.
+var output = bot.adapter.out = {
+	interval : polling.interval + 500,
+
+	messages : {},
+
+	//add a message to the output queue
+	add : function ( msg, roomid ) {
+		roomid = roomid || bot.roomid;
+		IO.out.receive({
+			text : msg + '\n',
+			room : roomid
+		});
+	},
+
+	//build the final output
+	build : function ( obj ) {
+		if ( !this.messages[obj.room] ) {
+			this.messages[ obj.room ] = '';
+		}
+		this.messages[ obj.room ] += obj.text;
+	},
+
+	//send output to all the good boys and girls
+	//no messages for naughty kids
+	//...what's red and sits in the corner?
+	//a naughty strawberry
+	send : function () {
+		//unless the bot's stopped. in which case, it should shut the fudge up
+		// the freezer and never let it out. not until it can talk again. what
+		// was I intending to say?
+		if ( !bot.stopped ) {
+			Object.keys( this.messages ).forEach(function ( room ) {
+				var message = this.messages[ room ];
+
+				if ( !message ) {
+					return;
+				}
+
+				this.sendToRoom( message, room );
+			}, this );
+		}
+
+		this.messages = {};
+	},
+
+	//what's brown and sticky?
+	//a stick
+	sendToRoom : function ( text, roomid ) {
+		IO.xhr({
+			url : '/chats/' + roomid + '/messages/new',
+			data : {
+				text : text,
+				fkey : fkey().fkey
+			},
+			method : 'POST',
+			complete : complete
+		});
+
+		function complete ( resp, xhr ) {
+			bot.log( xhr.status );
+
+			//conflict, wait for next round to send message
+			if ( xhr.status === 409 ) {
+				output.add( text, roomid );
+			}
+			//server error, usually caused by message being too long
+			else if ( xhr.status === 500 ) {
+				output.add( 'Server error (status 500) occured', roomid );
+			}
+		}
+	},
+
+	//what do you call a boomerang which doesn't return?
+	//a stick
+	loopage : function () {
+		var that = this;
+		setTimeout(function () {
+			IO.out.flush();
+			that.loopage();
+		}, this.interval );
+	}
+};
+//what's orange and sounds like a parrot?
+//a carrot
+IO.register( 'output', output.build, output );
+IO.register( 'afteroutput', output.send, output );
+
+//two guys walk into a bar. the bartender asks them "is this some kind of joke?"
+polling.init();
+output.loopage();
+}());
+
+;
 
 ;
 (function () {
@@ -2925,7 +2938,7 @@ bot.addCommand({
 (function () {
 //collection of nudges; msgObj, time left and the message itself
 var nudges = [],
-	interval = bot.adapter.in.pollInterval || 5000;
+	interval = bot.adapter.in.interval || 5000;
 
 function update () {
 	var now = Date.now();
@@ -2988,7 +3001,11 @@ bot.addCommand({
 	fun  : nudgeCommand,
 	permissions : {
 		del : 'NONE'
-	}
+	},
+
+	description : 'Register a nudge after an interval. ' +
+		'`/nudge intervalInMinutes message`, or the listener, ' +
+		'`nudge|remind|poke me? in? intervalInMinutes message'
 });
 
 bot.listen(/(?:nudge|remind|poke)\s(?:me\s)?(?:in\s)?(\d+m?)\s?(.*)$/,
@@ -3006,6 +3023,97 @@ function nudgeListener ( args ) {
 }());
 
 ;
+
+;
+(function () {
+//var rings = {
+//   roomid : [ members ]
+//}
+
+var rings;
+if ( !localStorage.bot_rings ) {
+	localStorage.bot_rings = '{}';
+}
+rings = JSON.parse( localStorage.bot_rings );
+
+// /ring activate name message
+// /ring register name
+var ring = function ( args ) {
+	var parts = args.parse(),
+		command = parts[ 0 ],
+		ringName = parts[ 1 ],
+		message = parts[ 2 ],
+
+		usrname = args.get( 'user_name' ),
+		roomid = args.get( 'room_id' ),
+
+		res;
+
+	if ( command === 'activate' ) {
+		res = activate( message, name, usrname, roomid );
+	}
+	else if ( command === 'register' ) {
+		res = register( name, usrname, roomid );
+	}
+	else {
+		res = 'Cannot understand command: ' + command + '. See /help ring';
+	}
+
+	return res;
+};
+
+bot.addCommand({
+	name : 'ring',
+	fun  : ring,
+	permissions : {
+		del : 'NONE'
+	},
+
+	description : 'Rings are room specific. ' +
+		'`/ring activate ringName message` - activate a ring. ' +
+		'`/ring register ringName` - register to a ring.'
+});
+
+function activate ( message, ringName, usrname, roomid ) {
+	if ( !rings[roomid] ) {
+		return 'There are no rings in your chat-room';
+	}
+
+	var roomRing = rings[ roomid ];
+	if ( !roomRing[ringName] ) {
+		return 'There exists no ' + ringName + ' ring in your chat-room';
+	}
+
+	message = 'Ring ' + ringName +
+		' activated by ' + usrname + '! ' +
+		message;
+
+	return roomRing[ ringName ].map(function ( username ) {
+		return '@' + usrname;
+	}).join( ', ' ) + ': ' + message;
+}
+
+function register ( ringName, usrname, roomid ) {
+	if ( !rings[roomid] ) {
+		rings[ roomid ] = {};
+	}
+	var roomRing = rings[ roomid ];
+
+	if ( !roomRing[ringName] ) {
+		roomRing[ ringName ] = [];
+	}
+
+	roomRing[ ringName ].push( usrname );
+	update();
+
+	return 'Registered to ring ' + ringName + ' in room #' + roomid;
+}
+
+function update () {
+	localStorage.bot_rings = JSON.stringify( rings );
+}
+
+}());
 
 ;
 //infix operator-precedence parser
@@ -3287,6 +3395,7 @@ bot.addCommand({
 	permissions : {
 		del : 'NONE'
 	},
+
 	description : [
 		'Roll dice in DnD notation. `MdN` rolls `M` `N`-sided dice',
 		'`MdN+X` rolls as said above, and adds `X` to the result'  ,
