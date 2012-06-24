@@ -18,6 +18,10 @@ var randomWord = function ( cb ) {
 var game = {
 
 	//the dude is just a template to be filled with parts
+	//like a futuristic man. he has no shape. he has no identity. he's just a
+	// collection of mindless parts, to be assembled, for the greater good.
+	//pah! I mock your pathetic attempts at disowning man of his prowess! YOU
+	// SHALL NOT WIN! VIVE LA PENSÉE!!
 	dude : [
 		'  +---+' ,
 		'  |   |' ,
@@ -48,7 +52,7 @@ var game = {
 		if ( this.end ) {
 			this.new();
 		}
-		if ( msg.content ) {
+		else if ( msg.content ) {
 			return this.handleGuess( msg );
 		}
 	},
@@ -86,11 +90,11 @@ var game = {
 		}
 
 		//or if it's the wrong length
-		if ( guess.length < this.word.length ) {
-			return guess + ' is shorter than the word.';
+		if ( guess.length > this.word.length ) {
+			return msg.codify(guess) + ' is longer than the phrase';
 		}
 
-		//replace all occurences of guest within the hidden word with their
+		//replace all occurences of the guess within the hidden word with their
 		// actual characters
 		var indexes = this.word.indexesOf( guess );
 		indexes.forEach(function ( index ) {
@@ -137,7 +141,7 @@ var game = {
 
 		var belowDude = this.guesses.sort().join( ', ' ) + '\n' + this.revealed;
 
-		var hangy = this.msg.codify( dude + belowDude );
+		var hangy = this.msg.codify( dude + '\n' + belowDude );
 		bot.log( hangy, this.msg );
 		this.msg.respond( hangy );
 	},
