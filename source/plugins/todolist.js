@@ -1,5 +1,5 @@
 (function () {
-var list = JSON.parse( localStorage.getItem('todo') || '{}' );
+var list = JSON.parse( localStorage.getItem('bot_todo') || '{}' );
 
 var userlist = function ( usrid ) {
 
@@ -129,7 +129,7 @@ var todo = function ( args ) {
 
 	//save the updated list
 	usr.save();
-	localStorage.setItem( 'todo', JSON.stringify(list) );
+	localStorage.setItem( 'bot_todo', JSON.stringify(list) );
 
 	return ret;
 };

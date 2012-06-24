@@ -266,7 +266,7 @@ var bot = window.bot = {
 
 	roomid : parseFloat( location.pathname.match(/\d+/)[0] ),
 
-	commandRegex : /^\/([\w\-]+)(?:\s(.+))?$/,
+	commandRegex : /^\/\s?([\w\-]+)(?:\s(.+))?$/,
 	commands : {}, //will be filled as needed
 	commandDictionary : null, //it's null at this point, won't be for long
 	listeners : [],
