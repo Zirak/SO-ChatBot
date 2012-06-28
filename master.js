@@ -266,28 +266,21 @@ var bot = window.bot = {
 
 	roomid : parseFloat( location.pathname.match(/\d+/)[0] ),
 
-	commandRegex : /^\/([\w\-]+)(?:\s(.+))?$/,
+	commandRegex : /^\/\s?([\w\-]+)(?:\s(.+))?$/,
 	commands : {}, //will be filled as needed
 	commandDictionary : null, //it's null at this point, won't be for long
 	listeners : [],
 
 	parseMessage : function ( msgObj ) {
-		msgObj = this.adapter.transform( msgObj );
-
 		if ( !this.validateMessage(msgObj) ) {
 			bot.log( msgObj, 'parseMessage invalid' );
 			return;
 		}
 
-		var msg = IO.decodehtmlEntities( msgObj.content );
-		msg = this.Message(
-			msg.slice( this.invocationPattern.length ).trim(),
-			msgObj
-		);
-
+		var msg = this.prepareMessage( msgObj );
 		bot.log( msg, 'parseMessage valid' );
 
-		if ( this.banlist.contains(msgObj.user_id) ) {
+		if ( this.banlist.contains(msg.get('user_id')) ) {
 			bot.log( msgObj, 'parseMessage banned' );
 			//TODO: remove this after testing, and push if block up
 			msg.reply( 'You iz in mindjail' );
@@ -325,6 +318,17 @@ var bot = window.bot = {
 			//make sure we have it documented
 			console.error( e, err );
 		}
+	},
+	
+	prepareMessage : function ( msgObj ) {
+		msgObj = this.adapter.transform( msgObj );
+
+		var msg = IO.decodehtmlEntities( msgObj.content );
+		
+		return this.Message(
+			msg.slice( this.invocationPattern.length ).trim(),
+			msgObj
+		);
 	},
 
 	parseCommand : function ( msg ) {
@@ -429,12 +433,14 @@ var bot = window.bot = {
 			var match = msg.exec( listener.pattern ), resp;
 
 			if ( match ) {
-				fired = true;
 				resp = listener.fun.call( listener.thisArg, msg );
 
 				bot.log( match, resp );
 				if ( resp ) {
 					msg.reply( resp );
+				}
+				else if ( resp !== false ) {
+					fired = true;
 				}
 			}
 		});
@@ -503,38 +509,40 @@ bot.banlist.remove = function ( item ) {
 };
 
 //execute arbitrary js code in a relatively safe environment
-bot.eval = (function ( msg ) {
+bot.eval = (function () {
 
 var workerURL = (function () {
 	//you can see the actual code in the codeWorker.js file
 	var workerCode = atob( 'dmFyIGdsb2JhbCA9IHRoaXM7IC8qbW9zdCBleHRyYSBmdW5jdGlvbnMgY291bGQgYmUgcG9zc2libHkgdW5zYWZlKi8gdmFyIHdoaXRleSA9IHsgJ3NlbGYnOiAxLCAnb25tZXNzYWdlJzogMSwgJ3Bvc3RNZXNzYWdlJzogMSwgJ2dsb2JhbCc6IDEsICd3aGl0ZXknOiAxLCAnZXZhbCc6IDEsICdBcnJheSc6IDEsICdCb29sZWFuJzogMSwgJ0RhdGUnOiAxLCAnRnVuY3Rpb24nOiAxLCAnTnVtYmVyJyA6IDEsICdPYmplY3QnOiAxLCAnUmVnRXhwJzogMSwgJ1N0cmluZyc6IDEsICdFcnJvcic6IDEsICdFdmFsRXJyb3InOiAxLCAnUmFuZ2VFcnJvcic6IDEsICdSZWZlcmVuY2VFcnJvcic6IDEsICdTeW50YXhFcnJvcic6IDEsICdUeXBlRXJyb3InOiAxLCAnVVJJRXJyb3InOiAxLCAnZGVjb2RlVVJJJzogMSwgJ2RlY29kZVVSSUNvbXBvbmVudCc6IDEsICdlbmNvZGVVUkknOiAxLCAnZW5jb2RlVVJJQ29tcG9uZW50JzogMSwgJ2lzRmluaXRlJzogMSwgJ2lzTmFOJzogMSwgJ3BhcnNlRmxvYXQnOiAxLCAncGFyc2VJbnQnOiAxLCAnSW5maW5pdHknOiAxLCAnSlNPTic6IDEsICdNYXRoJzogMSwgJ05hTic6IDEsICd1bmRlZmluZWQnOiAxIH07IFsgZ2xvYmFsLCBnbG9iYWwuX19wcm90b19fIF0uZm9yRWFjaChmdW5jdGlvbiAoIG9iaiApIHsgT2JqZWN0LmdldE93blByb3BlcnR5TmFtZXMoIG9iaiApLmZvckVhY2goZnVuY3Rpb24oIHByb3AgKSB7IGlmKCAhd2hpdGV5Lmhhc093blByb3BlcnR5KCBwcm9wICkgKSB7IE9iamVjdC5kZWZpbmVQcm9wZXJ0eSggb2JqLCBwcm9wLCB7IGdldCA6IGZ1bmN0aW9uKCkgeyB0aHJvdyAnU2VjdXJpdHkgRXhjZXB0aW9uOiBDYW5ub3QgYWNjZXNzICcgKyBwcm9wOyByZXR1cm4gMTsgfSwgY29uZmlndXJhYmxlIDogZmFsc2UgfSk7IH0gfSk7IH0pOyBPYmplY3QuZGVmaW5lUHJvcGVydHkoIEFycmF5LnByb3RvdHlwZSwgJ2pvaW4nLCB7IHdyaXRhYmxlOiBmYWxzZSwgY29uZmlndXJhYmxlOiBmYWxzZSwgZW51bXJhYmxlOiBmYWxzZSwgdmFsdWU6IChmdW5jdGlvbiggb2xkICl7IHJldHVybiBmdW5jdGlvbiggYXJnICl7IGlmKCB0aGlzLmxlbmd0aCA+IDUwMCB8fCAoYXJnICYmIGFyZy5sZW5ndGggPiA1MDAgKSApIHsgdGhyb3cgJ0V4Y2VwdGlvbjogdG9vIG1hbnkgaXRlbXMnOyB9IHJldHVybiBvbGQuYXBwbHkoIHRoaXMsIGFyZ3VtZW50cyApOyB9OyB9KEFycmF5LnByb3RvdHlwZS5qb2luKSkgfSk7IChmdW5jdGlvbigpeyAidXNlIHN0cmljdCI7IHZhciBjb25zb2xlID0geyBfaXRlbXMgOiBbXSwgbG9nOiBmdW5jdGlvbigpeyBjb25zb2xlLl9pdGVtcy5wdXNoLmFwcGx5KCBjb25zb2xlLl9pdGVtcywgYXJndW1lbnRzICk7IH0gfTsgc2VsZi5vbm1lc3NhZ2UgPSBmdW5jdGlvbiggZXZlbnQgKSB7ICd1c2Ugc3RyaWN0JzsgdmFyIGNvZGUgPSBldmVudC5kYXRhLmNvZGUsIHJlc3VsdDsgdHJ5IHsgcmVzdWx0ID0gZXZhbCggJyJ1c2Ugc3RyaWN0IjtcbicrY29kZSApOyB9IGNhdGNoICggZSApIHsgcmVzdWx0ID0gZS50b1N0cmluZygpOyB9IHBvc3RNZXNzYWdlKHsgYW5zd2VyIDogcmVzdWx0LCBsb2cgOiBjb25zb2xlLl9pdGVtcyB9KTsgfTsgfSkoKTs=' );
 
-	var BlobBuilder = window.WebKitBlobBuilder,
-		blobBuilder = new BlobBuilder(),
-		URL = window.webkitURL,
+	var blobBuilder = new window.WebKitBlobBuilder(),
 		blob;
 
 	blobBuilder.append( workerCode );
 	blob = blobBuilder.getBlob( 'text/javascript');
-	return URL.createObjectURL( blob );
+
+	return window.webkitURL.createObjectURL( blob );
 }());
 
-return function () {
+return function ( msg ) {
 	var timeout,
 		worker = new Worker( workerURL );
 
-	worker.addEventListener( 'message', function ( event ) {
+	worker.onmessage = function ( evt ) {
 		clearTimeout( timeout );
+		finish( dressUpAnswer(evt.data) );
+	};
 
-		finish( dressUpAnswer(event.data) );
-	});
+	worker.onerror = function ( error ) {
+		clearTimeout( timeout );
+		finish( error.message );
+	}
 
 	worker.postMessage({
 		code : msg.content.substr( 1 )
-			.replace( /[^\u0000-\u00FF]/g, '' )
 	});
 
-	timeout = window.setTimeout( function() {
+	timeout = window.setTimeout(function() {
 		finish( 'Maximum execution time exceeded' );
 	}, 50 );
 
@@ -2761,6 +2769,10 @@ var randomWord = function ( cb ) {
 var game = {
 
 	//the dude is just a template to be filled with parts
+	//like a futuristic man. he has no shape. he has no identity. he's just a
+	// collection of mindless parts, to be assembled, for the greater good.
+	//pah! I mock your pathetic attempts at disowning man of his prowess! YOU
+	// SHALL NOT WIN! VIVE LA PENSÉE!!
 	dude : [
 		'  +---+' ,
 		'  |   |' ,
@@ -2791,7 +2803,7 @@ var game = {
 		if ( this.end ) {
 			this.new();
 		}
-		if ( msg.content ) {
+		else if ( msg.content ) {
 			return this.handleGuess( msg );
 		}
 	},
@@ -2829,11 +2841,11 @@ var game = {
 		}
 
 		//or if it's the wrong length
-		if ( guess.length < this.word.length ) {
-			return guess + ' is shorter than the word.';
+		if ( guess.length > this.word.length ) {
+			return msg.codify(guess) + ' is longer than the phrase';
 		}
 
-		//replace all occurences of guest within the hidden word with their
+		//replace all occurences of the guess within the hidden word with their
 		// actual characters
 		var indexes = this.word.indexesOf( guess );
 		indexes.forEach(function ( index ) {
@@ -2880,7 +2892,7 @@ var game = {
 
 		var belowDude = this.guesses.sort().join( ', ' ) + '\n' + this.revealed;
 
-		var hangy = this.msg.codify( dude + belowDude );
+		var hangy = this.msg.codify( dude + '\n' + belowDude );
 		bot.log( hangy, this.msg );
 		this.msg.respond( hangy );
 	},
@@ -3029,15 +3041,14 @@ function nudgeListener ( args ) {
 //var rings = {
 //   roomid : [ members ]
 //}
-
 var rings;
 if ( !localStorage.bot_rings ) {
 	localStorage.bot_rings = '{}';
 }
 rings = JSON.parse( localStorage.bot_rings );
 
-// /ring activate name message
-// /ring register name
+// /ring activate ringName message
+// /ring register ringName
 var ring = function ( args ) {
 	var parts = args.parse(),
 		command = parts[ 0 ],
@@ -3048,12 +3059,13 @@ var ring = function ( args ) {
 		roomid = args.get( 'room_id' ),
 
 		res;
+	bot.log( parts, '/ring input' );
 
 	if ( command === 'activate' ) {
-		res = activate( message, name, usrname, roomid );
+		res = activate( message, ringName, usrname, roomid );
 	}
 	else if ( command === 'register' ) {
-		res = register( name, usrname, roomid );
+		res = register( ringName, usrname, roomid );
 	}
 	else {
 		res = 'Cannot understand command: ' + command + '. See /help ring';
@@ -3075,6 +3087,7 @@ bot.addCommand({
 });
 
 function activate ( message, ringName, usrname, roomid ) {
+	bot.log( message, ringName, usrname, roomid, '/ring activate' );
 	if ( !rings[roomid] ) {
 		return 'There are no rings in your chat-room';
 	}
@@ -3088,12 +3101,13 @@ function activate ( message, ringName, usrname, roomid ) {
 		' activated by ' + usrname + '! ' +
 		message;
 
-	return roomRing[ ringName ].map(function ( username ) {
-		return '@' + usrname;
+	return roomRing[ ringName ].map(function ( name ) {
+		return '@' + name;
 	}).join( ', ' ) + ': ' + message;
 }
 
 function register ( ringName, usrname, roomid ) {
+	bot.log( ringName, usrname, roomid, '/ring register' );
 	if ( !rings[roomid] ) {
 		rings[ roomid ] = {};
 	}
@@ -3102,8 +3116,13 @@ function register ( ringName, usrname, roomid ) {
 	if ( !roomRing[ringName] ) {
 		roomRing[ ringName ] = [];
 	}
+	var ring = roomRing[ ringName ];
 
-	roomRing[ ringName ].push( usrname );
+	if ( ring.indexOf(usrname) > -1 ) {
+		return 'You are already registered to ring ' + ringname;
+	}
+	ring.push( usrname );
+	
 	update();
 
 	return 'Registered to ring ' + ringName + ' in room #' + roomid;
@@ -3114,6 +3133,9 @@ function update () {
 }
 
 }());
+
+
+;
 
 ;
 //infix operator-precedence parser
@@ -3596,19 +3618,24 @@ bot.addCommand({
 
 ;
 (function () {
-var list = JSON.parse( localStorage.getItem('todo') || '{}' );
+var list = JSON.parse( localStorage.getItem('bot_todo') || '{}' ),
+
+	userCache = Object.create( null );
 
 var userlist = function ( usrid ) {
+	if ( userCache[usrid] ) {
+		return userCache[usrid];
+	}
 
 	var usr = list[ usrid ], toRemove = [];
 	if ( !usr ) {
 		usr = list[ usrid ] = [];
 	}
 
-	return {
+	return userCache[ usrid ] = {
 		get : function ( count ) {
-			return usr.slice( count ).map(function ( item, index ) {
-				return '(' + (index+1) + ')' + item;
+			return usr.slice( count ).map(function ( item, idx ) {
+				return '(' + (idx+1) + ')' + item;
 			}).join( ', ' );
 		},
 
@@ -3618,7 +3645,12 @@ var userlist = function ( usrid ) {
 		},
 
 		remove : function ( item ) {
-			toRemove.push( usr.indexOf(item) );
+			var idx = usr.indexOf( item );
+			if ( idx === -1 ) {
+				return false;
+			}
+			toRemove.push( idx );
+
 			return true;
 		},
 		removeByIndex : function ( idx ) {
@@ -3632,6 +3664,7 @@ var userlist = function ( usrid ) {
 
 		save : function () {
 			bot.log( toRemove.slice(), usr.slice() );
+
 			usr = usr.filter(function ( item, idx ) {
 				return toRemove.indexOf( idx ) === -1;
 			});
@@ -3639,6 +3672,7 @@ var userlist = function ( usrid ) {
 			toRemove.length = 0;
 
 			list[ usrid ] = usr;
+			localStorage.bot_todo = JSON.stringify( list );
 		},
 
 		exists : function ( suspect ) {
@@ -3664,8 +3698,9 @@ var todo = function ( args ) {
 		items = props.slice( 1 ),
 		res, ret;
 
-	//user wants to get n items, we just want the count
+	//user wants to get n items, count is the first arg
 	if ( action === 'get' ) {
+		//if the user didn't provide an argument, the entire thing is returned
 		ret = usr.get( items[0] );
 
 		if ( !ret ) {
@@ -3726,7 +3761,6 @@ var todo = function ( args ) {
 
 	//save the updated list
 	usr.save();
-	localStorage.setItem( 'todo', JSON.stringify(list) );
 
 	return ret;
 };
@@ -3739,9 +3773,9 @@ bot.addCommand({
 	},
 	description : 'Your personal todo list. ' +
 		'`get [count]` retrieves everything or count items. ' +
-		'`add [items]` adds n-items to your todo list (make sure items ' +
+		'`add items` adds items to your todo list (make sure items ' +
 			'with spaces are wrapped in quotes) ' +
-		'`rem [indices]` removes items specified by indice'
+		'`rem items|indices` removes items specified by indice or content'
 });
 
 }());
