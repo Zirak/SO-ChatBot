@@ -319,12 +319,12 @@ var bot = window.bot = {
 			console.error( e, err );
 		}
 	},
-	
+
 	prepareMessage : function ( msgObj ) {
 		msgObj = this.adapter.transform( msgObj );
 
 		var msg = IO.decodehtmlEntities( msgObj.content );
-		
+
 		return this.Message(
 			msg.slice( this.invocationPattern.length ).trim(),
 			msgObj
@@ -439,7 +439,8 @@ var bot = window.bot = {
 				if ( resp ) {
 					msg.reply( resp );
 				}
-				else if ( resp !== false ) {
+
+				if ( resp !== false ) {
 					fired = true;
 				}
 			}

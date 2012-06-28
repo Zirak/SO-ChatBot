@@ -2194,10 +2194,10 @@ var dictionaries = [
 	//what is a squid?
 	//what're squids?
 	//what are squids?
-	//what is an animal
+	//what is an animal?
 	//and all those above without a ?
 	//explanation in the post-mortem
-	/what(?:\'s)?\s(?:(?:is|are)\s)?(?:(?:an|a)\s)?([\w\s\-]+)\??/,
+	/what(?:'s|'re)?\s(?:(?:is|are)\s)?(?:(?:an|a)\s)?([\w\s\-]+)\??/,
 
 	//define squid
 	//define a squid
