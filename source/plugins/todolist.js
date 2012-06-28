@@ -1,17 +1,22 @@
 (function () {
-var list = JSON.parse( localStorage.getItem('bot_todo') || '{}' );
+var list = JSON.parse( localStorage.getItem('bot_todo') || '{}' ),
+
+	userCache = Object.create( null );
 
 var userlist = function ( usrid ) {
+	if ( userCache[usrid] ) {
+		return userCache[usrid];
+	}
 
 	var usr = list[ usrid ], toRemove = [];
 	if ( !usr ) {
 		usr = list[ usrid ] = [];
 	}
 
-	return {
+	return userCache[ usrid ] = {
 		get : function ( count ) {
-			return usr.slice( count ).map(function ( item, index ) {
-				return '(' + (index+1) + ')' + item;
+			return usr.slice( count ).map(function ( item, idx ) {
+				return '(' + (idx+1) + ')' + item;
 			}).join( ', ' );
 		},
 
@@ -21,7 +26,12 @@ var userlist = function ( usrid ) {
 		},
 
 		remove : function ( item ) {
-			toRemove.push( usr.indexOf(item) );
+			var idx = usr.indexOf( item );
+			if ( idx === -1 ) {
+				return false;
+			}
+			toRemove.push( idx );
+
 			return true;
 		},
 		removeByIndex : function ( idx ) {
@@ -35,6 +45,7 @@ var userlist = function ( usrid ) {
 
 		save : function () {
 			bot.log( toRemove.slice(), usr.slice() );
+
 			usr = usr.filter(function ( item, idx ) {
 				return toRemove.indexOf( idx ) === -1;
 			});
@@ -42,6 +53,7 @@ var userlist = function ( usrid ) {
 			toRemove.length = 0;
 
 			list[ usrid ] = usr;
+			localStorage.bot_todo = JSON.stringify( list );
 		},
 
 		exists : function ( suspect ) {
@@ -67,8 +79,9 @@ var todo = function ( args ) {
 		items = props.slice( 1 ),
 		res, ret;
 
-	//user wants to get n items, we just want the count
+	//user wants to get n items, count is the first arg
 	if ( action === 'get' ) {
+		//if the user didn't provide an argument, the entire thing is returned
 		ret = usr.get( items[0] );
 
 		if ( !ret ) {
@@ -129,7 +142,6 @@ var todo = function ( args ) {
 
 	//save the updated list
 	usr.save();
-	localStorage.setItem( 'bot_todo', JSON.stringify(list) );
 
 	return ret;
 };
@@ -142,9 +154,9 @@ bot.addCommand({
 	},
 	description : 'Your personal todo list. ' +
 		'`get [count]` retrieves everything or count items. ' +
-		'`add [items]` adds n-items to your todo list (make sure items ' +
+		'`add items` adds items to your todo list (make sure items ' +
 			'with spaces are wrapped in quotes) ' +
-		'`rem [indices]` removes items specified by indice'
+		'`rem items|indices` removes items specified by indice or content'
 });
 
 }());

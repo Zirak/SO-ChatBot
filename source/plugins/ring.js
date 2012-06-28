@@ -2,15 +2,14 @@
 //var rings = {
 //   roomid : [ members ]
 //}
-
 var rings;
 if ( !localStorage.bot_rings ) {
 	localStorage.bot_rings = '{}';
 }
 rings = JSON.parse( localStorage.bot_rings );
 
-// /ring activate name message
-// /ring register name
+// /ring activate ringName message
+// /ring register ringName
 var ring = function ( args ) {
 	var parts = args.parse(),
 		command = parts[ 0 ],
@@ -21,12 +20,13 @@ var ring = function ( args ) {
 		roomid = args.get( 'room_id' ),
 
 		res;
+	bot.log( parts, '/ring input' );
 
 	if ( command === 'activate' ) {
-		res = activate( message, name, usrname, roomid );
+		res = activate( message, ringName, usrname, roomid );
 	}
 	else if ( command === 'register' ) {
-		res = register( name, usrname, roomid );
+		res = register( ringName, usrname, roomid );
 	}
 	else {
 		res = 'Cannot understand command: ' + command + '. See /help ring';
@@ -48,6 +48,7 @@ bot.addCommand({
 });
 
 function activate ( message, ringName, usrname, roomid ) {
+	bot.log( message, ringName, usrname, roomid, '/ring activate' );
 	if ( !rings[roomid] ) {
 		return 'There are no rings in your chat-room';
 	}
@@ -61,12 +62,13 @@ function activate ( message, ringName, usrname, roomid ) {
 		' activated by ' + usrname + '! ' +
 		message;
 
-	return roomRing[ ringName ].map(function ( username ) {
-		return '@' + usrname;
+	return roomRing[ ringName ].map(function ( name ) {
+		return '@' + name;
 	}).join( ', ' ) + ': ' + message;
 }
 
 function register ( ringName, usrname, roomid ) {
+	bot.log( ringName, usrname, roomid, '/ring register' );
 	if ( !rings[roomid] ) {
 		rings[ roomid ] = {};
 	}
@@ -75,8 +77,13 @@ function register ( ringName, usrname, roomid ) {
 	if ( !roomRing[ringName] ) {
 		roomRing[ ringName ] = [];
 	}
+	var ring = roomRing[ ringName ];
 
-	roomRing[ ringName ].push( usrname );
+	if ( ring.indexOf(usrname) > -1 ) {
+		return 'You are already registered to ring ' + ringname;
+	}
+	ring.push( usrname );
+	
 	update();
 
 	return 'Registered to ring ' + ringName + ' in room #' + roomid;
@@ -87,3 +94,4 @@ function update () {
 }
 
 }());
+

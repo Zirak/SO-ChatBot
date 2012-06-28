@@ -272,22 +272,15 @@ var bot = window.bot = {
 	listeners : [],
 
 	parseMessage : function ( msgObj ) {
-		msgObj = this.adapter.transform( msgObj );
-
 		if ( !this.validateMessage(msgObj) ) {
 			bot.log( msgObj, 'parseMessage invalid' );
 			return;
 		}
 
-		var msg = IO.decodehtmlEntities( msgObj.content );
-		msg = this.Message(
-			msg.slice( this.invocationPattern.length ).trim(),
-			msgObj
-		);
-
+		var msg = this.prepareMessage( msgObj );
 		bot.log( msg, 'parseMessage valid' );
 
-		if ( this.banlist.contains(msgObj.user_id) ) {
+		if ( this.banlist.contains(msg.get('user_id')) ) {
 			bot.log( msgObj, 'parseMessage banned' );
 			//TODO: remove this after testing, and push if block up
 			msg.reply( 'You iz in mindjail' );
@@ -325,6 +318,17 @@ var bot = window.bot = {
 			//make sure we have it documented
 			console.error( e, err );
 		}
+	},
+	
+	prepareMessage : function ( msgObj ) {
+		msgObj = this.adapter.transform( msgObj );
+
+		var msg = IO.decodehtmlEntities( msgObj.content );
+		
+		return this.Message(
+			msg.slice( this.invocationPattern.length ).trim(),
+			msgObj
+		);
 	},
 
 	parseCommand : function ( msg ) {
@@ -429,12 +433,14 @@ var bot = window.bot = {
 			var match = msg.exec( listener.pattern ), resp;
 
 			if ( match ) {
-				fired = true;
 				resp = listener.fun.call( listener.thisArg, msg );
 
 				bot.log( match, resp );
 				if ( resp ) {
 					msg.reply( resp );
+				}
+				else if ( resp !== false ) {
+					fired = true;
 				}
 			}
 		});
@@ -503,38 +509,40 @@ bot.banlist.remove = function ( item ) {
 };
 
 //execute arbitrary js code in a relatively safe environment
-bot.eval = (function ( msg ) {
+bot.eval = (function () {
 
 var workerURL = (function () {
 	//you can see the actual code in the codeWorker.js file
 	var workerCode = atob( 'dmFyIGdsb2JhbCA9IHRoaXM7IC8qbW9zdCBleHRyYSBmdW5jdGlvbnMgY291bGQgYmUgcG9zc2libHkgdW5zYWZlKi8gdmFyIHdoaXRleSA9IHsgJ3NlbGYnOiAxLCAnb25tZXNzYWdlJzogMSwgJ3Bvc3RNZXNzYWdlJzogMSwgJ2dsb2JhbCc6IDEsICd3aGl0ZXknOiAxLCAnZXZhbCc6IDEsICdBcnJheSc6IDEsICdCb29sZWFuJzogMSwgJ0RhdGUnOiAxLCAnRnVuY3Rpb24nOiAxLCAnTnVtYmVyJyA6IDEsICdPYmplY3QnOiAxLCAnUmVnRXhwJzogMSwgJ1N0cmluZyc6IDEsICdFcnJvcic6IDEsICdFdmFsRXJyb3InOiAxLCAnUmFuZ2VFcnJvcic6IDEsICdSZWZlcmVuY2VFcnJvcic6IDEsICdTeW50YXhFcnJvcic6IDEsICdUeXBlRXJyb3InOiAxLCAnVVJJRXJyb3InOiAxLCAnZGVjb2RlVVJJJzogMSwgJ2RlY29kZVVSSUNvbXBvbmVudCc6IDEsICdlbmNvZGVVUkknOiAxLCAnZW5jb2RlVVJJQ29tcG9uZW50JzogMSwgJ2lzRmluaXRlJzogMSwgJ2lzTmFOJzogMSwgJ3BhcnNlRmxvYXQnOiAxLCAncGFyc2VJbnQnOiAxLCAnSW5maW5pdHknOiAxLCAnSlNPTic6IDEsICdNYXRoJzogMSwgJ05hTic6IDEsICd1bmRlZmluZWQnOiAxIH07IFsgZ2xvYmFsLCBnbG9iYWwuX19wcm90b19fIF0uZm9yRWFjaChmdW5jdGlvbiAoIG9iaiApIHsgT2JqZWN0LmdldE93blByb3BlcnR5TmFtZXMoIG9iaiApLmZvckVhY2goZnVuY3Rpb24oIHByb3AgKSB7IGlmKCAhd2hpdGV5Lmhhc093blByb3BlcnR5KCBwcm9wICkgKSB7IE9iamVjdC5kZWZpbmVQcm9wZXJ0eSggb2JqLCBwcm9wLCB7IGdldCA6IGZ1bmN0aW9uKCkgeyB0aHJvdyAnU2VjdXJpdHkgRXhjZXB0aW9uOiBDYW5ub3QgYWNjZXNzICcgKyBwcm9wOyByZXR1cm4gMTsgfSwgY29uZmlndXJhYmxlIDogZmFsc2UgfSk7IH0gfSk7IH0pOyBPYmplY3QuZGVmaW5lUHJvcGVydHkoIEFycmF5LnByb3RvdHlwZSwgJ2pvaW4nLCB7IHdyaXRhYmxlOiBmYWxzZSwgY29uZmlndXJhYmxlOiBmYWxzZSwgZW51bXJhYmxlOiBmYWxzZSwgdmFsdWU6IChmdW5jdGlvbiggb2xkICl7IHJldHVybiBmdW5jdGlvbiggYXJnICl7IGlmKCB0aGlzLmxlbmd0aCA+IDUwMCB8fCAoYXJnICYmIGFyZy5sZW5ndGggPiA1MDAgKSApIHsgdGhyb3cgJ0V4Y2VwdGlvbjogdG9vIG1hbnkgaXRlbXMnOyB9IHJldHVybiBvbGQuYXBwbHkoIHRoaXMsIGFyZ3VtZW50cyApOyB9OyB9KEFycmF5LnByb3RvdHlwZS5qb2luKSkgfSk7IChmdW5jdGlvbigpeyAidXNlIHN0cmljdCI7IHZhciBjb25zb2xlID0geyBfaXRlbXMgOiBbXSwgbG9nOiBmdW5jdGlvbigpeyBjb25zb2xlLl9pdGVtcy5wdXNoLmFwcGx5KCBjb25zb2xlLl9pdGVtcywgYXJndW1lbnRzICk7IH0gfTsgc2VsZi5vbm1lc3NhZ2UgPSBmdW5jdGlvbiggZXZlbnQgKSB7ICd1c2Ugc3RyaWN0JzsgdmFyIGNvZGUgPSBldmVudC5kYXRhLmNvZGUsIHJlc3VsdDsgdHJ5IHsgcmVzdWx0ID0gZXZhbCggJyJ1c2Ugc3RyaWN0IjtcbicrY29kZSApOyB9IGNhdGNoICggZSApIHsgcmVzdWx0ID0gZS50b1N0cmluZygpOyB9IHBvc3RNZXNzYWdlKHsgYW5zd2VyIDogcmVzdWx0LCBsb2cgOiBjb25zb2xlLl9pdGVtcyB9KTsgfTsgfSkoKTs=' );
 
-	var BlobBuilder = window.WebKitBlobBuilder,
-		blobBuilder = new BlobBuilder(),
-		URL = window.webkitURL,
+	var blobBuilder = new window.WebKitBlobBuilder(),
 		blob;
 
 	blobBuilder.append( workerCode );
 	blob = blobBuilder.getBlob( 'text/javascript');
-	return URL.createObjectURL( blob );
+
+	return window.webkitURL.createObjectURL( blob );
 }());
 
-return function () {
+return function ( msg ) {
 	var timeout,
 		worker = new Worker( workerURL );
 
-	worker.addEventListener( 'message', function ( event ) {
+	worker.onmessage = function ( evt ) {
 		clearTimeout( timeout );
+		finish( dressUpAnswer(evt.data) );
+	};
 
-		finish( dressUpAnswer(event.data) );
-	});
+	worker.onerror = function ( error ) {
+		clearTimeout( timeout );
+		finish( error.message );
+	}
 
 	worker.postMessage({
 		code : msg.content.substr( 1 )
-			.replace( /[^\u0000-\u00FF]/g, '' )
 	});
 
-	timeout = window.setTimeout( function() {
+	timeout = window.setTimeout(function() {
 		finish( 'Maximum execution time exceeded' );
 	}, 50 );
 
