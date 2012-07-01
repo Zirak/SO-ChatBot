@@ -7,7 +7,7 @@ var whitey = {
 	'onmessage': 1,
 	'postMessage': 1,
 	'global': 1,
-	'whitey': 1,
+	'whitey': 1, //look mom, I'm a whitelist, containing itself!
 	'eval': 1,
 	'Array': 1,
 	'Boolean': 1,
@@ -83,20 +83,52 @@ Object.defineProperty( Array.prototype, 'join', {
 		}
 	};
 
-	self.onmessage = function( event ) {
-		'use strict';
-		var code = event.data.code, result;
-
+	function exec ( code ) {
+		var result;
 		try {
-			result = eval( '"use strict";\n'+code );
+			result = eval( '"use strict";\n' + code );
 		}
 		catch ( e ) {
 			result = e.toString();
 		}
 
+		return result;
+	}
+
+	self.onmessage = function( event ) {
+		var jsonStringify = JSON.stringify, //backup
+			result = exec( event.data.code );
+
+		//JSON.stringify does not like functions, errors or undefined
+		var stringify = function ( input ) {
+			var type = ( {} ).toString.call( input ).slice( 8, -1 ),
+				output;
+
+			if ( type === 'Function' || type === 'Error' ) {
+				output = input.toString();
+			}
+			else if ( type === 'Array' ) {
+				output = [];
+				input.forEach(function ( item, idx ) {
+					output[ idx ] = stringify( item );
+				});
+			}
+			else if ( type === 'Object' ) {
+				output = {};
+				Object.keys( input ).forEach(function ( key ) {
+					output[ key ] = stringify( input[key] );
+				});
+			}
+			else if ( input === undefined ) {
+				output = 'undefined';
+			}
+
+			return jsonStringify( output );
+		};
+
 		postMessage({
-			answer : result,
-			log    : console._items
+			answer : stringify( result ),
+			log    : stringify( console._items ),
 		});
 	};
 

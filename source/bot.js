@@ -185,27 +185,46 @@ var entities = {"quot":"\"","amp":"&","apos":"'","lt":"<","gt":">","nbsp":" ","
 
 /*
   &       -all entities start with &
-  #?      -charcode entities (&#208; is Ð for instance)
-  [\w;]   -capture an entity (alphanumeric,separated by ;)
-  +?      -capture entities until there aint no more (don't get the trailing ;)
+  (
+   #      -charcode entities also have a #
+   x?     -hex charcodes
+  )
+  [\w;]   -now the entity (alphanumeric, separated by ;)
+  +?      -capture em until there aint no more (don't get the trailing ;)
   ;       -trailing ;
 */
-var entityRegex = /&#?[\w;]+?;/g;
+var entityRegex = /&(#x?)?[\w;]+?;/g;
 var replaceEntities = function ( entities ) {
 	//remove the & and split into each separate entity
 	return entities.slice( 1 ).split( ';' ).map( decodeEntity ).join( '' );
 };
 var decodeEntity = function ( entity ) {
-	//starts with a #, grab the charcode value
+	//starts with a #, it's charcode
 	if ( entity[0] === '#' ) {
-		return String.fromCharCode( Number(entity.slice(1)) );
+		return decodeCharcodeEntity( entity );
 	}
 
 	return entities[ entity ] || entity;
 };
+var decodeCharcodeEntity = function ( entity ) {
+	//remove the # prefix
+	entity = entity.slice( 1 );
+
+	var cc;
+	//hex entities
+	if ( entity[0] === 'x' ) {
+		cc = parseInt( entity.slice(1), 16 );
+	}
+	//decimal entities
+	else {
+		cc = parseInt( entity, 10 );
+	}
+
+	return String.fromCharCode( cc );
+};
 
 return function ( html ) {
-	//capture &blah; &blah;bloo and &#1337
+	//capture &blah; &blah;bloo; and &#1337;
 	return html.replace( entityRegex, replaceEntities );
 };
 }());
@@ -510,24 +529,9 @@ bot.banlist.remove = function ( item ) {
 };
 
 //execute arbitrary js code in a relatively safe environment
-bot.eval = (function () {
-
-var workerURL = (function () {
-	//you can see the actual code in the codeWorker.js file
-	var workerCode = atob( 'dmFyIGdsb2JhbCA9IHRoaXM7IC8qbW9zdCBleHRyYSBmdW5jdGlvbnMgY291bGQgYmUgcG9zc2libHkgdW5zYWZlKi8gdmFyIHdoaXRleSA9IHsgJ3NlbGYnOiAxLCAnb25tZXNzYWdlJzogMSwgJ3Bvc3RNZXNzYWdlJzogMSwgJ2dsb2JhbCc6IDEsICd3aGl0ZXknOiAxLCAnZXZhbCc6IDEsICdBcnJheSc6IDEsICdCb29sZWFuJzogMSwgJ0RhdGUnOiAxLCAnRnVuY3Rpb24nOiAxLCAnTnVtYmVyJyA6IDEsICdPYmplY3QnOiAxLCAnUmVnRXhwJzogMSwgJ1N0cmluZyc6IDEsICdFcnJvcic6IDEsICdFdmFsRXJyb3InOiAxLCAnUmFuZ2VFcnJvcic6IDEsICdSZWZlcmVuY2VFcnJvcic6IDEsICdTeW50YXhFcnJvcic6IDEsICdUeXBlRXJyb3InOiAxLCAnVVJJRXJyb3InOiAxLCAnZGVjb2RlVVJJJzogMSwgJ2RlY29kZVVSSUNvbXBvbmVudCc6IDEsICdlbmNvZGVVUkknOiAxLCAnZW5jb2RlVVJJQ29tcG9uZW50JzogMSwgJ2lzRmluaXRlJzogMSwgJ2lzTmFOJzogMSwgJ3BhcnNlRmxvYXQnOiAxLCAncGFyc2VJbnQnOiAxLCAnSW5maW5pdHknOiAxLCAnSlNPTic6IDEsICdNYXRoJzogMSwgJ05hTic6IDEsICd1bmRlZmluZWQnOiAxIH07IFsgZ2xvYmFsLCBnbG9iYWwuX19wcm90b19fIF0uZm9yRWFjaChmdW5jdGlvbiAoIG9iaiApIHsgT2JqZWN0LmdldE93blByb3BlcnR5TmFtZXMoIG9iaiApLmZvckVhY2goZnVuY3Rpb24oIHByb3AgKSB7IGlmKCAhd2hpdGV5Lmhhc093blByb3BlcnR5KCBwcm9wICkgKSB7IE9iamVjdC5kZWZpbmVQcm9wZXJ0eSggb2JqLCBwcm9wLCB7IGdldCA6IGZ1bmN0aW9uKCkgeyB0aHJvdyAnU2VjdXJpdHkgRXhjZXB0aW9uOiBDYW5ub3QgYWNjZXNzICcgKyBwcm9wOyByZXR1cm4gMTsgfSwgY29uZmlndXJhYmxlIDogZmFsc2UgfSk7IH0gfSk7IH0pOyBPYmplY3QuZGVmaW5lUHJvcGVydHkoIEFycmF5LnByb3RvdHlwZSwgJ2pvaW4nLCB7IHdyaXRhYmxlOiBmYWxzZSwgY29uZmlndXJhYmxlOiBmYWxzZSwgZW51bXJhYmxlOiBmYWxzZSwgdmFsdWU6IChmdW5jdGlvbiggb2xkICl7IHJldHVybiBmdW5jdGlvbiggYXJnICl7IGlmKCB0aGlzLmxlbmd0aCA+IDUwMCB8fCAoYXJnICYmIGFyZy5sZW5ndGggPiA1MDAgKSApIHsgdGhyb3cgJ0V4Y2VwdGlvbjogdG9vIG1hbnkgaXRlbXMnOyB9IHJldHVybiBvbGQuYXBwbHkoIHRoaXMsIGFyZ3VtZW50cyApOyB9OyB9KEFycmF5LnByb3RvdHlwZS5qb2luKSkgfSk7IChmdW5jdGlvbigpeyAidXNlIHN0cmljdCI7IHZhciBjb25zb2xlID0geyBfaXRlbXMgOiBbXSwgbG9nOiBmdW5jdGlvbigpeyBjb25zb2xlLl9pdGVtcy5wdXNoLmFwcGx5KCBjb25zb2xlLl9pdGVtcywgYXJndW1lbnRzICk7IH0gfTsgc2VsZi5vbm1lc3NhZ2UgPSBmdW5jdGlvbiggZXZlbnQgKSB7ICd1c2Ugc3RyaWN0JzsgdmFyIGNvZGUgPSBldmVudC5kYXRhLmNvZGUsIHJlc3VsdDsgdHJ5IHsgcmVzdWx0ID0gZXZhbCggJyJ1c2Ugc3RyaWN0IjtcbicrY29kZSApOyB9IGNhdGNoICggZSApIHsgcmVzdWx0ID0gZS50b1N0cmluZygpOyB9IHBvc3RNZXNzYWdlKHsgYW5zd2VyIDogcmVzdWx0LCBsb2cgOiBjb25zb2xlLl9pdGVtcyB9KTsgfTsgfSkoKTs=' );
-
-	var blobBuilder = new window.WebKitBlobBuilder(),
-		blob;
-
-	blobBuilder.append( workerCode );
-	blob = blobBuilder.getBlob( 'text/javascript');
-
-	return window.webkitURL.createObjectURL( blob );
-}());
-
-return function ( msg ) {
+bot.eval = function ( msg ) {
 	var timeout,
-		worker = new Worker( workerURL );
+		worker = new Worker( 'codeWorker.js' );
 
 	worker.onmessage = function ( evt ) {
 		clearTimeout( timeout );
@@ -536,8 +540,8 @@ return function ( msg ) {
 
 	worker.onerror = function ( error ) {
 		clearTimeout( timeout );
-		finish( error.message );
-	}
+		finish( error.toString() );
+	};
 
 	worker.postMessage({
 		code : msg.content.substr( 1 )
@@ -555,47 +559,29 @@ return function ( msg ) {
 	function dressUpAnswer ( answerObj ) {
 		var answer = answerObj.answer,
 			log = answerObj.log,
+			result;
 
-			result = '`' + objToResult( answer ) + '`';
-
-		if ( result.length > 400 ) {
-			result = '(snip) ' + result.slice( 400 );
-		}
+		result = snipAndCodify( answer );
 
 		if ( log && log.length ) {
-			result += ' Logged: ';
-
-			result += log.map(function( value, index ) {
-				return '`' + objToResult( value ) + '`';
-			}).join( ', ' );
+			result += ' Logged: ' + snipAndCodify( log ) + '';
 		}
 
 		return result;
 	}
-
-	function objToResult ( result ) {
+	function snipAndCodify ( str ) {
 		var ret;
 
-		//JSON.stringify( undefined ) === undefined, cutting around that
-		if ( result === undefined ) {
-			return 'undefined';
+		if ( str.length > 400 ) {
+			ret = '(snip) `' +  str.slice(0, 400) + '`';
 		}
-
-		if ( typeof result === 'function' ) {
-			return result.toString();
-		}
-
-		try {
-			ret = JSON.stringify( result );
-		}
-		catch ( e ) {
-			ret = e.toString();
+		else {
+			ret = '`' + str +'`';
 		}
 
 		return ret;
 	}
 };
-})();
 
 //some sort of pseudo constructor
 bot.Command = function ( cmd ) {
@@ -607,17 +593,16 @@ bot.Command = function ( cmd ) {
 
 	cmd.description = cmd.description || '';
 
-	cmd.canUse = function ( usrid ) {
-		var use = this.permissions.use;
-		return use === 'ALL' || use !== 'NONE' &&
-			use.indexOf( usrid ) > -1;
-	};
+	//make canUse and canDel
+	[ 'Use', 'Del' ].forEach(function ( perm ) {
+		var low = perm.toLowerCase();
+		cmd[ 'can' + perm ] = function ( usrid ) {
+			var canDo = this.permissions[ low ];
 
-	cmd.canDel = function ( usrid ) {
-		var del = this.permissions.del;
-		return del !== 'NONE' && del === 'ALL' ||
-			del.indexOf( usrid ) > -1;
-	};
+			return canDo === 'ALL' || canDo !== 'NONE' &&
+				canDo.indexOf( usrid ) > -1;
+		};
+	});
 
 	cmd.exec = function () {
 		return this.fun.apply( this.thisArg, arguments );

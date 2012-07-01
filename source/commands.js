@@ -69,7 +69,7 @@ var commands = {
 			if ( id < 0 ) {
 				msg += 'Cannot find user ' + usrid + '. ';
 			}
-			else if ( bot.isOwner(id) >= 0 ) {
+			else if ( bot.isOwner(id) ) {
 				msg += 'Cannot mindjail owner ' + usrid + '. ';
 				id = -1;
 			}
@@ -403,8 +403,9 @@ commands.urban.async = true;
 var parse = commands.parse = (function () {
 //special variables
 var variables = {
-	who : function ( msg ) {
-		return msg.get( 'user_name' );
+	who : function () {
+		var args = [].slice.call( arguments );
+		return args.pop().get( 'user_name' );
 	},
 
 	someone : function () {
@@ -417,6 +418,10 @@ var variables = {
 			return Number( user.style.opacity ) >= 0.5;
 		}),
 			user = active[ Math.floor(Math.random() * (active.length-1)) ];
+
+		if ( !usr ) {
+			return 'Nobody! I\'m all alone :(';
+		}
 
 		return user.getElementsByTagName( 'img' )[ 0 ].title;
 	},
@@ -452,8 +457,7 @@ var funcs = {
 		return Math.floor( Math.random() * (max - min + 1) ) + min;
 	}
 };
-var varRegex  = /(?:.|^)\$(\w+)/g,
-	funcRegex = /(?:.|^)\$(\w+)\((.*?)\)/g;
+var macroRegex = /(?:.|^)\$(\w+)(?:\((.*?)\))?/g;
 
 //extraVars is for internal usage via other commands
 return function parse ( args, extraVars ) {
@@ -562,16 +566,17 @@ return function ( args ) {
 
 	//check if the user wants to reply to a message
 	var direct = false, msgObj = args.get();
-	if ( /^\d+$/.test(replyTo) ) {
-		msgObj.message_id = replyTo;
+	if ( /^:?\d+$/.test(replyTo) ) {
+		msgObj.message_id = replyTo.replace( /^:/, '' );
 		direct = true;
 	}
 	else {
-		msgObj.user_name = replyTo;
+		msgObj.user_name = replyTo.replace( /^@/, '' );
 	}
 
 	var cmdArgs = bot.Message(
 		//the + 2 is for the two spaces after each arg
+		// /tell replyTo1cmdName2args
 		args.slice( replyTo.length + cmdName.length + 2 ).trim(),
 		msgObj
 	);
