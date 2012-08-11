@@ -16,7 +16,7 @@ var commands = {
 		}
 
 		return (
-			'https://github.com/Titani/SO-ChatBot/wiki/' +
+			'https://github.com/Zirak/SO-ChatBot/wiki/' +
 				'Interacting-with-the-bot'
 		);
 	},
