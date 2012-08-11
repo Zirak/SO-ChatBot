@@ -64,17 +64,16 @@ var build = {
 
 	addFile : function ( filePath, filesArray, idx ) {
 		if ( !this.filterer(filePath) ) {
-			build.print( 'rejected ' + filePath );
+			build.print( colour.red('- ' + filePath) );
 			this.totalFiles--;
 			return;
 		}
 
-		build.print( 'adding ' + filePath );
+		build.print( colour.green('+ ' + filePath) );
 		//add the file contents as the idx'th item, pushing everything there
 		// and after it to the right
 		var that = this;
 		preprocessor( filePath, function ( data ) {
-			console.log( filePath );
 			filesArray[ idx ] = data;
 			that.filesAdded++;
 			that.addComplete();
@@ -159,16 +158,17 @@ var minifier = {
 		build.print( '\nminifying...' );
 
 		var opts = {
-			host    : 'marijnhaverbeke.nl',
-			path    : '/uglifyjs',
+			host    : 'closure-compiler.appspot.com',
+			path    : '/compile',
 			method  : 'POST',
 			headers : {
-				'Content-Type' : 'application/x-www-form-urlencoded'
+				'Content-Type' : 'application/x-www-form-urlencoded',
 			}
 		};
 		var data = {
-			'js_code' : code,
-			'utf8'    : true
+			js_code       : code,
+			output_info   : 'compiled_code',
+			output_format : 'text'
 		};
 
 		var writeStream = fs.createWriteStream(
@@ -351,3 +351,13 @@ build.start(
 		);
 	}
 );
+
+var colour = {
+	reg : '\033[0m',
+	red : function ( str ) {
+		return '\033[31m' + str + this.reg;
+	},
+	green : function ( str ) {
+		return '\033[32m' + str + this.reg;
+	}
+};
