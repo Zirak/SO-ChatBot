@@ -9,6 +9,8 @@ function beautifyMsg ( msg ) {
 
 	lang = lang.toLowerCase();
 
+	console.log( msg_id, lang, '/beautify input' );
+
 	if ( ['html', 'css', 'js'].indexOf(lang) < 0 ) {
 		return help_message;
 	}
@@ -24,9 +26,13 @@ function beautifyMsg ( msg ) {
 		return '404 Message ' + msg_id + ' Not Found';
 	}
 	var code = containing_message
-			.getElementsByClassName( 'content' ).textContent;
+			.getElementsByClassName( 'content' )[ 0 ].textContent;
 
-	return msg.codify( mormons[lang](code) );
+	console.log( code, '/beautify beautifying' );
+
+	msg.respond(
+		msg.codify( mormons[lang](code) )
+	);
 }
 
 bot.addCommand({

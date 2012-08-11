@@ -42,10 +42,7 @@ bot.adapter = {
 		}
 
 		return lines.map(function ( line ) {
-			if ( !line.startsWith(tab) ) {
-				line = tab + line;
-			}
-			return line;
+			return tab + line;
 		}).join( '\n' );
 	}
 };
