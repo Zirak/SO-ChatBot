@@ -63,10 +63,10 @@ var commands = {
 			var id = Number( usrid );
 			//name provided instead of id
 			if ( /\D/.test(usrid) ) {
-				id = findUserid( usrid );
+				id = args.findUserid( usrid );
 			}
 
-			if ( id < 0 ) {
+			if ( !id ) {
 				msg += 'Cannot find user ' + usrid + '. ';
 			}
 			else if ( bot.isOwner(id) ) {
@@ -100,10 +100,10 @@ var commands = {
 			var id = Number( usrid );
 			//name provided instead of id
 			if ( /\D/.test(usrid) ) {
-				id = findUserid( usrid );
+				id = args.findUserid( usrid );
 			}
 
-			if ( id < 0 ) {
+			if ( !id ) {
 				msg += 'Cannot find user ' + usrid + '. ';
 			}
 
@@ -235,9 +235,9 @@ var commands = {
 		//check for searching by username, which here just means "there's a non
 		// digit in there"
 		if ( /\D/.test(usrid) ) {
-			id = findUserid( usrid );
+			id = args.findUserid( usrid );
 
-			if ( id < 0 ) {
+			if ( !id ) {
 				return 'Can\'t find user ' + usrid + ' in this chatroom.';
 			}
 		}
@@ -964,26 +964,6 @@ Object.keys( commands ).forEach(function ( cmdName ) {
 });
 
 //utility functions used in some commands
-function findUserid ( username ) {
-	var users = [].slice.call( document
-			.getElementById( 'sidebar' )
-			.getElementsByClassName( 'user-container' )
-	);
 
-	//grab a list of user ids
-	var ids = users.map(function ( container ) {
-		return container.id.match( /\d+/ )[ 0 ];
-	});
-	//and a list of their names
-	var names = users.map(function ( container ) {
-		return container.getElementsByTagName( 'img' )[ 0 ].title;
-	});
-
-	var idx = names.indexOf( username );
-	if ( idx < 0 ) {
-		return idx;
-	}
-	return Number( ids[idx] );
-}
 
 }());

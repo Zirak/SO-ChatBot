@@ -676,6 +676,30 @@ bot.Message = function ( text, msgObj ) {
 			return match;
 		},
 
+		findUserid : function ( username ) {
+			var users = [].slice.call( document
+					.getElementById( 'sidebar' )
+					.getElementsByClassName( 'user-container' )
+				);
+
+			//grab a list of user ids
+			var ids = users.map(function ( container ) {
+				return container.id.match( /\d+/ )[ 0 ];
+			});
+			//and a list of their names
+			var names = users.map(function ( container ) {
+				return container.getElementsByTagName( 'img' )[ 0 ]
+					.title.toLowerCase();
+			});
+
+			var idx = names.indexOf( username.toLowerCase() );
+			if ( idx < 0 ) {
+				return undefined;
+			}
+
+			return Number( ids[idx] );
+		}.memoize(),
+
 		//retrieve a value from the original message object, or if no argument
 		// provided, the msgObj itself
 		get : function ( what ) {
@@ -761,21 +785,36 @@ Object.defineProperty( Array.prototype, 'invoke', {
 	writable : true
 });
 
-//async memoizer
-Function.prototype.memoizeAsync = function ( cb, thisArg ) {
+Function.prototype.memoize = function () {
 	var cache = Object.create( null ), fun = this;
 
 	return function ( hash ) {
-		if ( cache[hash] ) {
+		if ( hash in cache ) {
 			return cache[ hash ];
 		}
-		//turn arguments into an array
+
+		var res = fun.apply( null, arguments );
+
+		cache[ hash ] = res;
+		return res;
+	};
+};
+
+//async memoizer
+Function.prototype.memoizeAsync = function ( cb ) {
+	var cache = Object.create( null ), fun = this;
+
+	return function ( hash ) {
+		if ( hash in cache ) {
+			return cache[ hash ];
+		}
+
 		var args = [].slice.call( arguments );
 
-		//and push the callback to it
+		//push the callback to the to-be-passed arguments
 		args.push(function ( res ) {
 			cache[ hash ] = res;
-			cb.apply( thisArg, arguments );
+			cb.apply( null, arguments );
 		});
 
 		return fun.apply( this, args );
@@ -1218,10 +1257,10 @@ var commands = {
 			var id = Number( usrid );
 			//name provided instead of id
 			if ( /\D/.test(usrid) ) {
-				id = findUserid( usrid );
+				id = args.findUserid( usrid );
 			}
 
-			if ( id < 0 ) {
+			if ( !id ) {
 				msg += 'Cannot find user ' + usrid + '. ';
 			}
 			else if ( bot.isOwner(id) ) {
@@ -1255,10 +1294,10 @@ var commands = {
 			var id = Number( usrid );
 			//name provided instead of id
 			if ( /\D/.test(usrid) ) {
-				id = findUserid( usrid );
+				id = args.findUserid( usrid );
 			}
 
-			if ( id < 0 ) {
+			if ( !id ) {
 				msg += 'Cannot find user ' + usrid + '. ';
 			}
 
@@ -1390,9 +1429,9 @@ var commands = {
 		//check for searching by username, which here just means "there's a non
 		// digit in there"
 		if ( /\D/.test(usrid) ) {
-			id = findUserid( usrid );
+			id = args.findUserid( usrid );
 
-			if ( id < 0 ) {
+			if ( !id ) {
 				return 'Can\'t find user ' + usrid + ' in this chatroom.';
 			}
 		}
@@ -2119,27 +2158,7 @@ Object.keys( commands ).forEach(function ( cmdName ) {
 });
 
 //utility functions used in some commands
-function findUserid ( username ) {
-	var users = [].slice.call( document
-			.getElementById( 'sidebar' )
-			.getElementsByClassName( 'user-container' )
-	);
 
-	//grab a list of user ids
-	var ids = users.map(function ( container ) {
-		return container.id.match( /\d+/ )[ 0 ];
-	});
-	//and a list of their names
-	var names = users.map(function ( container ) {
-		return container.getElementsByTagName( 'img' )[ 0 ].title;
-	});
-
-	var idx = names.indexOf( username );
-	if ( idx < 0 ) {
-		return idx;
-	}
-	return Number( ids[idx] );
-}
 
 }());
 
@@ -2548,12 +2567,12 @@ var help_message = 'Fetches and beautifies a message containing html, ' +
 
 function beautifyMsg ( msg ) {
 	var args = msg.parse(),
-		msg_id = args.shift(),
+		id = args.shift(),
 		lang = args.shift() || 'js';
 
 	lang = lang.toLowerCase();
 
-	console.log( msg_id, lang, '/beautify input' );
+	console.log( id, lang, '/beautify input' );
 
 	if ( ['html', 'css', 'js'].indexOf(lang) < 0 ) {
 		return help_message;
@@ -2565,7 +2584,7 @@ function beautifyMsg ( msg ) {
 		html : style_html
 	};
 
-	var containing_message = document.getElementById( 'message-' + msg_id );
+	var containing_message = fetch_message( id, msg );
 	if ( !containing_message ) {
 		return '404 Message ' + msg_id + ' Not Found';
 	}
@@ -2577,6 +2596,34 @@ function beautifyMsg ( msg ) {
 	msg.respond(
 		msg.codify( mormons[lang](code) )
 	);
+}
+
+function fetch_message ( id, msg ) {
+	if ( !/^\d+$/.test(id) ) {
+		console.log( id, '/beautify fetch_message' );
+		return fetch_last_message( msg.findUserid(id) );
+	}
+
+	return document.getElementById( 'message-' + id );
+}
+
+function fetch_last_message ( usrid ) {
+	var last_monologue = [].filter.call(
+		document.getElementsByClassName( 'user-' + usrid ),
+		class_test
+	).pop();
+
+	if ( !last_monologue ) {
+		return undefined;
+	}
+
+	return [].pop.call(
+		last_monologue.getElementsByClassName( 'message' )
+	);
+
+	function class_test ( elem ) {
+		return /\bmonologue\b/.test( elem.className )
+	}
 }
 
 bot.addCommand({
@@ -4631,6 +4678,8 @@ function css_beautify(source_text, options) {
 if (typeof exports !== "undefined") {
 	exports.css_beautify = css_beautify;
 }
+
+;
 
 ;
 

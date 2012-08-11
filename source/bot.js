@@ -676,6 +676,30 @@ bot.Message = function ( text, msgObj ) {
 			return match;
 		},
 
+		findUserid : function ( username ) {
+			var users = [].slice.call( document
+					.getElementById( 'sidebar' )
+					.getElementsByClassName( 'user-container' )
+				);
+
+			//grab a list of user ids
+			var ids = users.map(function ( container ) {
+				return container.id.match( /\d+/ )[ 0 ];
+			});
+			//and a list of their names
+			var names = users.map(function ( container ) {
+				return container.getElementsByTagName( 'img' )[ 0 ]
+					.title.toLowerCase();
+			});
+
+			var idx = names.indexOf( username.toLowerCase() );
+			if ( idx < 0 ) {
+				return undefined;
+			}
+
+			return Number( ids[idx] );
+		}.memoize(),
+
 		//retrieve a value from the original message object, or if no argument
 		// provided, the msgObj itself
 		get : function ( what ) {

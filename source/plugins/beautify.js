@@ -4,12 +4,12 @@ var help_message = 'Fetches and beautifies a message containing html, ' +
 
 function beautifyMsg ( msg ) {
 	var args = msg.parse(),
-		msg_id = args.shift(),
+		id = args.shift(),
 		lang = args.shift() || 'js';
 
 	lang = lang.toLowerCase();
 
-	console.log( msg_id, lang, '/beautify input' );
+	console.log( id, lang, '/beautify input' );
 
 	if ( ['html', 'css', 'js'].indexOf(lang) < 0 ) {
 		return help_message;
@@ -21,7 +21,7 @@ function beautifyMsg ( msg ) {
 		html : style_html
 	};
 
-	var containing_message = document.getElementById( 'message-' + msg_id );
+	var containing_message = fetch_message( id, msg );
 	if ( !containing_message ) {
 		return '404 Message ' + msg_id + ' Not Found';
 	}
@@ -33,6 +33,34 @@ function beautifyMsg ( msg ) {
 	msg.respond(
 		msg.codify( mormons[lang](code) )
 	);
+}
+
+function fetch_message ( id, msg ) {
+	if ( !/^\d+$/.test(id) ) {
+		console.log( id, '/beautify fetch_message' );
+		return fetch_last_message( msg.findUserid(id) );
+	}
+
+	return document.getElementById( 'message-' + id );
+}
+
+function fetch_last_message ( usrid ) {
+	var last_monologue = [].filter.call(
+		document.getElementsByClassName( 'user-' + usrid ),
+		class_test
+	).pop();
+
+	if ( !last_monologue ) {
+		return undefined;
+	}
+
+	return [].pop.call(
+		last_monologue.getElementsByClassName( 'message' )
+	);
+
+	function class_test ( elem ) {
+		return /\bmonologue\b/.test( elem.className )
+	}
 }
 
 bot.addCommand({

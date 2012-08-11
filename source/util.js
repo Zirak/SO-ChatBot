@@ -50,21 +50,36 @@ Object.defineProperty( Array.prototype, 'invoke', {
 	writable : true
 });
 
-//async memoizer
-Function.prototype.memoizeAsync = function ( cb, thisArg ) {
+Function.prototype.memoize = function () {
 	var cache = Object.create( null ), fun = this;
 
 	return function ( hash ) {
-		if ( cache[hash] ) {
+		if ( hash in cache ) {
 			return cache[ hash ];
 		}
-		//turn arguments into an array
+
+		var res = fun.apply( null, arguments );
+
+		cache[ hash ] = res;
+		return res;
+	};
+};
+
+//async memoizer
+Function.prototype.memoizeAsync = function ( cb ) {
+	var cache = Object.create( null ), fun = this;
+
+	return function ( hash ) {
+		if ( hash in cache ) {
+			return cache[ hash ];
+		}
+
 		var args = [].slice.call( arguments );
 
-		//and push the callback to it
+		//push the callback to the to-be-passed arguments
 		args.push(function ( res ) {
 			cache[ hash ] = res;
-			cb.apply( thisArg, arguments );
+			cb.apply( null, arguments );
 		});
 
 		return fun.apply( this, args );
