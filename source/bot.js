@@ -663,7 +663,7 @@ bot.Message = function ( text, msgObj ) {
 			}
 
 			return parsed.map(function ( part ) {
-				return bot.Message( part, msgObj )
+				return bot.Message( part, msgObj );
 			});
 		},
 

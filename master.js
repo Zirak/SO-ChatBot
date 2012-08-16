@@ -663,7 +663,7 @@ bot.Message = function ( text, msgObj ) {
 			}
 
 			return parsed.map(function ( part ) {
-				return bot.Message( part, msgObj )
+				return bot.Message( part, msgObj );
 			});
 		},
 
@@ -5756,10 +5756,10 @@ bot.addCommand({
 ;
 (function () {
 
-var template = '[{display_name}]({link})' +
-		'has {reputation} reputation, '
+var template = '[{display_name}]({link})'   +
+		'has {reputation} reputation, '     +
 		'asked {question_count} questions,' +
-		'gave {answer_count} answers, ' +
+		'gave {answer_count} answers, '     +
 		'for a q:a ratio of {ratio}';
 
 function stat ( msg, cb ) {
@@ -5776,13 +5776,13 @@ function stat ( msg, cb ) {
 			site   : 'stackoverflow',
 			filter :  '!G*klMsSp1IcBUKxXMwhRe8TaI(' //ugh, don't ask...
 		},
-		fun :
+		fun : done
 	});
 
-	function cb ( resp ) {
+	function done ( resp ) {
 		var user = resp.items[ 0 ], res;
 
-		if ( !usr ) {
+		if ( !user ) {
 			res = 'User ' + id + ' not found';
 		}
 		else {
