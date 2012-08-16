@@ -15,6 +15,12 @@ function stat ( msg, cb ) {
 		id = msg.findUserid( id );
 	}
 
+	//~10% chance
+	if ( Math.random() <= 0.1 ) {
+		finish( 'That dude sucks' );
+		return;
+	}
+
 	IO.jsonp({
 		url : 'https://api.stackexchange.com/2.0/users/' + id,
 		data : {
@@ -63,7 +69,16 @@ function normalize_stats ( stats ) {
 		},
 		stats );
 
-	stats.ratio = Math.ratio( stats.question_count, stats.answer_count );
+	//for teh lulz
+	if ( !stats.question_count && stats.answer_count ) {
+		stats.ratio = "H̸̡̪̯ͨ͊̽̅̾̎Ȩ̬̩̾͛ͪ̈́̀́͘ ̶̧̨̱̹̭̯ͧ̾ͬC̷̙̲̝͖ͭ̏ͥͮ͟Oͮ͏̮̪̝͍M̲̖͊̒ͪͩͬ̚̚͜Ȇ̴̟̟͙̞ͩ͌͝S̨̥̫͎̭ͯ̿̔̀ͅ";
+	}
+	else if ( !stats.answer_count && stats.question_count ) {
+		stats.ratio = "TO͇̹̺ͅƝ̴ȳ̳ TH̘Ë͖́̉ ͠P̯͍̭O̚​N̐Y̡";
+	}
+	else {
+		stats.ratio = Math.ratio( stats.question_count, stats.answer_count );
+	}
 
 	return stats;
 }
@@ -75,7 +90,9 @@ bot.addCommand({
 		del : 'NONE'
 	},
 
-	description : 'Gives useless stats on a user. `/stat usrid|usrname`'
+	description : 'Gives useless stats on a user. `/stat usrid|usrname`',
+	async : true
 });
 
 }());
+
