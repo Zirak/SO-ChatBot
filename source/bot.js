@@ -224,7 +224,6 @@ var decodeCharcodeEntity = function ( entity ) {
 };
 
 return function ( html ) {
-	//capture &blah; &blah;bloo; and &#1337;
 	return html.replace( entityRegex, replaceEntities );
 };
 }());

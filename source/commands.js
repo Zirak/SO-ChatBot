@@ -62,7 +62,7 @@ var commands = {
 		args.parse().map(function ( usrid ) {
 			var id = Number( usrid );
 			//name provided instead of id
-			if ( /\D/.test(usrid) ) {
+			if ( /^\d+$/.test(usrid) ) {
 				id = args.findUserid( usrid );
 			}
 
@@ -99,7 +99,7 @@ var commands = {
 		args.parse().map(function ( usrid ) {
 			var id = Number( usrid );
 			//name provided instead of id
-			if ( /\D/.test(usrid) ) {
+			if ( /^\d+$/.test(usrid) ) {
 				id = args.findUserid( usrid );
 			}
 
@@ -125,7 +125,10 @@ var commands = {
 
 	regex : function ( args ) {
 		var parts = args.parse(),
-			what = parts[ 0 ], pattern = parts[ 1 ], flags = parts[ 2 ] || '',
+
+			what = parts.shift(),
+			pattern = parts.shift(),
+			flags = parts.shift() || '',
 
 			regex = new RegExp( pattern, flags.toLowerCase() ),
 			matches = regex.exec( what );
@@ -138,7 +141,6 @@ var commands = {
 		}
 
 		return matches.map(function ( match ) {
-			//have the chat codify the output
 			return '`' + match + '`';
 		}).join( ', ' );
 	},
@@ -167,7 +169,7 @@ var commands = {
 		// jQuery.fn.prop => prop
 		// jQuery.prop    => jQuery.prop if it's on jQuery
 		// prop           => prop if it's on jQuery.prototype,
-		//                   jQuery.prop if it's on jQuery
+		//                     jQuery.prop if it's on jQuery
 
 		bot.log( props, parts, '/jquery input' );
 
@@ -215,26 +217,12 @@ var commands = {
 		return opts[ Math.floor(Math.random() * opts.length) ];
 	},
 
-	online : function () {
-		//the pseudo-selector for the user names looks like this:
-		//document .present-users .avatar:nth-child(0).title
-		var avatars = document.getElementById( 'present-users' )
-				.getElementsByClassName( 'avatar' );
-
-		return [].map.call( avatars,
-			function ( wrapper ) {
-				return wrapper.children[ 0 ].title;
-			}
-		).join( ', ' );
-	},
-
 	user : function ( args ) {
 		var props = args.replace( ' ', '' ),
 			usrid = props || args.get( 'user_id' ), id = usrid;
 
-		//check for searching by username, which here just means "there's a non
-		// digit in there"
-		if ( /\D/.test(usrid) ) {
+		//check for searching by username
+		if ( /^\d+$/.test(usrid) ) {
 			id = args.findUserid( usrid );
 
 			if ( !id ) {
@@ -842,34 +830,33 @@ return function ( args ) {
 		return errorMessage;
 	}
 	command.name = command.name.toLowerCase();
+	command.input = new RegExp( command.input );
 
 	bot.log( commandParts, '/learn parsed' );
 
-	addCustomCommand( command.name, command.input, command.output );
+	addCustomCommand( command );
 	return 'Command ' + command.name + ' learned';
 };
 
-function addCustomCommand ( name, input, output ) {
+function addCustomCommand ( command ) {
 	bot.addCommand({
-		name : name,
-		description : 'User-taught command: ' + output,
+		name : command.name,
+		description : 'User-taught command: ' + command.output,
 
-		fun : makeCustomCommand( name, input, output ),
+		fun : makeCustomCommand( command ),
 		permissions : {
 			use : 'ALL',
 			del : 'ALL'
 		}
 	});
 }
-function makeCustomCommand ( name, input, output ) {
-	input = new RegExp( input );
-
+function makeCustomCommand ( command ) {
 	return function ( args ) {
-		bot.log( args, name + ' input' );
+		bot.log( args, command.name + ' input' );
 
-		var cmdArgs = bot.Message( output, args.get() );
+		var cmdArgs = bot.Message( command.output, args.get() );
 		//parse is bot.commands.parse
-		return parse( cmdArgs, input.exec(args) );
+		return parse( cmdArgs, command.input.exec(args) );
 	};
 }
 
@@ -920,8 +907,6 @@ var descriptions = {
 
 	choose : '"Randomly" choose an option given. /choose option0 option1 ...',
 
-	online : 'Echoes list of users online in the bot\'s chatroom',
-
 	user : 'Fetches user-link for specified user. /user usr_id|usr_name',
 
 	listcommands : 'This seems pretty obvious',
@@ -962,8 +947,5 @@ Object.keys( commands ).forEach(function ( cmdName ) {
 [ 'die', 'live', 'ban', 'unban' ].forEach(function ( cmdName ) {
 	bot.commands[ cmdName ].permissions.use = bot.owners;
 });
-
-//utility functions used in some commands
-
 
 }());

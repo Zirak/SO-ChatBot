@@ -85,3 +85,31 @@ Function.prototype.memoizeAsync = function ( cb ) {
 		return fun.apply( this, args );
 	};
 };
+
+//calculates a:b to string form
+Math.ratio = function ( a, b ) {
+    a = Number( a );
+    b = Number( b );
+
+    var gcd = this.gcd( a, b );
+    return ( a / gcd ) + ':' + ( a / gcd );
+};
+
+//Euclidean gcd
+Math.gcd = function ( a, b ) {
+    if ( !b ) {
+        return a;
+    }
+    return this.gcd( b, a % b );
+};
+
+//Crockford's supplant
+String.prototype.supplant = function ( obj ) {
+	return this.replace( /\{([^\}]+)\}/g, replace );
+
+	function replace ( $0, $1 ) {
+		return obj[ $1 ] ?
+			obj[ $1 ] :
+			$1;
+	}
+};
