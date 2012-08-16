@@ -108,8 +108,8 @@ String.prototype.supplant = function ( obj ) {
 	return this.replace( /\{([^\}]+)\}/g, replace );
 
 	function replace ( $0, $1 ) {
-		return obj[ $1 ] ?
+		return obj.hasOwnProperty( $1 ) ?
 			obj[ $1 ] :
-			$1;
+			$0;
 	}
 };
