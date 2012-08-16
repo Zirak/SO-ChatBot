@@ -92,7 +92,7 @@ Math.ratio = function ( a, b ) {
     b = Number( b );
 
     var gcd = this.gcd( a, b );
-    return ( a / gcd ) + ':' + ( a / gcd );
+    return ( a / gcd ) + ':' + ( b / gcd );
 };
 
 //Euclidean gcd
