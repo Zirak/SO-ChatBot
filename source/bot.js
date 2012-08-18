@@ -691,7 +691,7 @@ bot.Message = function ( text, msgObj ) {
 					.title.toLowerCase();
 			});
 
-			var idx = names.indexOf( username.toLowerCase() );
+			var idx = names.indexOf( username.toString().toLowerCase() );
 			if ( idx < 0 ) {
 				return undefined;
 			}
