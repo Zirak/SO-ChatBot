@@ -691,7 +691,7 @@ bot.Message = function ( text, msgObj ) {
 					.title.toLowerCase();
 			});
 
-			var idx = names.indexOf( username.toLowerCase() );
+			var idx = names.indexOf( username.toString().toLowerCase() );
 			if ( idx < 0 ) {
 				return undefined;
 			}
@@ -1439,11 +1439,12 @@ var commands = {
 	},
 
 	user : function ( args ) {
-		var props = args.replace( ' ', '' ),
-			usrid = props || args.get( 'user_id' ), id = usrid;
+		var props = args.parse(),
+			usrid = props[ 0 ] || args.get( 'user_id' ),
+			id = usrid;
 
 		//check for searching by username
-		if ( /^\d+$/.test(usrid) ) {
+		if ( !(/^\d+$/.test(usrid)) ) {
 			id = args.findUserid( usrid );
 
 			if ( !id ) {
@@ -1610,25 +1611,23 @@ return function ( args, cb ) {
 commands.urban.async = true;
 
 var parse = commands.parse = (function () {
-//special variables
-var variables = {
+var macros = {
 	who : function () {
-		var args = [].slice.call( arguments );
-		return args.pop().get( 'user_name' );
+		return [].pop.call( arguments ).get( 'user_name' );
 	},
 
 	someone : function () {
 		var presentUsers = document.getElementById( 'sidebar' )
-				.getElementsByClassName( 'present-user' );
+			.getElementsByClassName( 'present-user' );
 
 		//the chat keeps a low opacity for users who remained silent for long,
 		// and high opacity for those who recently talked
 		var active = [].filter.call( presentUsers, function ( user ) {
 			return Number( user.style.opacity ) >= 0.5;
 		}),
-			user = active[ Math.floor(Math.random() * (active.length-1)) ];
+		user = active[ Math.floor(Math.random() * (active.length-1)) ];
 
-		if ( !usr ) {
+		if ( !user ) {
 			return 'Nobody! I\'m all alone :(';
 		}
 
@@ -1637,10 +1636,8 @@ var variables = {
 
 	digit : function () {
 		return Math.floor( Math.random() * 10 );
-	}
-};
-//special macros
-var funcs = {
+	},
+
 	encode : function ( string ) {
 		return encodeURIComponent( string );
 	},
@@ -1673,11 +1670,9 @@ return function parse ( args, extraVars ) {
 	extraVars = extraVars || {};
 	bot.log( args, extraVars, '/parse input' );
 
-	return args
-		.replace( funcRegex, replaceFunc )
-		.replace( varRegex, replaceVar );
+	return args.replace( macroRegex, replaceMacro );
 
-	function replaceFunc ( $0, filler, fillerArgs ) {
+	function replaceMacro ( $0, filler, fillerArgs ) {
 		//$$ makes a literal $
 		if ( $0.startsWith('$$') ) {
 			return $0.slice( 1 );
@@ -1690,56 +1685,43 @@ return function parse ( args, extraVars ) {
 			ret = $0[ 0 ];
 		}
 
-		//check for the function's existance in the funcs object
-		if ( funcs.hasOwnProperty(filler) ) {
-			//parse the arguments, split them into individual arguments,
-			// and trim'em (to cover the case of "arg,arg" and "arg, arg")
-			fillerArgs = parse( fillerArgs, extraVars )
-				.split( ',' ).invoke( 'trim' );
+		fillerArgs = parseMacroArgs( fillerArgs );
 
+		var macro;
+		//check for the function's existance in the funcs object
+		if ( macros.hasOwnProperty(filler) ) {
 			bot.log( filler, fillerArgs, '/parse func call');
-			ret += funcs[ filler ].apply( null, fillerArgs );
+			macro = macros[ filler ];
 		}
 
 		//it's passed as an extra function
-		else if (
-			extraVars.hasOwnProperty(filler) && extraVars[filler].apply
-		) {
-			ret += extraVars[ filler ].apply( null, fillerArgs );
+		else if ( extraVars.hasOwnProperty(filler) ) {
+			macro = extraVars[ filler ];
 		}
 
+		//when the macro is a function
+		if ( macro.apply ) {
+			ret += macro.apply( null, fillerArgs );
+		}
+		//when the macro is simply a substitution
+		else {
+			ret += macro;
+		}
 		return ret;
 	}
 
-	function replaceVar ( $0, filler ) {
-		//same as in the above function
-		if ( $0.startsWith('$$') ) {
-			return $0.slice( 1 );
+	function parseMacroArgs ( macroArgs ) {
+		console.log( macroArgs, '/parse parseMacroArgs' );
+		if ( !macroArgs ) {
+			return [];
 		}
 
-		var ret = '';
-		if ( $0[0] !== '$' ) {
-			ret = $0[ 0 ];
-		}
-
-		//it's recognized by special extra variables passed
-		if ( extraVars.hasOwnProperty(filler) ) {
-			ret += extraVars[ filler ];
-		}
-		//it's a special variables
-		else if ( variables.hasOwnProperty(filler) ) {
-			ret += variables[ filler ]( args );
-		}
-		//it's part of the argument variables
-		else if ( args.get && args.get(filler) ) {
-			ret += args.get( filler );
-		}
-		//it's not defined
-		else {
-			ret = $0;
-		}
-
-		return ret;
+		//parse the arguments, split them into individual arguments,
+		// and trim'em (to cover the case of "arg,arg" and "arg, arg")
+		return (
+			parse( macroArgs, extraVars )
+				.split( ',' ).invoke( 'trim' ).concat( args )
+		);
 	}
 };
 }());
