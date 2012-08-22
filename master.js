@@ -1922,7 +1922,6 @@ return function ( args, cb ) {
 		plural = type + 's',
 
 		range = parts[ 1 ] || 'last',
-		start, end, //dates used in "between" calls
 
 		usrid = parts[ 2 ];
 
@@ -1962,10 +1961,8 @@ return function ( args, cb ) {
 	bot.log( url, params, '/get building url' );
 
 	if ( range === 'between' ) {
-		start = Date.parse( parts[2] );
-		end = Date.parse( parts[3] );
-		params.fromdate = start;
-		params.todate = end;
+		params.fromdate = Date.parse( parts[2] );
+		params.todate = Date.parse( parts[3] );
 
 		bot.log( url, params, '/get building url between' );
 	}
@@ -2015,77 +2012,7 @@ return function ( args, cb ) {
 }());
 commands.get.async = true;
 
-commands.learn = (function () {
-return function ( args ) {
-	bot.log( args, '/learn input' );
 
-	var commandParts = args.parse();
-	var command = {
-		name   : commandParts[ 0 ],
-		output : commandParts[ 1 ],
-		input  : commandParts[ 2 ] || '.*'
-	};
-
-	//a truthy value, unintuitively, means it isn't valid, because it returns
-	// an error message
-	var errorMessage = checkCommand( command );
-	if ( errorMessage ) {
-		return errorMessage;
-	}
-	command.name = command.name.toLowerCase();
-	command.input = new RegExp( command.input );
-
-	bot.log( commandParts, '/learn parsed' );
-
-	addCustomCommand( command );
-	return 'Command ' + command.name + ' learned';
-};
-
-function addCustomCommand ( command ) {
-	bot.addCommand({
-		name : command.name,
-		description : 'User-taught command: ' + command.output,
-
-		fun : makeCustomCommand( command ),
-		permissions : {
-			use : 'ALL',
-			del : 'ALL'
-		}
-	});
-}
-function makeCustomCommand ( command ) {
-	return function ( args ) {
-		bot.log( args, command.name + ' input' );
-
-		var cmdArgs = bot.Message( command.output, args.get() );
-		//parse is bot.commands.parse
-		return parse( cmdArgs, command.input.exec(args) );
-	};
-}
-
-//return a truthy value (an error message) if it's invalid, falsy if it's
-// valid
-function checkCommand ( cmd ) {
-	var somethingUndefined = Object.keys( cmd ).some(function ( key ) {
-		return !cmd[ key ];
-	}),
-		error;
-
-	if ( somethingUndefined ) {
-		error = 'Illegal /learn object';
-	}
-
-	if ( !/^[\w\-]+$/.test(cmd.name) ) {
-		error = 'Invalid command name';
-	}
-
-	if ( bot.commandExists(cmd.name.toLowerCase()) ) {
-		error = 'Command ' + cmd.name + ' already exists';
-	}
-
-	return error;
-}
-}());
 
 var descriptions = {
 	help : 'Fetches documentation for given command, or general help article.' +
@@ -2098,40 +2025,40 @@ var descriptions = {
 
 	die  : 'Kills the bot',
 
-	forget : 'Forgets a given command. /forget cmdName',
+	forget : 'Forgets a given command. `/forget cmdName`',
 
-	ban : 'Bans a user from using a bot. /ban usr_id|usr_name',
+	ban : 'Bans a user from using a bot. `/ban usr_id|usr_name'`,
 
-	unban : 'Removes a user from bot\'s mindjail. /unban usr_id|usr_name',
+	unban : 'Removes a user from bot\'s mindjail. `/unban usr_id|usr_name`',
 
-	regex : 'Executes a regex against text input. /regex text regex [flags]',
+	regex : 'Executes a regex against text input. `/regex text regex [flags]`',
 
-	jquery : 'Fetches documentation link from jQuery API. /jquery what',
+	jquery : 'Fetches documentation link from jQuery API. `/jquery what`',
 
-	choose : '"Randomly" choose an option given. /choose option0 option1 ...',
+	choose : '"Randomly" choose an option given. `/choose option0 option1 ...`',
 
-	user : 'Fetches user-link for specified user. /user usr_id|usr_name',
+	user : 'Fetches user-link for specified user. `/user usr_id|usr_name`',
 
 	listcommands : 'This seems pretty obvious',
 
-	define : 'Fetches definition for a given word. /define something',
+	define : 'Fetches definition for a given word. `/define something`',
 
 	norris : 'Random chuck norris joke!',
 
-	urban : 'Fetches UrbanDictionary definition. /urban something',
+	urban : 'Fetches UrbanDictionary definition. `/urban something`',
 
 	parse : 'Returns result of "parsing" message according to the bot\'s mini' +
 		'-macro capabilities',
 
 	tell : 'Redirect command result to user/message.' +
-		' /tell msg_id|usr_name cmdName [cmdArgs]',
+		' /tell `msg_id|usr_name cmdName [cmdArgs]`',
 
-	mdn : 'Fetches mdn documentation. /mdn what',
+	mdn : 'Fetches mdn documentation. `/mdn what`',
 
 	get : '', //I can't intelligibly explain this in a sentence
 
 	learn : 'Teach the bot a command.' +
-		' /learn cmdName cmdOutputMacro [cmdInputRegex]'
+		' '
 };
 
 Object.keys( commands ).forEach(function ( cmdName ) {
@@ -5065,6 +4992,101 @@ bot.addCommand({
 }());
 
 ;
+(function () {
+var parse;
+
+function learn ( args ) {
+	bot.log( args, '/learn input' );
+
+	var commandParts = args.parse();
+	var command = {
+		name   : commandParts[ 0 ],
+		output : commandParts[ 1 ],
+		input  : commandParts[ 2 ] || '.*'
+	};
+
+	//a truthy value, unintuitively, means it isn't valid, because it returns
+	// an error message
+	var errorMessage = checkCommand( command );
+	if ( errorMessage ) {
+		return errorMessage;
+	}
+	command.name = command.name.toLowerCase();
+	command.input = new RegExp( command.input );
+
+	parse = bot.getCommand( 'parse' );
+	if ( parse.error ) {
+		console.error( '/parse not loaded, cannot /learn' );
+		return 'Failed; /parse not loaded';
+	}
+
+	bot.log( commandParts, '/learn parsed' );
+
+	addCustomCommand( command );
+	return 'Command ' + command.name + ' learned';
+};
+
+function addCustomCommand ( command ) {
+	bot.addCommand({
+		name : command.name,
+		description : 'User-taught command: ' + command.output,
+
+		fun : makeCustomCommand( command ),
+		permissions : {
+			use : 'ALL',
+			del : 'ALL'
+		}
+	});
+}
+function makeCustomCommand ( command ) {
+
+	return function ( args ) {
+		bot.log( args, command.name + ' input' );
+
+		var cmdArgs = bot.Message( command.output, args.get() );
+		return parse( cmdArgs, command.input.exec(args) );
+	};
+}
+
+//return a truthy value (an error message) if it's invalid, falsy if it's
+// valid
+function checkCommand ( cmd ) {
+	var somethingUndefined = Object.keys( cmd ).some(function ( key ) {
+		return !cmd[ key ];
+	}),
+		error;
+
+	if ( somethingUndefined ) {
+		error = 'Illegal /learn object';
+	}
+
+	if ( !/^[\w\-]+$/.test(cmd.name) ) {
+		error = 'Invalid command name';
+	}
+
+	if ( bot.commandExists(cmd.name.toLowerCase()) ) {
+		error = 'Command ' + cmd.name + ' already exists';
+	}
+
+	return error;
+}
+
+
+bot.addCommand({
+	name : 'learn',
+	fun  : learn,
+	privileges : {
+		del : 'NONE',
+	},
+
+	description : 'Teaches the bot a command. ' +
+		'`/learn cmdName cmdOutputMacro [cmdInputRegex]`'
+});
+}());
+
+;
+
+;
 /*global bot:true, IO:true */
 (function () {
 //collection of nudges; msgObj, time left and the message itself
@@ -5743,13 +5765,21 @@ var template = '[{display_name}]({link}) '          +
 		'earned {reputation_change_day} rep today, '+
 		'asked {question_count} questions, '        +
 		'gave {answer_count} answers, '             +
-		'for a q:a ratio of {ratio}';
+		'for a q:a ratio of {ratio}.\n';
+
+var extended_template = 'avg. rep/post: {avg_rep_post}, ' +
+		'{gold} gold badges, ' +
+		'{silver} silver badges and ' +
+		'{bronze} bronze badges. ';
 
 function stat ( msg, cb ) {
 	var args = msg.parse(),
-		id = args[ 0 ];
+		id = args[ 0 ], extended = args[ 1 ] === 'extended';
 
-	if ( !/^\d+$/.test(id) ) {
+	if ( !id ) {
+		id = msg.get( 'user_id' );
+	}
+	else if ( !/^\d+$/.test(id) ) {
 		id = msg.findUserid( id );
 	}
 
@@ -5780,9 +5810,7 @@ function stat ( msg, cb ) {
 			res = 'User ' + id + ' not found';
 		}
 		else {
-			user = normalize_stats( user );
-			console.log( user, '/stat normalized' );
-			res = template.supplant( user );
+			res = handle_user_object( user, extended );
 		}
 
 		finish( res );
@@ -5796,6 +5824,18 @@ function stat ( msg, cb ) {
 			msg.reply( res );
 		}
 	}
+}
+
+function handle_user_object ( user, extended ) {
+	user = normalize_stats( user );
+
+	var res = template.supplant( user );
+
+	if ( extended ) {
+		res += extended_template.supplant( calc_extended_stats(user) );
+	}
+
+	return res;
 }
 
 function normalize_stats ( stats ) {
@@ -5814,10 +5854,30 @@ function normalize_stats ( stats ) {
 	else if ( !stats.answer_count && stats.question_count ) {
 		stats.ratio = "TO͇̹̺ͅƝ̴ȳ̳ TH̘Ë͖́̉ ͠P̯͍̭O̚​N̐Y̡";
 	}
+	else if ( !stats.answer_count && !stats.question_count ) {
+		stats.ratio = 'http://www.imgzzz.com/i/image_1294737413.png';
+	}
 	else {
 		stats.ratio = Math.ratio( stats.question_count, stats.answer_count );
 	}
 
+	console.log( stats, '/stat normalized' );
+	return stats;
+}
+
+function calc_extended_stats ( stats ) {
+	stats = Object.merge( stats.badge_counts, stats );
+
+	stats.avg_rep_post = stats.reputation
+		/
+		( stats.question_count + stats.answer_count );
+
+	//1 / 0 === Infinity
+	if ( stats.avg_rep_post === Infinity ) {
+		stats.avg_rep_post = 'T͎͍̘͙̖̤̉̌̇̅ͯ͋͢͜͝H̖͙̗̗̺͚̱͕̒́͟E̫̺̯͖͎̗̒͑̅̈ ̈ͮ̽ͯ̆̋́͏͙͓͓͇̹<̩̟̳̫̪̇ͩ̑̆͗̽̇͆́ͅC̬͎ͪͩ̓̑͊ͮͪ̄̚̕Ě̯̰̤̗̜̗͓͛͝N̶̴̞͇̟̲̪̅̓ͯͅT͍̯̰͓̬͚̅͆̄E̠͇͇̬̬͕͖ͨ̔̓͞R͚̠̻̲̗̹̀>̇̏ͣ҉̳̖̟̫͕ ̧̛͈͙͇͂̓̚͡C͈̞̻̩̯̠̻ͥ̆͐̄ͦ́̀͟A̛̪̫͙̺̱̥̞̙ͦͧ̽͛̈́ͯ̅̍N̦̭͕̹̤͓͙̲̑͋̾͊ͣŅ̜̝͌͟O̡̝͍͚̲̝ͣ̔́͝Ť͈͢ ̪̘̳͔̂̒̋ͭ͆̽͠H̢͈̤͚̬̪̭͗ͧͬ̈́̈̀͌͒͡Ơ̮͍͇̝̰͍͚͖̿ͮ̀̍́L͐̆ͨ̏̎͡҉̧̱̯̤̹͓̗̻̭ͅḐ̲̰͙͑̂̒̐́̊';
+	}
+
+	console.log( stats, '/stat extended' );
 	return stats;
 }
 
