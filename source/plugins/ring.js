@@ -80,10 +80,10 @@ function register ( ringName, usrname, roomid ) {
 	var ring = roomRing[ ringName ];
 
 	if ( ring.indexOf(usrname) > -1 ) {
-		return 'You are already registered to ring ' + ringname;
+		return 'You are already registered to ring ' + ringName;
 	}
 	ring.push( usrname );
-	
+
 	update();
 
 	return 'Registered to ring ' + ringName + ' in room #' + roomid;

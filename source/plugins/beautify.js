@@ -23,7 +23,7 @@ function beautifyMsg ( msg ) {
 
 	var containing_message = fetch_message( id, msg );
 	if ( !containing_message ) {
-		return '404 Message ' + msg_id + ' Not Found';
+		return '404 Message ' + id + ' Not Found';
 	}
 	var code = containing_message
 			.getElementsByClassName( 'content' )[ 0 ].textContent;

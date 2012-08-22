@@ -806,7 +806,7 @@ var descriptions = {
 
 	forget : 'Forgets a given command. `/forget cmdName`',
 
-	ban : 'Bans a user from using a bot. `/ban usr_id|usr_name'`,
+	ban : 'Bans a user from using a bot. `/ban usr_id|usr_name`',
 
 	unban : 'Removes a user from bot\'s mindjail. `/unban usr_id|usr_name`',
 

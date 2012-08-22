@@ -2027,7 +2027,7 @@ var descriptions = {
 
 	forget : 'Forgets a given command. `/forget cmdName`',
 
-	ban : 'Bans a user from using a bot. `/ban usr_id|usr_name'`,
+	ban : 'Bans a user from using a bot. `/ban usr_id|usr_name`',
 
 	unban : 'Removes a user from bot\'s mindjail. `/unban usr_id|usr_name`',
 
@@ -2504,7 +2504,7 @@ function beautifyMsg ( msg ) {
 
 	var containing_message = fetch_message( id, msg );
 	if ( !containing_message ) {
-		return '404 Message ' + msg_id + ' Not Found';
+		return '404 Message ' + id + ' Not Found';
 	}
 	var code = containing_message
 			.getElementsByClassName( 'content' )[ 0 ].textContent;
@@ -5260,10 +5260,10 @@ function register ( ringName, usrname, roomid ) {
 	var ring = roomRing[ ringName ];
 
 	if ( ring.indexOf(usrname) > -1 ) {
-		return 'You are already registered to ring ' + ringname;
+		return 'You are already registered to ring ' + ringName;
 	}
 	ring.push( usrname );
-	
+
 	update();
 
 	return 'Registered to ring ' + ringName + ' in room #' + roomid;
