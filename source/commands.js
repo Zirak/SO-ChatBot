@@ -701,7 +701,6 @@ return function ( args, cb ) {
 		plural = type + 's',
 
 		range = parts[ 1 ] || 'last',
-		start, end, //dates used in "between" calls
 
 		usrid = parts[ 2 ];
 
@@ -741,10 +740,8 @@ return function ( args, cb ) {
 	bot.log( url, params, '/get building url' );
 
 	if ( range === 'between' ) {
-		start = Date.parse( parts[2] );
-		end = Date.parse( parts[3] );
-		params.fromdate = start;
-		params.todate = end;
+		params.fromdate = Date.parse( parts[2] );
+		params.todate = Date.parse( parts[3] );
 
 		bot.log( url, params, '/get building url between' );
 	}
@@ -794,77 +791,7 @@ return function ( args, cb ) {
 }());
 commands.get.async = true;
 
-commands.learn = (function () {
-return function ( args ) {
-	bot.log( args, '/learn input' );
 
-	var commandParts = args.parse();
-	var command = {
-		name   : commandParts[ 0 ],
-		output : commandParts[ 1 ],
-		input  : commandParts[ 2 ] || '.*'
-	};
-
-	//a truthy value, unintuitively, means it isn't valid, because it returns
-	// an error message
-	var errorMessage = checkCommand( command );
-	if ( errorMessage ) {
-		return errorMessage;
-	}
-	command.name = command.name.toLowerCase();
-	command.input = new RegExp( command.input );
-
-	bot.log( commandParts, '/learn parsed' );
-
-	addCustomCommand( command );
-	return 'Command ' + command.name + ' learned';
-};
-
-function addCustomCommand ( command ) {
-	bot.addCommand({
-		name : command.name,
-		description : 'User-taught command: ' + command.output,
-
-		fun : makeCustomCommand( command ),
-		permissions : {
-			use : 'ALL',
-			del : 'ALL'
-		}
-	});
-}
-function makeCustomCommand ( command ) {
-	return function ( args ) {
-		bot.log( args, command.name + ' input' );
-
-		var cmdArgs = bot.Message( command.output, args.get() );
-		//parse is bot.commands.parse
-		return parse( cmdArgs, command.input.exec(args) );
-	};
-}
-
-//return a truthy value (an error message) if it's invalid, falsy if it's
-// valid
-function checkCommand ( cmd ) {
-	var somethingUndefined = Object.keys( cmd ).some(function ( key ) {
-		return !cmd[ key ];
-	}),
-		error;
-
-	if ( somethingUndefined ) {
-		error = 'Illegal /learn object';
-	}
-
-	if ( !/^[\w\-]+$/.test(cmd.name) ) {
-		error = 'Invalid command name';
-	}
-
-	if ( bot.commandExists(cmd.name.toLowerCase()) ) {
-		error = 'Command ' + cmd.name + ' already exists';
-	}
-
-	return error;
-}
-}());
 
 var descriptions = {
 	help : 'Fetches documentation for given command, or general help article.' +
@@ -877,40 +804,40 @@ var descriptions = {
 
 	die  : 'Kills the bot',
 
-	forget : 'Forgets a given command. /forget cmdName',
+	forget : 'Forgets a given command. `/forget cmdName`',
 
-	ban : 'Bans a user from using a bot. /ban usr_id|usr_name',
+	ban : 'Bans a user from using a bot. `/ban usr_id|usr_name'`,
 
-	unban : 'Removes a user from bot\'s mindjail. /unban usr_id|usr_name',
+	unban : 'Removes a user from bot\'s mindjail. `/unban usr_id|usr_name`',
 
-	regex : 'Executes a regex against text input. /regex text regex [flags]',
+	regex : 'Executes a regex against text input. `/regex text regex [flags]`',
 
-	jquery : 'Fetches documentation link from jQuery API. /jquery what',
+	jquery : 'Fetches documentation link from jQuery API. `/jquery what`',
 
-	choose : '"Randomly" choose an option given. /choose option0 option1 ...',
+	choose : '"Randomly" choose an option given. `/choose option0 option1 ...`',
 
-	user : 'Fetches user-link for specified user. /user usr_id|usr_name',
+	user : 'Fetches user-link for specified user. `/user usr_id|usr_name`',
 
 	listcommands : 'This seems pretty obvious',
 
-	define : 'Fetches definition for a given word. /define something',
+	define : 'Fetches definition for a given word. `/define something`',
 
 	norris : 'Random chuck norris joke!',
 
-	urban : 'Fetches UrbanDictionary definition. /urban something',
+	urban : 'Fetches UrbanDictionary definition. `/urban something`',
 
 	parse : 'Returns result of "parsing" message according to the bot\'s mini' +
 		'-macro capabilities',
 
 	tell : 'Redirect command result to user/message.' +
-		' /tell msg_id|usr_name cmdName [cmdArgs]',
+		' /tell `msg_id|usr_name cmdName [cmdArgs]`',
 
-	mdn : 'Fetches mdn documentation. /mdn what',
+	mdn : 'Fetches mdn documentation. `/mdn what`',
 
 	get : '', //I can't intelligibly explain this in a sentence
 
 	learn : 'Teach the bot a command.' +
-		' /learn cmdName cmdOutputMacro [cmdInputRegex]'
+		' '
 };
 
 Object.keys( commands ).forEach(function ( cmdName ) {
