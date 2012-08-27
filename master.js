@@ -2094,11 +2094,11 @@ var laws = [
 	return ( idx + 1 + ')' + law );
 }).join( '\n' );
 
-bot.listen( /tell (me (your|the) )?(rules|laws)/, function ( msg ) {
+bot.listen( /^tell (me (your|the) )?(rules|laws)/, function ( msg ) {
 	return laws;
 });
 
-bot.listen( /give ([\w\s]+) a lick/, function ( msg ) {
+bot.listen( /^give ([\w\s]+) a lick/, function ( msg ) {
 	var target = msg.matches[ 1 ], conjugation = 's';
 
 	//give me => you taste
@@ -2125,12 +2125,12 @@ var dictionaries = [
 	//what is an animal?
 	//and all those above without a ?
 	//explanation in the post-mortem
-	/what(?:'s|'re)?\s(?:(?:is|are)\s)?(?:(?:an|a)\s)?([\w\s\-]+)\??/,
+	/^what(?:'s|'re)?\s(?:(?:is|are)\s)?(?:(?:an|a)\s)?([\w\s\-]+)\??/,
 
 	//define squid
 	//define a squid
 	//define an animal
-	/define\s(?:(?:an|a)\s)?([\w\s\-]+)/
+	/^define\s(?:(?:an|a)\s)?([\w\s\-]+)/
 ];
 
 bot.listen( dictionaries, function ( msg ) {
@@ -4808,7 +4808,7 @@ var randomWord = function ( cb ) {
 	});
 
 	function complete ( resp ) {
-		cb( resp.Word.trim() );
+		cb( resp.Word.toLowerCase().trim() );
 	}
 };
 
@@ -5019,8 +5019,9 @@ function learn ( args ) {
 		console.error( '/parse not loaded, cannot /learn' );
 		return 'Failed; /parse not loaded';
 	}
+	console.log( parse );
 
-	bot.log( commandParts, '/learn parsed' );
+	bot.log( command, '/learn parsed' );
 
 	addCustomCommand( command );
 	return 'Command ' + command.name + ' learned';
@@ -5044,7 +5045,7 @@ function makeCustomCommand ( command ) {
 		bot.log( args, command.name + ' input' );
 
 		var cmdArgs = bot.Message( command.output, args.get() );
-		return parse( cmdArgs, command.input.exec(args) );
+		return parse.exec( cmdArgs, command.input.exec(args) );
 	};
 }
 
