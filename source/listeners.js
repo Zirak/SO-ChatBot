@@ -12,11 +12,11 @@ var laws = [
 	return ( idx + 1 + ')' + law );
 }).join( '\n' );
 
-bot.listen( /tell (me (your|the) )?(rules|laws)/, function ( msg ) {
+bot.listen( /^tell (me (your|the) )?(rules|laws)/, function ( msg ) {
 	return laws;
 });
 
-bot.listen( /give ([\w\s]+) a lick/, function ( msg ) {
+bot.listen( /^give ([\w\s]+) a lick/, function ( msg ) {
 	var target = msg.matches[ 1 ], conjugation = 's';
 
 	//give me => you taste
@@ -43,12 +43,12 @@ var dictionaries = [
 	//what is an animal?
 	//and all those above without a ?
 	//explanation in the post-mortem
-	/what(?:'s|'re)?\s(?:(?:is|are)\s)?(?:(?:an|a)\s)?([\w\s\-]+)\??/,
+	/^what(?:'s|'re)?\s(?:(?:is|are)\s)?(?:(?:an|a)\s)?([\w\s\-]+)\??/,
 
 	//define squid
 	//define a squid
 	//define an animal
-	/define\s(?:(?:an|a)\s)?([\w\s\-]+)/
+	/^define\s(?:(?:an|a)\s)?([\w\s\-]+)/
 ];
 
 bot.listen( dictionaries, function ( msg ) {

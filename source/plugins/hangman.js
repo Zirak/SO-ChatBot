@@ -11,7 +11,7 @@ var randomWord = function ( cb ) {
 	});
 
 	function complete ( resp ) {
-		cb( resp.Word.trim() );
+		cb( resp.Word.toLowerCase().trim() );
 	}
 };
 
