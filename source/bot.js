@@ -48,9 +48,7 @@ var IO = window.IO = {
 		function fireEvent( evt ) {
 			var call = evt.fun.apply( evt.thisArg, evt.args.concat(args) );
 
-			if ( call === false ) {
-				that.preventDefault = true;
-			}
+			that.preventDefault = call === false;
 		}
 	},
 
