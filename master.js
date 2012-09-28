@@ -5898,9 +5898,9 @@ bot.addCommand({
 
 ;
 IO.register( 'input', function ( msgObj ) {
-	var content = msgObj.content.toUpperCase().match( /\w+/ )[ 0 ];
+	var words = msgObj.content.match( /\w+/g ) || [];
 
-	if ( content === 'STOP' ) {
+	if ( words.length === 1 && words[0].toUpperCase() === 'STOP' ) {
 		bot.adapter.out.add( 'HAMMERTIME!', msgObj.room_id );
 	}
 });
