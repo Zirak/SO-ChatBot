@@ -66,23 +66,28 @@ Function.prototype.memoize = function () {
 };
 
 //async memoizer
-Function.prototype.memoizeAsync = function ( cb ) {
-	var cache = Object.create( null ), fun = this;
+Function.prototype.memoizeAsync = function ( hasher ) {
+	var cache = Object.create( null ), fun = this,
+		hasher = hasher || function (x) { return x; };
 
-	return function ( hash ) {
+	return function () {
+		var args = [].slice.call( arguments ),
+			cb = args.pop(), //HEAVY assumption that cb is always passed
+			hash = hasher.apply( null, arguments );
+
 		if ( hash in cache ) {
-			return cache[ hash ];
+			cb.apply( null, cache[hash] );
+			return;
 		}
 
-		var args = [].slice.call( arguments );
-
 		//push the callback to the to-be-passed arguments
-		args.push(function ( res ) {
-			cache[ hash ] = res;
-			cb.apply( null, arguments );
-		});
+		args.push( resultFun );
+		fun.apply( this, args );
 
-		return fun.apply( this, args );
+		function resultFun () {
+			cache[ hash ] = arguments;
+			cb.apply( null, arguments );
+		}
 	};
 };
 

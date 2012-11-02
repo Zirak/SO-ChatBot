@@ -26,6 +26,11 @@ var build = {
 
 		this.endCallback = end || function () {
 			build.print( '\nbuilding ' + this.outputName + ' complete' );
+
+			if ( !this.doMinify ) {
+				build.print( 'not running minifier' );
+			}
+
 			build.print(
 				'total size of all files (pre-build): ' + this.totalSize
 			);
@@ -258,6 +263,7 @@ var preprocessor = {
 			if ( err ) {
 				throw err;
 			}
+			build.print( colour.blue('# ' + targetPath) );
 
 			//replace the comment with the file content
 			//TODO: make this better
@@ -277,7 +283,7 @@ var preprocessor = {
 	readTarget : function ( targetPath ) {
 		var that = this;
 		//check to see if the file requested exists
-		path.exists( targetPath, function ( exists ) {
+		fs.exists( targetPath, function ( exists ) {
 			if ( !exists ) {
 				throw new Error(
 					'Cannot #build unexisting file ' + targetPath +
@@ -333,24 +339,27 @@ if ( process.argv.indexOf('no-min') > -1 ) {
 	build.doMinify = false;
 }
 
-build.start(
-	[
-		'./source/bot.js',
-		'./source/adapter.js',
-		'./source/plugins/'
-	],
-	function ( fileName ) {
-		return (
-			//only .js files
-			path.extname( fileName ) === '.js' &&
+var files = [
+	'./source/IO.js',
+	'./source/bot.js',
+	'./source/plugins/'
+];
+function filter ( fileName ) {
+	return (
+		//only .js files
+		path.extname( fileName ) === '.js' &&
 			//no web-workers
 			fileName.indexOf( 'Worker' ) === -1 &&
 			//no backup files
 			fileName.indexOf( '~' ) === -1 &&
-			fileName.indexOf( '#' ) !== 0
-		);
-	}
-);
+			fileName.indexOf( '#' ) !== 0 );
+}
+
+if ( process.argv.indexOf('no-adapter') !== -1 ) {
+	files.push( './source/adapter.js' );
+}
+
+build.start( files, filter );
 
 var colour = {
 	reg : '\033[0m',
@@ -359,5 +368,11 @@ var colour = {
 	},
 	green : function ( str ) {
 		return '\033[32m' + str + this.reg;
+	},
+	blue : function ( str ) {
+		return '\033[34m' + str + this.reg;
+	},
+	purp : function ( str ) {
+		return '\033[35m' + str + this.reg;
 	}
 };

@@ -252,19 +252,7 @@ return function ( args, cb ) {
 		return finish( cache[args] );
 	}
 
-	var duckyAPI = 'http://api.duckduckgo.com/?',
-		params = {
-			q : 'define ' + args,
-			format : 'json'
-		};
-
-	IO.jsonp({
-		//talk to the duck!
-		url : duckyAPI,
-		fun : finishCall,
-		data : params,
-		jsonpName : 'callback'
-	});
+	IO.jsonp.define( args.toString(), finishCall );
 
 	//the duck talked back! either the xhr is complete, or the hallucinations
 	// are back
