@@ -273,7 +273,7 @@ IO.jsonp = function ( opts ) {
 
 //generic, pre-made calls to be used inside commands
 IO.jsonp.define = function ( what, cb ) {
-	this({
+	IO.jsonp({
 		url : 'http://api.duckduckgo.com/',
 		jsonpName : 'callback',
 		data : {
@@ -285,12 +285,12 @@ IO.jsonp.define = function ( what, cb ) {
 };
 
 IO.jsonp.google = function ( query, cb ) {
-	this({
+	IO.jsonp({
 		url : 'http://ajax.googleapis.com/ajax/services/search/web',
 		jsonpName : 'callback',
 		data : {
 			v : '1.0',
-			q : args.toString()
+			q : query
 		},
 		fun : cb
 	});

@@ -563,103 +563,33 @@ return function ( args ) {
 };
 }());
 
-commands.mdn = (function () {
+commands.mdn = function ( args, cb ) {
+	var template = '[{titleNoFormatting}]({url})';
 
-// https://developer.mozilla.org/Special:Tags?tag=DOM
-//these may only work in Chrome, but who cares?
-//an array of DOM objects mdn has special links for
-var DOMParts = [
-	{
-		name  : 'node',
-		mdn   : 'Node',
-		proto : Node.prototype
-	},
-	{
-		name  : 'element',
-		proto : Element.prototype
-	},
-	{
-		name  : 'nodelist',
-		mdn   : 'NodeList',
-		proto : NodeList.prototype
-	},
-	{
-		name  : 'form',
-		//I could not find a way to get an actual copy of HTMLFormCollection
-		// with all the properties (elements, name, acceptCharset etc) in it
-		//document.createElement('form') is close, but also responds to many
-		// other properties
-		proto : {
-			elements : true, name : true, acceptCharset : true, action : true,
-			enctype : true, encoding : true, method : true, submit : true,
-			reset : true, length : true, target : true
+	IO.jsonp.google(
+		args.toString() + ' site:developer.mozilla.org', finishCall );
+
+	function finishCall ( resp ) {
+		if ( resp.responseStatus !== 200 ) {
+			finish( 'Something went on fire; status ' + resp.responseStatus );
+			return;
 		}
-	},
-	{
-		name  : 'document',
-		proto : document
-	},
-	{
-		name  : 'text',
-		mdn   : 'Text',
-		proto : Text.prototype
-	}
-];
 
-function whichDOMPart ( suspect, prop ) {
-	var part;
-	suspect = suspect.toLowerCase();
-	for ( var i = 0, len = DOMParts.length; i < len; ++i ) {
-		part = DOMParts[ i ];
-		if ( part.name === suspect && part.proto.hasOwnProperty(prop) ) {
-			return DOMParts[ i ];
+		var result = resp.responseData.results[ 0 ];
+		bot.log( result, '/mdn result' );
+		finish( template.supplant(result) );
+	}
+
+	function finish ( res ) {
+		if ( cb && cb.call ) {
+			cb( res );
+		}
+		else {
+			args.reply( res );
 		}
 	}
-}
-
-function mdn ( what ) {
-	var parts = what.trim().split( '.' ),
-		base = 'https://developer.mozilla.org/en/',
-		url;
-
-	bot.log( what, parts, '/mdn input' );
-
-	//mdn urls never have something.prototype.property, but always
-	// something.property
-	if ( parts[1] === 'prototype' ) {
-		parts.splice( 1, 1 );
-	}
-
-	//part of the DOM?
-	var DOMPart = whichDOMPart( parts[0], parts[1] );
-	if ( DOMPart ) {
-		parts[ 0 ] = DOMPart.mdn || DOMPart.name;
-		url = base + 'DOM/' + parts.join( '.' );
-
-		bot.log( url, '/mdn DOM' );
-	}
-
-	//it may be documented as part of the global object
-	else if ( window[parts[0]] ) {
-		url = base +
-			'JavaScript/Reference/Global_Objects/' + parts.join( '/' );
-		bot.log( url, '/mdn global' );
-	}
-
-	//i unno
-	else {
-		url = 'https://developer.mozilla.org/en-US/search?q=' +
-			encodeURIComponent( what );
-		bot.log( url, '/mdn unknown' );
-	}
-
-	return url;
-}
-
-return function ( args ) {
-	return args.parse().map( mdn ).join( ' ' );
 };
-}());
+commands.mdn.async = true;
 
 commands.get = (function () {
 

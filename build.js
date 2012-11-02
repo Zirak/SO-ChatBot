@@ -353,7 +353,7 @@ function filter ( fileName ) {
 			fileName.indexOf( '#' ) !== 0 );
 }
 
-if ( process.argv.indexOf('no-adapter') !== -1 ) {
+if ( process.argv.indexOf('no-adapter') === -1 ) {
 	files.push( './source/adapter.js' );
 }
 //the adapter, if exists, needs to go before any plugin
