@@ -4894,7 +4894,8 @@ bot.addCommand({
 
 //collection of nudges; msgObj, time left and the message itself
 var nudges = [],
-	interval = bot.adapter.in.interval || 5000;
+	interval = bot.adapter &&
+		bot.adapter.in.interval || 5000;
 
 function update () {
 	var now = Date.now();
