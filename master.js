@@ -1458,10 +1458,31 @@ var commands = {
 	},
 
 	choose : function ( args ) {
-		var opts = args.parse();
-		bot.log( opts, '/choose input' );
+		var opts = args.parse().filter( conjunctions ),
+			rnd = Math.random(),
+			len = opts.length;
 
-		return opts[ Math.floor(Math.random() * opts.length) ];
+		bot.log( opts, rnd, '/choose input' );
+
+		//10% chance to get a "none-of-the-above"
+		if ( rnd < 0.1 ) {
+			return len === 2 ? 'Neither' : 'None of the above';
+		}
+		//15% chance to get "all-of-the-above"
+		// (the first 10% are covered in the previous option)
+		else if ( rnd < 0.25 ) {
+			return len === 2 ? 'Both!' : 'All of the above';
+		}
+
+		return opts[ Math.floor(Math.random() * len) ];
+
+		//TODO: add support for words like and, e.g.
+		// skip and jump or cry and die
+		//  =>
+		// "skip and jump", "cry and die"
+		function conjunctions ( word ) {
+			return word !== 'or';
+		}
 	},
 
 	user : function ( args ) {
