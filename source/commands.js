@@ -592,7 +592,6 @@ commands.mdn = function ( args, cb ) {
 commands.mdn.async = true;
 
 commands.get = (function () {
-
 var types = {
 	answer : true,
 	question : true

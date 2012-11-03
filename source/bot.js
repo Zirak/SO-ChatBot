@@ -4,7 +4,7 @@
 var bot = window.bot = {
 	invocationPattern : '!!',
 
-	roomid : parseFloat( location.pathname.match(/\d+/)[0] ),
+	roomid : Number( /\d+/.exec(location)[0] ),
 
 	commandRegex : /^\/\s?([\w\-]+)(?:\s(.+))?$/,
 	commands : {}, //will be filled as needed

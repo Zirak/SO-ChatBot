@@ -110,7 +110,7 @@ var entities = {"quot":"\"","amp":"&","apos":"'","lt":"<","gt":">","nbsp":" ","
   (
    #      -charcode entities also have a #
    x?     -hex charcodes
-  )
+  )?
   [\w;]   -now the entity (alphanumeric, separated by ;)
   +?      -capture em until there aint no more (don't get the trailing ;)
   ;       -trailing ;

@@ -110,7 +110,7 @@ var entities = {"quot":"\"","amp":"&","apos":"'","lt":"<","gt":">","nbsp":" ","
   (
    #      -charcode entities also have a #
    x?     -hex charcodes
-  )
+  )?
   [\w;]   -now the entity (alphanumeric, separated by ;)
   +?      -capture em until there aint no more (don't get the trailing ;)
   ;       -trailing ;
@@ -303,7 +303,7 @@ IO.jsonp.google = function ( query, cb ) {
 var bot = window.bot = {
 	invocationPattern : '!!',
 
-	roomid : parseFloat( location.pathname.match(/\d+/)[0] ),
+	roomid : Number( /\d+/.exec(location)[0] ),
 
 	commandRegex : /^\/\s?([\w\-]+)(?:\s(.+))?$/,
 	commands : {}, //will be filled as needed
@@ -1839,7 +1839,6 @@ commands.mdn = function ( args, cb ) {
 commands.mdn.async = true;
 
 commands.get = (function () {
-
 var types = {
 	answer : true,
 	question : true
@@ -4793,16 +4792,14 @@ bot.addCommand({
 "use strict";
 
 var randomWord = function ( cb ) {
-	var url = 'http://randomword.setgetgo.com/get.php';
-
 	IO.jsonp({
-		url : url,
+		url : 'http://sleepy-bastion-8674.herokuapp.com/',
 		jsonpName : 'callback',
 		fun : complete
 	});
 
 	function complete ( resp ) {
-		cb( resp.Word.toLowerCase().trim() );
+		cb( resp.word.toLowerCase().trim() );
 	}
 };
 

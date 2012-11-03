@@ -2,16 +2,14 @@
 "use strict";
 
 var randomWord = function ( cb ) {
-	var url = 'http://randomword.setgetgo.com/get.php';
-
 	IO.jsonp({
-		url : url,
+		url : 'http://sleepy-bastion-8674.herokuapp.com/',
 		jsonpName : 'callback',
 		fun : complete
 	});
 
 	function complete ( resp ) {
-		cb( resp.Word.toLowerCase().trim() );
+		cb( resp.word.toLowerCase().trim() );
 	}
 };
 
