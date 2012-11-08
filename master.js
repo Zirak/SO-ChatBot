@@ -1630,14 +1630,13 @@ return function ( args, cb ) {
 	});
 
 	function complete ( resp ) {
-		var msg, top;
+		var msg;
 
 		if ( resp.result_type === 'no_results' ) {
 			msg = 'Y U NO MAEK SENSE!!!???!!?11 No results for ' + args;
 		}
 		else {
-			top = resp.list[ 0 ];
-			msg = args.link( args.toString(), top.permalink ) + top.definition;
+			msg = formatTop( resp.list[0] );
 		}
 		cache[ args ] = msg;
 
@@ -1651,6 +1650,12 @@ return function ( args, cb ) {
 		else {
 			args.reply( def );
 		}
+	}
+
+	function formatTop ( top ) {
+		return args.link( args.toString(), top.permalink ) +
+			' ' +
+			top.definition;
 	}
 };
 }());
