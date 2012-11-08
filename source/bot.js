@@ -361,13 +361,7 @@ bot.Message = function ( text, msgObj ) {
 			);
 		},
 
-		codify : function ( msg ) {
-			return bot.adapter.codify( msg );
-		},
 
-		escape : function ( msg ) {
-			return bot.adapter.escape( msg );
-		},
 
 		//parse() parses the original message
 		//parse( true ) also turns every match result to a Message
@@ -420,6 +414,10 @@ bot.Message = function ( text, msgObj ) {
 
 			return Number( ids[idx] );
 		}.memoize(),
+
+		codify : bot.adapter.codify.bind( bot.adapter ),
+		escape : bot.adapter.escape.bind( bot.adapter ),
+		link : bot.adapter.link.bind( bot.adapter ),
 
 		//retrieve a value from the original message object, or if no argument
 		// provided, the msgObj itself

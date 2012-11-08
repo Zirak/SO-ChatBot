@@ -1,5 +1,4 @@
 (function () {
-var template = '[{titleNoFormatting}]({url})';
 //TODO: maybe move this somewhere else?
 function google ( args, cb ) {
 	IO.jsonp.google( args.toString(), finishCall );
@@ -19,7 +18,8 @@ function google ( args, cb ) {
 			results.map( format ).join( ' ; ' ) );
 
 		function format ( result ) {
-			return template.supplant( result );
+			var title = decodeURIComponent( result.titleNoFormatting )
+			return args.link( title, result.url );
 		}
 	}
 

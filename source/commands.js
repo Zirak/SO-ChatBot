@@ -379,7 +379,7 @@ return function ( args, cb ) {
 		}
 		else {
 			top = resp.list[ 0 ];
-			msg = '[' + args + '](' + top.permalink + '): ' + top.definition;
+			msg = args.link( args.toString(), top.permalink ) + top.definition;
 		}
 		cache[ args ] = msg;
 

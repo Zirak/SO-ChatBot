@@ -247,7 +247,7 @@ var preprocessor = {
 				path.dirname( this.filePath ), targetName
 			);
 
-			this.readTarget( targetPath );
+			this.readTarget( targetPath, targetName );
 		}
 		//nothing to do here, moving along
 		else {
@@ -255,9 +255,8 @@ var preprocessor = {
 		}
 	},
 
-	embedFile : function ( targetPath ) {
-		var base = path.basename( targetPath ),
-			that = this;
+	embedFile : function ( targetPath, name ) {
+		var that = this;
 
 		fs.readFile( targetPath, 'utf8', function ( err, data ) {
 			if ( err ) {
@@ -273,14 +272,14 @@ var preprocessor = {
 				that.source.slice( 0, that.index ) +
 				data +
 				that.source.slice(
-					that.index + that.instruction.length + base.length
+					that.index + that.instruction.length + name.length
 				);
 
 			that.continuation();
 		});
 	},
 
-	readTarget : function ( targetPath ) {
+	readTarget : function ( targetPath, name ) {
 		var that = this;
 		//check to see if the file requested exists
 		fs.exists( targetPath, function ( exists ) {
@@ -291,7 +290,7 @@ var preprocessor = {
 				);
 			}
 
-			that.embedFile( targetPath );
+			that.embedFile( targetPath, name );
 		});
 	},
 

@@ -91,6 +91,17 @@ Function.prototype.memoizeAsync = function ( hasher ) {
 	};
 };
 
+//returns the number with at most `places` digits after the dot
+//examples:
+// 1.337.maxDecimal(1) === 1.3
+// floor(1.337 * 10e1) / 10e1 = 13
+// 13 / 10e1 = 1.3
+Number.prototype.maxDecimal = function ( places ) {
+	var exponent = Math.pow( 10, places );
+
+	return Math.floor( this * exponent ) / exponent;
+}
+
 //calculates a:b to string form
 Math.ratio = function ( a, b ) {
     a = Number( a );

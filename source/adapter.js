@@ -1,4 +1,6 @@
 (function () {
+var linkTemplate = '[{text}]({url})';
+
 bot.adapter = {
 	//a pretty crucial function. accepts the msgObj we know nothing about,
 	// and returns an object with these properties:
@@ -44,6 +46,14 @@ bot.adapter = {
 		return lines.map(function ( line ) {
 			return tab + line;
 		}).join( '\n' );
+	},
+
+	//receives a url and text to display, returns a recognizable link
+	link : function ( text, url ) {
+		return linkTemplate.supplant({
+			text : this.escape( text ),
+			url  : url
+		});
 	}
 };
 
