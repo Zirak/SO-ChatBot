@@ -1,4 +1,4 @@
-For usage info, on how to use the bot, see [here](https://github.com/Titani/SO-ChatBot/wiki/Interacting-with-the-bot).
+For usage info, on how to use the bot, see [here](https://github.com/Zirak/SO-ChatBot/wiki/Interacting-with-the-bot).
 
 The bot is currently a big dangle-on script running in your browser. Run `bookmarklet.js` in your browser to get it up an' running.
 
