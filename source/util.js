@@ -50,6 +50,19 @@ Object.defineProperty( Array.prototype, 'invoke', {
 	writable : true
 });
 
+//fuck you readability
+//left this comment as company for future viewers with their new riddle
+Object.defineProperty( Array.prototype, 'first', {
+	value : function ( fun ) {
+		return this.some(function ( item ) {
+			return fun.apply( null, arguments ) && ( (fun = item) || true );
+		}) ? fun : null;
+	},
+
+	configurable : true,
+	writable : true
+});
+
 Function.prototype.memoize = function () {
 	var cache = Object.create( null ), fun = this;
 
@@ -128,4 +141,8 @@ String.prototype.supplant = function ( obj ) {
 			obj[ $1 ] :
 			$0;
 	}
+};
+
+String.prototype.add = function ( str, nonewline ) {
+	return this + str + ( nonewline ? '' : '\n' );
 };

@@ -460,6 +460,7 @@ var macroRegex = /(?:.|^)\$(\w+)(?:\((.*?)\))?/g;
 
 //extraVars is for internal usage via other commands
 return function parse ( args, extraVars ) {
+	var msgObj = ( args.get && args.get() ) || {};
 	extraVars = extraVars || {};
 	bot.log( args, extraVars, '/parse input' );
 
@@ -478,23 +479,17 @@ return function parse ( args, extraVars ) {
 			ret = $0[ 0 ];
 		}
 
-		fillerArgs = parseMacroArgs( fillerArgs );
+		var macro = findMacro( filler );
 
-		var macro;
-		//check for the function's existance in the funcs object
-		if ( macros.hasOwnProperty(filler) ) {
-			bot.log( filler, fillerArgs, '/parse func call');
-			macro = macros[ filler ];
+		//not found? bummer.
+		if ( !macro ) {
+			return filler;
 		}
 
-		//it's passed as an extra function
-		else if ( extraVars.hasOwnProperty(filler) ) {
-			macro = extraVars[ filler ];
-		}
-
+		bot.log( macro, filler, fillerArgs, '/parse replaceMacro' );
 		//when the macro is a function
 		if ( macro.apply ) {
-			ret += macro.apply( null, fillerArgs );
+			ret += macro.apply( null, parseMacroArgs(fillerArgs) );
 		}
 		//when the macro is simply a substitution
 		else {
@@ -515,6 +510,15 @@ return function parse ( args, extraVars ) {
 			parse( macroArgs, extraVars )
 				.split( ',' ).invoke( 'trim' ).concat( args )
 		);
+	}
+
+	function findMacro ( macro ) {
+		return (
+			[ macros, msgObj, extraVars ].first( hasMacro ) || [] )[ macro ];
+
+		function hasMacro ( obj ) {
+			return obj.hasOwnProperty( macro );
+		}
 	}
 };
 }());
@@ -738,7 +742,7 @@ commands.get.async = true;
 
 var descriptions = {
 	help : 'Fetches documentation for given command, or general help article.' +
-		' /help [cmdName]',
+		' `/help [cmdName]`',
 
 	listen : 'Forwards the message to the listen API (as if called without' +
 		'the /)',
