@@ -3,6 +3,7 @@ var fs = require( 'fs' ),
 	http = require( 'http' ),
 	querystring = require( 'querystring' );
 
+
 //some file IO done synchronously because I'm a fat lazy bastard
 var build = {
 	outputName : 'master.js',
@@ -130,7 +131,7 @@ var build = {
 			this.write( code );
 
 			if ( this.doMinify ) {
-				minifier.minify( code, this.minEndCallback );
+				minify( code, this.minEndCallback );
 			}
 			code = null;
 		}
@@ -155,52 +156,20 @@ var build = {
 	}
 };
 
-var minifier = {
-	outputName : 'master.min.js',
-	outputSize : 0,
+var minify = function ( code, callback, outName ) {
+	outName = outName || 'master.min.js';
+	build.print( '\nminifying...' );
 
-	minify : function ( code, callback ) {
-		build.print( '\nminifying...' );
+	var min = require( 'uglify-js2' )
+		.minify( code, { fromString : true } ).code;
 
-		var opts = {
-			host    : 'closure-compiler.appspot.com',
-			path    : '/compile',
-			method  : 'POST',
-			headers : {
-				'Content-Type' : 'application/x-www-form-urlencoded',
-			}
-		};
-		var data = {
-			js_code       : code,
-			output_info   : 'compiled_code',
-			output_format : 'text'
-		};
+	fs.writeFile( outName, min, finish );
 
-		var writeStream = fs.createWriteStream(
-			this.outputName,
-			{flags : 'w', encoding : 'utf8'}
-		);
-
-		var that = this;
-
-		var req = http.request( opts, function ( resp ) {
-			resp.setEncoding( 'utf8' );
-
-			resp.on( 'data', write );
-
-			resp.on( 'end', function () {
-				writeStream.end();
-
-				callback( that.outputName, that.outputSize );
-			});
-		});
-
-		req.end( querystring.stringify(data) );
-
-		function write ( data ) {
-			writeStream.write( data );
-			that.outputSize += data.length;
+	function finish ( err ) {
+		if ( err ) {
+			throw err;
 		}
+		callback( outName, min.length );
 	}
 };
 

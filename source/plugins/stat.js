@@ -12,6 +12,8 @@ var extended_template = 'avg. rep/post: {avg_rep_post}, ' +
 		'{silver} silver badges and ' +
 		'{bronze} bronze badges. ';
 
+var site = /chat\.(\w+)/.exec( location )[ 1 ];
+
 function stat ( msg, cb ) {
 	var args = msg.parse(),
 		id = args[ 0 ], extended = args[ 1 ] === 'extended';
@@ -32,7 +34,7 @@ function stat ( msg, cb ) {
 	IO.jsonp({
 		url : 'https://api.stackexchange.com/2.0/users/' + id,
 		data : {
-			site   : 'stackoverflow',
+			site   : site,
 			filter :  '!G*klMsSp1IcBUKxXMwhRe8TaI(' //ugh, don't ask...
 		},
 		fun : done
@@ -133,4 +135,3 @@ bot.addCommand({
 });
 
 }());
-

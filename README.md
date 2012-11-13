@@ -1,16 +1,29 @@
 For usage info, on how to use the bot, see [here](https://github.com/Zirak/SO-ChatBot/wiki/Interacting-with-the-bot).
 
-The bot is currently a big dangle-on script running in your browser. Run `bookmarklet.js` in your browser to get it up an' running.
+==Running the bot==
+The bot is currently a big dangle-on script running in your browser. **Run `bookmarklet.js`** in your browser to get it up an' running.
 
-To play with it yourself, there are several rules:
+==Building==
+(For build minification, install [uglify-js2](https://github.com/mishoo/UglifyJS2))
 
-1. If you're fed up with the console messages, `bot.stoplog = true`
-2. ***ALWAYS*** run through `build.js` (requires nodejs) after modifying things
-  1. You can `node build.js no-min` to skip minification
-3. In the source, `//#build fileName` is a "preprocessor" command, which is handled in `build.js`
-4. You do not speak of fight-club
+```sh
+#one must first get the repo
+$ git clone git://github.com/Zirak/SO-ChatBot.git
+$ cd SO-ChatBot
 
-The main two methods of the bot API:
+#to build something
+$ node build.js
+#or, to, skip minification
+$ node build.js no-min
+#or, to not add the adapter
+$ node build.js no-adapter
+#you can combine the two options above in whichever order
+```
+The result will be in `master.js` and `master.min.js`
+
+==The Bot API==
+(or a very limited subset of)
+For a real cover, check the source code or `console.log(bot)`. Should be straightforward.
 
 ```javascript
 //add a bot command
