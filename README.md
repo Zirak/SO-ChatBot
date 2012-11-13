@@ -1,9 +1,9 @@
 For usage info, on how to use the bot, see [here](https://github.com/Zirak/SO-ChatBot/wiki/Interacting-with-the-bot).
 
-==Running the bot==
+###Running the bot###
 The bot is currently a big dangle-on script running in your browser. **Run `bookmarklet.js`** in your browser to get it up an' running.
 
-==Building==
+###Building###
 (For build minification, install [uglify-js2](https://github.com/mishoo/UglifyJS2))
 
 ```sh
@@ -21,7 +21,7 @@ $ node build.js no-adapter
 ```
 The result will be in `master.js` and `master.min.js`
 
-==The Bot API==
+###The Bot API###
 (or a very limited subset of)
 For a real cover, check the source code or `console.log(bot)`. Should be straightforward.
 
