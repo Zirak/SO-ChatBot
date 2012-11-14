@@ -1567,7 +1567,7 @@ return function ( args, cb ) {
 		}
 
 		if ( !def ) {
-			def = 'Could not find definition for ' + args;
+			def = 'Could not find definition for ' + args + '. Trying Urban Dictionary';
 			bot.commands.urban.fun.call(this, args);
 		}
 		else {
