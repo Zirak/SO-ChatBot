@@ -293,7 +293,7 @@ return function ( args, cb ) {
 
 		if ( !def ) {
 			def = 'Could not find definition for ' + args;
-			bot.commands.urban.call(this, args);
+			bot.commands.urban.fun.call(this, args);
 		}
 		else {
 			def = args + ': ' + def; //problem?
