@@ -14,6 +14,11 @@ function google ( args, cb ) {
 		//TODO: change hard limit to argument
 		var results = resp.responseData.results.slice( 0, 3 );
 		bot.log( results, '/google results' );
+
+		if ( !results.length ) {
+			finish( 'The Google contains no such knowledge' );
+			return;
+		}
 		finish(
 			results.map( format ).join( ' ; ' ) );
 

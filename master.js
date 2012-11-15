@@ -305,8 +305,6 @@ IO.jsonp.google = function ( query, cb ) {
 var bot = window.bot = {
 	invocationPattern : '!!',
 
-	roomid : Number( /\d+/.exec(location)[0] ),
-
 	commandRegex : /^\/\s?([\w\-]+)(?:\s(.+))?$/,
 	commands : {}, //will be filled as needed
 	commandDictionary : null, //it's null at this point, won't be for long
@@ -1841,8 +1839,7 @@ return function ( args ) {
 		//the + 2 is for the two spaces after each arg
 		// /tell replyTo1cmdName2args
 		args.slice( replyTo.length + cmdName.length + 2 ).trim(),
-		msgObj
-	);
+		msgObj );
 	bot.log( cmdArgs, '/tell calling ' + cmdName );
 
 	//if the command is async, it'll accept a callback
@@ -2170,6 +2167,7 @@ what              --simply the word what
 var linkTemplate = '[{text}]({url})';
 
 bot.adapter = {
+	roomid : ( /\d+/.exec(location) || [0] )[ 0 ],
 	//a pretty crucial function. accepts the msgObj we know nothing about,
 	// and returns an object with these properties:
 	//  user_name, user_id, room_id, content
@@ -2237,7 +2235,7 @@ var polling = bot.adapter.in = {
 
 	init : function () {
 		var that = this,
-			roomid = bot.roomid;
+			roomid = bot.adapter.roomid;
 
 		IO.xhr({
 			url : '/chats/' + roomid + '/events/',
@@ -2350,7 +2348,7 @@ var output = bot.adapter.out = {
 
 	//add a message to the output queue
 	add : function ( msg, roomid ) {
-		roomid = roomid || bot.roomid;
+		roomid = roomid || bot.adapter.roomid;
 		IO.out.receive({
 			text : msg + '\n',
 			room : roomid
@@ -2434,8 +2432,6 @@ IO.register( 'afteroutput', output.send, output );
 polling.init();
 output.loopage();
 }());
-
-;
 
 ;
 (function () {
@@ -3798,8 +3794,6 @@ bot.listen(
 );
 
 ;
-
-;
 (function () {
 //TODO: maybe move this somewhere else?
 function google ( args, cb ) {
@@ -3816,6 +3810,11 @@ function google ( args, cb ) {
 		//TODO: change hard limit to argument
 		var results = resp.responseData.results.slice( 0, 3 );
 		bot.log( results, '/google results' );
+
+		if ( !results.length ) {
+			finish( 'The Google contains no such knowledge' );
+			return;
+		}
 		finish(
 			results.map( format ).join( ' ; ' ) );
 

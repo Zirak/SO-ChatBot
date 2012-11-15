@@ -4,8 +4,6 @@
 var bot = window.bot = {
 	invocationPattern : '!!',
 
-	roomid : Number( /\d+/.exec(location)[0] ),
-
 	commandRegex : /^\/\s?([\w\-]+)(?:\s(.+))?$/,
 	commands : {}, //will be filled as needed
 	commandDictionary : null, //it's null at this point, won't be for long
