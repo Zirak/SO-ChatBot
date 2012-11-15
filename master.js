@@ -1565,17 +1565,18 @@ return function ( args, cb ) {
 		}
 
 		if ( !def ) {
-			def = 'Could not find definition for ' + args;
+			def = 'Could not find definition for ' + args +
+				'. Trying Urban Dictionary';
+			bot.getCommand( 'urban' ).exec( args );
 		}
 		else {
 			def = args + ': ' + def; //problem?
 			//the chat treats ( as a special character, so we escape!
 			def += ' [\\(source\\)](' + url + ')';
+			//add to cache
+			cache[ args ] = def;
 		}
 		bot.log( def, '/define finishCall output' );
-
-		//add to cache
-		cache[ args ] = def;
 
 		finish( def );
 	}
