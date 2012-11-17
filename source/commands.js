@@ -540,6 +540,7 @@ return function ( args ) {
 		return 'Invalid /tell arguments. Use /help for usage info';
 	}
 
+	cmdName = cmdName.toLowerCase();
 	cmd = bot.getCommand( cmdName );
 	if ( cmd.error ) {
 		return cmd.error;
