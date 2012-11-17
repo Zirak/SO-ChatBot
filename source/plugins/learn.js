@@ -1,5 +1,8 @@
 (function () {
-var parse;
+"use strict";
+var parse = bot.getCommand( 'parse' );
+var storage = JSON.parse( localStorage.bot_learn || '{}' );
+loadCommands();
 
 function learn ( args ) {
 	bot.log( args, '/learn input' );
@@ -20,21 +23,15 @@ function learn ( args ) {
 	command.name = command.name.toLowerCase();
 	command.input = new RegExp( command.input );
 
-	parse = bot.getCommand( 'parse' );
-	if ( parse.error ) {
-		console.error( '/parse not loaded, cannot /learn' );
-		return 'Failed; /parse not loaded';
-	}
-	console.log( parse );
-
 	bot.log( command, '/learn parsed' );
 
 	addCustomCommand( command );
+	saveCommand( command );
 	return 'Command ' + command.name + ' learned';
-};
+}
 
 function addCustomCommand ( command ) {
-	bot.addCommand({
+	var cmd = bot.Command({
 		name : command.name,
 		description : 'User-taught command: ' + command.output,
 
@@ -44,9 +41,19 @@ function addCustomCommand ( command ) {
 			del : 'ALL'
 		}
 	});
+
+	cmd.del = (function ( old ) {
+		return function () {
+			deleteCommand( command.name );
+			old();
+		};
+	}( cmd.del ));
+
+	bot.log( cmd, '/learn addCustomCommand' );
+	bot.addCommand( cmd );
 }
 function makeCustomCommand ( command ) {
-
+	bot.log( command, '/learn makeCustomCommand' );
 	return function ( args ) {
 		bot.log( args, command.name + ' input' );
 
@@ -67,23 +74,46 @@ function checkCommand ( cmd ) {
 		error = 'Illegal /learn object';
 	}
 
-	if ( !/^[\w\-]+$/.test(cmd.name) ) {
+	else if ( !/^[\w\-]+$/.test(cmd.name) ) {
 		error = 'Invalid command name';
 	}
 
-	if ( bot.commandExists(cmd.name.toLowerCase()) ) {
+	else if ( bot.commandExists(cmd.name.toLowerCase()) ) {
 		error = 'Command ' + cmd.name + ' already exists';
 	}
 
 	return error;
 }
 
+function loadCommands () {
+	Object.keys( storage ).forEach( teach );
+
+	function teach ( key ) {
+		var cmd = JSON.parse( storage[key] );
+		cmd.input = new RegExp( cmd.input );
+
+		bot.log( cmd, '/learn loadCommands' );
+		addCustomCommand( cmd );
+	}
+}
+function saveCommand ( command ) {
+	storage[ command.name ] = JSON.stringify({
+		name   : command.name,
+		input  : command.input.source,
+		output : command.output
+	});
+	localStorage.bot_learn = JSON.stringify( storage );
+}
+function deleteCommand ( name ) {
+	delete storage[ name ];
+	localStorage.bot_learn = JSON.stringify( storage );
+}
 
 bot.addCommand({
 	name : 'learn',
 	fun  : learn,
 	privileges : {
-		del : 'NONE',
+		del : 'NONE'
 	},
 
 	description : 'Teaches the bot a command. ' +
