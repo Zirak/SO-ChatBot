@@ -12,7 +12,7 @@ var extended_template = 'avg. rep/post: {avg_rep_post}, ' +
 		'{silver} silver badges and ' +
 		'{bronze} bronze badges. ';
 
-var site = /chat\.(\w+)/.exec( location )[ 1 ];
+var site = ( /chat\.(\w+)/.exec(location) || [,'stackoverflow'] )[ 1 ];
 
 function stat ( msg, cb ) {
 	var args = msg.parse(),
