@@ -274,13 +274,13 @@ IO.jsonp = function ( opts ) {
 }
 
 //generic, pre-made calls to be used inside commands
-IO.jsonp.define = function ( what, cb ) {
+IO.jsonp.ddg = function ( query, cb ) {
 	IO.jsonp({
 		url : 'http://api.duckduckgo.com/',
 		jsonpName : 'callback',
 		data : {
 			format : 'json',
-			q : 'define ' + what
+			q : query
 		},
 		fun : cb
 	});
@@ -860,8 +860,10 @@ Function.prototype.memoizeAsync = function ( hasher ) {
 //returns the number with at most `places` digits after the dot
 //examples:
 // 1.337.maxDecimal(1) === 1.3
-// floor(1.337 * 10e1) / 10e1 = 13
-// 13 / 10e1 = 1.3
+//
+//steps:
+// floor(1.337 * 10e0) = 13
+// 13 / 10e0 = 1.3
 Number.prototype.maxDecimal = function ( places ) {
 	var exponent = Math.pow( 10, places );
 
@@ -1276,7 +1278,7 @@ bot.commandDictionary = new SuggestionDictionary( 3 );
 
 var commands = {
 	help : function ( args ) {
-		if ( args.length ) {
+		if ( args && args.length ) {
 
 			var cmd = bot.getCommand( args );
 			if ( cmd.error ) {
@@ -1546,7 +1548,7 @@ return function ( args, cb ) {
 		return finish( cache[args] );
 	}
 
-	IO.jsonp.define( args.toString(), finishCall );
+	IO.jsonp.ddg( 'define ' + args.toString(), finishCall );
 
 	//the duck talked back! either the xhr is complete, or the hallucinations
 	// are back
@@ -1868,8 +1870,6 @@ return function ( args ) {
 }());
 
 commands.mdn = function ( args, cb ) {
-	var template = '[{titleNoFormatting}]({url})';
-
 	IO.jsonp.google(
 		args.toString() + ' site:developer.mozilla.org', finishCall );
 
@@ -1881,7 +1881,7 @@ commands.mdn = function ( args, cb ) {
 
 		var result = resp.responseData.results[ 0 ];
 		bot.log( result, '/mdn result' );
-		finish( template.supplant(result) );
+		finish( result.url );
 	}
 
 	function finish ( res ) {
@@ -2081,6 +2081,10 @@ Object.keys( commands ).forEach(function ( cmdName ) {
 }());
 
 (function () {
+bot.listen( /^help(?: (\S+))?/, function ( msg ) {
+	return bot.getCommand( 'help' ).exec( msg.matches[1] );
+});
+
 var laws = [
 	'A robot may not injure a human being or, through inaction, ' +
 		'allow a human being to come to harm.',
@@ -2090,16 +2094,16 @@ var laws = [
 
 	'A robot must protect its own existence as long as such ' +
 		'protection does not conflict with the First or Second Laws.'
-].map(function ( ret, law, idx ) {
-	return ( idx + 1 + ')' + law );
+].map(function ( law, idx ) {
+	return idx + '. ' + law;
 }).join( '\n' );
 
-bot.listen( /^tell (me (your|the) )?(rules|laws)/, function ( msg ) {
+bot.listen( /^tell (me (your|the) )?(rule|law)s/, function ( msg ) {
 	return laws;
 });
 
-bot.listen( /^give ([\w\s]+) a lick/, function ( msg ) {
-	var target = msg.matches[ 1 ], conjugation = 's';
+bot.listen( /^give (.+?) a lick/, function ( msg ) {
+	var target = msg.matches[ 1 ], conjugation;
 
 	//give me => you taste
 	if ( target === 'me' ) {
@@ -2110,6 +2114,9 @@ bot.listen( /^give ([\w\s]+) a lick/, function ( msg ) {
 	else if ( target === 'yourself' ) {
 		target = 'I';
 		conjugation = '';
+	}
+	else {
+		conjugation = 's';
 	}
 	//otherwise, use what the user gave us, plus a plural `s`
 
@@ -2144,21 +2151,21 @@ bot.listen( dictionaries, function ( msg ) {
 	});
 });
 /*
-what              --simply the word what
-(?:'s|'re)?       --optional suffix (what's, what're)
+what              #simply the word what
+(?:'s|'re)?       #optional suffix (what's, what're)
 \s
 (?:
-    (?:is|are)    --is|are
-\s                --you need a whitespace after a word
-)?                --make the is|are optional
+    (?:is|are)    #is|are
+\s                #you need a whitespace after a word
+)?                #make the is|are optional
 (?:
-    (?:an|a)      --an|a
-\s                --once again, option chosen - need a whitespace
-)?                --make it optional
+    (?:an|a)      #an|a
+\s                #once again, option chosen - need a whitespace
+)?                #make it optional
 (
-    [\w\s\-]+     --match the word the user's after, all we really care about
+    [\w\s\-]+     #match the word the user's after, all we really care about
 )
-\??               --optional ?
+\??               #optional ?
 */
 }());
 
@@ -3568,7 +3575,9 @@ function normalize_stats ( stats ) {
 		stats.ratio = 'http://www.imgzzz.com/i/image_1294737413.png';
 	}
 	else {
-		stats.ratio = Math.ratio( stats.question_count, stats.answer_count );
+		stats.ratio =
+			Math.ratio( stats.question_count, stats.answer_count )
+			.maxDecimal( 4 );
 	}
 
 	console.log( stats, '/stat normalized' );
@@ -6236,7 +6245,7 @@ function checkCommand ( cmd ) {
 		error;
 
 	if ( somethingUndefined ) {
-		error = 'Illegal /learn object';
+		error = 'Illegal /learn object; see `/help learn`';
 	}
 
 	else if ( !/^[\w\-]+$/.test(cmd.name) ) {

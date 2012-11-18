@@ -273,13 +273,13 @@ IO.jsonp = function ( opts ) {
 }
 
 //generic, pre-made calls to be used inside commands
-IO.jsonp.define = function ( what, cb ) {
+IO.jsonp.ddg = function ( query, cb ) {
 	IO.jsonp({
 		url : 'http://api.duckduckgo.com/',
 		jsonpName : 'callback',
 		data : {
 			format : 'json',
-			q : 'define ' + what
+			q : query
 		},
 		fun : cb
 	});

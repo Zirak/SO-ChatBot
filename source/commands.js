@@ -3,7 +3,7 @@
 
 var commands = {
 	help : function ( args ) {
-		if ( args.length ) {
+		if ( args && args.length ) {
 
 			var cmd = bot.getCommand( args );
 			if ( cmd.error ) {
@@ -273,7 +273,7 @@ return function ( args, cb ) {
 		return finish( cache[args] );
 	}
 
-	IO.jsonp.define( args.toString(), finishCall );
+	IO.jsonp.ddg( 'define ' + args.toString(), finishCall );
 
 	//the duck talked back! either the xhr is complete, or the hallucinations
 	// are back
@@ -595,8 +595,6 @@ return function ( args ) {
 }());
 
 commands.mdn = function ( args, cb ) {
-	var template = '[{titleNoFormatting}]({url})';
-
 	IO.jsonp.google(
 		args.toString() + ' site:developer.mozilla.org', finishCall );
 
@@ -608,7 +606,7 @@ commands.mdn = function ( args, cb ) {
 
 		var result = resp.responseData.results[ 0 ];
 		bot.log( result, '/mdn result' );
-		finish( template.supplant(result) );
+		finish( result.url );
 	}
 
 	function finish ( res ) {

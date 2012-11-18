@@ -71,7 +71,7 @@ function checkCommand ( cmd ) {
 		error;
 
 	if ( somethingUndefined ) {
-		error = 'Illegal /learn object';
+		error = 'Illegal /learn object; see `/help learn`';
 	}
 
 	else if ( !/^[\w\-]+$/.test(cmd.name) ) {

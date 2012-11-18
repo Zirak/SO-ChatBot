@@ -1,4 +1,8 @@
 (function () {
+bot.listen( /^help(?: (\S+))?/, function ( msg ) {
+	return bot.getCommand( 'help' ).exec( msg.matches[1] );
+});
+
 var laws = [
 	'A robot may not injure a human being or, through inaction, ' +
 		'allow a human being to come to harm.',
@@ -8,16 +12,16 @@ var laws = [
 
 	'A robot must protect its own existence as long as such ' +
 		'protection does not conflict with the First or Second Laws.'
-].map(function ( ret, law, idx ) {
-	return ( idx + 1 + ')' + law );
+].map(function ( law, idx ) {
+	return idx + '. ' + law;
 }).join( '\n' );
 
-bot.listen( /^tell (me (your|the) )?(rules|laws)/, function ( msg ) {
+bot.listen( /^tell (me (your|the) )?(rule|law)s/, function ( msg ) {
 	return laws;
 });
 
-bot.listen( /^give ([\w\s]+) a lick/, function ( msg ) {
-	var target = msg.matches[ 1 ], conjugation = 's';
+bot.listen( /^give (.+?) a lick/, function ( msg ) {
+	var target = msg.matches[ 1 ], conjugation;
 
 	//give me => you taste
 	if ( target === 'me' ) {
@@ -28,6 +32,9 @@ bot.listen( /^give ([\w\s]+) a lick/, function ( msg ) {
 	else if ( target === 'yourself' ) {
 		target = 'I';
 		conjugation = '';
+	}
+	else {
+		conjugation = 's';
 	}
 	//otherwise, use what the user gave us, plus a plural `s`
 
@@ -62,20 +69,20 @@ bot.listen( dictionaries, function ( msg ) {
 	});
 });
 /*
-what              --simply the word what
-(?:'s|'re)?       --optional suffix (what's, what're)
+what              #simply the word what
+(?:'s|'re)?       #optional suffix (what's, what're)
 \s
 (?:
-    (?:is|are)    --is|are
-\s                --you need a whitespace after a word
-)?                --make the is|are optional
+    (?:is|are)    #is|are
+\s                #you need a whitespace after a word
+)?                #make the is|are optional
 (?:
-    (?:an|a)      --an|a
-\s                --once again, option chosen - need a whitespace
-)?                --make it optional
+    (?:an|a)      #an|a
+\s                #once again, option chosen - need a whitespace
+)?                #make it optional
 (
-    [\w\s\-]+     --match the word the user's after, all we really care about
+    [\w\s\-]+     #match the word the user's after, all we really care about
 )
-\??               --optional ?
+\??               #optional ?
 */
 }());

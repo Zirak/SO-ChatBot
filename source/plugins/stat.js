@@ -100,7 +100,9 @@ function normalize_stats ( stats ) {
 		stats.ratio = 'http://www.imgzzz.com/i/image_1294737413.png';
 	}
 	else {
-		stats.ratio = Math.ratio( stats.question_count, stats.answer_count );
+		stats.ratio =
+			Math.ratio( stats.question_count, stats.answer_count )
+			.maxDecimal( 4 );
 	}
 
 	console.log( stats, '/stat normalized' );
