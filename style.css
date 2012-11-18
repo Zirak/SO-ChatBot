@@ -1,0 +1,16 @@
+body {
+	background : black;
+	color      : green;
+}
+
+#chat {
+	position : relative;
+	height : 50%;
+	width : 100%;
+	min-height : 200px;
+}
+
+#input {
+	position : relative;
+	width : 20%;
+}

@@ -2,13 +2,19 @@
 <html>
 <head>
 	<title>Horse Lime Exclusive</title>
+	<link href='style.css' type='text/css' rel='stylesheet' />
 </head>
 <body>
-	<aside>As this isn't the real chat, some commands have been disabled.</aside>
 	<section id='chat'></section>
-	<textarea id='input'></textarea>
-	<!-- this script will throw 404 errors. haven't found a workaround -->
+	<input id='input'></textarea>
+
+	<script>
+	//adapter workarounds
+	function fkey () { return arguments[0]; }
+	</script>
+	<!-- this script will throw XHR errors because of the adapter. I
+		 haven't found a workaround. -->
 	<script src='https://raw.github.com/Zirak/SO-ChatBot/master/master.js'></script>
-	<script src'adapter.js'></script>
+	<script src='adapter.js'></script>
 </body>
 </html>
