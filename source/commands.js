@@ -376,7 +376,7 @@ return function ( args, cb ) {
 		var msg;
 
 		if ( resp.result_type === 'no_results' ) {
-			msg = 'Y U NO MAEK SENSE!!!???!!?11 No results for ' + args;
+			msg = 'Y U NO MAKE SENSE!!!???!!?11 No results for ' + args;
 		}
 		else {
 			msg = formatTop( resp.list[0] );
