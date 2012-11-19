@@ -31,6 +31,17 @@ var converters = {
 			f : m * 3.280839895 };
 	},
 	f : function ( f ) {
+		//I don't quite like this solution for re-writing the units, but
+		// this idea is good (praise rlemon!), so I'll just clean it later.
+		var m = f / 3.28083989;
+		if ( m > 1000 ) {
+			return {
+				km : m / 1000 };
+		}
+		else if ( m < 0.01 ) {
+			return {
+				mm : m * 1000 };
+		}
 		return {
 			m : f / 3.28083989 };
 	},
@@ -64,11 +75,23 @@ var converters = {
 			lb : g * 0.0022 };
 	},
 	lb : function ( lb ) {
+		var g = lb * 453.592;
+		if ( g > 1000 ) {
+			return {
+				kg : g / 1000 };
+		}
+
 		return {
 			g : lb * 453.592 };
+	},
+
+	//kg: 1g = 1kg * 1000
+	kg : function ( kg ) {
+		return converters.g( kg * 1000 );
 	}
 };
-var alias = {};
+var alias = {
+	lbs : 'lb' };
 
 /*
   (        #start number matching
