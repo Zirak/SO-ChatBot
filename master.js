@@ -3830,7 +3830,7 @@ function google ( args, cb ) {
 			results.map( format ).join( ' ; ' ) );
 
 		function format ( result ) {
-			var title = decodeURIComponent( result.titleNoFormatting )
+			var title = IO.decodehtmlEntities( result.titleNoFormatting );
 			return args.link( title, result.url );
 		}
 	}
