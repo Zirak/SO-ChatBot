@@ -739,11 +739,18 @@ bot.Message = function ( text, msgObj ) {
 };
 
 bot.owners = [
-	419970, //Raynos
-	342129, //Matt McDonald
-	170224, //Ivo Wetzel
 	94197,	//Andy E
-	617762	//me (Zirak)
+	170224, //Ivo Wetzel
+	322395, //Loktar
+	342129, //Matt McDonald
+	418183, //Octavian Damiean
+	419970, //Raynos
+	617762,	//me (Zirak)
+	809950, //Gni33
+	829835, //rlemon
+	851498, //Florian Margaine
+	855760, //Abhishek
+	995876  //Esailija
 ];
 bot.isOwner = function ( usrid ) {
 	return this.owners.indexOf( usrid ) > -1;
