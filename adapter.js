@@ -28,7 +28,6 @@ bot.adapter.in = {
 		if ( e.which !== this.ENTER ) {
 			return;
 		}
-		console.log( 'woop' );
 
 		IO.in.receive({
 			content   : this.elem.value,
@@ -45,11 +44,9 @@ var output = bot.adapter.out = {
 	messages : [],
 
 	add : function ( msg ) {
-		console.log( 'in ' + msg );
 		IO.out.receive({ text : msg + '\n' });
 	},
 	build : function ( obj ) {
-		console.log( 'build', obj, this );
 		this.messages.push( obj.text );
 	},
 	send : function () {
