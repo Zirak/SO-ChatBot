@@ -6074,7 +6074,7 @@ var undo = {
 			if ( resp === '"ok"' ) {
 				msg = 'Target eliminated';
 			}
-			else if ( resp.test(/it is too late/i) ) {
+			else if ( /it is too late/i.test(resp) ) {
 				msg = 'TimeError: Could not reach 88mph';
 			}
 			else {
@@ -6100,7 +6100,7 @@ bot.addCommand({
 		del : 'NONE',
 		use : bot.owners
 	},
-	desription : 'Undo (delete) specified or last message. `/undo [msgid]`'
+	description : 'Undo (delete) specified or last message. `/undo [msgid]`'
 });
 
 }());
