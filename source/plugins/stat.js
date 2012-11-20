@@ -25,6 +25,10 @@ function stat ( msg, cb ) {
 		id = msg.findUserid( id );
 	}
 
+	if ( id < 0 ) {
+		return 'Unobtanium could not be obtained';
+	}
+
 	//~10% chance
 	if ( Math.random() <= 0.1 ) {
 		finish( 'That dude sucks' );
@@ -101,8 +105,7 @@ function normalize_stats ( stats ) {
 	}
 	else {
 		stats.ratio =
-			Math.ratio( stats.question_count, stats.answer_count )
-			.maxDecimal( 4 );
+			Math.ratio( stats.question_count, stats.answer_count );
 	}
 
 	console.log( stats, '/stat normalized' );
@@ -112,9 +115,10 @@ function normalize_stats ( stats ) {
 function calc_extended_stats ( stats ) {
 	stats = Object.merge( stats.badge_counts, stats );
 
-	stats.avg_rep_post = stats.reputation
-		/
-		( stats.question_count + stats.answer_count );
+	stats.avg_rep_post =
+		( stats.reputation /
+		  ( stats.question_count + stats.answer_count )
+		).maxDecimal( 2 );
 
 	//1 / 0 === Infinity
 	if ( stats.avg_rep_post === Infinity ) {

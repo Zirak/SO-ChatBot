@@ -402,12 +402,13 @@ bot.Message = function ( text, msgObj ) {
 			//and a list of their names
 			var names = users.map(function ( container ) {
 				return container.getElementsByTagName( 'img' )[ 0 ]
-					.title.toLowerCase();
+					.title.toLowerCase().replace( /\s/g, '' );
 			});
 
-			var idx = names.indexOf( username.toString().toLowerCase() );
+			var idx = names.indexOf(
+				username.toString().toLowerCase().replace( /\s/g, '' ) );
 			if ( idx < 0 ) {
-				return undefined;
+				return -1;
 			}
 
 			return Number( ids[idx] );

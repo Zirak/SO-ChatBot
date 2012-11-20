@@ -703,12 +703,13 @@ bot.Message = function ( text, msgObj ) {
 			//and a list of their names
 			var names = users.map(function ( container ) {
 				return container.getElementsByTagName( 'img' )[ 0 ]
-					.title.toLowerCase();
+					.title.toLowerCase().replace( /\s/g, '' );
 			});
 
-			var idx = names.indexOf( username.toString().toLowerCase() );
+			var idx = names.indexOf(
+				username.toString().toLowerCase().replace( /\s/g, '' ) );
 			if ( idx < 0 ) {
-				return undefined;
+				return -1;
 			}
 
 			return Number( ids[idx] );
@@ -1340,26 +1341,29 @@ var commands = {
 	},
 
 	ban : function ( args ) {
-		var msg = '';
-		args.parse().map(function ( usrid ) {
-			var id = Number( usrid );
+		var msg = [];
+		args.parse().map( getID ).forEach( ban );
+
+		return msg.join( ' ' );
+
+		function getID ( usrid ) {
 			//name provided instead of id
-			if ( /^\d+$/.test(usrid) ) {
-				id = args.findUserid( usrid );
+			if ( /\D/.test(usrid) ) {
+				usrid = args.findUserid( usrid.replace(/^@/, '') );
 			}
 
-			if ( !id ) {
-				msg += 'Cannot find user ' + usrid + '. ';
+			var id = Number( usrid );
+			if ( id < 0 ) {
+				msg.push( 'Cannot find user ' + usrid + '.' );
+				id = -1;
 			}
 			else if ( bot.isOwner(id) ) {
-				msg += 'Cannot mindjail owner ' + usrid + '. ';
+				msg.push( 'Cannot mindjail owner ' + usrid + '.' );
 				id = -1;
 			}
 
 			return id;
-		}).forEach( ban );
-
-		return msg;
+		}
 
 		function ban ( id ) {
 			if ( id < 0 ) {
@@ -1367,40 +1371,47 @@ var commands = {
 			}
 
 			if ( bot.banlist.contains(id) ) {
-				msg += 'User ' + id + ' already in mindjail. ';
+				msg.push( 'User ' + id + ' already in mindjail.' );
 			}
 			else {
 				bot.banlist.add( id );
-				msg += 'User ' + id + ' added to mindjail. ';
+				msg.push( 'User ' + id + ' added to mindjail.');
 			}
 		}
 	},
 
 	unban : function ( args ) {
-		var msg = '';
-		args.parse().map(function ( usrid ) {
-			var id = Number( usrid );
+		var msg = [];
+		args.parse().map( getID ).forEach( unban );
+
+		return msg.join( ' ' );
+
+		function getID ( usrid ) {
 			//name provided instead of id
-			if ( /^\d+$/.test(usrid) ) {
-				id = args.findUserid( usrid );
+			if ( /\D/.test(usrid) ) {
+				usrid = args.findUserid( usrid.replace(/^@/, '') );
 			}
 
-			if ( !id ) {
-				msg += 'Cannot find user ' + usrid + '. ';
+			var id = Number( usrid );
+			if ( id < 0 ) {
+				msg.push( 'Cannot find user ' + usrid + '.' );
+				id = -1;
+			}
+			else if ( bot.isOwner(id) ) {
+				msg.push( 'Cannot mindjail owner ' + usrid + '.' );
+				id = -1;
 			}
 
-			return Number( id );
-		}).forEach( unban );
-
-		return msg;
+			return id;
+		}
 
 		function unban ( id ) {
 			if ( !bot.banlist.contains(id) ) {
-				msg += 'User ' + id + ' isn\'t in mindjail. ';
+				msg.push( 'User ' + id + ' isn\'t in mindjail.' );
 			}
 			else {
 				bot.banlist.remove( id );
-				msg += 'User ' + id + ' freed from mindjail. ';
+				msg.push( 'User ' + id + ' freed from mindjail.' );
 			}
 		}
 	},
@@ -1529,7 +1540,7 @@ var commands = {
 		if ( !(/^\d+$/.test(usrid)) ) {
 			id = args.findUserid( usrid );
 
-			if ( !id ) {
+			if ( id < 0 ) {
 				return 'Can\'t find user ' + usrid + ' in this chatroom.';
 			}
 		}
@@ -3530,6 +3541,10 @@ function stat ( msg, cb ) {
 		id = msg.findUserid( id );
 	}
 
+	if ( id < 0 ) {
+		return 'Unobtanium could not be obtained';
+	}
+
 	//~10% chance
 	if ( Math.random() <= 0.1 ) {
 		finish( 'That dude sucks' );
@@ -3606,8 +3621,7 @@ function normalize_stats ( stats ) {
 	}
 	else {
 		stats.ratio =
-			Math.ratio( stats.question_count, stats.answer_count )
-			.maxDecimal( 4 );
+			Math.ratio( stats.question_count, stats.answer_count );
 	}
 
 	console.log( stats, '/stat normalized' );
@@ -3617,9 +3631,10 @@ function normalize_stats ( stats ) {
 function calc_extended_stats ( stats ) {
 	stats = Object.merge( stats.badge_counts, stats );
 
-	stats.avg_rep_post = stats.reputation
-		/
-		( stats.question_count + stats.answer_count );
+	stats.avg_rep_post =
+		( stats.reputation /
+		  ( stats.question_count + stats.answer_count )
+		).maxDecimal( 2 );
 
 	//1 / 0 === Infinity
 	if ( stats.avg_rep_post === Infinity ) {
