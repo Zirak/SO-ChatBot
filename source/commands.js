@@ -43,7 +43,7 @@ var commands = {
 
 	refresh : function() {
 		window.location.reload();
-        },
+    },
 
 	forget : function ( args ) {
 		var name = args.toLowerCase(),
@@ -764,7 +764,7 @@ var descriptions = {
 
 	die  : 'Kills the bot',
 
-        refresh : 'Reloads the browser window for the bot',
+	refresh : 'Reloads the browser window for the bot',
 
 	forget : 'Forgets a given command. `/forget cmdName`',
 

@@ -1324,6 +1324,10 @@ var commands = {
 		return 'You killed me!';
 	},
 
+	refresh : function() {
+		window.location.reload();
+    },
+
 	forget : function ( args ) {
 		var name = args.toLowerCase(),
 			cmd = bot.getCommand( name );
@@ -2043,6 +2047,8 @@ var descriptions = {
 
 	die  : 'Kills the bot',
 
+	refresh : 'Reloads the browser window for the bot',
+
 	forget : 'Forgets a given command. `/forget cmdName`',
 
 	ban : 'Bans a user from using a bot. `/ban usr_id|usr_name`',
@@ -2092,7 +2098,7 @@ Object.keys( commands ).forEach(function ( cmdName ) {
 });
 
 //only allow specific users to use certain commands
-[ 'die', 'live', 'ban', 'unban' ].forEach(function ( cmdName ) {
+[ 'die', 'live', 'ban', 'unban', 'refresh' ].forEach(function ( cmdName ) {
 	bot.commands[ cmdName ].permissions.use = bot.owners;
 });
 
