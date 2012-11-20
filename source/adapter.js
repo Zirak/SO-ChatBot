@@ -245,6 +245,9 @@ var output = bot.adapter.out = {
 			else if ( xhr.status === 500 ) {
 				output.add( 'Server error (status 500) occured', roomid );
 			}
+			else {
+				IO.fire( 'sendoutput', xhr );
+			}
 		}
 	},
 
