@@ -1,59 +1,61 @@
 body {
-   background-image: url(http://subtlepatterns.subtlepatterns.netdna-cdn.com/patterns/stressed_linen.png);      
-   background-position: initial initial; 
-   background-repeat: initial initial;
-   font-family: Tahoma;
+	background-image : url(
+		http://subtlepatterns.subtlepatterns.netdna-cdn.com/patterns/stressed_linen.png);
+	background-position : initial initial;
+	background-repeat : initial initial;
+	font-family : Tahoma;
 }
 .container {
-   height: 100%;
+	height : 100%;
 }
 .chat-wrapper {
-   padding: 4px;
+	padding : 4px;
 }
 .inputs-wrapper {
-   position: fixed;
-   bottom: 0px;
-   left: 0px;
-   height: 40px;
-   width: 100%;
-   background-color: #1A1A1A;
+	position : fixed;
+	bottom : 0px;
+	left : 0px;
+	height : 40px;
+	width : 100%;
+	background-color : #1A1A1A;
 }
 .inputs {
-   margin: 4px;
-   white-space: nowrap;
+	margin : 4px;
+	white-space : nowrap;
 }
 #input {
-   width: 65%;
-   min-width: 224px;
-   margin-left: 4px;
+	width : 65%;
+	min-width : 224px;
+	margin-left : 4px;
 }
 .inputs input, .inputs button {
-   padding: 4px; 
+	padding : 4px;
 }
 
 .message {
-   background-image: url(http://subtlepatterns.subtlepatterns.netdna-cdn.com/patterns/low_contrast_linen.png);
-   background-position: initial initial; 
-   background-repeat: initial initial;
-   padding: 4px;
-   border-radius: 3px;
-   margin-bottom: 6px;
-   color: green;
+	background-image : url(
+		http://subtlepatterns.subtlepatterns.netdna-cdn.com/patterns/low_contrast_linen.png);
+	background-position : initial initial;
+	background-repeat : initial initial;
+	padding : 4px;
+	border-radius : 3px;
+	margin-bottom : 6px;
+	color : green;
 }
 .message .text {
-   display: inline-block; /* inline causes too much wrap, inline block causes full line breaks.... fml */
-   margin-top: 4px;
-   line-height: 22px;
+	display : inline-block; /* inline causes too much wrap, inline block causes full line breaks.... fml */
+	margin-top : 4px;
+	line-height : 22px;
 }
-.ident { 
-   vertical-align: top;
-   margin-right: 16px;    
+.ident {
+	vertical-align : top;
+	margin-right : 16px;
 }
 .fork {
-   float: right;
-   line-height: 32px;
+	float : right;
+	line-height : 32px;
 }
-a, a:active, a:visited {
-   color: white;
-   text-decoration: none;
+a, a :active, a :visited {
+	color : white;
+	text-decoration : none;
 }
