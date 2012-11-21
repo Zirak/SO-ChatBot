@@ -110,3 +110,5 @@ IO.register('afteroutput', output.send, output);
 function $D(x) {
     return x;
 }
+
+bot.adapter.in.elem.focus();
