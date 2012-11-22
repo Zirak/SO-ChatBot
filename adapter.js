@@ -12,9 +12,9 @@ bot.adapter = {
 	reply      : $D,
 	directreply: $D,
 
-	//these should be rewritten
-	codify : $D,
-	link   : $D
+	//h4x :D
+	codify : bot.adapter.codify,
+	link   : bot.adapter.link
 
 };
 
@@ -102,8 +102,7 @@ output.format = {
 	message : function ( md ) {
 		var elem = document.createElement( 'div' );
 		elem.className = 'text';
-		//elem.appendChild( mini_md(md) );
-		elem.textContent = md;
+		elem.appendChild( mini_md.parse(md) );
 		return elem;
 	},
 
@@ -119,15 +118,92 @@ bot.adapter.in.elem.focus();
 bot.adapter.in.init();
 output.loopage();
 
-
 IO.register('output', output.build, output);
 IO.register('afteroutput', output.send, output);
 
-function mini_md ( message ) {
-	//I'll do it later...already have the logic, too lazy to write
-	return message;
-/(^|\s)(\b(https?|ftp):\/\/[\-A-Z0-9+\u0026@#\/%?=~_|!:,.;]*[\-A-Z0-9+\u0026@#\/%=~_|])/gi, "$1<a href='$2'>$2</a>"
-}
+var mini_md = {
+	tab  : '    ',
+	frag : null,
+	link_re : /\[(.+)\]\(((?:https?|ftp):\/\/.+\..+)\)/g,
+
+	parse : function ( message ) {
+		this.frag = document.createDocumentFragment();
+		this.message = this.untabify( message );
+
+		//code check
+		console.log( this.message );
+		if ( this.message.slice(0, 4) === this.tab ) {
+			this.codify();
+			return this.frag;
+		}
+
+		var linked = this.link_re.break( this.message, this.replace.bind(this) );
+
+		if ( !linked ) {
+			this.append_text( 0 );
+		}
+		return this.frag;
+	},
+
+	codify : function () {
+		var code = document.createElement( 'pre' );
+		code.textContent = this.message;
+
+		this.frag.appendChild( code );
+	},
+
+	replace : function ( groups, prev, begin ) {
+		console.log( arguments );
+		this.append_text( prev, begin );
+
+		if ( groups[0] ) {
+			this.append_link( groups[1], groups[2] );
+		}
+	},
+
+	append_link : function ( text, href ) {
+		var link = document.createElement( 'a' );
+		link.textContent = text;
+		link.href = href ? href : text;
+
+		this.frag.appendChild( link );
+	},
+
+	append_text : function ( begin, end ) {
+		console.log( begin, end );
+		var node;
+		if ( begin !== end ) {
+			node = document.createTextNode();
+			node.data = this.message.slice( begin, end );
+
+			this.frag.appendChild( node );
+		}
+	},
+
+	untabify : function ( text ) {
+		return text.replace( /\t/g, this.tab );
+	}
+};
+
+RegExp.prototype.break = function ( str, fun ) {
+	var last = 0, matched = false;
+	str.replace( this, cb );
+
+	if ( matched ) {
+		fun.call( null, [], last );
+	}
+	return matched;
+
+	function cb ( match ) {
+		matched = true;
+		var args = [].slice.call( arguments ),
+			groups = args.slice( 0, -2 ),
+			offset = args[ args.length - 2 ];
+
+		fun.call( null, groups, last, offset );
+		last = offset + match.length;
+	}
+};
 
 function $D ( x ) {
 	return x;
