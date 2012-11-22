@@ -3,39 +3,39 @@ var global = this;
 /*most extra functions could be possibly unsafe*/
 var whitey = {
 	'self'               : 1,
-    'onmessage'          : 1,
-    'postMessage'        : 1,
-    'global'             : 1,
-    'whitey'             : 1, /*look mom, I'm a whitelist, containing itself!*/
-    'eval'               : 1,
-    'Array'              : 1,
-    'Boolean'            : 1,
-    'Date'               : 1,
-    'Function'           : 1,
-    'Number'             : 1,
-    'Object'             : 1,
-    'RegExp'             : 1,
-    'String'             : 1,
-    'Error'              : 1,
-    'EvalError'          : 1,
-    'RangeError'         : 1,
-    'ReferenceError'     : 1,
-    'SyntaxError'        : 1,
-    'TypeError'          : 1,
-    'URIError'           : 1,
-    'decodeURI'          : 1,
-    'decodeURIComponent' : 1,
-    'encodeURI'          : 1,
-    'encodeURIComponent' : 1,
-    'isFinite'           : 1,
-    'isNaN'              : 1,
-    'parseFloat'         : 1,
-    'parseInt'           : 1,
-    'Infinity'           : 1,
-    'JSON'               : 1,
-    'Math'               : 1,
-    'NaN'                : 1,
-    'undefined'          : 1
+	'onmessage'          : 1,
+	'postMessage'        : 1,
+	'global'             : 1,
+	'whitey'             : 1, /*look mom, I'm a whitelist, containing itself!*/
+	'eval'               : 1,
+	'Array'              : 1,
+	'Boolean'            : 1,
+	'Date'               : 1,
+	'Function'           : 1,
+	'Number'             : 1,
+	'Object'             : 1,
+	'RegExp'             : 1,
+	'String'             : 1,
+	'Error'              : 1,
+	'EvalError'          : 1,
+	'RangeError'         : 1,
+	'ReferenceError'     : 1,
+	'SyntaxError'        : 1,
+	'TypeError'          : 1,
+	'URIError'           : 1,
+	'decodeURI'          : 1,
+	'decodeURIComponent' : 1,
+	'encodeURI'          : 1,
+	'encodeURIComponent' : 1,
+	'isFinite'           : 1,
+	'isNaN'              : 1,
+	'parseFloat'         : 1,
+	'parseInt'           : 1,
+	'Infinity'           : 1,
+	'JSON'               : 1,
+	'Math'               : 1,
+	'NaN'                : 1,
+	'undefined'          : 1
 };
 
 [ global, global.__proto__ ].forEach(function ( obj ) {
@@ -98,7 +98,7 @@ Object.defineProperty( Array.prototype, 'join', {
 	self.onmessage = function ( event ) {
 		var jsonStringify = JSON.stringify, /*backup*/
 			result = exec( event.data.code );
-
+			
 		/*JSON.stringify does not like functions, errors or undefined*/
 		var stringify = function ( input ) {
 			var type = ( {} ).toString.call( input ).slice( 8, -1 ),
@@ -121,6 +121,9 @@ Object.defineProperty( Array.prototype, 'join', {
 			}
 			else if ( input === undefined ) {
 				output = 'undefined';
+			}
+			else {
+				output = input;
 			}
 
 			return jsonStringify( output );

@@ -230,6 +230,8 @@ var bot = window.bot = {
 	}
 };
 
+//#build eval.js
+
 bot.banlist = [];
 bot.banlist.contains = function ( item ) {
 	return this.indexOf( item ) >= 0;
@@ -244,61 +246,6 @@ bot.banlist.remove = function ( item ) {
 	}
 	else {
 		return null;
-	}
-};
-
-//execute arbitrary js code in a relatively safe environment
-bot.eval = function ( msg ) {
-	var timeout,
-		worker = new Worker( 'codeWorker.js' );
-
-	worker.onmessage = function ( evt ) {
-		clearTimeout( timeout );
-		finish( dressUpAnswer(evt.data) );
-	};
-
-	worker.onerror = function ( error ) {
-		clearTimeout( timeout );
-		finish( error.toString() );
-	};
-
-	worker.postMessage({
-		code : msg.content.substr( 1 )
-	});
-
-	timeout = window.setTimeout(function() {
-		finish( 'Maximum execution time exceeded' );
-	}, 50 );
-
-	function finish ( result ) {
-		worker.terminate();
-		msg.directreply( result );
-	}
-
-	function dressUpAnswer ( answerObj ) {
-		var answer = answerObj.answer,
-			log = answerObj.log,
-			result;
-
-		result = snipAndCodify( answer );
-
-		if ( log && log.length ) {
-			result += ' Logged: ' + snipAndCodify( log ) + '';
-		}
-
-		return result;
-	}
-	function snipAndCodify ( str ) {
-		var ret;
-
-		if ( str.length > 400 ) {
-			ret = '(snip) `' +  str.slice(0, 400) + '`';
-		}
-		else {
-			ret = '`' + str +'`';
-		}
-
-		return ret;
 	}
 };
 
