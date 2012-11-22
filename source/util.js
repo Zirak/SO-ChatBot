@@ -63,6 +63,15 @@ Object.defineProperty( Array.prototype, 'first', {
 	writable : true
 });
 
+Object.defineProperty( Array.prototype, 'random', {
+	value : function () {
+		return this[ Math.floor(Math.random() * this.length) ];
+	},
+
+	configurable : true,
+	writable : true
+});
+
 Function.prototype.memoize = function () {
 	var cache = Object.create( null ), fun = this;
 

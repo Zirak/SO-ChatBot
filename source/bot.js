@@ -90,10 +90,10 @@ var bot = window.bot = {
 		}
 
 		if ( !cmdObj.canUse(msg.get('user_id')) ) {
-			msg.reply(
-				'You do not have permission to use the command ' +
-					commandName
-			);
+			msg.reply([
+				'You do not have permission to use the command ' + commandName,
+				'I\'m afraid I can\'t let you do that, ' + msg.get('user_name')
+			].random());
 			return;
 		}
 
