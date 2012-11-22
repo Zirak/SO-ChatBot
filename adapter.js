@@ -124,14 +124,13 @@ IO.register('afteroutput', output.send, output);
 var mini_md = {
 	tab  : '    ',
 	frag : null,
-	link_re : /\[(.+)\]\(((?:https?|ftp):\/\/.+\..+)\)/g,
+	link_re : /\[(.+?)\]\(((?:https?|ftp):\/\/.+?\..+?)\)/g,
 
 	parse : function ( message ) {
 		this.frag = document.createDocumentFragment();
 		this.message = this.untabify( message );
 
 		//code check
-		console.log( this.message );
 		if ( this.message.slice(0, 4) === this.tab ) {
 			this.codify();
 			return this.frag;
@@ -153,7 +152,6 @@ var mini_md = {
 	},
 
 	replace : function ( groups, prev, begin ) {
-		console.log( arguments );
 		this.append_text( prev, begin );
 
 		if ( groups[0] ) {
@@ -170,7 +168,6 @@ var mini_md = {
 	},
 
 	append_text : function ( begin, end ) {
-		console.log( begin, end );
 		var node;
 		if ( begin !== end ) {
 			node = document.createTextNode();
