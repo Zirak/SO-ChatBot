@@ -25,6 +25,10 @@ var commands = {
 		return bot.callListeners( msg );
 	},
 
+	eval : function ( msg ) {
+		return bot.eval( msg );
+	},
+
 	live : function () {
 		if ( !bot.stopped ) {
 			return 'I\'m not dead! Honest!';
