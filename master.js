@@ -1579,11 +1579,17 @@ var commands = {
 
 	purgecommands : function ( args ) {
 		var id = args.get( 'user_id' );
-		Object.keys( bot.commands ).filter( filterer ).invoke( 'del' );
+		Object.keys( bot.commands ).map( mapper ).forEach( del );
+
 		return 'The deed has been done.';
 
-		function filterer ( cmd ) {
-			return cmd.learned && cmd.canDel( id );
+		function mapper ( cmdName ) {
+			return bot.commands[ cmdName ];
+		}
+		function del ( cmd ) {
+			if ( cmd.learned && cmd.canDel(id) ) {
+				cmd.del();
+			}
 		}
 	}
 };
@@ -6386,6 +6392,7 @@ function addCustomCommand ( command ) {
 			del : 'ALL'
 		}
 	});
+	cmd.learned = true;
 
 	cmd.del = (function ( old ) {
 		return function () {

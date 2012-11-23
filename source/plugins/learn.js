@@ -41,6 +41,7 @@ function addCustomCommand ( command ) {
 			del : 'ALL'
 		}
 	});
+	cmd.learned = true;
 
 	cmd.del = (function ( old ) {
 		return function () {
