@@ -38,8 +38,8 @@ code {
 }
 
 .message {
-	background-image : url(
-		http://subtlepatterns.subtlepatterns.netdna-cdn.com/patterns/low_contrast_linen.png);
+	background-image: url(
+		http://subtlepatterns.subtlepatterns.netdna-cdn.com/patterns/linen.png);
 	background-position : initial initial;
 	background-repeat : initial initial;
 	padding : 4px;
@@ -47,6 +47,11 @@ code {
 	margin-bottom : 6px;
 	color : green;
 }
+.message.bot {
+	background-image : url(
+		http://subtlepatterns.subtlepatterns.netdna-cdn.com/patterns/low_contrast_linen.png);
+}
+
 .message .text {
 	display : inline-block; /* inline causes too much wrap, inline block causes full line breaks.... fml */
 	margin-top : 4px;
@@ -54,7 +59,7 @@ code {
 }
 .ident {
 	vertical-align : top;
-	margin-right : 16px;
+	margin: 0 8px;
 }
 .fork {
 	float : right;

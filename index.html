@@ -5,24 +5,14 @@
 		<link href='style.css' type='text/css' rel='stylesheet' />
 	</head>
 	<body>
-		<div class="container">
+		<div class='container'>
+			<div class='chat-wrapper' id='chat'></div>
 
-			<div class="chat-wrapper" id="chat">
-				<div class="message">
-					<img class="ident" src="http://www.gravatar.com/avatar/2d7aced56559de2ecc26577fd1cba614?s=32&d=identicon&r=PG" />
-					<div class="text">Welcome to the chatbot demo! My name is Hal.</div>
-				</div>
-				<div class="message">
-					<img class="ident" src="http://www.gravatar.com/avatar/2d7aced56559de2ecc26577fd1cba614?s=32&d=identicon&r=PG" />
-					<div class="text">For interaction tips please type '/help',<br>and for a list of available commands try '/listCommands'.</div>
-				</div>
-			</div>
-
-			<div class="inputs-wrapper">
-				<div class="inputs">
-					<input type="text" name="input" id="input" placeholder="Type Command Here..." />
-					<button id="send" name="send">Send</button>
-					<span class="fork"><a href="https://github.com/Zirak/SO-ChatBot">Fork on GitHub</a></span>
+			<div class='inputs-wrapper'>
+				<div class='inputs'>
+					<input type='text' name='input' id='input' placeholder='Type Command Here...' />
+					<button id='send' name='send'>Send</button>
+					<span class='fork'><a href='https://github.com/Zirak/SO-ChatBot'>Fork on GitHub</a></span>
 				</div>
 			</div>
 
@@ -32,10 +22,11 @@
 			function fkey () { return arguments[0]; }
 			console.info( 'Ignore the following errors' );
 		</script>
-		<script src="https://raw.github.com/Zirak/SO-ChatBot/master/master.js"></script>
+		<script src='https://raw.github.com/Zirak/SO-ChatBot/master/master.js'></script>
 		<script>
 			console.info( 'Stop ignoring errors...naow' );
 		</script>
-		<script src="adapter.js"></script>
+		<script src='format.js'></script>
+		<script src='adapter.js'></script>
 	</body>
 </html>
