@@ -551,7 +551,7 @@ return function ( msg ) {
 	};
 
 	worker.postMessage({
-		code : msg.content.substr( 1 )
+		code : msg.content.replace( /^>/, '' )
 	});
 
 	timeout = window.setTimeout(function() {
@@ -592,6 +592,7 @@ return function ( msg ) {
 	}
 };
 }());
+
 
 bot.banlist = [];
 bot.banlist.contains = function ( item ) {
