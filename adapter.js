@@ -63,7 +63,6 @@ var output = bot.adapter.out = {
 		this.messages.push( obj.text );
 	},
 	send : function () {
-		var self = this;
 		this.messages.forEach( this.format.add, this.format );
 		this.messages = [];
 
@@ -123,58 +122,43 @@ IO.register('afteroutput', output.send, output);
 
 var mini_md = {
 	tab  : '    ',
-	frag : null,
-	link_re : /\[(.+?)\]\(((?:https?|ftp):\/\/.+?\..+?)\)/g,
+	link_re : /(https?:\/\/.+?\.[^\)\s]+(?!\())/g,
+	link_md : /\[(.+?)\]\(((?:https?|ftp):\/\/.+?\..+?)\)/g,
+	code_md : /`(.+?)`(?=$|\s)/g, //this will have to do...
 
 	parse : function ( message ) {
-		this.frag = document.createDocumentFragment();
 		this.message = this.untabify( message );
 
 		//code check
 		if ( this.message.slice(0, 4) === this.tab ) {
-			this.codify();
-			return this.frag;
+			return this.codify( null, this.message );
 		}
 
-		var linked = this.link_re.break( this.message, this.replace.bind(this) );
+		var frag = fragger.new();
+		frag.init( this.message );
 
-		if ( !linked ) {
-			this.append_text( 0 );
-		}
-		return this.frag;
+		frag.replace( this.link_md, this.link );
+		frag.replace( this.link_re, this.link );
+		frag.replace( this.code_md, this.codify  );
+
+		return frag.root;
 	},
 
-	codify : function () {
-		var code = document.createElement( 'pre' );
-		code.textContent = this.message;
-
-		this.frag.appendChild( code );
-	},
-
-	replace : function ( groups, prev, begin ) {
-		this.append_text( prev, begin );
-
-		if ( groups[0] ) {
-			this.append_link( groups[1], groups[2] );
-		}
-	},
-
-	append_link : function ( text, href ) {
+	link : function ( $0, text, href ) {
 		var link = document.createElement( 'a' );
 		link.textContent = text;
 		link.href = href ? href : text;
 
-		this.frag.appendChild( link );
+		return link;
 	},
 
-	append_text : function ( begin, end ) {
-		var node;
-		if ( begin !== end ) {
-			node = document.createTextNode();
-			node.data = this.message.slice( begin, end );
+	codify : function ( $0, text ) {
+		//$0 existing means it's a regexp match, not a block-codify
+		var tag = $0 ? 'code' : 'pre';
+		var code = document.createElement( tag );
+		code.textContent = text;
 
-			this.frag.appendChild( node );
-		}
+		return code;
 	},
 
 	untabify : function ( text ) {
@@ -182,23 +166,68 @@ var mini_md = {
 	}
 };
 
-RegExp.prototype.break = function ( str, fun ) {
-	var last = 0, matched = false;
-	str.replace( this, cb );
+var fragger = {
+	root : null,
+	cur_root : null, //ungh, but I can't find a better place...
+	last_index : null,
 
-	if ( matched ) {
-		fun.call( null, [], last );
-	}
-	return matched;
+	new : function () {
+		return Object.create( this );
+	},
 
-	function cb ( match ) {
-		matched = true;
-		var args = [].slice.call( arguments ),
-			groups = args.slice( 0, -2 ),
+	init : function ( text ) {
+		this.root = document.createDocumentFragment();
+		this.root.appendChild( document.createTextNode(text) );
+	},
+
+	replace : function ( re, fun ) {
+		this.last_index = 0;
+		var list = this.getTextNodes(),
+			bound = this.actual_replace.bind( this, fun ),
+			cur;
+
+		while ( cur = list.pop() ) {
+			this.cur_root = document.createDocumentFragment();
+
+			cur.data.replace( re, bound );
+			this.append_text( cur.data, this.last_index );
+
+			this.root.replaceChild( this.cur_root, cur );
+		}
+
+		return this.root;
+	},
+
+	actual_replace : function ( cb, match ) {
+		var args   = [].slice.call( arguments ),
+			str    = args[ args.length - 1 ],
 			offset = args[ args.length - 2 ];
 
-		fun.call( null, groups, last, offset );
-		last = offset + match.length;
+		this.append_text( str, this.last_index, offset );
+
+		var node = cb.apply( null, args.slice(1) );
+		if ( node && node.nodeType ) {
+			this.cur_root.appendChild( node );
+			this.last_index = offset + match.length;
+		}
+	},
+
+	append_text : function ( str, begin, end ) {
+		if ( begin === end ) {
+			return;
+		}
+		var node = document.createTextNode();
+		node.data = str.slice( begin, end );
+
+		this.cur_root.appendChild( node );
+	},
+
+	getTextNodes : function () {
+		return [].filter.call( this.root.childNodes, text_node_check );
+
+		function text_node_check ( node ) {
+			return node && node.nodeType === 3;
+		}
 	}
 };
 

@@ -5,6 +5,11 @@ body {
 	background-repeat : initial initial;
 	font-family : Tahoma;
 }
+code {
+	font-family : monospace;
+	white-space : pre;
+}
+
 .container {
 	height : 100%;
 }
