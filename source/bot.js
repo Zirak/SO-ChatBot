@@ -118,6 +118,15 @@ var bot = window.bot = {
 		return msg.startsWith( this.invocationPattern );
 	},
 
+	addCommand : function ( cmd ) {
+		if ( !cmd.exec || !cmd.del ) {
+			cmd = this.Command( cmd );
+		}
+
+		this.commands[ cmd.name ] = cmd;
+		this.commandDictionary.trie.add( cmd.name );
+	},
+
 	//gee, I wonder what this will return?
 	commandExists : function ( cmdName ) {
 		return this.commands.hasOwnProperty( cmdName );
@@ -131,8 +140,7 @@ var bot = window.bot = {
 		}
 		//set the error margin according to the length
 		this.commandDictionary.maxCost = Math.floor(
-			cmdName.length / 5 + 1
-		);
+			cmdName.length / 5 + 1 );
 
 		var msg = 'Command ' + cmdName + ' does not exist.',
 		//find commands resembling the one the user entered
@@ -203,16 +211,6 @@ var bot = window.bot = {
 	directreply : function ( msg, msgObj ) {
 		var reply = this.adapter.directreply( msg, msgObj );
 		this.adapter.out.add( reply, msgObj.room_id );
-	},
-
-	//some awesome in function form
-	addCommand : function ( cmd ) {
-		if ( !cmd.exec || !cmd.del ) {
-			cmd = this.Command( cmd );
-		}
-
-		this.commands[ cmd.name ] = cmd;
-		this.commandDictionary.trie.add( cmd.name );
 	},
 
 	stoplog : false,
@@ -306,8 +304,6 @@ bot.Message = function ( text, msgObj ) {
 			);
 		},
 
-
-
 		//parse() parses the original message
 		//parse( true ) also turns every match result to a Message
 		//parse( msgToParse ) parses msgToParse
@@ -363,7 +359,7 @@ bot.Message = function ( text, msgObj ) {
 
 		codify : bot.adapter.codify.bind( bot.adapter ),
 		escape : bot.adapter.escape.bind( bot.adapter ),
-		link : bot.adapter.link.bind( bot.adapter ),
+		link   : bot.adapter.link.bind( bot.adapter ),
 
 		//retrieve a value from the original message object, or if no argument
 		// provided, the msgObj itself

@@ -22,8 +22,9 @@ $ node build.js no-adapter
 The result will be in `master.js` and `master.min.js`
 
 ###The Bot API###
-(or a very limited subset of)
-For a real cover, check the source code or `console.log(bot)`. Should be straightforward.
+(, a very short explanation of a limited subset of)
+
+For a real cover, check the source code or [this wiki page](https://github.com/Zirak/SO-ChatBot/wiki/Plugin-writing) or `console.log(bot)`. Should be straightforward.
 
 ```javascript
 //add a bot command
@@ -49,5 +50,3 @@ bot.listen(
     callbackFun
 );
 ```
-
-Callbacks receive a single paramete, the arguments, unless they're asynchronous, in which case they receive 2 (the second being a callback to optionally use.)

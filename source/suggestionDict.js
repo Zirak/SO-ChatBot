@@ -1,4 +1,4 @@
-//a Trie suggestion dictionary, made by Esailija
+//a Trie suggestion dictionary, made by Esailija (small fixes by God)
 // http://stackoverflow.com/users/995876/esailija
 //used in the "command not found" message to show you closest commands
 var SuggestionDictionary = (function () {
@@ -12,13 +12,11 @@ TrieNode.prototype.add = function( word ) {
 	var node = this, char, i = 0;
 
 	while( char = word.charAt(i++) ) {
-
-		if( !( char in node.children ) ) {
-			node.children[char] = new TrieNode();
+		if( !(char in node.children) ) {
+			node.children[ char ] = new TrieNode();
 		}
 
-		node = node.children[char];
-
+		node = node.children[ char ];
 	}
 
 	node.word = word;
@@ -26,12 +24,12 @@ TrieNode.prototype.add = function( word ) {
 
 //Having a small maxCost will increase performance greatly, experiment with
 //values of 1-3
-function SuggestionDictionary( maxCost ) {
-	if( !( this instanceof SuggestionDictionary ) ) {
+function SuggestionDictionary ( maxCost ) {
+	if( !(this instanceof SuggestionDictionary) ) {
 		throw new TypeError( "Illegal function call" );
 	}
 
-	maxCost = parseInt( maxCost, 10 );
+	maxCost = Number( maxCost );
 
 	if( isNaN( maxCost ) || maxCost < 1 ) {
 		throw new TypeError( "maxCost must be an integer > 1 " );
@@ -42,10 +40,9 @@ function SuggestionDictionary( maxCost ) {
 }
 
 SuggestionDictionary.prototype = {
-
 	constructor: SuggestionDictionary,
 
-	build: function( words ) {
+	build : function ( words ) {
 		if( !Array.isArray( words ) ) {
 			throw new TypeError( "Cannot build a dictionary from "+words );
 		}
@@ -57,18 +54,17 @@ SuggestionDictionary.prototype = {
 		}, this);
 	},
 
-	__sortfn: function( a, b ) {
+	__sortfn : function ( a, b ) {
 		return a[1] - b[1];
 	},
 
-	search: function( word ) {
+	search : function ( word ) {
 		word = word.valueOf();
 		var r;
 
 		if( typeof word !== "string" ) {
-			throw new TypeError( "Cannot search "+word );
+			throw new TypeError( "Cannot search " + word );
 		}
-
 		if( this.trie === undefined ) {
 			throw new TypeError( "Cannot search, dictionary isn't built yet" );
 		}
@@ -86,7 +82,7 @@ SuggestionDictionary.prototype = {
 	}
 };
 
-function range( x, y ) {
+function range ( x, y ) {
 	var r = [], i, l, start;
 
 	if( y === undefined ) {
@@ -106,57 +102,57 @@ function range( x, y ) {
 
 }
 
-function search( word, maxCost, trie ) {
+function search ( word, maxCost, trie ) {
 	var results = [],
 	currentRow = range( word.length + 1 );
 
 
 	Object.keys( trie.children ).forEach(function ( letter ) {
 		searchRecursive(
-			trie.children[letter], letter, word, currentRow, results, maxCost
-		);
+			trie.children[letter], letter, word,
+			currentRow, results, maxCost );
 	});
 
 	return results;
 }
 
 
-function searchRecursive( node, letter, word, previousRow, results, maxCost ) {
+function searchRecursive ( node, letter, word, previousRow, results, maxCost ) {
 	var columns = word.length + 1,
-	currentRow = [previousRow[0] + 1],
-	i, insertCost, deleteCost, replaceCost, last;
+		currentRow = [ previousRow[0] + 1 ],
+		i, insertCost, deleteCost, replaceCost, last;
 
 	for( i = 1; i < columns; ++i ) {
 
-		insertCost = currentRow[i-1] + 1;
-		deleteCost = previousRow[i] + 1;
+		insertCost = currentRow[ i-1 ] + 1;
+		deleteCost = previousRow[ i ] + 1;
 
-		if( word.charAt( i-1 ) !== letter ) {
-			replaceCost = previousRow[i-1]+1;
+		if( word.charAt(i-1) !== letter ) {
+			replaceCost = previousRow[ i-1 ]+1;
 
 		}
 		else {
-			replaceCost = previousRow[i-1];
+			replaceCost = previousRow[ i-1 ];
 		}
 
-		currentRow.push( Math.min( insertCost, deleteCost, replaceCost ) );
+		currentRow.push( Math.min(insertCost, deleteCost, replaceCost) );
 	}
 
-	last = currentRow[currentRow.length-1];
+	last = currentRow[ currentRow.length-1 ];
 	if( last <= maxCost && node.word !== null ) {
 		results.push( [node.word, last] );
 	}
 
-	if( Math.min.apply( Math, currentRow ) <= maxCost ) {
+	if( Math.min.apply(Math, currentRow) <= maxCost ) {
 		Object.keys( node.children ).forEach(function ( letter ) {
 			searchRecursive(
-				node.children[letter], letter, word, currentRow,
-				results, maxCost
-			);
+				node.children[letter], letter, word,
+				currentRow, results, maxCost );
 		});
 	}
 }
 
 return SuggestionDictionary;
 }());
+
 bot.commandDictionary = new SuggestionDictionary( 3 );
