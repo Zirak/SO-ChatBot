@@ -16,6 +16,9 @@ code {
 .chat-wrapper {
 	padding : 4px;
 }
+#chat {
+	padding-bottom: 45px; /* 5px gutter */
+}
 .inputs-wrapper {
 	position : fixed;
 	bottom : 0px;

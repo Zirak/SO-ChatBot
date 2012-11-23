@@ -73,7 +73,7 @@ var output = bot.adapter.out = {
 	send : function () {
 		this.messages.forEach( format.add, format );
 		this.messages = [];
-
+		window.scroll(0, document.height);
 		input.reset();
 	},
 
