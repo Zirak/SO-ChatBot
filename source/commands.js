@@ -276,6 +276,16 @@ var commands = {
 	listcommands : function () {
 		return 'Available commands: ' +
 			Object.keys( bot.commands ).join( ', ' );
+	},
+
+	purgecommands : function ( args ) {
+		var id = args.get( 'user_id' );
+		Object.keys( bot.commands ).filter( filterer ).invoke( 'del' );
+		return 'The deed has been done.';
+
+		function filterer ( cmd ) {
+			return cmd.learned && cmd.canDel( id );
+		}
 	}
 };
 
@@ -638,131 +648,14 @@ commands.mdn = function ( args, cb ) {
 };
 commands.mdn.async = true;
 
-commands.get = (function () {
-var types = {
-	answer : true,
-	question : true
-};
-var ranges = {
-	//the result array is in descending order, so it's "reversed"
-	first : function ( arr ) {
-		return arr[ arr.length - 1 ];
-	},
-
-	last : function ( arr ) {
-		return arr[ 0 ];
-	},
-
-	between : function ( arr ) {
-		//SO api takes care of this for us
-		return arr;
-	}
-};
-
-return function ( args, cb ) {
-	var parts = args.parse(),
-		type = parts[ 0 ] || 'answer',
-		plural = type + 's',
-
-		range = parts[ 1 ] || 'last',
-
-		usrid = parts[ 2 ];
-
-	//if "between" is given, fetch the correct usrid
-	// /get type between start end usrid
-	if ( range === 'between' ) {
-		usrid = parts[ 4 ];
-	}
-
-	//range is a number and no usrid, assume the range is the usrid, and
-	// default range to last
-	// /get type usrid
-	if ( !usrid && !isNaN(range) ) {
-		usrid = range;
-		range = 'last';
-	}
-
-	//if after all this usrid is falsy, assume the user's id
-	if ( !usrid ) {
-		usrid = args.get( 'user_id' );
-	}
-
-	bot.log( parts, 'get input' );
-
-	if ( !types.hasOwnProperty(type) ) {
-		return 'Invalid "getter" name ' + type;
-	}
-	if ( !ranges.hasOwnProperty(range) ) {
-		return 'Invalid range specifier ' + range;
-	}
-
-	var url = 'http://api.stackoverflow.com/1.1/users/' + usrid + '/' + plural,
-		params = {
-			sort : 'creation'
-		};
-
-	bot.log( url, params, '/get building url' );
-
-	if ( range === 'between' ) {
-		params.fromdate = Date.parse( parts[2] );
-		params.todate = Date.parse( parts[3] );
-
-		bot.log( url, params, '/get building url between' );
-	}
-
-	IO.jsonp({
-		url : url,
-		data : params,
-		fun : parseResponse
-	});
-
-	function parseResponse ( respObj ) {
-		//Une erreru! L'horreur!
-		if ( respObj.error ) {
-			args.reply( respObj.error.message );
-			return;
-		}
-
-		//get only the part we care about in the result, based on which one
-		// the user asked for (first, last, between)
-		//respObj will have an answers or questions property, based on what we
-		// queried for, in array form
-		var relativeParts = [].concat( ranges[range](respObj[plural]) ),
-			base = "http://stackoverflow.com/q/",
-			res;
-
-		bot.log( relativeParts.slice(), '/get parseResponse parsing' );
-
-		if ( relativeParts[0] ) {
-			//get the id(s) of the answer(s)/question(s)
-			res = relativeParts.map(function ( obj ) {
-				return base + ( obj[type + '_id'] || '' );
-			}).join( ' ' );
-		}
-		else {
-			res = 'User did not submit any ' + plural;
-		}
-		bot.log( res, '/get parseResponse parsed');
-
-		if ( cb && cb.call ) {
-			cb( res );
-		}
-		else {
-			args.directreply( res );
-		}
-	}
-};
-}());
-commands.get.async = true;
-
-
-
 var descriptions = {
 	help : 'Fetches documentation for given command, or general help article.' +
 		' `/help [cmdName]`',
 
 	listen : 'Forwards the message to the listen API (as if called without' +
 		'the /)',
+
+	eval : 'Forwards message to code-eval (as if the command / was a >)',
 
 	live : 'Resurrects the bot if it\'s down',
 
@@ -786,6 +679,8 @@ var descriptions = {
 
 	listcommands : 'This seems pretty obvious',
 
+	purgecommands : 'Deletes all user-taught commands.',
+
 	define : 'Fetches definition for a given word. `/define something`',
 
 	norris : 'Random chuck norris joke!',
@@ -798,12 +693,14 @@ var descriptions = {
 	tell : 'Redirect command result to user/message.' +
 		' /tell `msg_id|usr_name cmdName [cmdArgs]`',
 
-	mdn : 'Fetches mdn documentation. `/mdn what`',
+	mdn : 'Fetches mdn documentation. `/mdn what`'
+};
 
-	get : '', //I can't intelligibly explain this in a sentence
-
-	learn : 'Teach the bot a command.' +
-		' '
+//only allow owners to use certain commands
+var privilegedCommands = {
+	die : true, live : true,
+	ban : true, unban : true,
+	refresh : true, purgecommands : true
 };
 
 Object.keys( commands ).forEach(function ( cmdName ) {
@@ -811,16 +708,12 @@ Object.keys( commands ).forEach(function ( cmdName ) {
 		name : cmdName,
 		fun  : commands[ cmdName ],
 		permissions : {
-			del : 'NONE'
+			del : 'NONE',
+			use : privilegedCommands[ cmdName ] ? bot.owners : 'ALL'
 		},
 		description : descriptions[ cmdName ],
 		async : commands[ cmdName ].async
 	});
-});
-
-//only allow specific users to use certain commands
-[ 'die', 'live', 'ban', 'unban', 'refresh' ].forEach(function ( cmdName ) {
-	bot.commands[ cmdName ].permissions.use = bot.owners;
 });
 
 }());
