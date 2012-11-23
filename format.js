@@ -58,7 +58,7 @@ var mini_md = {
 	tab  : '    ',
 	link_re : /(https?:\/\/.+?\.[^\)\s]+(?!\())/g,
 	link_md : /\[(.+?)\]\(((?:https?|ftp):\/\/.+?\..+?)\)/g,
-	code_md : /`(.+?)`(?=$|\s)/g, //this will have to do...
+	code_md : /`(.+?)`/g, //this will have to do...
 
 	parse : function ( message ) {
 		this.message = this.untabify( message );
@@ -80,6 +80,7 @@ var mini_md = {
 
 	link : function ( $0, text, href ) {
 		var link = document.createElement( 'a' );
+		link.target = '_blank';
 		link.textContent = text;
 		link.href = href ? href : text;
 
