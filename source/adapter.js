@@ -2,7 +2,22 @@
 var linkTemplate = '[{text}]({url})';
 
 bot.adapter = {
-	roomid : ( /\d+/.exec(location) || [0] )[ 0 ],
+	roomid : null, fkey : null,
+
+	//not a necessary function, used in here to set some variables
+	init : function () {
+		var fkey = document.getElementById( 'fkey' );
+		if ( !fkey ) {
+			console.error( 'bot.adapter could not find fkey; aborting' );
+			return;
+		}
+		this.fkey = fkey.value;
+		this.roomid = /\d+/.exec(location)[ 0 ];
+
+		this.in.init();
+		this.out.init();
+	},
+
 	//a pretty crucial function. accepts the msgObj we know nothing about,
 	// and returns an object with these properties:
 	//  user_name, user_id, room_id, content
@@ -165,8 +180,11 @@ var polling = bot.adapter.in = {
 // and the room_id. everything else is up to the implementation.
 var output = bot.adapter.out = {
 	interval : polling.interval + 500,
-
 	messages : {},
+
+	init : function () {
+		this.loopage();
+	},
 
 	//add a message to the output queue
 	add : function ( msg, roomid ) {
@@ -254,6 +272,5 @@ IO.register( 'output', output.build, output );
 IO.register( 'afteroutput', output.send, output );
 
 //two guys walk into a bar. the bartender asks them "is this some kind of joke?"
-polling.init();
-output.loopage();
+bot.adapter.init();
 }());
