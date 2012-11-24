@@ -2,7 +2,7 @@
 var linkTemplate = '[{text}]({url})';
 
 bot.adapter = {
-	roomid : null, fkey : null,
+	roomid : null, fkey : null, site : null,
 
 	//not a necessary function, used in here to set some variables
 	init : function () {
@@ -13,6 +13,7 @@ bot.adapter = {
 		}
 		this.fkey = fkey.value;
 		this.roomid = /\d+/.exec(location)[ 0 ];
+		this.site = /chat\.(\w+)/.exec( location )[ 1 ];
 
 		this.in.init();
 		this.out.init();

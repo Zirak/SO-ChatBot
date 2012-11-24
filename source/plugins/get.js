@@ -1,8 +1,7 @@
 (function () {
 var types = {
-	answer : true,
-	question : true
-};
+	answer   : true,
+	question : true };
 var ranges = {
 	//the result array is in descending order, so it's "reversed"
 	first : function ( arr ) {
@@ -20,6 +19,8 @@ var ranges = {
 };
 
 function get ( args, cb ) {
+	//default:
+	// /get type range usrid
 	var parts = args.parse(),
 		type = parts[ 0 ] || 'answer',
 		plural = type + 's',
@@ -56,10 +57,13 @@ function get ( args, cb ) {
 		return 'Invalid range specifier ' + range;
 	}
 
-	var url = 'http://api.stackoverflow.com/1.1/users/' + usrid + '/' + plural,
-		params = {
-			sort : 'creation'
-		};
+	var url = 'http://api.stackexchange.com/2.1/users/' + usrid + '/' + plural;
+	var params = {
+		site : bot.adapter.site,
+		sort : 'creation',
+		//basically, only show answer/question id and their link
+		filter : '!BGS1(RNaKd_71l)9SkX3zg.ifSRSSy'
+	};
 
 	bot.log( url, params, '/get building url' );
 
@@ -71,15 +75,15 @@ function get ( args, cb ) {
 	}
 
 	IO.jsonp({
-		url : url,
+		url  : url,
 		data : params,
-		fun : parseResponse
+		fun  : parseResponse
 	});
 
 	function parseResponse ( respObj ) {
 		//Une erreru! L'horreur!
-		if ( respObj.error ) {
-			args.reply( respObj.error.message );
+		if ( respObj.error_message ) {
+			args.reply( respObj.error_message );
 			return;
 		}
 
@@ -87,17 +91,13 @@ function get ( args, cb ) {
 		// the user asked for (first, last, between)
 		//respObj will have an answers or questions property, based on what we
 		// queried for, in array form
-		var relativeParts = [].concat( ranges[range](respObj[plural]) ),
-			base = "http://stackoverflow.com/q/",
+		var posts = [].concat( ranges[range](respObj.items) ),
 			res;
 
-		bot.log( relativeParts.slice(), '/get parseResponse parsing' );
+		bot.log( posts.slice(), '/get parseResponse parsing' );
 
-		if ( relativeParts[0] ) {
-			//get the id(s) of the answer(s)/question(s)
-			res = relativeParts.map(function ( obj ) {
-				return base + ( obj[type + '_id'] || '' );
-			}).join( ' ' );
+		if ( posts.length ) {
+			res = makeUserResponse( posts );
 		}
 		else {
 			res = 'User did not submit any ' + plural;
@@ -110,6 +110,12 @@ function get ( args, cb ) {
 		else {
 			args.directreply( res );
 		}
+	}
+
+	function makeUserResponse( posts ) {
+		return posts.map(function ( post ) {
+			return post.link;
+		}).join ( ' ; ');
 	}
 };
 
