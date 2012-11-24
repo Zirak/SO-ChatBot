@@ -49,7 +49,7 @@ return function ( msg ) {
 		var ret;
 
 		if ( str.length > 400 ) {
-			ret = '(snip) `' +  str.slice(0, 400) + '`';
+			ret = '`' +  str.slice(0, 400) + '` (snip)';
 		}
 		else {
 			ret = '`' + str +'`';
