@@ -1,6 +1,5 @@
 (function () {
-var resps = [
-	'<3', ':D', 'yummy!', '*nom nom nom*' ],
+var resps = [ '<3', ':D', 'yummy!', '*nom nom nom*' ],
 	re = /^botsnack/;
 var botsnack = resps.random.bind( resps );
 

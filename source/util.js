@@ -124,7 +124,28 @@ Number.prototype.maxDecimal = function ( places ) {
 	var exponent = Math.pow( 10, places );
 
 	return Math.floor( this * exponent ) / exponent;
-}
+};
+
+//receives an (ordered) array of numbers, denoting ranges, returns the first
+// range it falls between. I suck at explaining, so:
+// 4..fallsAfter( [1, 2, 5] )  === 2
+// 4..fallsAfter( [0, 3] ) === 3
+Number.prototype.fallsAfter = function ( ranges ) {
+	ranges = ranges.slice();
+	var min = ranges.shift(), max,
+		n = this.valueOf();
+
+	for ( var i = 0, l = ranges.length; i < l; i++ ) {
+		max = ranges[ i ];
+
+		if ( n < max ) {
+			break;
+		}
+		min = max;
+	}
+
+	return min <= n ? min : null;
+};
 
 //calculates a:b to string form
 Math.ratio = function ( a, b ) {
