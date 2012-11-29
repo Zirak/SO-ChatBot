@@ -10,7 +10,9 @@ function learn ( args ) {
 	var command = {
 		name   : commandParts[ 0 ],
 		output : commandParts[ 1 ],
-		input  : commandParts[ 2 ] || '.*'
+		input  : commandParts[ 2 ] || '.*',
+		desc   : commandParts[ 3 ] ||
+			'User-taught command: ' + args.codify( command.output )
 	};
 
 	//a truthy value, unintuitively, means it isn't valid, because it returns
@@ -32,7 +34,7 @@ function learn ( args ) {
 function addCustomCommand ( command ) {
 	var cmd = bot.Command({
 		name : command.name,
-		description : 'User-taught command: ' + command.output,
+		description : command.desc,
 
 		fun : makeCustomCommand( command ),
 		permissions : {
@@ -115,7 +117,7 @@ bot.addCommand({
 	},
 
 	description : 'Teaches the bot a command. ' +
-		'`/learn cmdName cmdOutputMacro [cmdInputRegex]`'
+		'`/learn cmdName cmdOutputMacro [cmdInputRegex [description]]`'
 });
 
 loadCommands();
