@@ -664,7 +664,7 @@ var descriptions = {
 		' `/help [cmdName]`',
 
 	listen : 'Forwards the message to the listen API (as if called without' +
-		'the /)',
+		' the /)',
 
 	eval : 'Forwards message to code-eval (as if the command / was a >)',
 

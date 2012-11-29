@@ -309,7 +309,8 @@ if ( process.argv.indexOf('no-min') > -1 ) {
 
 var files = [
 	'./source/IO.js',
-	'./source/bot.js' ];
+	'./source/bot.js',
+	'./source/personality.js' ];
 function filter ( fileName ) {
 	return (
 		//only .js files

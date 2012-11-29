@@ -97,14 +97,21 @@ var bot = window.bot = {
 			return;
 		}
 
+		if ( this.personality.check(commandName) ) {
+			this.personality.command();
+			if ( this.personality.isABitch() ) {
+				msg.respond( this.personality.bitch() );
+			}
+		}
+
 		bot.log( cmdObj, 'parseCommand calling' );
 
 		var args = this.Message(
 			//+ 1 is for the / in the message
 			msg.slice( commandName.length + 1 ).trim(),
 			msg.get() );
-		var res = cmdObj.exec( args );
 
+		var res = cmdObj.exec( args );
 		if ( res ) {
 			msg.reply( res );
 		}
@@ -182,9 +189,7 @@ var bot = window.bot = {
 					msg.reply( resp );
 				}
 
-				if ( resp !== false ) {
-					fired = true;
-				}
+				fired = resp !== false;
 			}
 		});
 

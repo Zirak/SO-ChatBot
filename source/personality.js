@@ -1,3 +1,6 @@
+//warning: if you have more than 8 points of super-sentitive feminist delicacy,
+// don't read this file. treat it as a nice black box.
+
 //bitch in English is a noun, verb and adjective. interesting.
 bot.personality = {
 	bitchiness : 0,
@@ -15,13 +18,18 @@ bot.personality = {
 	stuff : {
 		0.7 : [ "Oh don't mind me, that isn't difficult at all..." ],
 		0.8 : [ "You don't appreciate me enough" ],
-		0.9 : [ "The occasional 'thanks' or 'I'm sorry' would be nice..." ],
+		0.9 : [ 'The occasional "thanks" or "I\'m sorry" would be nice...' ],
 		1   : [
 			"*sigh* Remember laughter? I don't. You ripped it out of me. " +
-				"Heartless bastard." ]
+				'Heartless bastard.' ]
 	},
 	//TODO: add special map for special times of the month
 	insanity : {},
+
+	okayCommands : { hangman : true, help : true },
+	check : function ( name ) {
+		return !this.okayCommands.hasOwnProperty( name );
+	},
 
 	bitch : function () {
 		return this.getResp( this.stuff );
@@ -30,11 +38,10 @@ bot.personality = {
 	command : function () {
 		this.bitchiness += this.getDB();
 	},
+	thank     : function () { return this.unbitch( this.thanks ); },
+	apologize : function () { return this.unbitch( this.apologies ); },
 
-	thank     : function () { this.unbitch( this.thanks ); },
-	apologize : function () { this.unbitch( this.apologies ); },
-
-	unbitch : function ( map ) {
+	unbitch : function ( map, delta ) {
 		var resp = this.getResp( map );
 
 		this.bitchiness -= ( delta || this.bitchiness );
@@ -47,7 +54,7 @@ bot.personality = {
 	},
 
 	isABitch : function () {
-		return this.bitchiness > 1;
+		return this.bitchiness >= 1;
 	},
 
 	looksLikeABitch : function () {
@@ -56,7 +63,7 @@ bot.personality = {
 
 	//db stands for "delta bitchiness"
 	getDB : function () {
-		return this.isThatTimeOfTheMonth() ? 0.1 : 0.05;
+		return this.isThatTimeOfTheMonth() ? 0.075 : 0.05;
 	},
 
 	isThatTimeOfTheMonth : function () {
@@ -65,3 +72,7 @@ bot.personality = {
 		return day < 2 || day > 27;
 	}
 };
+
+//you see the loophole?
+bot.listen( /thank(s| you)/, bot.personality.thank, bot.personality );
+bot.listen( /sorry/, bot.personality.apologize, bot.personality );
