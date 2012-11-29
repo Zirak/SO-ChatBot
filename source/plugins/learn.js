@@ -10,10 +10,13 @@ function learn ( args ) {
 	var command = {
 		name   : commandParts[ 0 ],
 		output : commandParts[ 1 ],
-		input  : commandParts[ 2 ] || '.*',
-		desc   : commandParts[ 3 ] ||
-			'User-taught command: ' + args.codify( command.output )
+		input  : commandParts[ 2 ] || '.*'
 	};
+	command.description = [
+		'User-taught command:',
+		commandParts[3] || '',
+		args.codify( command.output )
+	].join( ' ' );
 
 	//a truthy value, unintuitively, means it isn't valid, because it returns
 	// an error message
@@ -34,7 +37,7 @@ function learn ( args ) {
 function addCustomCommand ( command ) {
 	var cmd = bot.Command({
 		name : command.name,
-		description : command.desc,
+		description : command.description,
 
 		fun : makeCustomCommand( command ),
 		permissions : {
@@ -100,7 +103,8 @@ function saveCommand ( command ) {
 	storage[ command.name ] = JSON.stringify({
 		name   : command.name,
 		input  : command.input.source,
-		output : command.output
+		output : command.output,
+		description : command.description
 	});
 	localStorage.bot_learn = JSON.stringify( storage );
 }
