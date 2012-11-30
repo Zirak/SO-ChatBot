@@ -1,4 +1,4 @@
-var moo = (function () {
+var cowsay = (function () {
 
 var cowsay = {
 
@@ -157,11 +157,8 @@ function rightPad ( str, len, padder ) {
 }
 
 
-return function () {
-	return cowsay.moo.apply( cowsay, arguments );
-};
-
-}());
+return cowsay;
+}();
 
 bot.listen(
 	/cow(think|say)\s(?:([eT])=(.{0,2})\s)?(?:([eT])=(.{0,2})\s)?(.+)/,
@@ -170,20 +167,23 @@ bot.listen(
 		//the first item is the whole match, second item is the "think" or
 		// "say", last item is the message, we only want the "parameters"
 		var args = msg.matches.slice( 2, -1 ),
-			opts = {};
-
-		for ( var i = 0, len = args.length; i < len; i += 2 ) {
-			//if that capturing group got something,
-			if ( args[i] && args[i+1] ) {
-				//set that parameter
-				opts[ args[i] ] = args[ i + 1 ];
-			}
-		}
+			opts = getOpts();
 
 		//cowsay or cowthink?
 		opts.t = msg.matches[ 1 ] === 'think';
 
-		var cowreact = moo( msg.matches.slice(-1)[0], opts );
-		msg.respond( msg.codify(cowreact) );
+		var cowreact = cowsay.moo( msg.matches.slice(-1)[0], opts );
+		msg.send( msg.codify(cowreact) );
+
+		function getOpts () {
+			//'e=^^ T=vv would represent in capturing groups as:
+			// ['e', '^^', 'T', 'vv']
+			//so we go through the pairs
+			for ( var i = 0, len = args.length; i < len; i += 2 ) {
+				if ( args[i] && args[i+1] ) {
+					opts[ args[i] ] = args[ i + 1 ];
+				}
+			}
+		}
 	}
 );

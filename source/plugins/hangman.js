@@ -5,7 +5,7 @@ var randomWord = function ( cb ) {
 	IO.jsonp({
 		url : 'http://sleepy-bastion-8674.herokuapp.com/',
 		jsonpName : 'callback',
-		fun : complete
+		fun : complete //aaawwww yyeeaaahhhh
 	});
 
 	function complete ( resp ) {
@@ -14,7 +14,6 @@ var randomWord = function ( cb ) {
 };
 
 var game = {
-
 	//the dude is just a template to be filled with parts
 	//like a futuristic man. he has no shape. he has no identity. he's just a
 	// collection of mindless parts, to be assembled, for the greater good.
@@ -48,48 +47,39 @@ var game = {
 		this.msg = msg;
 
 		if ( this.end ) {
-			this.new();
+			this.new( msg );
 		}
 		else if ( msg.content ) {
 			return this.handleGuess( msg );
 		}
 	},
 
-	new : function () {
-		var that = this;
+	new : function ( msg ) {
+		var self = this;
+		randomWord( finish );
 
-		randomWord(function ( word ) {
+		function finish ( word ) {
 			bot.log( word + ' /hang random' );
-
 			game.word = word;
-			that.revealed = new Array( word.length + 1 ).join( '-' );
-			that.guesses = [];
-			that.guessNum = 0;
+			self.revealed = new Array( word.length + 1 ).join( '-' );
+			self.guesses = [];
+			self.guessNum = 0;
 
 			//oh look, another dirty hack...this one is to make sure the
 			// hangman is codified
-			that.guessMade = true;
-
-			that.register();
-		});
+			self.guessMade = true;
+			self.register();
+			this.receiveMessage( msg );
+		}
 	},
 
 	handleGuess : function ( msg ) {
 		var guess = msg.slice().toLowerCase();
 		bot.log( guess, 'handleGuess' );
 
-		if ( !this.validGuessRegex.test(guess) ) {
-			return 'Only alphanumeric and whitespace characters allowed';
-		}
-
-		//check if it was already submitted
-		if ( this.guesses.indexOf(guess) > -1 ) {
-			return guess + ' was already submitted';
-		}
-
-		//or if it's the wrong length
-		if ( guess.length > this.word.length ) {
-			return msg.codify(guess) + ' is longer than the phrase';
+		var err = this.checkGuess( guess );
+		if ( err ) {
+			return err;
 		}
 
 		//replace all occurences of the guess within the hidden word with their
@@ -107,15 +97,30 @@ var game = {
 		this.guesses.push( guess );
 		this.guessMade = true;
 
-		bot.log( guess, this.guessMade, 'handleGuess handled' );
+		bot.log( guess, 'handleGuess handled' );
 
-		//plain vanilla lose-win checks
+		//plain vanilla lose-win checks. yum yum yum.
 		if ( this.loseCheck() ) {
 			return this.lose();
 		}
-
 		if ( this.winCheck() ) {
 			return this.win();
+		}
+	},
+
+	checkGuess : function ( guess ) {
+		if ( !this.validGuessRegex.test(guess) ) {
+			return 'Only alphanumeric and whitespace characters allowed';
+		}
+
+		//check if it was already submitted
+		if ( this.guesses.indexOf(guess) > -1 ) {
+			return guess + ' was already submitted';
+		}
+
+		//or if it's the wrong length
+		if ( guess.length > this.word.length ) {
+			return bot.adapter.codify( guess ) + ' is longer than the phrase';
 		}
 	},
 
@@ -130,18 +135,19 @@ var game = {
 	//attach the hangman drawing to the already guessed list and to the
 	// revealed portion of the secret word
 	preparePrint : function () {
-		var that = this;
+		var self = this;
 
 		//replace the placeholders in the dude with body parts
 		var dude = this.dude.replace( /\d/g, function ( part ) {
-			return part > that.guessNum ? ' ' : that.parts[ part ];
+			return part > self.guessNum ? ' ' : self.parts[ part ];
 		});
 
-		var belowDude = this.guesses.sort().join( ', ' ) + '\n' + this.revealed;
-
+		var belowDude = this.guesses.sort().join( ', ' ) +
+			'\n' + this.revealed;
 		var hangy = this.msg.codify( dude + '\n' + belowDude );
+
 		bot.log( hangy, this.msg );
-		this.msg.respond( hangy );
+		this.msg.send( hangy );
 	},
 
 	//win the game
@@ -189,5 +195,4 @@ bot.addCommand({
 	fun : game.receiveMessage,
 	thisArg : game
 });
-
 }());

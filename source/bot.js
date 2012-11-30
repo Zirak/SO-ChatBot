@@ -100,7 +100,7 @@ var bot = window.bot = {
 		if ( this.personality.check(commandName) ) {
 			this.personality.command();
 			if ( this.personality.isABitch() ) {
-				msg.respond( this.personality.bitch() );
+				msg.send( this.personality.bitch() );
 			}
 		}
 
@@ -287,7 +287,7 @@ bot.Message = function ( text, msgObj ) {
 	ret.content = text;
 
 	var deliciousObject = {
-		respond : function ( resp ) {
+		send : function ( resp ) {
 			bot.adapter.out.add( resp, msgObj.room_id );
 		},
 

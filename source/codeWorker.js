@@ -54,7 +54,6 @@ var whitey = {
 	}); /*end while*/
 });
 
-
 Object.defineProperty( Array.prototype, 'join', {
 	writable: false,
 	configurable: false,
@@ -69,7 +68,6 @@ Object.defineProperty( Array.prototype, 'join', {
 			return old.apply( this, arguments );
 		};
 	}( Array.prototype.join ))
-
 });
 
 
