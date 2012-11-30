@@ -111,8 +111,9 @@ Object.defineProperty( Array.prototype, 'join', {
 				});
 			}
 			else if ( type === 'Object' ) {
-				output = Object.keys( input ).reduce(function ( key ) {
-					output[ key ] = stringify( input[key] );
+				output = Object.keys( input ).reduce(function ( ret, key ) {
+					ret[ key ] = stringify( input[key] );
+					return ret;
 				}, {} );
 			}
 			else if ( input === undefined ) {
