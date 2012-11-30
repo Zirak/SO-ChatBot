@@ -82,6 +82,7 @@ Object.defineProperty( Array.prototype, 'join', {
 			console._items.push.apply( console._items, arguments );
 		}
 	};
+	var p = console.log.bind( console );
 
 	function exec ( code ) {
 		var result;
@@ -98,40 +99,38 @@ Object.defineProperty( Array.prototype, 'join', {
 	self.onmessage = function ( event ) {
 		var jsonStringify = JSON.stringify, /*backup*/
 			result = exec( event.data.code );
-			
+
 		/*JSON.stringify does not like functions, errors or undefined*/
 		var stringify = function ( input ) {
 			var type = ( {} ).toString.call( input ).slice( 8, -1 ),
 				output;
 
-			if ( type === 'Function' || type === 'Error' ) {
-				output = input.toString();
-			}
-			else if ( type === 'Array' ) {
-				output = [];
-				input.forEach(function ( item, idx ) {
-					output[ idx ] = stringify( item );
+			if ( Array.isArray(input) ) {
+				output = input.map(function ( item ) {
+					return stringify( item );
 				});
 			}
 			else if ( type === 'Object' ) {
-				output = {};
-				Object.keys( input ).forEach(function ( key ) {
+				output = Object.keys( input ).reduce(function ( key ) {
 					output[ key ] = stringify( input[key] );
-				});
+				}, {} );
 			}
 			else if ( input === undefined ) {
 				output = 'undefined';
 			}
+			else if ( input === null ) {
+				output = null;
+			}
 			else {
-				output = input;
+				output = input.toString();
 			}
 
-			return jsonStringify( output );
+			return output;
 		};
 
 		postMessage({
-			answer : stringify( result ),
-			log    : stringify( console._items ),
+			answer : jsonStringify( stringify(result) ),
+			log    : jsonStringify( stringify(console._items) ),
 		});
 	};
 

@@ -120,8 +120,8 @@ bot.addCommand({
 		del : 'NONE'
 	},
 
-	description : 'Teaches the bot a command. ' +
-		'`/learn cmdName cmdOutputMacro [cmdInputRegex [description]]`'
+	description : 'Teaches me a command. ' +
+		'`/learn cmdName outputPattern [inputRegex [description]]`'
 });
 
 loadCommands();
