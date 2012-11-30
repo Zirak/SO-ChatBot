@@ -100,6 +100,8 @@ Object.defineProperty( Array.prototype, 'join', {
 		var jsonStringify = JSON.stringify, /*backup*/
 			result = exec( event.data.code );
 
+		var natives = { Number : true, String : true, Boolean : true };
+
 		/*JSON.stringify does not like functions, errors or undefined*/
 		var stringify = function ( input ) {
 			var type = ( {} ).toString.call( input ).slice( 8, -1 ),
@@ -122,6 +124,9 @@ Object.defineProperty( Array.prototype, 'join', {
 			else if ( input === null ) {
 				output = null;
 			}
+			else if ( type in natives ) {
+				output = input;
+			}
 			else {
 				output = input.toString();
 			}
@@ -131,7 +136,7 @@ Object.defineProperty( Array.prototype, 'join', {
 
 		postMessage({
 			answer : jsonStringify( stringify(result) ),
-			log    : jsonStringify( stringify(console._items) ),
+			log    : jsonStringify( stringify(console._items) ).slice(1, -1)
 		});
 	};
 
