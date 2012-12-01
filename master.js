@@ -4894,8 +4894,9 @@ var cowsay = {
 		this.tongue   = rightPad( opts.T || defs.T, 2 ).slice( 0, 2 );
 		this.line     = opts.t ? 'O' : '\\';
 		this.thinking = opts.t;
+		console.log( this.eyes, this.tongue );
 
-		this.message  = wordWrap( message, opts.W || defs.W );
+		this.message  = wordWrap( message, opts.W || defs.W ).trim();
 
 		//cowsay is actually the result of breeding a balloon and a cow
 		return this.makeBalloon() + this.makeCow();
@@ -4909,26 +4910,20 @@ var cowsay = {
 	},
 
 	makeBalloon : function () {
-		var message = this.message.trim().split( '\n' );
+		var lines = this.message.split( '\n' );
 
-		var longest = Math.max.apply(
-			Math,
-			message.map(function ( line ) {
-				return line.length;
-			})
-		),
-
-		//for the top and bottom lines of the thought bubble
-			boundaryOccurences = new Array( longest + 2 ),
-			topLine = boundaryOccurences.join( '_' ),
-			btmLine = boundaryOccurences.join( '-' ),
-
-			lineCount = message.length,
-		//the border of the speech bubble
+		var longest = lines.reduce( longestLine, 0 ),
+			lineCount = lines.length,
 			border = this.chooseBorders( lineCount );
 
-		//for every line of the message...
-		var balloon = message.map(function ( line, idx ) {
+		var balloon = lines.map( baloonLine );
+		var boundaryOccurences = new Array( longest + 2 )
+		balloon.unshift( ' ' + boundaryOccurences.join('_') );
+		balloon.push   ( ' ' + boundaryOccurences.join('-') );
+
+		return balloon.join( '\n' );
+
+		function baloonLine ( line, idx ) {
 			var padders;
 			//top left and top right
 			if ( idx === 0 ) {
@@ -4940,7 +4935,7 @@ var cowsay = {
 			}
 			//the wall
 			else {
-				padders = border.slice( -2 );
+				padders = border.slice( 2 );
 			}
 
 			//return the message, padded with spaces to the right as to fit
@@ -4950,12 +4945,10 @@ var cowsay = {
 				rightPad( line, longest ) + ' ' +
 				padders[ 1 ]
 			);
-		});
-
-		balloon.unshift( ' ' + topLine );
-		balloon.push   ( ' ' + btmLine );
-
-		return balloon.join( '\n' );
+		}
+		function longestLine ( max, line ) {
+			return line.length > max ? line.length : max;
+		}
 	},
 
 	//choose the borders to use for the balloon
@@ -4985,7 +4978,6 @@ var cowsay = {
 	}
 };
 
-
 function wordWrap ( str, len ) {
 	var lineLen = 0;
 	return str.split( ' ' ).reduce( handleWord, '' );
@@ -5003,13 +4995,9 @@ function wordWrap ( str, len ) {
 		return ret + word + ' ';
 	}
 }
-
 function rightPad ( str, len, padder ) {
 	padder = padder || ' ';
-	while ( str.length < len ) {
-		str += padder;
-	}
-	return str;
+	return ( str + Array(len).join(padder) ).slice( 0, len );
 }
 
 
@@ -5022,24 +5010,27 @@ bot.listen(
 	function ( msg ) {
 		//the first item is the whole match, second item is the "think" or
 		// "say", last item is the message, we only want the "parameters"
-		var args = msg.matches.slice( 2, -1 ),
-			opts = getOpts();
+		var opts = getOpts( msg.matches.slice(2, -1) );
 
 		//cowsay or cowthink?
 		opts.t = msg.matches[ 1 ] === 'think';
+		bot.log( opts, 'cowsay opts' );
 
-		var cowreact = cowsay.moo( msg.matches.slice(-1)[0], opts );
+		var cowreact = cowsay.moo( msg.matches.pop(), opts );
 		msg.send( msg.codify(cowreact) );
 
-		function getOpts () {
+		function getOpts ( args ) {
+			var ret = {};
 			//'e=^^ T=vv would represent in capturing groups as:
 			// ['e', '^^', 'T', 'vv']
 			//so we go through the pairs
 			for ( var i = 0, len = args.length; i < len; i += 2 ) {
 				if ( args[i] && args[i+1] ) {
-					opts[ args[i] ] = args[ i + 1 ];
+					ret[ args[i] ] = args[ i + 1 ];
 				}
 			}
+
+			return ret;
 		}
 	}
 );
