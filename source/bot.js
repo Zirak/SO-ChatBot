@@ -196,18 +196,6 @@ var bot = window.bot = {
 		return fired;
 	},
 
-	//the next two functions shouldn't be here, but as of yet no real adapter
-	// mechanism, so you could fit this bot into other chats, has been planned
-	reply : function ( msg, msgObj ) {
-		var reply = this.adapter.reply( msg, msgObj );
-		this.adapter.out.add( reply, msgObj.room_id );
-	},
-
-	directreply : function ( msg, msgObj ) {
-		var reply = this.adapter.directreply( msg, msgObj );
-		this.adapter.out.add( reply, msgObj.room_id );
-	},
-
 	stoplog : false,
 	log : function () {
 		if ( !this.stoplog ) {
@@ -291,18 +279,13 @@ bot.Message = function ( text, msgObj ) {
 			bot.adapter.out.add( resp, msgObj.room_id );
 		},
 
-		reply : function ( resp, usrname ) {
-			usrname = usrname || msgObj.user_name;
-
-			bot.reply( resp, Object.merge(msgObj, {user_name : usrname}) );
+		reply : function ( resp ) {
+			var prefix = bot.adapter.reply( msgObj );
+			this.send( prefix + ' ' + resp );
 		},
-		directreply : function ( resp, msgid ) {
-			msgid = msgid || msgObj.message_id;
-
-			bot.directreply(
-				resp,
-				Object.merge( msgObj, { message_id : msgid } )
-			);
+		directreply : function ( resp ) {
+			var prefix = bot.adapter.directreply( msgObj );
+			this.send( prefix + ' ' + resp );
 		},
 
 		//parse() parses the original message

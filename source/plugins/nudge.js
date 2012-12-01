@@ -2,8 +2,7 @@
 
 //collection of nudges; msgObj, time left and the message itself
 var nudges = [],
-	interval = bot.adapter &&
-		bot.adapter.in.interval || 5000;
+	interval = 100 * 60;
 
 function update () {
 	var now = Date.now();
@@ -23,16 +22,16 @@ function sendNudge ( nudge ) {
 	console.log( nudge, 'nudge fire' );
 	//check to see if the nudge was sent after a bigger delay than expected
 	//TODO: that ^
-	bot.reply( nudge.message, nudge.msgObj );
+	nudge.msg.reply( nudge.message );
 }
 setTimeout( update, interval );
 
 //now for the command itself
-function addNudge ( delay, msg, msgObj ) {
+function addNudge ( delay, message, msgObj ) {
 	var inMS;
-	console.log( delay, msg, '/nudge input' );
+	console.log( delay, message, '/nudge input' );
 
-	//interval will be one of these:
+	//interval will be one of these (where n is a number):
 	// nm  =>  n minutes
 	// n   =>  n minutes
 	//so erm...yeah. just parse the bitch
@@ -50,8 +49,8 @@ function addNudge ( delay, msg, msgObj ) {
 	//let's put an arbitrary comment here
 
 	var nudge = {
-		msgObj  : msgObj,
-		message : '*nudge*' + ( msg || '' ),
+		msg     : msgObj,
+		message : '*nudge* ' + message,
 		register: Date.now(),
 		time    : inMS
 	};
@@ -79,10 +78,10 @@ bot.listen(/(?:nudge|remind|poke)\s(?:me\s)?(?:in\s)?(\d+m?)\s?(.*)$/,
 
 function nudgeCommand ( args ) {
 	var props = args.parse();
-	return addNudge( props[0], props.slice(1).join(' '), args.get() );
+	return addNudge( props[0], props.slice(1).join(' '), args );
 }
 function nudgeListener ( args ) {
-	return addNudge( args.matches[1], args.matches[2], args.get() );
+	return addNudge( args.matches[1], args.matches[2], args );
 }
 
 }());

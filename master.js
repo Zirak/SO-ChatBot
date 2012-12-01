@@ -497,18 +497,6 @@ var bot = window.bot = {
 		return fired;
 	},
 
-	//the next two functions shouldn't be here, but as of yet no real adapter
-	// mechanism, so you could fit this bot into other chats, has been planned
-	reply : function ( msg, msgObj ) {
-		var reply = this.adapter.reply( msg, msgObj );
-		this.adapter.out.add( reply, msgObj.room_id );
-	},
-
-	directreply : function ( msg, msgObj ) {
-		var reply = this.adapter.directreply( msg, msgObj );
-		this.adapter.out.add( reply, msgObj.room_id );
-	},
-
 	stoplog : false,
 	log : function () {
 		if ( !this.stoplog ) {
@@ -655,18 +643,13 @@ bot.Message = function ( text, msgObj ) {
 			bot.adapter.out.add( resp, msgObj.room_id );
 		},
 
-		reply : function ( resp, usrname ) {
-			usrname = usrname || msgObj.user_name;
-
-			bot.reply( resp, Object.merge(msgObj, {user_name : usrname}) );
+		reply : function ( resp ) {
+			var prefix = bot.adapter.reply( msgObj );
+			this.send( prefix + ' ' + resp );
 		},
-		directreply : function ( resp, msgid ) {
-			msgid = msgid || msgObj.message_id;
-
-			bot.directreply(
-				resp,
-				Object.merge( msgObj, { message_id : msgid } )
-			);
+		directreply : function ( resp ) {
+			var prefix = bot.adapter.directreply( msgObj );
+			this.send( prefix + ' ' + resp );
 		},
 
 		//parse() parses the original message
@@ -2254,16 +2237,15 @@ bot.adapter = {
 		return msg.replace( /([`\*_\(\)\[\]])/g, '\\$1' );
 	},
 
-	//receives a msg and the msgObj, and returns a message which will be
-	// recognized as a reply to a user
-	reply : function ( msg, msgObj ) {
-		var usr = msgObj.user_name.replace( /\s/g, '' );
-		return '@' + usr + ' ' + msg;
+	//receives the msgObj, and returns a string recognized as a reply to the
+	// user
+	reply : function ( msgObj ) {
+		return '@' + msgObj.user_name.replace( /\s/g, '' );
 	},
-	//again, receives msg and msgObj, returns a message which is a reply to
-	// another message
-	directreply : function ( msg, msgObj ) {
-		return ':' + msgObj.message_id + ' ' + msg;
+	//receives msgObj, returns a string recognized as a reply to the specific
+	// message
+	directreply : function ( msgObj ) {
+		return ':' + msgObj.message_id;
 	},
 
 	//receives text and turns it into a codified version
@@ -4682,21 +4664,6 @@ function style_html(html_source, options) {
 
 ;
 (function () {
-var resps = [ '<3', ':D', 'yummy!', '*nom nom nom*' ],
-	re = /^botsnack/;
-var botsnack = resps.random.bind( resps );
-
-bot.listen( re, botsnack );
-IO.register( 'input', function ( msgObj ) {
-	if ( re.test(msgObj.content) ) {
-		bot.reply( botsnack(), msgObj );
-	}
-});
-
-}());
-
-;
-(function () {
 "use strict";
 
 var converters = {
@@ -5556,8 +5523,7 @@ loadCommands();
 
 //collection of nudges; msgObj, time left and the message itself
 var nudges = [],
-	interval = bot.adapter &&
-		bot.adapter.in.interval || 5000;
+	interval = 100 * 60;
 
 function update () {
 	var now = Date.now();
@@ -5577,16 +5543,16 @@ function sendNudge ( nudge ) {
 	console.log( nudge, 'nudge fire' );
 	//check to see if the nudge was sent after a bigger delay than expected
 	//TODO: that ^
-	bot.reply( nudge.message, nudge.msgObj );
+	nudge.msg.reply( nudge.message );
 }
 setTimeout( update, interval );
 
 //now for the command itself
-function addNudge ( delay, msg, msgObj ) {
+function addNudge ( delay, message, msgObj ) {
 	var inMS;
-	console.log( delay, msg, '/nudge input' );
+	console.log( delay, message, '/nudge input' );
 
-	//interval will be one of these:
+	//interval will be one of these (where n is a number):
 	// nm  =>  n minutes
 	// n   =>  n minutes
 	//so erm...yeah. just parse the bitch
@@ -5604,8 +5570,8 @@ function addNudge ( delay, msg, msgObj ) {
 	//let's put an arbitrary comment here
 
 	var nudge = {
-		msgObj  : msgObj,
-		message : '*nudge*' + ( msg || '' ),
+		msg     : msgObj,
+		message : '*nudge* ' + message,
 		register: Date.now(),
 		time    : inMS
 	};
@@ -5633,10 +5599,10 @@ bot.listen(/(?:nudge|remind|poke)\s(?:me\s)?(?:in\s)?(\d+m?)\s?(.*)$/,
 
 function nudgeCommand ( args ) {
 	var props = args.parse();
-	return addNudge( props[0], props.slice(1).join(' '), args.get() );
+	return addNudge( props[0], props.slice(1).join(' '), args );
 }
 function nudgeListener ( args ) {
-	return addNudge( args.matches[1], args.matches[2], args.get() );
+	return addNudge( args.matches[1], args.matches[2], args );
 }
 
 }());
