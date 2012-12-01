@@ -35,15 +35,15 @@ bot.adapter = {
 		return msg.replace( /([`\*_\(\)\[\]])/g, '\\$1' );
 	},
 
-	//receives the msgObj, and returns a string recognized as a reply to the
+	//receives a username, and returns a string recognized as a reply to the
 	// user
-	reply : function ( msgObj ) {
-		return '@' + msgObj.user_name.replace( /\s/g, '' );
+	reply : function ( usrname ) {
+		return '@' + usrname.replace( /\s/g, '' );
 	},
-	//receives msgObj, returns a string recognized as a reply to the specific
+	//receives a msgid, returns a string recognized as a reply to the specific
 	// message
-	directreply : function ( msgObj ) {
-		return ':' + msgObj.message_id;
+	directreply : function ( msgid ) {
+		return ':' + msgid;
 	},
 
 	//receives text and turns it into a codified version

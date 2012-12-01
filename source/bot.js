@@ -280,11 +280,11 @@ bot.Message = function ( text, msgObj ) {
 		},
 
 		reply : function ( resp ) {
-			var prefix = bot.adapter.reply( msgObj );
+			var prefix = bot.adapter.reply( msgObj.user_name );
 			this.send( prefix + ' ' + resp );
 		},
 		directreply : function ( resp ) {
-			var prefix = bot.adapter.directreply( msgObj );
+			var prefix = bot.adapter.directreply( msgObj.message_id );
 			this.send( prefix + ' ' + resp );
 		},
 
