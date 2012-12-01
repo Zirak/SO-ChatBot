@@ -97,42 +97,25 @@ Object.defineProperty( Array.prototype, 'join', {
 		var jsonStringify = JSON.stringify, /*backup*/
 			result = exec( event.data.code );
 
-		var natives = {
-			Number  : true, String : true,
-			Boolean : true, Null   : true };
-
 		/*JSON.stringify does not like functions, errors or undefined*/
-		var stringify = function ( input ) {
-			var type = ( {} ).toString.call( input ).slice( 8, -1 ),
+		var strung = { Function : true, Error : true, Undefined : true };
+		var reviver = function ( key, value ) {
+			var type = ( {} ).toString.call( value ).slice( 8, -1 ),
 				output;
 
-			if ( Array.isArray(input) ) {
-				output = input.map(function ( item ) {
-					return stringify( item );
-				});
-			}
-			else if ( type === 'Object' ) {
-				output = Object.keys( input ).reduce(function ( ret, key ) {
-					ret[ key ] = stringify( input[key] );
-					return ret;
-				}, {} );
-			}
-			else if ( input === undefined ) {
-				output = 'undefined';
-			}
-			else if ( type in natives ) {
-				output = input;
+			if ( type in strung ) {
+				output = '' + value;
 			}
 			else {
-				output = input.toString();
+				output = value;
 			}
 
 			return output;
 		};
 
 		postMessage({
-			answer : jsonStringify( stringify(result) ),
-			log    : jsonStringify( stringify(console._items) ).slice(1, -1)
+			answer : jsonStringify( result, reviver ),
+			log    : jsonStringify( console._items, reviver ).slice(1, -1)
 		});
 	};
 
