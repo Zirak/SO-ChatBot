@@ -70,7 +70,6 @@ Object.defineProperty( Array.prototype, 'join', {
 	}( Array.prototype.join ))
 });
 
-
 (function(){
 	"use strict";
 
@@ -85,7 +84,7 @@ Object.defineProperty( Array.prototype, 'join', {
 	function exec ( code ) {
 		var result;
 		try {
-			result = eval( '"use strict";\n' + code );
+			result = eval( '"use strict";undefined;\n' + code );
 		}
 		catch ( e ) {
 			result = e.toString();
@@ -98,7 +97,9 @@ Object.defineProperty( Array.prototype, 'join', {
 		var jsonStringify = JSON.stringify, /*backup*/
 			result = exec( event.data.code );
 
-		var natives = { Number : true, String : true, Boolean : true };
+		var natives = {
+			Number  : true, String : true,
+			Boolean : true, Null   : true };
 
 		/*JSON.stringify does not like functions, errors or undefined*/
 		var stringify = function ( input ) {
@@ -118,9 +119,6 @@ Object.defineProperty( Array.prototype, 'join', {
 			}
 			else if ( input === undefined ) {
 				output = 'undefined';
-			}
-			else if ( input === null ) {
-				output = null;
 			}
 			else if ( type in natives ) {
 				output = input;

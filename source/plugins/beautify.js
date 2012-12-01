@@ -8,8 +8,7 @@ function beautifyMsg ( msg ) {
 		lang = args.shift() || 'js';
 
 	lang = lang.toLowerCase();
-
-	console.log( id, lang, '/beautify input' );
+	bot.log( id, lang, '/beautify input' );
 
 	if ( ['html', 'css', 'js'].indexOf(lang) < 0 ) {
 		return help_message;
@@ -27,7 +26,7 @@ function beautifyMsg ( msg ) {
 	var code = containing_message
 			.getElementsByClassName( 'content' )[ 0 ].textContent;
 
-	console.log( code, '/beautify beautifying' );
+	bot.log( code, '/beautify beautifying' );
 
 	msg.send(
 		msg.codify( mormons[lang](code) ) );
@@ -35,7 +34,7 @@ function beautifyMsg ( msg ) {
 
 function fetch_message ( id, msg ) {
 	if ( !/^\d+$/.test(id) ) {
-		console.log( id, '/beautify fetch_message' );
+		bot.log( id, '/beautify fetch_message' );
 		return fetch_last_message( msg.findUserid(id) );
 	}
 
