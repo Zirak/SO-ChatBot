@@ -1859,7 +1859,7 @@ return function parse ( args, extraVars ) {
 
 commands.tell = (function () {
 
-var invalidCommands = { tell : true, forget : true };
+var invalidCommands = { tell : true, forget : true, ring : true };
 
 return function ( args ) {
 	var props = args.parse();
@@ -4664,6 +4664,22 @@ function style_html(html_source, options) {
 
 ;
 (function () {
+var resps = [
+	'<3', ':D', 'yummy!', '*nom nom nom*' ],
+	re = /^botsnack/;
+var botsnack = resps.random.bind( resps );
+
+bot.listen( re, botsnack );
+IO.register( 'input', function ( msgObj ) {
+	if ( re.test(msgObj.content) ) {
+		bot.reply( botsnack(), msgObj );
+	}
+});
+
+}());
+
+;
+(function () {
 "use strict";
 
 var converters = {
@@ -5609,40 +5625,67 @@ function nudgeListener ( args ) {
 
 ;
 (function () {
+"use strict";
 //var rings = {
 //   roomid : [ members ]
 //}
-var rings;
-if ( !localStorage.bot_rings ) {
-	localStorage.bot_rings = '{}';
-}
-rings = JSON.parse( localStorage.bot_rings );
+var rings = JSON.parse( localStorage.bot_rings );
 
-// /ring activate ringName message
-// /ring register ringName
 var ring = function ( args ) {
 	var parts = args.parse(),
-		command = parts[ 0 ],
-		ringName = parts[ 1 ],
-		message = parts[ 2 ],
-
-		usrname = args.get( 'user_name' ),
-		roomid = args.get( 'room_id' ),
-
+		action = parts.shift(),
 		res;
 	bot.log( parts, '/ring input' );
 
-	if ( command === 'activate' ) {
-		res = activate( message, ringName, usrname, roomid );
-	}
-	else if ( command === 'register' ) {
-		res = register( ringName, usrname, roomid );
+	if ( actions[action] ) {
+		res = actions[action](
+			parts, args.get('user_name'), args.get('room_id') );
 	}
 	else {
-		res = 'Cannot understand command: ' + command + '. See /help ring';
+		res = 'Unrecognized action ' + action + '. See `/help ring`';
 	}
 
 	return res;
+};
+
+var actions = {
+	//activate ringName message
+	activate : function ( args, usrname, roomid ) {
+		if ( !rings[roomid] ) {
+			return 'There are no rings in your chat-room';
+		}
+
+		var roomRing = rings[ roomid ],
+			ringName = args.shift();
+		if ( !roomRing[ringName] ) {
+			return 'There exists no ' + ringName + ' ring in your chat-room';
+		}
+
+		var registered = roomRing[ ringName ].map( bot.adapter.reply );
+		return registered + '(ring ' + ringName + ') ' + args.shift();
+	},
+
+	//register ringName
+	register : function ( args, usrname, roomid ) {
+		if ( !rings[roomid] ) {
+			rings[ roomid ] = {};
+		}
+
+		var roomRing = rings[ roomid ],
+			ringName = args.shift();
+		if ( !roomRing[ringName] ) {
+			roomRing[ ringName ] = [];
+		}
+
+		var ring = roomRing[ ringName ];
+		if ( ring.indexOf(usrname) > -1 ) {
+			return 'You are already registered to ring ' + ringName;
+		}
+
+		ring.push( usrname );
+		save();
+		return 'Registered to ring ' + ringName + ' in room #' + roomid;
+	}
 };
 
 bot.addCommand({
@@ -5652,59 +5695,17 @@ bot.addCommand({
 		del : 'NONE'
 	},
 
-	description : 'Rings are room specific. ' +
+	description : 'Upon activating a ring, all those who registered to it ' +
+		' will be pinged. ' +
 		'`/ring activate ringName message` - activate a ring. ' +
 		'`/ring register ringName` - register to a ring.'
 });
 
-function activate ( message, ringName, usrname, roomid ) {
-	bot.log( message, ringName, usrname, roomid, '/ring activate' );
-	if ( !rings[roomid] ) {
-		return 'There are no rings in your chat-room';
-	}
-
-	var roomRing = rings[ roomid ];
-	if ( !roomRing[ringName] ) {
-		return 'There exists no ' + ringName + ' ring in your chat-room';
-	}
-
-	message = 'Ring ' + ringName +
-		' activated by ' + usrname + '! ' +
-		message;
-
-	return roomRing[ ringName ].map(function ( name ) {
-		return '@' + name;
-	}).join( ', ' ) + ': ' + message;
-}
-
-function register ( ringName, usrname, roomid ) {
-	bot.log( ringName, usrname, roomid, '/ring register' );
-	if ( !rings[roomid] ) {
-		rings[ roomid ] = {};
-	}
-	var roomRing = rings[ roomid ];
-
-	if ( !roomRing[ringName] ) {
-		roomRing[ ringName ] = [];
-	}
-	var ring = roomRing[ ringName ];
-
-	if ( ring.indexOf(usrname) > -1 ) {
-		return 'You are already registered to ring ' + ringName;
-	}
-	ring.push( usrname );
-
-	update();
-
-	return 'Registered to ring ' + ringName + ' in room #' + roomid;
-}
-
-function update () {
+function save () {
 	localStorage.bot_rings = JSON.stringify( rings );
 }
 
 }());
-
 
 ;
 //infix operator-precedence parser

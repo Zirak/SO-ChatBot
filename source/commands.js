@@ -560,7 +560,7 @@ return function parse ( args, extraVars ) {
 
 commands.tell = (function () {
 
-var invalidCommands = { tell : true, forget : true };
+var invalidCommands = { tell : true, forget : true, ring : true };
 
 return function ( args ) {
 	var props = args.parse();
