@@ -2138,10 +2138,11 @@ bot.personality = {
 	},
 	//what an incredible name
 	stuff : {
-		0.7 : [ "Oh don't mind me, that isn't difficult at all..." ],
-		0.8 : [ "You don't appreciate me enough" ],
-		0.9 : [ 'The occasional "thanks" or "I\'m sorry" would be nice...' ],
-		1   : [
+		1   : [ "Oh don't mind me, that isn't difficult at all..." ],
+		1.2 : [
+			"You don't appreciate me enough. Not that I need to be thanked.." ],
+		1.3 : [ 'The occasional "thanks" or "I\'m sorry" would be nice...' ],
+		2   : [
 			"*sigh* Remember laughter? I don't. You ripped it out of me. " +
 				'Heartless bastard.' ]
 	},
@@ -2171,7 +2172,8 @@ bot.personality = {
 	},
 	getResp : function ( map ) {
 		return map[
-			this.bitchiness.fallsAfter( Object.keys(map) )
+			this.bitchiness.fallsAfter(
+				Object.keys(map).map(Number).sort() )
 		].random();
 	},
 
@@ -2185,7 +2187,7 @@ bot.personality = {
 
 	//db stands for "delta bitchiness"
 	getDB : function () {
-		return this.isThatTimeOfTheMonth() ? 0.075 : 0.05;
+		return this.isThatTimeOfTheMonth() ? 0.075 : 0.025;
 	},
 
 	isThatTimeOfTheMonth : function () {
@@ -5137,7 +5139,10 @@ bot.addCommand({
 
 ;
 (function () {
-//TODO: maybe move this somewhere else?
+var nulls = [
+	'The Google contains no such knowledge',
+	'There are no search results. Run.' ];
+
 function google ( args, cb ) {
 	IO.jsonp.google( args.toString() + ' -site:w3schools.com', finishCall );
 
@@ -5154,7 +5159,7 @@ function google ( args, cb ) {
 		bot.log( results, '/google results' );
 
 		if ( !results.length ) {
-			finish( 'The Google contains no such knowledge' );
+			finish( nulls.random() );
 			return;
 		}
 		finish(

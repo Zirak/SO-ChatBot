@@ -1,5 +1,8 @@
 (function () {
-//TODO: maybe move this somewhere else?
+var nulls = [
+	'The Google contains no such knowledge',
+	'There are no search results. Run.' ];
+
 function google ( args, cb ) {
 	IO.jsonp.google( args.toString() + ' -site:w3schools.com', finishCall );
 
@@ -16,7 +19,7 @@ function google ( args, cb ) {
 		bot.log( results, '/google results' );
 
 		if ( !results.length ) {
-			finish( 'The Google contains no such knowledge' );
+			finish( nulls.random() );
 			return;
 		}
 		finish(
