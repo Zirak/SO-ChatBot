@@ -3,7 +3,7 @@
 //var rings = {
 //   roomid : [ members ]
 //}
-var rings = JSON.parse( localStorage.bot_rings );
+var rings = JSON.parse( localStorage.bot_rings || '{}' );
 
 var ring = function ( args ) {
 	var parts = args.parse(),

@@ -4664,22 +4664,6 @@ function style_html(html_source, options) {
 
 ;
 (function () {
-var resps = [
-	'<3', ':D', 'yummy!', '*nom nom nom*' ],
-	re = /^botsnack/;
-var botsnack = resps.random.bind( resps );
-
-bot.listen( re, botsnack );
-IO.register( 'input', function ( msgObj ) {
-	if ( re.test(msgObj.content) ) {
-		bot.reply( botsnack(), msgObj );
-	}
-});
-
-}());
-
-;
-(function () {
 "use strict";
 
 var converters = {
@@ -5629,7 +5613,7 @@ function nudgeListener ( args ) {
 //var rings = {
 //   roomid : [ members ]
 //}
-var rings = JSON.parse( localStorage.bot_rings );
+var rings = JSON.parse( localStorage.bot_rings || '{}' );
 
 var ring = function ( args ) {
 	var parts = args.parse(),
@@ -6335,21 +6319,20 @@ bot.addCommand({
 
 ;
 (function () {
-var list = JSON.parse( localStorage.getItem('bot_todo') || '{}' ),
-
-	userCache = Object.create( null );
+var list = JSON.parse( localStorage.getItem('bot_todo') || '{}' );
 
 var userlist = function ( usrid ) {
 	if ( userCache[usrid] ) {
 		return userCache[usrid];
 	}
 
-	var usr = list[ usrid ], toRemove = [];
+	var usr = list[ usrid ],
+		toRemove = [];
 	if ( !usr ) {
 		usr = list[ usrid ] = [];
 	}
 
-	return userCache[ usrid ] = {
+	return {
 		get : function ( count ) {
 			return usr.slice( count ).map(function ( item, idx ) {
 				return '(' + (idx+1) + ')' + item;
@@ -6366,9 +6349,7 @@ var userlist = function ( usrid ) {
 			if ( idx === -1 ) {
 				return false;
 			}
-			toRemove.push( idx );
-
-			return true;
+			return this.removeByIndex( idx );
 		},
 		removeByIndex : function ( idx ) {
 			if ( idx >= usr.length ) {
@@ -6394,14 +6375,12 @@ var userlist = function ( usrid ) {
 
 		exists : function ( suspect ) {
 			suspect = suspect.toLowerCase();
-			//it could be re-written as:
-			//usr.invoke( 'toLowerCase' ).indexOf( suspect ) > -1
-			return usr.some(function (item) {
+			return usr.some(function ( item ) {
 				return suspect === item.toLowerCase();
 			});
 		}
 	};
-};
+}.memoize();
 
 var todo = function ( args ) {
 	var props = args.parse();

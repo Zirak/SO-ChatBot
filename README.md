@@ -13,7 +13,7 @@ $ cd SO-ChatBot
 
 #to build something
 $ node build.js
-#or, to, skip minification
+#or, to skip minification
 $ node build.js no-min
 #or, to not add the adapter
 $ node build.js no-adapter
