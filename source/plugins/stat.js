@@ -1,16 +1,16 @@
 (function () {
 
-var template = '[{display_name}]({link}) '          +
-		'has {reputation} reputation, '             +
-		'earned {reputation_change_day} rep today, '+
-		'asked {question_count} questions, '        +
-		'gave {answer_count} answers, '             +
+var template = '[{display_name}]({link}) '           +
+		'has {reputation} reputation, '              +
+		'earned {reputation_change_day} rep today, ' +
+		'asked {question_count} questions, '         +
+		'gave {answer_count} answers, '              +
 		'for a q:a ratio of {ratio}.\n';
 
-var extended_template = 'avg. rep/post: {avg_rep_post}, ' +
-		'{gold} gold badges, ' +
-		'{silver} silver badges and ' +
-		'{bronze} bronze badges. ';
+var extended_template = 'avg. rep/post: {avg_rep_post}. Badges: ' +
+		'{gold}g ' +
+		'{silver}s ' +
+		'{bronze}b ';
 
 function stat ( msg, cb ) {
 	var args = msg.parse(),
@@ -20,11 +20,11 @@ function stat ( msg, cb ) {
 		id = msg.get( 'user_id' );
 	}
 	else if ( !/^\d+$/.test(id) ) {
-		id = msg.findUserid( id );
+		id = msg.findUserid( extended ? id : args.slice().join(' ') );
 	}
 
 	if ( id < 0 ) {
-		return 'Unobtanium could not be obtained';
+		return 'User Elusio proved elusive.';
 	}
 
 	//~10% chance
@@ -49,7 +49,6 @@ function stat ( msg, cb ) {
 		}
 
 		var user = resp.items[ 0 ], res;
-
 		if ( !user ) {
 			res = 'User ' + id + ' not found';
 		}
@@ -72,7 +71,6 @@ function stat ( msg, cb ) {
 
 function handle_user_object ( user, extended ) {
 	user = normalize_stats( user );
-
 	var res = template.supplant( user );
 
 	if ( extended ) {
@@ -99,14 +97,14 @@ function normalize_stats ( stats ) {
 		stats.ratio = "TO͇̹̺ͅƝ̴ȳ̳ TH̘Ë͖́̉ ͠P̯͍̭O̚​N̐Y̡";
 	}
 	else if ( !stats.answer_count && !stats.question_count ) {
-		stats.ratio = 'http://www.imgzzz.com/i/image_1294737413.png';
+		stats.ratio = 'http://i.imgur.com/F79hP.png';
 	}
 	else {
 		stats.ratio =
 			Math.ratio( stats.question_count, stats.answer_count );
 	}
 
-	console.log( stats, '/stat normalized' );
+	bot.log( stats, '/stat normalized' );
 	return stats;
 }
 
@@ -123,7 +121,7 @@ function calc_extended_stats ( stats ) {
 		stats.avg_rep_post = 'T͎͍̘͙̖̤̉̌̇̅ͯ͋͢͜͝H̖͙̗̗̺͚̱͕̒́͟E̫̺̯͖͎̗̒͑̅̈ ̈ͮ̽ͯ̆̋́͏͙͓͓͇̹<̩̟̳̫̪̇ͩ̑̆͗̽̇͆́ͅC̬͎ͪͩ̓̑͊ͮͪ̄̚̕Ě̯̰̤̗̜̗͓͛͝N̶̴̞͇̟̲̪̅̓ͯͅT͍̯̰͓̬͚̅͆̄E̠͇͇̬̬͕͖ͨ̔̓͞R͚̠̻̲̗̹̀>̇̏ͣ҉̳̖̟̫͕ ̧̛͈͙͇͂̓̚͡C͈̞̻̩̯̠̻ͥ̆͐̄ͦ́̀͟A̛̪̫͙̺̱̥̞̙ͦͧ̽͛̈́ͯ̅̍N̦̭͕̹̤͓͙̲̑͋̾͊ͣŅ̜̝͌͟O̡̝͍͚̲̝ͣ̔́͝Ť͈͢ ̪̘̳͔̂̒̋ͭ͆̽͠H̢͈̤͚̬̪̭͗ͧͬ̈́̈̀͌͒͡Ơ̮͍͇̝̰͍͚͖̿ͮ̀̍́L͐̆ͨ̏̎͡҉̧̱̯̤̹͓̗̻̭ͅḐ̲̰͙͑̂̒̐́̊';
 	}
 
-	console.log( stats, '/stat extended' );
+	bot.log( stats, '/stat extended' );
 	return stats;
 }
 
@@ -134,7 +132,8 @@ bot.addCommand({
 		del : 'NONE'
 	},
 
-	description : 'Gives useless stats on a user. `/stat usrid|usrname`',
+	description : 'Gives useless stats on a user. ' +
+		'`/stat usrid|usrname [extended]`',
 	async : true
 });
 
