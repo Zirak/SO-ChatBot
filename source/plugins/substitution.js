@@ -16,14 +16,15 @@ var sub = /^\s*s(.)(.+?)\1(.+?)\1(g?i?)/;
 bot.listen( sub, substitute );
 
 function substitute ( msg ) {
-	var re = RegExp( msg.matches[2], msg.matches[4] );
+	var re = RegExp( msg.matches[2], msg.matches[4] ),
 		replacement = msg.matches[ 3 ];
 
 	var message = get_matching_message( re, msg.get('message_id') );
 	if ( !message ) {
 		return 'No matching message (are you sure we\'re in the right room?';
 	}
-	var link = message.previousElementSibling.href
+
+	var link = message.previousElementSibling.href;
 	return message.textContent.replace( re, replacement ) + ' ' +
 		msg.link( '(source)', link );
 }
@@ -34,7 +35,7 @@ function get_matching_message ( re, onlyBefore ) {
 	return messages.first( matches );
 
 	function matches ( el ) {
-		var id = Number( el.parentElement.id.match(/\d+$/)[0] )
+		var id = Number( el.parentElement.id.match(/\d+$/)[0] );
 		return id < onlyBefore && re.test( el.textContent );
 	}
 }

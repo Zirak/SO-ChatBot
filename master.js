@@ -6340,25 +6340,27 @@ var sub = /^\s*s(.)(.+?)\1(.+?)\1(g?i?)/;
 bot.listen( sub, substitute );
 
 function substitute ( msg ) {
-	var re = RegExp( msg.matches[2], msg.matches[4] );
+	var re = RegExp( msg.matches[2], msg.matches[4] ),
 		replacement = msg.matches[ 3 ];
 
-	var message = get_matching_message( re );
+	var message = get_matching_message( re, msg.get('message_id') );
 	if ( !message ) {
 		return 'No matching message (are you sure we\'re in the right room?';
 	}
+
 	var link = message.previousElementSibling.href;
-	return msg.link( '(source)', link ) + ' ' +
-		message.textContent.replace( re, replacement );
+	return message.textContent.replace( re, replacement ) + ' ' +
+		msg.link( '(source)', link );
 }
 
-function get_matching_message ( re ) {
+function get_matching_message ( re, onlyBefore ) {
 	var messages = [].slice.call(
 		document.getElementsByClassName('content') ).reverse();
 	return messages.first( matches );
 
 	function matches ( el ) {
-		return re.test( el.textContent );
+		var id = Number( el.parentElement.id.match(/\d+$/)[0] );
+		return id < onlyBefore && re.test( el.textContent );
 	}
 }
 }());
@@ -6368,10 +6370,6 @@ function get_matching_message ( re ) {
 var list = JSON.parse( localStorage.getItem('bot_todo') || '{}' );
 
 var userlist = function ( usrid ) {
-	if ( userCache[usrid] ) {
-		return userCache[usrid];
-	}
-
 	var usr = list[ usrid ],
 		toRemove = [];
 	if ( !usr ) {
@@ -6381,7 +6379,7 @@ var userlist = function ( usrid ) {
 	return {
 		get : function ( count ) {
 			return usr.slice( count ).map(function ( item, idx ) {
-				return '(' + (idx+1) + ')' + item;
+				return '(' + idx + ')' + item;
 			}).join( ', ' );
 		},
 
@@ -6428,53 +6426,35 @@ var userlist = function ( usrid ) {
 	};
 }.memoize();
 
-var todo = function ( args ) {
-	var props = args.parse();
-	bot.log( props, 'todo input' );
-
-	if ( !props[0] ) {
-		props = [ 'get' ];
-	}
-	var action = props[ 0 ],
-		usr = userlist( args.get('user_id') ),
-		items = props.slice( 1 ),
-		res, ret;
-
-	//user wants to get n items, count is the first arg
-	if ( action === 'get' ) {
+var actions = {
+	get : function ( usr, items ) {
 		//if the user didn't provide an argument, the entire thing is returned
-		ret = usr.get( items[0] );
+		var ret = usr.get( items[0] );
+		return ret || 'No items on your todo';
+	},
 
-		if ( !ret ) {
-			ret = 'No items on your todo.';
-		}
-		bot.log( ret, 'todo get' );
-	}
+	add : function ( usr, items ) {
+		var ret = '';
+		items.every( add );
+		return ret || 'Item(s) added.';
 
-	else if ( action === 'add' ) {
-		res = items.every(function ( item ) {
-
+		function add ( item ) {
 			if ( usr.exists(item) ) {
 				ret = item + ' already exists.';
 				return false;
 			}
-			else {
-				usr.add( item );
-			}
-
+			usr.add( item );
 			return true;
-		});
-
-		if ( res ) {
-			ret = 'Item(s) added.';
 		}
+	},
 
-		bot.log( ret, 'todo add' );
-	}
+	rm : function ( usr, items ) {
+		var ret = '';
+		items.every( remove );
 
-	else if ( action === 'rem' ) {
-		res = items.every(function ( item ) {
+		return ret || 'Item(s) removed.';
 
+		function remove ( item ) {
 			if ( /^\d+$/.test(item) ) {
 				usr.removeByIndex( Number(item - 1) );
 			}
@@ -6487,23 +6467,33 @@ var todo = function ( args ) {
 			}
 
 			return true;
-		});
-
-		if ( res ) {
-			ret = 'Item(s) removed.';
 		}
-
-		bot.log( ret, 'todo rem' );
 	}
-	//not a valid action
+};
+
+var todo = function ( args ) {
+	var props = args.parse();
+	bot.log( props, 'todo input' );
+
+	if ( !props[0] ) {
+		props = [ 'get' ];
+	}
+	var action = props[ 0 ],
+		usr = userlist( args.get('user_id') ),
+		items = props.slice( 1 ),
+		ret;
+
+	if ( actions[action] ) {
+		ret = actions[ action ]( usr, items );
+		bot.log( ret, '/todo ' + action );
+	}
 	else {
 		ret = 'Unidentified /todo action ' + action;
-		bot.log( ret, 'todo undefined' );
+		bot.log( ret, '/todo unknown' );
 	}
 
 	//save the updated list
 	usr.save();
-
 	return ret;
 };
 
@@ -6517,7 +6507,7 @@ bot.addCommand({
 		'`get [count]` retrieves everything or count items. ' +
 		'`add items` adds items to your todo list (make sure items ' +
 			'with spaces are wrapped in quotes) ' +
-		'`rem items|indices` removes items specified by indice or content'
+		'`rm items|indices` removes items specified by indice or content'
 });
 
 }());
