@@ -19,22 +19,23 @@ function substitute ( msg ) {
 	var re = RegExp( msg.matches[2], msg.matches[4] );
 		replacement = msg.matches[ 3 ];
 
-	var message = get_matching_message( re );
+	var message = get_matching_message( re, msg.get('message_id') );
 	if ( !message ) {
 		return 'No matching message (are you sure we\'re in the right room?';
 	}
-	var link = message.previousElementSibling.href;
-	return msg.link( '(source)', link ) + ' ' +
-		message.textContent.replace( re, replacement );
+	var link = message.previousElementSibling.href
+	return message.textContent.replace( re, replacement ) + ' ' +
+		msg.link( '(source)', link );
 }
 
-function get_matching_message ( re ) {
+function get_matching_message ( re, onlyBefore ) {
 	var messages = [].slice.call(
 		document.getElementsByClassName('content') ).reverse();
 	return messages.first( matches );
 
 	function matches ( el ) {
-		return re.test( el.textContent );
+		var id = Number( el.parentElement.id.match(/\d+$/)[0] )
+		return id < onlyBefore && re.test( el.textContent );
 	}
 }
 }());
