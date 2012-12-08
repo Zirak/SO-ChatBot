@@ -88,7 +88,7 @@ var actions = {
 
 		function remove ( item ) {
 			if ( /^\d+$/.test(item) ) {
-				usr.removeByIndex( Number(item - 1) );
+				usr.removeByIndex( Number(item) );
 			}
 			else if ( !usr.exists(item) ) {
 				ret = item + ' does not exist.';
