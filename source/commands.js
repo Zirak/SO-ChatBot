@@ -122,10 +122,6 @@ var commands = {
 				msg.push( 'Cannot find user ' + usrid + '.' );
 				id = -1;
 			}
-			else if ( bot.isOwner(id) ) {
-				msg.push( 'Cannot mindjail owner ' + usrid + '.' );
-				id = -1;
-			}
 
 			return id;
 		}
@@ -709,13 +705,17 @@ var descriptions = {
 
 //only allow owners to use certain commands
 var privilegedCommands = {
-	die : true, live : true,
+	die : true, live  : true,
 	ban : true, unban : true,
 	refresh : true, purgecommands : true
 };
+//voting-based commands for unpriviledged users
+var communal = {
+	die : true, ban : true
+};
 
 Object.keys( commands ).forEach(function ( cmdName ) {
-	bot.addCommand({
+	var cmd = {
 		name : cmdName,
 		fun  : commands[ cmdName ],
 		permissions : {
@@ -724,7 +724,12 @@ Object.keys( commands ).forEach(function ( cmdName ) {
 		},
 		description : descriptions[ cmdName ],
 		async : commands[ cmdName ].async
-	});
+	};
+
+	if ( communal[cmdName] ) {
+		cmd = bot.CommunityCommand( cmd );
+	}
+	bot.addCommand( cmd );
 });
 
 }());

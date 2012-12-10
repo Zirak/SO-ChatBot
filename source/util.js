@@ -165,7 +165,11 @@ Math.gcd = function ( a, b ) {
 };
 
 //Crockford's supplant
-String.prototype.supplant = function ( obj ) {
+String.prototype.supplant = function ( arg ) {
+	//if it's an object, use that. otherwise, use the arguments list.
+	var obj = (
+		Object(arg) === arg ?
+		arg : arguments );
 	return this.replace( /\{([^\}]+)\}/g, replace );
 
 	function replace ( $0, $1 ) {

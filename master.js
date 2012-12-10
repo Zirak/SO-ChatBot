@@ -631,6 +631,63 @@ bot.Command = function ( cmd ) {
 
 	return cmd;
 };
+//a normally priviliged command which can be executed if enough people use it
+bot.CommunityCommand = function ( command, req ) {
+	var cmd = this.Command( command ),
+		used = {},
+		old_execute = cmd.exec,
+		old_canUse  = cmd.canUse;
+	req = req || 2;
+
+	cmd.canUse = function () {
+		return true;
+	};
+	cmd.exec = function ( msg ) {
+		var err = register( msg.get('user_id') );
+		if ( err ) {
+			console.log( err );
+			return err;
+		}
+		old_execute.apply( cmd, arguments );
+	};
+	return cmd;
+
+	//once again, a switched return statement truthy means a message, falsy
+	// means to go on ahead
+	function register ( usrid ) {
+		if ( old_canUse.call(cmd, usrid) ) {
+			return false;
+		}
+
+		clean();
+		var count = Object.keys( used ).length,
+			needed = req - count;
+		console.log( used, count, req );
+
+		if ( usrid in used ) {
+			return 'Already registered; still need {0} more'.supplant( needed );
+		}
+		else if ( needed > 0 ) {
+			used[ usrid ] = new Date;
+			return 'Registered; need {0} more to execute'.supplant( needed );
+		}
+		console.log( 'should execute' );
+		return false; //huzzah!
+	}
+
+	function clean () {
+		var tenMinsAgo = new Date;
+		tenMinsAgo.setMinutes( tenMinsAgo.getMinutes() - 10 );
+
+		Object.keys( used ).reduce( rm, used );
+		function rm ( ret, key ) {
+			if ( ret[key] < tenMinsAgo ) {
+				delete ret[ key ];
+			}
+			return ret;
+		}
+	}
+};
 
 bot.Message = function ( text, msgObj ) {
 	//"casting" to object so that it can be extended with cool stuff and
@@ -916,7 +973,11 @@ Math.gcd = function ( a, b ) {
 };
 
 //Crockford's supplant
-String.prototype.supplant = function ( obj ) {
+String.prototype.supplant = function ( arg ) {
+	//if it's an object, use that. otherwise, use the arguments list.
+	var obj = (
+		Object(arg) === arg ?
+		arg : arguments );
 	return this.replace( /\{([^\}]+)\}/g, replace );
 
 	function replace ( $0, $1 ) {
@@ -1419,10 +1480,6 @@ var commands = {
 			var id = Number( usrid );
 			if ( id < 0 ) {
 				msg.push( 'Cannot find user ' + usrid + '.' );
-				id = -1;
-			}
-			else if ( bot.isOwner(id) ) {
-				msg.push( 'Cannot mindjail owner ' + usrid + '.' );
 				id = -1;
 			}
 
@@ -2008,13 +2065,17 @@ var descriptions = {
 
 //only allow owners to use certain commands
 var privilegedCommands = {
-	die : true, live : true,
+	die : true, live  : true,
 	ban : true, unban : true,
 	refresh : true, purgecommands : true
 };
+//voting-based commands for unpriviledged users
+var communal = {
+	die : true, ban : true
+};
 
 Object.keys( commands ).forEach(function ( cmdName ) {
-	bot.addCommand({
+	var cmd = {
 		name : cmdName,
 		fun  : commands[ cmdName ],
 		permissions : {
@@ -2023,7 +2084,12 @@ Object.keys( commands ).forEach(function ( cmdName ) {
 		},
 		description : descriptions[ cmdName ],
 		async : commands[ cmdName ].async
-	});
+	};
+
+	if ( communal[cmdName] ) {
+		cmd = bot.CommunityCommand( cmd );
+	}
+	bot.addCommand( cmd );
 });
 
 }());
@@ -5960,6 +6026,7 @@ return function ( source ) {
 };
 }());
 
+(function () {
 //now, to the command itself...
 var roll = function ( args ) {
 	if ( !/^[\d\s\+\-\*\/d]+$/.test(args) ) {
@@ -5984,6 +6051,7 @@ bot.addCommand({
 		'`X` can also be a die roll: `MdN*XdY` for example'
 	].join( '. ' )
 });
+})();
 
 ;
 (function () {
@@ -6345,7 +6413,7 @@ function substitute ( msg ) {
 
 	var message = get_matching_message( re, msg.get('message_id') );
 	if ( !message ) {
-		return 'No matching message (are you sure we\'re in the right room?';
+		return 'No matching message (are you sure we\'re in the right room?)';
 	}
 
 	var link = message.previousElementSibling.href;
@@ -6359,7 +6427,7 @@ function get_matching_message ( re, onlyBefore ) {
 	return messages.first( matches );
 
 	function matches ( el ) {
-		var id = Number( el.parentElement.id.match(/\d+$/)[0] );
+		var id = Number( el.parentElement.id.match(/\d+/)[0] );
 		return id < onlyBefore && re.test( el.textContent );
 	}
 }

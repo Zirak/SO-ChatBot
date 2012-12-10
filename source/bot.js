@@ -267,6 +267,63 @@ bot.Command = function ( cmd ) {
 
 	return cmd;
 };
+//a normally priviliged command which can be executed if enough people use it
+bot.CommunityCommand = function ( command, req ) {
+	var cmd = this.Command( command ),
+		used = {},
+		old_execute = cmd.exec,
+		old_canUse  = cmd.canUse;
+	req = req || 2;
+
+	cmd.canUse = function () {
+		return true;
+	};
+	cmd.exec = function ( msg ) {
+		var err = register( msg.get('user_id') );
+		if ( err ) {
+			console.log( err );
+			return err;
+		}
+		old_execute.apply( cmd, arguments );
+	};
+	return cmd;
+
+	//once again, a switched return statement truthy means a message, falsy
+	// means to go on ahead
+	function register ( usrid ) {
+		if ( old_canUse.call(cmd, usrid) ) {
+			return false;
+		}
+
+		clean();
+		var count = Object.keys( used ).length,
+			needed = req - count;
+		console.log( used, count, req );
+
+		if ( usrid in used ) {
+			return 'Already registered; still need {0} more'.supplant( needed );
+		}
+		else if ( needed > 0 ) {
+			used[ usrid ] = new Date;
+			return 'Registered; need {0} more to execute'.supplant( needed );
+		}
+		console.log( 'should execute' );
+		return false; //huzzah!
+	}
+
+	function clean () {
+		var tenMinsAgo = new Date;
+		tenMinsAgo.setMinutes( tenMinsAgo.getMinutes() - 10 );
+
+		Object.keys( used ).reduce( rm, used );
+		function rm ( ret, key ) {
+			if ( ret[key] < tenMinsAgo ) {
+				delete ret[ key ];
+			}
+			return ret;
+		}
+	}
+};
 
 bot.Message = function ( text, msgObj ) {
 	//"casting" to object so that it can be extended with cool stuff and

@@ -21,7 +21,7 @@ function substitute ( msg ) {
 
 	var message = get_matching_message( re, msg.get('message_id') );
 	if ( !message ) {
-		return 'No matching message (are you sure we\'re in the right room?';
+		return 'No matching message (are you sure we\'re in the right room?)';
 	}
 
 	var link = message.previousElementSibling.href;
@@ -35,7 +35,7 @@ function get_matching_message ( re, onlyBefore ) {
 	return messages.first( matches );
 
 	function matches ( el ) {
-		var id = Number( el.parentElement.id.match(/\d+$/)[0] );
+		var id = Number( el.parentElement.id.match(/\d+/)[0] );
 		return id < onlyBefore && re.test( el.textContent );
 	}
 }

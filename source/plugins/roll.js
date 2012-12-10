@@ -261,6 +261,7 @@ return function ( source ) {
 };
 }());
 
+(function () {
 //now, to the command itself...
 var roll = function ( args ) {
 	if ( !/^[\d\s\+\-\*\/d]+$/.test(args) ) {
@@ -285,3 +286,4 @@ bot.addCommand({
 		'`X` can also be a die roll: `MdN*XdY` for example'
 	].join( '. ' )
 });
+})();
