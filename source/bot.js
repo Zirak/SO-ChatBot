@@ -97,15 +97,7 @@ var bot = window.bot = {
 			return;
 		}
 
-		if ( this.personality.check(commandName) ) {
-			this.personality.command();
-			if ( this.personality.isABitch() ) {
-				msg.send( this.personality.bitch() );
-			}
-		}
-
 		bot.log( cmdObj, 'parseCommand calling' );
-
 		var args = this.Message(
 			//+ 1 is for the / in the message
 			msg.slice( commandName.length + 1 ).trim(),
