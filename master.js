@@ -271,7 +271,7 @@ IO.jsonp = function ( opts ) {
 
 	script.src = opts.url;
 	document.head.appendChild( script );
-}
+};
 
 //generic, pre-made calls to be used inside commands
 IO.jsonp.ddg = function ( query, cb ) {
@@ -1619,9 +1619,18 @@ var commands = {
 		args.directreply( 'http://stackoverflow.com/users/' + id );
 	},
 
-	listcommands : function () {
+	listcommands : function ( args ) {
+		var commands = Object.keys( bot.commands ),
+			page = Number( args.content ) || 0,
+			pageSize = 50;
+
+		var start = page * pageSize,
+			end = start + pageSize,
+			left = Math.max( 0, commands.length - end ) / pageSize;
+
 		return 'Available commands: ' +
-			Object.keys( bot.commands ).join( ', ' );
+			commands.slice( start, end ).join( ', ' ) +
+			' ({0} pages left)'.supplant(left);
 	},
 
 	purgecommands : function ( args ) {
@@ -1776,7 +1785,7 @@ return function ( args, cb ) {
 	}
 
 	function formatTop ( top ) {
-		return args.link( args.toString(), top.permalink ) +
+		return args.link( top.word, top.permalink ) +
 			' ' +
 			top.definition;
 	}
@@ -5192,6 +5201,48 @@ bot.addCommand({
 });
 
 }());
+
+;
+(function () {
+var last = 0,
+	delay = 1000;
+var template = '{body} (status {status} on {created_on})';
+
+var fetch = function ( msg ) {
+	if ( !toExecuteOrNotToExecute(msg.content === 'force') ) {
+		return; //should probably give an error message or something...
+	}
+	last = Date.now();
+
+	IO.jsonp({
+		url : 'https://status.github.com/api/last-message.json',
+		fun : finish,
+		jsonpName : 'callback'
+	});
+
+	function finish ( resp ) {
+		resp.body = IO.decodehtmlEntities( resp.body );
+		msg.reply( template.supplant(resp) );
+	}
+};
+
+var toExecuteOrNotToExecute = function ( force ) {
+	return force || !last || (
+		Date.now() - last > delay
+	);
+}
+
+bot.addCommand({
+	name : 'github-status',
+	fun  : fetch,
+	permissions : {
+		del : 'NONE'
+	},
+	description : 'Retrieve latest github status. `/github-status [force]`',
+	async : true
+});
+
+})();
 
 ;
 (function () {
