@@ -270,7 +270,7 @@ IO.jsonp = function ( opts ) {
 
 	script.src = opts.url;
 	document.head.appendChild( script );
-}
+};
 
 //generic, pre-made calls to be used inside commands
 IO.jsonp.ddg = function ( query, cb ) {

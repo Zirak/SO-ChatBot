@@ -269,9 +269,18 @@ var commands = {
 		args.directreply( 'http://stackoverflow.com/users/' + id );
 	},
 
-	listcommands : function () {
+	listcommands : function ( args ) {
+		var commands = Object.keys( bot.commands ),
+			page = Number( args.content ) || 0,
+			pageSize = 50;
+
+		var start = page * pageSize,
+			end = start + pageSize,
+			left = Math.max( 0, commands.length - end ) / pageSize;
+
 		return 'Available commands: ' +
-			Object.keys( bot.commands ).join( ', ' );
+			commands.slice( start, end ).join( ', ' ) +
+			' ({0} pages left)'.supplant(left);
 	},
 
 	purgecommands : function ( args ) {
@@ -426,7 +435,7 @@ return function ( args, cb ) {
 	}
 
 	function formatTop ( top ) {
-		return args.link( args.toString(), top.permalink ) +
+		return args.link( top.word, top.permalink ) +
 			' ' +
 			top.definition;
 	}
