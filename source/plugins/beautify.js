@@ -77,7 +77,7 @@ function fetch_message_id ( id, msg ) {
 	if ( !message ) {
 		return -1;
 	}
-	return /\d+/.exec( message.id );
+	return /\d+/.exec( message.id )[ 0 ];
 }
 
 function fetch_last_message_of ( usrid ) {
