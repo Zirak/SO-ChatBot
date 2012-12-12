@@ -1628,9 +1628,12 @@ var commands = {
 			end = start + pageSize,
 			left = Math.max( 0, commands.length - end ) / pageSize;
 
-		return 'Available commands: ' +
-			commands.slice( start, end ).join( ', ' ) +
-			' ({0} pages left)'.supplant(left);
+		var ret = commands.slice( start, end ).join( ', ' );
+		if ( left ) {
+			ret += ' ({0} pages left)'.supplant(left);
+		}
+
+		return ret;
 	},
 
 	purgecommands : function ( args ) {
@@ -2043,7 +2046,7 @@ var descriptions = {
 
 	user : 'Fetches user-link for specified user. `/user usr_id|usr_name`',
 
-	listcommands : 'This seems pretty obvious',
+	listcommands : 'Lists commands. `/listcommands [page=0]`',
 
 	purgecommands : 'Deletes all user-taught commands.',
 
