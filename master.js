@@ -2608,47 +2608,86 @@ function save ( msg ) {
 (function () {
 var help_message = 'Fetches and beautifies a message containing html, ' +
 		'css or js. `/beautify msgid [lang=js]`';
+var err404 = 'Message {0} not found';
 
-function beautifyMsg ( msg ) {
+var beautifiers = {
+	js   : js_beautify,
+	css  : css_beautify,
+	html : style_html };
+
+function beautify ( msg ) {
 	var args = msg.parse(),
-		id = args.shift(),
-		lang = args.shift() || 'js';
+		possible_id = args.shift(),
+		lang = ( args.shift() || 'js' ).toLowerCase();
 
-	lang = lang.toLowerCase();
-	bot.log( id, lang, '/beautify input' );
+	bot.log( possible_id, lang, '/beautify input' );
 
-	if ( ['html', 'css', 'js'].indexOf(lang) < 0 ) {
-		return help_message;
+	if ( !beautifiers.hasOwnProperty(lang) ) {
+		return 'Unrecognized language {0}. Options: {1}'
+			.supplant( lang, Object.keys(beautifiers).join(', ') );
 	}
 
-	var mormons = {
-		js   : js_beautify,
-		css  : css_beautify,
-		html : style_html };
-
-	var containing_message = fetch_message( id, msg );
-	if ( !containing_message ) {
-		return '404 Message ' + id + ' Not Found';
+	var id = Number( fetch_message_id(possible_id, msg) );
+	if ( id < 0 ) {
+		return err404.supplant( id );
 	}
-	var code = containing_message
-			.getElementsByClassName( 'content' )[ 0 ].textContent;
 
-	bot.log( code, '/beautify beautifying' );
+	fetch_message( id, finish );
 
-	msg.send(
-		msg.codify( mormons[lang](code) ) );
+	function finish ( code ) {
+		if ( !code ) {
+			bot.log( '/beautify not found' );
+			msg.reply( err404.supplant(id) );
+		}
+		else {
+			//so...we meet at last
+			bot.log( code, '/beautify beautifying' );
+			msg.send( msg.codify(beautifiers[lang](code)) );
+		}
+	}
 }
 
-function fetch_message ( id, msg ) {
-	if ( !/^\d+$/.test(id) ) {
-		bot.log( id, '/beautify fetch_message' );
-		return fetch_last_message( msg.findUserid(id) );
-	}
+function fetch_message( id, cb ) {
+	IO.xhr({
+		method : 'GET',
+		url : '/message/' + id,
+		data : {
+			plain : true
+		},
 
-	return document.getElementById( 'message-' + id );
+		complete : complete
+	});
+
+	function complete ( resp ) {
+		//h4x everywhere
+		//the SO error page begins with a \r. that's the only way we can tell
+		// it apart from another, possibly valid message, since messages can't
+		// be whitespace padded
+		if ( resp[0] === '\r' ) {
+			resp = null;
+		}
+		else {
+			resp = IO.decodehtmlEntities( resp );
+		}
+		cb( resp );
+	}
 }
 
-function fetch_last_message ( usrid ) {
+function fetch_message_id ( id, msg ) {
+	if ( /^\d+$/.test(id) ) {
+		return id;
+	}
+
+	bot.log( id, '/beautify fetch_message_id' );
+	var message = fetch_last_message_of( msg.findUserid(id) );
+
+	if ( !message ) {
+		return -1;
+	}
+	return /\d+/.exec( message.id );
+}
+
+function fetch_last_message_of ( usrid ) {
 	var last_monologue = [].filter.call(
 		document.getElementsByClassName( 'user-' + usrid ),
 		class_test
@@ -2668,7 +2707,7 @@ function fetch_last_message ( usrid ) {
 
 bot.addCommand({
 	name : 'beautify',
-	fun  : beautifyMsg,
+	fun  : beautify,
 	permission : {
 		del : 'NONE'
 	},
