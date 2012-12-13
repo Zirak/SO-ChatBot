@@ -431,6 +431,7 @@ var bot = window.bot = {
 		if ( cmd.learned ) {
 			this.info.learned += 1;
 		}
+		cmd.invoked = 0;
 
 		this.commands[ cmd.name ] = cmd;
 		this.commandDictionary.trie.add( cmd.name );
@@ -610,6 +611,8 @@ bot.Command = function ( cmd ) {
 	cmd.permissions.del = cmd.permissions.del || 'NONE';
 
 	cmd.description = cmd.description || '';
+	cmd.creator = cmd.creator || 'God';
+	cmd.invoked = 0;
 
 	//make canUse and canDel
 	[ 'Use', 'Del' ].forEach(function ( perm ) {
@@ -623,6 +626,7 @@ bot.Command = function ( cmd ) {
 	});
 
 	cmd.exec = function () {
+		this.invoked += 1;
 		return this.fun.apply( this.thisArg, arguments );
 	};
 
@@ -671,7 +675,7 @@ bot.CommunityCommand = function ( command, req ) {
 		}
 		else if ( needed > 0 ) {
 			used[ usrid ] = new Date;
-			return 'Registered; need {0} more to execute'.supplant( needed );
+			return 'Registered; need {0} more to execute'.supplant( needed-1 );
 		}
 		console.log( 'should execute' );
 		return false; //huzzah!
@@ -974,6 +978,22 @@ Math.gcd = function ( a, b ) {
     return this.gcd( b, a % b );
 };
 
+Math.rand = function ( min, max ) {
+	//rand() === rand( 0, 9 )
+	if ( !min ) {
+		min = 0;
+		max = 9;
+	}
+
+	//rand( max ) === rand( 0, max )
+	else if ( !max ) {
+		max = min;
+		min = 0;
+	}
+
+	return Math.floor( Math.random() * (max - min + 1) ) + min;
+};
+
 //Crockford's supplant
 String.prototype.supplant = function ( arg ) {
 	//if it's an object, use that. otherwise, use the arguments list.
@@ -988,6 +1008,16 @@ String.prototype.supplant = function ( arg ) {
 			$0;
 	}
 };
+
+//I got annoyed that RegExps don't automagically turn into correct shit when
+// JSON-ing them. so HERE.
+Object.defineProperty( RegExp.prototype, 'toJSON', {
+	value : function () {
+		return this.toString();
+	},
+	configurable : true,
+	writable : true
+});
 
 //not the most efficient thing, but who cares. formats the difference between
 // two dates
@@ -1550,9 +1580,34 @@ var commands = {
 
 	//a lesson on semi-bad practices and laziness
 	//chapter III
-	info : function () {
+	info : function ( args ) {
+		if ( args.content ) {
+			return commandFormat( args.content );
+		}
+
 		var info = bot.info;
 		return timeFormat() + ', and ' + statsFormat();
+
+		function commandFormat ( commandName ) {
+			var cmd = bot.getCommand( commandName );
+
+			if ( cmd.error ) {
+				return cmd.error;
+			}
+			var ret =  'Command {name}, created by {creator}'.supplant( cmd );
+
+			if ( cmd.date ) {
+				ret += ' on ' + cmd.date.toUTCString();
+			}
+			if ( cmd.invoked ) {
+				ret += ', invoked ' + cmd.invoked + ' times';
+			}
+			else {
+				ret += ' but hasn\'t been used yet';
+			}
+
+			return ret;
+		}
 
 		function timeFormat () {
 			var format = 'I awoke on {0} (that\'s about {1} ago)',
@@ -1578,6 +1633,9 @@ var commands = {
 				ret.push(
 					(but ? 'but ' : '') +
 					'forgotten ' + info.forgotten + ' commands' );
+			}
+			if ( Math.random() < 0.15 ) {
+				ret.push( 'teleported ' + Math.rand(100) + ' goats' );
 			}
 
 			return ret.join( ', ' ) || 'haven\'t done anything yet!';
@@ -1930,20 +1988,7 @@ var macros = {
 	rand : function ( min, max ) {
 		min = Number( min );
 		max = Number( max );
-
-		//handle rand() === rand( 0, 9 )
-		if ( !min ) {
-			min = 0;
-			max = 9;
-		}
-
-		//handle rand( max ) === rand( 0, max )
-		else if ( !max ) {
-			max = min;
-			min = 0;
-		}
-
-		return Math.floor( Math.random() * (max - min + 1) ) + min;
+		return Math.rand( min, max );
 	}
 };
 var macroRegex = /(?:.|^)\$(\w+)(?:\((.*?)\))?/g;
@@ -2124,7 +2169,7 @@ var descriptions = {
 	get : 'Grabs a question/answer link (see online for thorough explanation)',
 	help : 'Fetches documentation for given command, or general help article.' +
 		' `/help [cmdName]`',
-	info : 'Grabs some stats on the my current instance. `',
+	info : 'Grabs some stats on my current instance. `',
 	jquery : 'Fetches documentation link from jQuery API. `/jquery what`',
 	listcommands : 'Lists commands. `/listcommands [page=0]`',
 	listen : 'Forwards the message to my ears (as if called without the /)',
@@ -5636,7 +5681,10 @@ function learn ( args ) {
 	var command = {
 		name   : commandParts[ 0 ],
 		output : commandParts[ 1 ],
-		input  : commandParts[ 2 ] || '.*'
+		input  : commandParts[ 2 ] || '.*',
+		//meta info
+		creator: args.get( 'user_name' ),
+		date   : new Date()
 	};
 	command.description = [
 		'User-taught command:',
@@ -5657,13 +5705,18 @@ function learn ( args ) {
 
 	addCustomCommand( command );
 	saveCommand( command );
+
 	return 'Command ' + command.name + ' learned';
 }
 
 function addCustomCommand ( command ) {
 	var cmd = bot.Command({
+		//I hate this duplication
 		name : command.name,
+
 		description : command.description,
+		creator : command.creator,
+		date : command.date,
 
 		fun : makeCustomCommand( command ),
 		permissions : {
@@ -5676,7 +5729,7 @@ function addCustomCommand ( command ) {
 	cmd.del = (function ( old ) {
 		return function () {
 			deleteCommand( command.name );
-			old();
+			old.call( cmd );
 		};
 	}( cmd.del ));
 
@@ -5720,18 +5773,16 @@ function loadCommands () {
 	function teach ( key ) {
 		var cmd = JSON.parse( storage[key] );
 		cmd.input = new RegExp( cmd.input );
+		cmd.date = new Date( Date.parse(cmd.date) );
 
 		bot.log( cmd, '/learn loadCommands' );
 		addCustomCommand( cmd );
 	}
 }
 function saveCommand ( command ) {
-	storage[ command.name ] = JSON.stringify({
-		name   : command.name,
-		input  : command.input.source,
-		output : command.output,
-		description : command.description
-	});
+	//h4x in source/util.js defines RegExp.prototype.toJSON so we don't worry
+	// about the input regexp stringifying
+	storage[ command.name ] = JSON.stringify( command );
 	localStorage.bot_learn = JSON.stringify( storage );
 }
 function deleteCommand ( name ) {

@@ -143,9 +143,34 @@ var commands = {
 
 	//a lesson on semi-bad practices and laziness
 	//chapter III
-	info : function () {
+	info : function ( args ) {
+		if ( args.content ) {
+			return commandFormat( args.content );
+		}
+
 		var info = bot.info;
 		return timeFormat() + ', and ' + statsFormat();
+
+		function commandFormat ( commandName ) {
+			var cmd = bot.getCommand( commandName );
+
+			if ( cmd.error ) {
+				return cmd.error;
+			}
+			var ret =  'Command {name}, created by {creator}'.supplant( cmd );
+
+			if ( cmd.date ) {
+				ret += ' on ' + cmd.date.toUTCString();
+			}
+			if ( cmd.invoked ) {
+				ret += ', invoked ' + cmd.invoked + ' times';
+			}
+			else {
+				ret += ' but hasn\'t been used yet';
+			}
+
+			return ret;
+		}
 
 		function timeFormat () {
 			var format = 'I awoke on {0} (that\'s about {1} ago)',
@@ -171,6 +196,9 @@ var commands = {
 				ret.push(
 					(but ? 'but ' : '') +
 					'forgotten ' + info.forgotten + ' commands' );
+			}
+			if ( Math.random() < 0.15 ) {
+				ret.push( 'teleported ' + Math.rand(100) + ' goats' );
 			}
 
 			return ret.join( ', ' ) || 'haven\'t done anything yet!';
@@ -523,20 +551,7 @@ var macros = {
 	rand : function ( min, max ) {
 		min = Number( min );
 		max = Number( max );
-
-		//handle rand() === rand( 0, 9 )
-		if ( !min ) {
-			min = 0;
-			max = 9;
-		}
-
-		//handle rand( max ) === rand( 0, max )
-		else if ( !max ) {
-			max = min;
-			min = 0;
-		}
-
-		return Math.floor( Math.random() * (max - min + 1) ) + min;
+		return Math.rand( min, max );
 	}
 };
 var macroRegex = /(?:.|^)\$(\w+)(?:\((.*?)\))?/g;
@@ -717,7 +732,7 @@ var descriptions = {
 	get : 'Grabs a question/answer link (see online for thorough explanation)',
 	help : 'Fetches documentation for given command, or general help article.' +
 		' `/help [cmdName]`',
-	info : 'Grabs some stats on the my current instance. `',
+	info : 'Grabs some stats on my current instance. `',
 	jquery : 'Fetches documentation link from jQuery API. `/jquery what`',
 	listcommands : 'Lists commands. `/listcommands [page=0]`',
 	listen : 'Forwards the message to my ears (as if called without the /)',

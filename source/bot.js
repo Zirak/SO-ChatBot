@@ -130,6 +130,7 @@ var bot = window.bot = {
 		if ( cmd.learned ) {
 			this.info.learned += 1;
 		}
+		cmd.invoked = 0;
 
 		this.commands[ cmd.name ] = cmd;
 		this.commandDictionary.trie.add( cmd.name );
@@ -248,6 +249,8 @@ bot.Command = function ( cmd ) {
 	cmd.permissions.del = cmd.permissions.del || 'NONE';
 
 	cmd.description = cmd.description || '';
+	cmd.creator = cmd.creator || 'God';
+	cmd.invoked = 0;
 
 	//make canUse and canDel
 	[ 'Use', 'Del' ].forEach(function ( perm ) {
@@ -261,6 +264,7 @@ bot.Command = function ( cmd ) {
 	});
 
 	cmd.exec = function () {
+		this.invoked += 1;
 		return this.fun.apply( this.thisArg, arguments );
 	};
 
@@ -309,7 +313,7 @@ bot.CommunityCommand = function ( command, req ) {
 		}
 		else if ( needed > 0 ) {
 			used[ usrid ] = new Date;
-			return 'Registered; need {0} more to execute'.supplant( needed );
+			return 'Registered; need {0} more to execute'.supplant( needed-1 );
 		}
 		console.log( 'should execute' );
 		return false; //huzzah!

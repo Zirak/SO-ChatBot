@@ -10,7 +10,10 @@ function learn ( args ) {
 	var command = {
 		name   : commandParts[ 0 ],
 		output : commandParts[ 1 ],
-		input  : commandParts[ 2 ] || '.*'
+		input  : commandParts[ 2 ] || '.*',
+		//meta info
+		creator: args.get( 'user_name' ),
+		date   : new Date()
 	};
 	command.description = [
 		'User-taught command:',
@@ -31,13 +34,18 @@ function learn ( args ) {
 
 	addCustomCommand( command );
 	saveCommand( command );
+
 	return 'Command ' + command.name + ' learned';
 }
 
 function addCustomCommand ( command ) {
 	var cmd = bot.Command({
+		//I hate this duplication
 		name : command.name,
+
 		description : command.description,
+		creator : command.creator,
+		date : command.date,
 
 		fun : makeCustomCommand( command ),
 		permissions : {
@@ -50,7 +58,7 @@ function addCustomCommand ( command ) {
 	cmd.del = (function ( old ) {
 		return function () {
 			deleteCommand( command.name );
-			old();
+			old.call( cmd );
 		};
 	}( cmd.del ));
 
@@ -94,18 +102,16 @@ function loadCommands () {
 	function teach ( key ) {
 		var cmd = JSON.parse( storage[key] );
 		cmd.input = new RegExp( cmd.input );
+		cmd.date = new Date( Date.parse(cmd.date) );
 
 		bot.log( cmd, '/learn loadCommands' );
 		addCustomCommand( cmd );
 	}
 }
 function saveCommand ( command ) {
-	storage[ command.name ] = JSON.stringify({
-		name   : command.name,
-		input  : command.input.source,
-		output : command.output,
-		description : command.description
-	});
+	//h4x in source/util.js defines RegExp.prototype.toJSON so we don't worry
+	// about the input regexp stringifying
+	storage[ command.name ] = JSON.stringify( command );
 	localStorage.bot_learn = JSON.stringify( storage );
 }
 function deleteCommand ( name ) {
