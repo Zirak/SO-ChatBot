@@ -1000,23 +1000,23 @@ Date.timeSince = function ( d0, d1 ) {
 	var delays = [
 		{
 			delta : 31536000,
-			suffix : 'years'
+			suffix : 'year'
 		},
 		{
 			delta : 2592000,
-			suffix : 'months'
+			suffix : 'month'
 		},
 		{
 			delta : 86400,
-			suffix : 'days'
+			suffix : 'day'
 		},
 		{
 			delta : 3600,
-			suffix : 'hours'
+			suffix : 'hour'
 		},
 		{
 			delta : 60,
-			suffix : 'minutes'
+			suffix : 'minute'
 		},
 		//anything else is seconds
 	];
@@ -1024,11 +1024,18 @@ Date.timeSince = function ( d0, d1 ) {
 	while ( delay = delays.shift() ) {
 		interval = seconds / delay.delta;
 
-		if ( interval > 1 ) {
-			return Math.floor( interval ) + ' ' + delay.suffix;
+		if ( interval >= 1 ) {
+			return format( interval, delay.suffix );
 		}
 	}
-	return Math.floor( seconds ) + ' seconds';
+	return format( seconds, 'second' );
+
+	function format ( interval, suffix ) {
+		interval = Math.floor( interval );
+		suffix += interval === 1 ? '' : 's';
+
+		return interval + ' ' + suffix;
+	}
 };
 
 (function () {
@@ -1561,7 +1568,7 @@ var commands = {
 				but = false; //you'll see in a few lines
 
 			if ( info.invoked ) {
-				ret.push( 'was invoked ' + info.invoked + ' times' );
+				ret.push( 'got invoked ' + info.invoked + ' times' );
 			}
 			if ( info.learned ) {
 				but = true;
@@ -2108,51 +2115,32 @@ commands.mdn = function ( args, cb ) {
 commands.mdn.async = true;
 
 var descriptions = {
+	ban : 'Bans a user from (ab)using me. `/ban usr_id|usr_name`',
+	choose : '"Randomly" choose an option given. `/choose option0 option1 ...`',
+	define : 'Fetches definition for a given word. `/define something`',
+	die  : 'Kills me :(',
+	eval : 'Forwards message to javascript code-eval',
+	forget : 'Forgets a given command. `/forget cmdName`',
+	get : 'Grabs a question/answer link (see online for thorough explanation)',
 	help : 'Fetches documentation for given command, or general help article.' +
 		' `/help [cmdName]`',
-
-	listen : 'Forwards the message to the listen API (as if called without' +
-		' the /)',
-
-	eval : 'Forwards message to code-eval (as if the command / was a >)',
-
-	live : 'Resurrects the bot if it\'s down',
-
-	die  : 'Kills the bot',
-
-	refresh : 'Reloads the browser window for the bot',
-
-	forget : 'Forgets a given command. `/forget cmdName`',
-
-	ban : 'Bans a user from using a bot. `/ban usr_id|usr_name`',
-
-	unban : 'Removes a user from bot\'s mindjail. `/unban usr_id|usr_name`',
-
-	regex : 'Executes a regex against text input. `/regex text regex [flags]`',
-
+	info : 'Grabs some stats on the my current instance. `',
 	jquery : 'Fetches documentation link from jQuery API. `/jquery what`',
-
-	choose : '"Randomly" choose an option given. `/choose option0 option1 ...`',
-
-	user : 'Fetches user-link for specified user. `/user usr_id|usr_name`',
-
 	listcommands : 'Lists commands. `/listcommands [page=0]`',
-
-	purgecommands : 'Deletes all user-taught commands.',
-
-	define : 'Fetches definition for a given word. `/define something`',
-
+	listen : 'Forwards the message to my ears (as if called without the /)',
+	live : 'Resurrects me (:D) if I\'m down',
+	mdn : 'Fetches mdn documentation. `/mdn what`',
 	norris : 'Random chuck norris joke!',
-
-	urban : 'Fetches UrbanDictionary definition. `/urban something`',
-
-	parse : 'Returns result of "parsing" message according to the bot\'s mini' +
-		'-macro capabilities',
-
+	parse : 'Returns result of "parsing" message according to the my mini' +
+		'-macro capabilities (see online docs)',
+	purgecommands : 'Deletes all user-taught commands.',
+	refresh : 'Reloads the browser window I live in',
+	regex : 'Executes a regex against text input. `/regex text regex [flags]`',
 	tell : 'Redirect command result to user/message.' +
 		' /tell `msg_id|usr_name cmdName [cmdArgs]`',
-
-	mdn : 'Fetches mdn documentation. `/mdn what`'
+	unban : 'Removes a user from my mindjail. `/unban usr_id|usr_name`',
+	urban : 'Fetches UrbanDictionary definition. `/urban something`',
+	user : 'Fetches user-link for specified user. `/user usr_id|usr_name`',
 };
 
 //only allow owners to use certain commands

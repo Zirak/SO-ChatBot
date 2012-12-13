@@ -190,23 +190,23 @@ Date.timeSince = function ( d0, d1 ) {
 	var delays = [
 		{
 			delta : 31536000,
-			suffix : 'years'
+			suffix : 'year'
 		},
 		{
 			delta : 2592000,
-			suffix : 'months'
+			suffix : 'month'
 		},
 		{
 			delta : 86400,
-			suffix : 'days'
+			suffix : 'day'
 		},
 		{
 			delta : 3600,
-			suffix : 'hours'
+			suffix : 'hour'
 		},
 		{
 			delta : 60,
-			suffix : 'minutes'
+			suffix : 'minute'
 		},
 		//anything else is seconds
 	];
@@ -214,9 +214,16 @@ Date.timeSince = function ( d0, d1 ) {
 	while ( delay = delays.shift() ) {
 		interval = seconds / delay.delta;
 
-		if ( interval > 1 ) {
-			return Math.floor( interval ) + ' ' + delay.suffix;
+		if ( interval >= 1 ) {
+			return format( interval, delay.suffix );
 		}
 	}
-	return Math.floor( seconds ) + ' seconds';
+	return format( seconds, 'second' );
+
+	function format ( interval, suffix ) {
+		interval = Math.floor( interval );
+		suffix += interval === 1 ? '' : 's';
+
+		return interval + ' ' + suffix;
+	}
 };
