@@ -292,7 +292,7 @@ bot.CommunityCommand = function ( command, req ) {
 			console.log( err );
 			return err;
 		}
-		old_execute.apply( cmd, arguments );
+		return old_execute.apply( cmd, arguments );
 	};
 	return cmd;
 
