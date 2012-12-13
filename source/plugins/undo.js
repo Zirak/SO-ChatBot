@@ -44,6 +44,10 @@ var undo = {
 			else if ( /it is too late/i.test(resp) ) {
 				msg = 'TimeError: Could not reach 88mph';
 			}
+			else if ( /only delete your own/i.test(resp) ) {
+				 //...I can't think of anything clever
+				msg = 'I can only delete my own messages';
+			}
 			else {
 				msg = 'I have no idea what happened: ' + resp;
 			}

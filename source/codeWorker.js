@@ -100,7 +100,10 @@ Object.defineProperty( Array.prototype, 'join', {
 		var jsonStringify = JSON.stringify, /*backup*/
 			result = exec( event.data );
 
-		var strung = { Function : true, Error : true, Undefined : true };
+		var strung = {
+			Function  : true, Error  : true,
+			Undefined : true, RegExp : true
+		};
 		var reviver = function ( key, value ) {
 			var type = ( {} ).toString.call( value ).slice( 8, -1 ),
 				output;
@@ -118,7 +121,7 @@ Object.defineProperty( Array.prototype, 'join', {
 
 		postMessage({
 			answer : jsonStringify( result, reviver ),
-			log    : jsonStringify( console._items, reviver ).slice(1, -1)
+			log    : jsonStringify( console._items, reviver ).slice( 1, -1 )
 		});
 	};
 })();
