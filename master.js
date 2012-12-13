@@ -2169,7 +2169,8 @@ var descriptions = {
 	get : 'Grabs a question/answer link (see online for thorough explanation)',
 	help : 'Fetches documentation for given command, or general help article.' +
 		' `/help [cmdName]`',
-	info : 'Grabs some stats on my current instance. `',
+	info : 'Grabs some stats on my current instance or a command.' +
+		' `/info [cmdName]`',
 	jquery : 'Fetches documentation link from jQuery API. `/jquery what`',
 	listcommands : 'Lists commands. `/listcommands [page=0]`',
 	listen : 'Forwards the message to my ears (as if called without the /)',
