@@ -127,6 +127,10 @@ var commands = {
 		}
 
 		function unban ( id ) {
+			if ( id < 0 ) {
+				return;
+			}
+
 			if ( !bot.banlist.contains(id) ) {
 				msg.push( 'User ' + id + ' isn\'t in mindjail.' );
 			}
@@ -134,6 +138,42 @@ var commands = {
 				bot.banlist.remove( id );
 				msg.push( 'User ' + id + ' freed from mindjail.' );
 			}
+		}
+	},
+
+	//a lesson on semi-bad practices and laziness
+	//chapter III
+	info : function () {
+		var info = bot.info;
+		return timeFormat() + ', and ' + statsFormat();
+
+		function timeFormat () {
+			var format = 'I awoke on {0} (that\'s about {1} ago)',
+
+				awoke = info.start.toUTCString(),
+				ago = Date.timeSince( info.start );
+
+			return format.supplant( awoke, ago );
+		}
+
+		function statsFormat () {
+			var ret = [],
+				but = false; //you'll see in a few lines
+
+			if ( info.invoked ) {
+				ret.push( 'was invoked ' + info.invoked + ' times' );
+			}
+			if ( info.learned ) {
+				but = true;
+				ret.push( 'learned ' + info.learned + ' commands' );
+			}
+			if ( info.forgotten ) {
+				ret.push(
+					(but ? 'but ' : '') +
+					'forgotten ' + info.forgotten + ' commands' );
+			}
+
+			return ret.join( ', ' ) || 'haven\'t done anything yet!';
 		}
 	},
 

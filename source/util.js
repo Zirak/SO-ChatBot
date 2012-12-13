@@ -179,6 +179,44 @@ String.prototype.supplant = function ( arg ) {
 	}
 };
 
-String.prototype.add = function ( str, nonewline ) {
-	return this + str + ( nonewline ? '' : '\n' );
+//not the most efficient thing, but who cares. formats the difference between
+// two dates
+Date.timeSince = function ( d0, d1 ) {
+	d1 = d1 || (new Date);
+	//our resolution goes starts with seconds, we don't care about ms
+	var seconds = Math.floor( (d1 - d0) / 1000 ),
+		delay, interval;
+
+	var delays = [
+		{
+			delta : 31536000,
+			suffix : 'years'
+		},
+		{
+			delta : 2592000,
+			suffix : 'months'
+		},
+		{
+			delta : 86400,
+			suffix : 'days'
+		},
+		{
+			delta : 3600,
+			suffix : 'hours'
+		},
+		{
+			delta : 60,
+			suffix : 'minutes'
+		},
+		//anything else is seconds
+	];
+
+	while ( delay = delays.shift() ) {
+		interval = seconds / delay.delta;
+
+		if ( interval > 1 ) {
+			return Math.floor( interval ) + ' ' + delay.suffix;
+		}
+	}
+	return Math.floor( seconds ) + ' seconds';
 };

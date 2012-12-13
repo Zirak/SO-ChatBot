@@ -248,7 +248,10 @@ var output = bot.adapter.out = {
 			}
 			//server error, usually caused by message being too long
 			else if ( xhr.status === 500 ) {
-				output.add( 'Server error (status 500) occured', roomid );
+				output.add(
+					'Server error (status 500) occured ' +
+						' (message probably too long)'
+					, roomid );
 			}
 			else {
 				IO.fire( 'sendoutput', xhr );

@@ -309,7 +309,12 @@ var bot = window.bot = {
 	commands : {}, //will be filled as needed
 	commandDictionary : null, //it's null at this point, won't be for long
 	listeners : [],
-
+	info : {
+		invoked   : 0,
+		learned   : 0,
+		forgotten : 0,
+		start     : new Date,
+	},
 
 	parseMessage : function ( msgObj ) {
 		if ( !this.validateMessage(msgObj) ) {
@@ -360,6 +365,9 @@ var bot = window.bot = {
 			msg.directreply( err );
 			//make sure we have it documented
 			console.error( e, err );
+		}
+		finally {
+			this.info.invoked += 1;
 		}
 	},
 
@@ -419,6 +427,9 @@ var bot = window.bot = {
 	addCommand : function ( cmd ) {
 		if ( !cmd.exec || !cmd.del ) {
 			cmd = this.Command( cmd );
+		}
+		if ( cmd.learned ) {
+			this.info.learned += 1;
 		}
 
 		this.commands[ cmd.name ] = cmd;
@@ -616,6 +627,7 @@ bot.Command = function ( cmd ) {
 	};
 
 	cmd.del = function () {
+		bot.info.forgotten += 1;
 		delete bot.commands[ cmd.name ];
 	};
 
@@ -977,8 +989,46 @@ String.prototype.supplant = function ( arg ) {
 	}
 };
 
-String.prototype.add = function ( str, nonewline ) {
-	return this + str + ( nonewline ? '' : '\n' );
+//not the most efficient thing, but who cares. formats the difference between
+// two dates
+Date.timeSince = function ( d0, d1 ) {
+	d1 = d1 || (new Date);
+	//our resolution goes starts with seconds, we don't care about ms
+	var seconds = Math.floor( (d1 - d0) / 1000 ),
+		delay, interval;
+
+	var delays = [
+		{
+			delta : 31536000,
+			suffix : 'years'
+		},
+		{
+			delta : 2592000,
+			suffix : 'months'
+		},
+		{
+			delta : 86400,
+			suffix : 'days'
+		},
+		{
+			delta : 3600,
+			suffix : 'hours'
+		},
+		{
+			delta : 60,
+			suffix : 'minutes'
+		},
+		//anything else is seconds
+	];
+
+	while ( delay = delays.shift() ) {
+		interval = seconds / delay.delta;
+
+		if ( interval > 1 ) {
+			return Math.floor( interval ) + ' ' + delay.suffix;
+		}
+	}
+	return Math.floor( seconds ) + ' seconds';
 };
 
 (function () {
@@ -1477,6 +1527,10 @@ var commands = {
 		}
 
 		function unban ( id ) {
+			if ( id < 0 ) {
+				return;
+			}
+
 			if ( !bot.banlist.contains(id) ) {
 				msg.push( 'User ' + id + ' isn\'t in mindjail.' );
 			}
@@ -1484,6 +1538,42 @@ var commands = {
 				bot.banlist.remove( id );
 				msg.push( 'User ' + id + ' freed from mindjail.' );
 			}
+		}
+	},
+
+	//a lesson on semi-bad practices and laziness
+	//chapter III
+	info : function () {
+		var info = bot.info;
+		return timeFormat() + ', and ' + statsFormat();
+
+		function timeFormat () {
+			var format = 'I awoke on {0} (that\'s about {1} ago)',
+
+				awoke = info.start.toUTCString(),
+				ago = Date.timeSince( info.start );
+
+			return format.supplant( awoke, ago );
+		}
+
+		function statsFormat () {
+			var ret = [],
+				but = false; //you'll see in a few lines
+
+			if ( info.invoked ) {
+				ret.push( 'was invoked ' + info.invoked + ' times' );
+			}
+			if ( info.learned ) {
+				but = true;
+				ret.push( 'learned ' + info.learned + ' commands' );
+			}
+			if ( info.forgotten ) {
+				ret.push(
+					(but ? 'but ' : '') +
+					'forgotten ' + info.forgotten + ' commands' );
+			}
+
+			return ret.join( ', ' ) || 'haven\'t done anything yet!';
 		}
 	},
 
@@ -2520,7 +2610,10 @@ var output = bot.adapter.out = {
 			}
 			//server error, usually caused by message being too long
 			else if ( xhr.status === 500 ) {
-				output.add( 'Server error (status 500) occured', roomid );
+				output.add(
+					'Server error (status 500) occured ' +
+						' (message probably too long)'
+					, roomid );
 			}
 			else {
 				IO.fire( 'sendoutput', xhr );

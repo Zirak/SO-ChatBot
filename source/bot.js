@@ -8,7 +8,12 @@ var bot = window.bot = {
 	commands : {}, //will be filled as needed
 	commandDictionary : null, //it's null at this point, won't be for long
 	listeners : [],
-
+	info : {
+		invoked   : 0,
+		learned   : 0,
+		forgotten : 0,
+		start     : new Date,
+	},
 
 	parseMessage : function ( msgObj ) {
 		if ( !this.validateMessage(msgObj) ) {
@@ -59,6 +64,9 @@ var bot = window.bot = {
 			msg.directreply( err );
 			//make sure we have it documented
 			console.error( e, err );
+		}
+		finally {
+			this.info.invoked += 1;
 		}
 	},
 
@@ -118,6 +126,9 @@ var bot = window.bot = {
 	addCommand : function ( cmd ) {
 		if ( !cmd.exec || !cmd.del ) {
 			cmd = this.Command( cmd );
+		}
+		if ( cmd.learned ) {
+			this.info.learned += 1;
 		}
 
 		this.commands[ cmd.name ] = cmd;
@@ -254,6 +265,7 @@ bot.Command = function ( cmd ) {
 	};
 
 	cmd.del = function () {
+		bot.info.forgotten += 1;
 		delete bot.commands[ cmd.name ];
 	};
 
