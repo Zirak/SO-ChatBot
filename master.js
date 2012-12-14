@@ -411,7 +411,10 @@ var bot = window.bot = {
 
 		bot.log( cmdObj, 'parseCommand calling' );
 
-		var args = this.Message( msg.replace(/^\//, '').trim(), msg.get() ),
+		var args = this.Message(
+				msg.replace(/^\//, '').slice( commandName.length ).trim(),
+				msg.get()
+			),
 			//it always amazed me how, in dynamic systems, the trigger of the
 			// actions is always a small, nearly unidentifiable line
 			//this line right here activates a command
@@ -1514,11 +1517,10 @@ var commands = {
 			args.parse().forEach( ban );
 		}
 		else {
-			ret = Object.keys( bot.banlist ).filter( Number ) ||
-				[ 'No users in mindjail.' ];
+			ret = Object.keys( bot.banlist ).filter( Number );
 		}
 
-		return ret.join( ' ' );
+		return ret.join( ' ' ) || 'Nothing to show/do.';
 
 		function ban ( usrid ) {
 			var id = Number( usrid ),
