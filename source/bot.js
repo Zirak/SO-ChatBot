@@ -228,6 +228,7 @@ bot.banlist = JSON.parse( localStorage.bot_ban || '{}' );
 if ( Array.isArray(bot.banlist) ) {
 	bot.banlist = bot.banlist.reduce(function ( ret, id ) {
 		ret[ id ] = { told : false };
+		return ret;
 	}, {});
 }
 bot.banlist.contains = function ( id ) {
