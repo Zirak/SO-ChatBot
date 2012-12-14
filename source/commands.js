@@ -66,78 +66,66 @@ var commands = {
 	},
 
 	ban : function ( args ) {
-		var msg = [];
-		args.parse().map( getID ).forEach( ban );
-
-		return msg.join( ' ' );
-
-		function getID ( usrid ) {
-			//name provided instead of id
-			if ( /\D/.test(usrid) ) {
-				usrid = args.findUserid( usrid.replace(/^@/, '') );
-			}
-
-			var id = Number( usrid );
-			if ( id < 0 ) {
-				msg.push( 'Cannot find user ' + usrid + '.' );
-				id = -1;
-			}
-			else if ( bot.isOwner(id) ) {
-				msg.push( 'Cannot mindjail owner ' + usrid + '.' );
-				id = -1;
-			}
-
-			return id;
+		var ret = [];
+		if ( args.content ) {
+			args.parse().forEach( ban );
+		}
+		else {
+			ret = Object.keys( bot.banlist ).filter( Number );
 		}
 
-		function ban ( id ) {
-			if ( id < 0 ) {
-				return;
+		return ret.join( ' ' ) || 'Nothing to show/do.';
+
+		function ban ( usrid ) {
+			var id = Number( usrid ),
+				msg;
+			if ( /\D/.test(usrid) ) {
+				id = args.findUserid( id.replace(/^@/, '') );
 			}
 
-			if ( bot.banlist.contains(id) ) {
-				msg.push( 'User ' + id + ' already in mindjail.' );
+			if ( id < 0 ) {
+				msg = 'Cannot find user {0}.';
+			}
+			else if ( bot.isOwner(id) ) {
+				msg = 'Cannot mindjail owner {0}.';
+			}
+			else if ( bot.banlist.contains(id) ) {
+				msg = 'User {0} already in mindjail.';
 			}
 			else {
 				bot.banlist.add( id );
-				msg.push( 'User ' + id + ' added to mindjail.');
+				msg = 'User {0} added to mindjail.';
 			}
+
+			ret.push( msg.supplant(usrid) );
 		}
 	},
 
 	unban : function ( args ) {
-		var msg = [];
-		args.parse().map( getID ).forEach( unban );
+		var ret = [];
+		args.parse().forEach( unban );
 
-		return msg.join( ' ' );
+		return ret.join( ' ' );
 
-		function getID ( usrid ) {
-			//name provided instead of id
+		function unban ( usrid ) {
+			var id = Number( usrid ),
+				msg;
 			if ( /\D/.test(usrid) ) {
-				usrid = args.findUserid( usrid.replace(/^@/, '') );
+				id = args.findUserid( usrid.replace(/^@/, '') );
 			}
 
-			var id = Number( usrid );
 			if ( id < 0 ) {
-				msg.push( 'Cannot find user ' + usrid + '.' );
-				id = -1;
+				msg = 'Cannot find user {0}.'
 			}
-
-			return id;
-		}
-
-		function unban ( id ) {
-			if ( id < 0 ) {
-				return;
-			}
-
-			if ( !bot.banlist.contains(id) ) {
-				msg.push( 'User ' + id + ' isn\'t in mindjail.' );
+			else if ( !bot.banlist.contains(id) ) {
+				msg = 'User {0} isn\'t in mindjail.';
 			}
 			else {
 				bot.banlist.remove( id );
-				msg.push( 'User ' + id + ' freed from mindjail.' );
+				msg = 'User {0} freed from mindjail!';
 			}
+
+			ret.push( msg.supplant(usrid) );
 		}
 	},
 

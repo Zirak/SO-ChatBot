@@ -4,7 +4,7 @@
 var bot = window.bot = {
 	invocationPattern : '!!',
 
-	commandRegex : /^\s*([\w\-]+)(?:\s(.+))?$/,
+	commandRegex : /^\/\s*([\w\-]+)(?:\s(.+))?$/,
 	commands : {}, //will be filled as needed
 	commandDictionary : null, //it's null at this point, won't be for long
 	listeners : [],
@@ -21,13 +21,18 @@ var bot = window.bot = {
 			return;
 		}
 
-		var msg = this.prepareMessage( msgObj );
+		var msg = this.prepareMessage( msgObj ),
+			id = msg.get( 'user_id' );
 		bot.log( msg, 'parseMessage valid' );
 
-		if ( this.banlist.contains(msg.get('user_id')) ) {
+		if ( this.banlist.contains(id) ) {
 			bot.log( msgObj, 'parseMessage banned' );
-			//TODO: remove this after testing, and push if block up
-			msg.reply( 'You iz in mindjail' );
+
+			//tell the user he's banned only if he hasn't already been told
+			if ( !this.banlist[id].told ) {
+				msg.reply( 'You iz in mindjail' );
+				this.banlist[ id ].told = true;
+			}
 			return;
 		}
 
@@ -43,7 +48,7 @@ var bot = window.bot = {
 			//see if some hobo listener wants this
 			else if ( !this.callListeners(msg) ) {
 				//no listener fancied the message. this is the last frontier,
-				// so just give up in a fancy, dignified way
+				// so just give up in a classy, dignified way
 				msg.reply(
 					'Y U NO MAEK SENSE!? Could not understand `' + msg + '`' );
 			}
@@ -87,9 +92,9 @@ var bot = window.bot = {
 		}
 		bot.log( commandParts, 'parseCommand matched' );
 
-		var commandName = commandParts[ 1 ].toLowerCase();
+		var commandName = commandParts[ 1 ].toLowerCase(),
+			cmdObj = this.getCommand( commandName );
 		//see if there was some error fetching the command
-		var cmdObj = this.getCommand( commandName );
 		if ( cmdObj.error ) {
 			msg.reply( cmdObj.error );
 			return;
@@ -98,14 +103,20 @@ var bot = window.bot = {
 		if ( !cmdObj.canUse(msg.get('user_id')) ) {
 			msg.reply([
 				'You do not have permission to use the command ' + commandName,
-				"I'm afraid I can't do that, " + msg.get('user_name')
+				"I'm afraid I can't let you do that, " + msg.get('user_name')
 			].random());
 			return;
 		}
 
 		bot.log( cmdObj, 'parseCommand calling' );
 
-		var args = this.Message( msg.replace(/^\//, '').trim(), msg.get() ),
+		var args = this.Message(
+				msg.replace(/^\//, '').slice( commandName.length ).trim(),
+				msg.get()
+			),
+			//it always amazed me how, in dynamic systems, the trigger of the
+			// actions is always a small, nearly unidentifiable line
+			//this line right here activates a command
 			res = cmdObj.exec( args );
 
 		if ( res ) {
@@ -213,26 +224,27 @@ var bot = window.bot = {
 
 //#build eval.js
 
-bot.banlist = JSON.parse( localStorage.bot_ban || '[]' );
-bot.banlist.contains = function ( item ) {
-	return this.indexOf( item ) >= 0;
+bot.banlist = JSON.parse( localStorage.bot_ban || '{}' );
+if ( Array.isArray(bot.banlist) ) {
+	bot.banlist = bot.banlist.reduce(function ( ret, id ) {
+		ret[ id ] = { told : false };
+	}, {});
+}
+bot.banlist.contains = function ( id ) {
+	return this.hasOwnProperty( id );
 };
-bot.banlist.add = function ( item ) {
-	this.push( item );
+bot.banlist.add = function ( id ) {
+	this[ id ] = { told : false };
 	this.save();
 };
-bot.banlist.remove = function ( item ) {
-	var idx = this.indexOf( item ),
-		ret = null;
-
-	if ( idx >= 0 ) {
-		ret = this.splice( idx, 1 );
+bot.banlist.remove = function ( id ) {
+	if ( this.contains(id) ) {
+		delete this[ id ];
+		this.save();
 	}
-
-	this.save();
-	return ret;
 };
 bot.banlist.save = function () {
+	//JSON.stringify ignores functions
 	localStorage.bot_ban = JSON.stringify( this );
 };
 
