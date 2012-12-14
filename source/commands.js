@@ -688,7 +688,8 @@ commands.mdn = function ( args, cb ) {
 commands.mdn.async = true;
 
 var descriptions = {
-	ban : 'Bans a user from (ab)using me. `/ban usr_id|usr_name`',
+	ban : 'Bans user(s) from using me. Lacking arguments, prints the banlist.' +
+		' `/ban [usr_id|usr_name, [...]`',
 	choose : '"Randomly" choose an option given. `/choose option0 option1 ...`',
 	define : 'Fetches definition for a given word. `/define something`',
 	die  : 'Kills me :(',
