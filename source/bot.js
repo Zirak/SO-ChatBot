@@ -4,7 +4,7 @@
 var bot = window.bot = {
 	invocationPattern : '!!',
 
-	commandRegex : /^\/\s?([\w\-]+)(?:\s(.+))?$/,
+	commandRegex : /^\s*([\w\-]+)(?:\s(.+))?$/,
 	commands : {}, //will be filled as needed
 	commandDictionary : null, //it's null at this point, won't be for long
 	listeners : [],
@@ -32,16 +32,14 @@ var bot = window.bot = {
 		}
 
 		try {
-			//it's a command
-			if ( msg.startsWith('/') ) {
-				this.parseCommand( msg );
-			}
-
 			//it wants to execute some code
-			else if ( msg.startsWith('>') ) {
+			if ( msg.startsWith('>') ) {
 				this.eval( msg );
 			}
-
+			//it's a command
+			else if ( msg.startsWith('/') ) {
+				this.parseCommand( msg );
+			}
 			//see if some hobo listener wants this
 			else if ( !this.callListeners(msg) ) {
 				//no listener fancied the message. this is the last frontier,
@@ -62,8 +60,8 @@ var bot = window.bot = {
 			}
 
 			msg.directreply( err );
-			//make sure we have it documented
-			console.error( e, err );
+			//make sure we have it somewhere
+			console.dir( e );
 		}
 		finally {
 			this.info.invoked += 1;
@@ -106,12 +104,10 @@ var bot = window.bot = {
 		}
 
 		bot.log( cmdObj, 'parseCommand calling' );
-		var args = this.Message(
-			//+ 1 is for the / in the message
-			msg.slice( commandName.length + 1 ).trim(),
-			msg.get() );
 
-		var res = cmdObj.exec( args );
+		var args = this.Message( msg.replace(/^\//, '').trim(), msg.get() ),
+			res = cmdObj.exec( args );
+
 		if ( res ) {
 			msg.reply( res );
 		}

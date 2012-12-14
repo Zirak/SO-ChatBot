@@ -149,7 +149,7 @@ var commands = {
 		}
 
 		var info = bot.info;
-		return timeFormat() + ', and ' + statsFormat();
+		return timeFormat() + ', ' + statsFormat();
 
 		function commandFormat ( commandName ) {
 			var cmd = bot.getCommand( commandName );
@@ -162,6 +162,7 @@ var commands = {
 			if ( cmd.date ) {
 				ret += ' on ' + cmd.date.toUTCString();
 			}
+
 			if ( cmd.invoked ) {
 				ret += ', invoked ' + cmd.invoked + ' times';
 			}
@@ -183,19 +184,17 @@ var commands = {
 
 		function statsFormat () {
 			var ret = [],
-				but = false; //you'll see in a few lines
+				but = ''; //you'll see in a few lines
 
 			if ( info.invoked ) {
 				ret.push( 'got invoked ' + info.invoked + ' times' );
 			}
 			if ( info.learned ) {
-				but = true;
+				but = 'but ';
 				ret.push( 'learned ' + info.learned + ' commands' );
 			}
 			if ( info.forgotten ) {
-				ret.push(
-					(but ? 'but ' : '') +
-					'forgotten ' + info.forgotten + ' commands' );
+				ret.push( but + 'forgotten ' + info.forgotten + ' commands' );
 			}
 			if ( Math.random() < 0.15 ) {
 				ret.push( 'teleported ' + Math.rand(100) + ' goats' );
@@ -203,28 +202,6 @@ var commands = {
 
 			return ret.join( ', ' ) || 'haven\'t done anything yet!';
 		}
-	},
-
-	regex : function ( args ) {
-		var parts = args.parse(),
-
-			what = parts.shift(),
-			pattern = parts.shift(),
-			flags = parts.shift() || '',
-
-			regex = new RegExp( pattern, flags.toLowerCase() ),
-			matches = regex.exec( what );
-
-		bot.log( what, pattern, flags, regex, 'regex parsed' );
-		bot.log( matches, 'regex matched' );
-
-		if ( !matches ) {
-			return 'No matches.';
-		}
-
-		return matches.map(function ( match ) {
-			return '`' + match + '`';
-		}).join( ', ' );
 	},
 
 	jquery : function jquery ( args ) {

@@ -39,7 +39,8 @@ var undo = {
 			var msg;
 
 			if ( resp === '"ok"' ) {
-				msg = 'Target eliminated';
+				//nothing to see here
+				return;
 			}
 			else if ( /it is too late/i.test(resp) ) {
 				msg = 'TimeError: Could not reach 88mph';

@@ -19,6 +19,7 @@ return function ( msg ) {
 		finish( error.toString() );
 	};
 
+	//and it all boils down to this...
 	worker.postMessage( msg.content.replace(/^>/, '') );
 
 	timeout = window.setTimeout(function() {
