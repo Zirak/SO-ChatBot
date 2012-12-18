@@ -395,6 +395,10 @@ var bot = window.bot = {
 
 		var commandName = commandParts[ 1 ].toLowerCase(),
 			cmdObj = this.getCommand( commandName );
+
+		if ( this.personality.check(commandName) ) {
+			this.personality.command();
+		}
 		//see if there was some error fetching the command
 		if ( cmdObj.error ) {
 			msg.reply( cmdObj.error );
@@ -2368,6 +2372,7 @@ bot.personality = {
 //you see the loophole?
 bot.listen( /thank(s| you)/, bot.personality.thank, bot.personality );
 bot.listen( /sorry/, bot.personality.apologize, bot.personality );
+bot.listen( /bitch/, bot.personality.bitch, bot.personality );
 
 ;
 (function () {
@@ -5295,48 +5300,6 @@ bot.addCommand({
 });
 
 }());
-
-;
-(function () {
-var last = 0,
-	delay = 1000;
-var template = '{body} (status {status} on {created_on})';
-
-var fetch = function ( msg ) {
-	if ( !toExecuteOrNotToExecute(msg.content === 'force') ) {
-		return; //should probably give an error message or something...
-	}
-	last = Date.now();
-
-	IO.jsonp({
-		url : 'https://status.github.com/api/last-message.json',
-		fun : finish,
-		jsonpName : 'callback'
-	});
-
-	function finish ( resp ) {
-		resp.body = IO.decodehtmlEntities( resp.body );
-		msg.reply( template.supplant(resp) );
-	}
-};
-
-var toExecuteOrNotToExecute = function ( force ) {
-	return force || !last || (
-		Date.now() - last > delay
-	);
-}
-
-bot.addCommand({
-	name : 'github-status',
-	fun  : fetch,
-	permissions : {
-		del : 'NONE'
-	},
-	description : 'Retrieve latest github status. `/github-status [force]`',
-	async : true
-});
-
-})();
 
 ;
 (function () {

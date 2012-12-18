@@ -94,6 +94,10 @@ var bot = window.bot = {
 
 		var commandName = commandParts[ 1 ].toLowerCase(),
 			cmdObj = this.getCommand( commandName );
+
+		if ( this.personality.check(commandName) ) {
+			this.personality.command();
+		}
 		//see if there was some error fetching the command
 		if ( cmdObj.error ) {
 			msg.reply( cmdObj.error );

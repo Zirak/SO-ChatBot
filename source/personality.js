@@ -78,3 +78,4 @@ bot.personality = {
 //you see the loophole?
 bot.listen( /thank(s| you)/, bot.personality.thank, bot.personality );
 bot.listen( /sorry/, bot.personality.apologize, bot.personality );
+bot.listen( /bitch/, bot.personality.bitch, bot.personality );
