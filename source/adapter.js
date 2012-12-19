@@ -155,7 +155,7 @@ var polling = bot.adapter.in = {
 		if ( msg.event_type !== 1 && msg.event_type !== 2 ) {
 			return;
 		}
-		this.setLastTime( msg.time_stamp, msg.room_id );
+		this.lastTimes[ msg.room_id ] = Date.now();
 
 		//check for a multiline message
 		if ( msg.content.startsWith('<div class=\'full\'>') ) {
@@ -182,14 +182,6 @@ var polling = bot.adapter.in = {
 				Object.merge( msg, { content : line.trim() })
 			);
 		}, this );
-	},
-
-	setLastTime : function ( time, roomid ) {
-		var res = time;
-		if ( this.lastTimes[roomid] ) {
-			res = Math.max( this.lastTimes[roomid], time );
-		}
-		this.lastTimes[ roomid ] = res;
 	}
 };
 

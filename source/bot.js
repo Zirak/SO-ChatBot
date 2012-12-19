@@ -444,18 +444,19 @@ bot.Message = function ( text, msgObj ) {
 };
 
 bot.owners = [
-	94197,	//Andy E
-	170224, //Ivo Wetzel
-	322395, //Loktar
-	342129, //Matt McDonald
-	418183, //Octavian Damiean
-	419970, //Raynos
-	617762,	//me (Zirak)
-	809950, //Gni33
-	829835, //rlemon
-	851498, //Florian Margaine
-	855760, //Abhishek
-	995876  //Esailija
+	94197,   //Andy E
+	170224,  //Ivo Wetzel
+	322395,  //Loktar
+	401137,  //Amaan Cheval
+	418183,  //Octavian Damiean
+	419970,  //Raynos
+	617762,  //Zirak
+	809950,  //GNi33
+	829835,  //rlemon
+	851498,  //Florian Margaine
+	855760,  //Abhishek
+	995876,  //Esailija
+	1386886, //jAndy
 ];
 bot.isOwner = function ( usrid ) {
 	return this.owners.indexOf( usrid ) > -1;

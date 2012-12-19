@@ -1,24 +1,39 @@
 (function () {
 /*
-  \s*      #tolerate pre-whitespace
-  s        #substitution prefix
-  (.)      #delimiter declaration. it can be anything not repeated in the regex
-  (.+?)    #regex pattern. will match until...
-  \1       #delimiter again
-  (.+?)    #replacement
-  \1       #delimiter
-  (        #flag capturing group
-    g?     #global (optional)
-    i?     #case insensitive (optional)
-  )
+  ^\s*         #tolerate pre-whitespace
+  s            #substitution prefix
+  (.)          #delimiter declaration
+  (            #begin matching regex
+    (?:        #match shit which isn't an...
+      (?:\\\1) #escaped delimeter
+      |        #or...
+      [^\1]    #anything but the delimeter
+    )*?
+  )            #end matching regex
+  \1           #delimeter again
+  (            #the fa-chizzle all over again...this time for replacement
+    (?:
+      (?:\\\1)
+      |
+      [^\1]
+    )*?
+  )      #read above, I'm not repeating this crap
+  \1
+  (      #flag capturing group
+    g?   #global (optional)
+    i?   #case insensitive (optional)
+  )      #FIN
  */
-var sub = /^\s*s(.)(.+?)\1(.+?)\1(g?i?)/;
+var sub = /s(.)((?:(?:\\\1)|[^\1])*?)\1((?:(?:\\\1)|[^\1])*?)\1(g?i?)/;
 bot.listen( sub, substitute );
 
 function substitute ( msg ) {
 	var re = RegExp( msg.matches[2], msg.matches[4] ),
 		replacement = msg.matches[ 3 ];
 
+	if ( !msg.matches[2] ) {
+		return 'Empty regex is empty';
+	}
 	var message = get_matching_message( re, msg.get('message_id') );
 	if ( !message ) {
 		return 'No matching message (are you sure we\'re in the right room?)';
