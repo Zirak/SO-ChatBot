@@ -2379,7 +2379,11 @@ bot.listen( /bitch/, bot.personality.bitch, bot.personality );
 var linkTemplate = '[{text}]({url})';
 
 bot.adapter = {
-	roomid : null, fkey : null, site : null,
+	//the following two only used in the adapter; you can change & drop at will
+	roomid : null,
+	fkey   : null,
+	//used in commands calling the SO API
+	site   : null,
 
 	//not a necessary function, used in here to set some variables
 	init : function () {
@@ -2457,6 +2461,9 @@ var polling = bot.adapter.in = {
 	// the latest id or something like that. could also be the time last
 	// sent, which is why I called it times at the beginning. or something.
 	times : {},
+	//currently, used for messages sent when the room's been silent for a
+	// while
+	lastTimes : {},
 
 	interval : 5000,
 
@@ -2517,6 +2524,7 @@ var polling = bot.adapter.in = {
 
 		//handle all the input
 		IO.in.flush();
+		IO.fire( 'heartbeat' );
 	},
 
 	handleMessageObject : function ( msg ) {
@@ -2524,6 +2532,7 @@ var polling = bot.adapter.in = {
 		if ( msg.event_type !== 1 && msg.event_type !== 2 ) {
 			return;
 		}
+		this.setLastTime( msg.time_stamp, msg.room_id );
 
 		//check for a multiline message
 		if ( msg.content.startsWith('<div class=\'full\'>') ) {
@@ -2550,6 +2559,14 @@ var polling = bot.adapter.in = {
 				Object.merge( msg, { content : line.trim() })
 			);
 		}, this );
+	},
+
+	setLastTime : function ( time, roomid ) {
+		var res = time;
+		if ( this.lastTimes[roomid] ) {
+			res = Math.max( this.lastTimes[roomid], time );
+		}
+		this.lastTimes[ roomid ] = res;
 	}
 };
 
@@ -4827,6 +4844,34 @@ function style_html(html_source, options) {
   return multi_parser.output.join('');
 }
 
+
+;
+//when nothing happens after a while, I get bored.
+(function () {
+var run = false,
+	lastIdx = null,
+	delay = 300000; //1000(ms) * 60 (sec) * 5 = 5min
+
+function zzz () {
+	if ( !run ) {
+		return;
+	}
+	run = false;
+	var now = Date.now(),
+		obj = bot.adapter.in.lastTimes;
+	Object.keys( obj ).filter( timeCheck ).forEach( stuff );
+
+	//let my naming expertise astound you once more
+	function stuff ( roomid ) {
+		//...I...don't know, really.
+	}
+
+	function timeCheck ( roomid ) {
+		return obj[ roomid ] + delay <= now;
+	}
+}
+IO.register( 'heartbeat', zzz );
+})();
 
 ;
 (function () {

@@ -2,7 +2,11 @@
 var linkTemplate = '[{text}]({url})';
 
 bot.adapter = {
-	roomid : null, fkey : null, site : null,
+	//the following two only used in the adapter; you can change & drop at will
+	roomid : null,
+	fkey   : null,
+	//used in commands calling the SO API
+	site   : null,
 
 	//not a necessary function, used in here to set some variables
 	init : function () {
@@ -80,6 +84,9 @@ var polling = bot.adapter.in = {
 	// the latest id or something like that. could also be the time last
 	// sent, which is why I called it times at the beginning. or something.
 	times : {},
+	//currently, used for messages sent when the room's been silent for a
+	// while
+	lastTimes : {},
 
 	interval : 5000,
 
@@ -140,6 +147,7 @@ var polling = bot.adapter.in = {
 
 		//handle all the input
 		IO.in.flush();
+		IO.fire( 'heartbeat' );
 	},
 
 	handleMessageObject : function ( msg ) {
@@ -147,6 +155,7 @@ var polling = bot.adapter.in = {
 		if ( msg.event_type !== 1 && msg.event_type !== 2 ) {
 			return;
 		}
+		this.setLastTime( msg.time_stamp, msg.room_id );
 
 		//check for a multiline message
 		if ( msg.content.startsWith('<div class=\'full\'>') ) {
@@ -173,6 +182,14 @@ var polling = bot.adapter.in = {
 				Object.merge( msg, { content : line.trim() })
 			);
 		}, this );
+	},
+
+	setLastTime : function ( time, roomid ) {
+		var res = time;
+		if ( this.lastTimes[roomid] ) {
+			res = Math.max( this.lastTimes[roomid], time );
+		}
+		this.lastTimes[ roomid ] = res;
 	}
 };
 
