@@ -3181,6 +3181,8 @@ function nudgeListener ( args ) {
 }());
 
 ;
+
+;
 IO.register( 'input', function ( msgObj ) {
 	var words = msgObj.content.match( /\w+/g ) || [];
 
@@ -5676,7 +5678,7 @@ var game = {
 			// hangman is codified
 			self.guessMade = true;
 			self.register();
-			this.receiveMessage( msg );
+			self.receiveMessage( msg );
 		}
 	},
 

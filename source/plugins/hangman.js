@@ -69,7 +69,7 @@ var game = {
 			// hangman is codified
 			self.guessMade = true;
 			self.register();
-			this.receiveMessage( msg );
+			self.receiveMessage( msg );
 		}
 	},
 
