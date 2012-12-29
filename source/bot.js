@@ -115,7 +115,7 @@ var bot = window.bot = {
 		bot.log( cmdObj, 'parseCommand calling' );
 
 		var args = this.Message(
-				msg.replace(/^\//, '').slice( commandName.length ).trim(),
+				msg.replace(/^\/\s*/, '').slice( commandName.length ).trim(),
 				msg.get()
 			),
 			//it always amazed me how, in dynamic systems, the trigger of the
