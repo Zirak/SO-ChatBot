@@ -4,11 +4,21 @@ var timers = Object.create( null ),
 
 var actions = {
 	start : function ( name ) {
+		if ( name === undefined ) {
+			//if Crockford ever reads this, I want to reassure you: I did mean
+			// postfix increment. I want to grab the original value of id while
+			// increasing its value.
+			//now you may continue reading the code at ease
+			name = id++;
+		}
 		timers[ name ] = Date.now();
 		return 'Registered timer ' + name;
 	},
 
 	stop : function ( name ) {
+		if ( name === undefined ) {
+			return 'You must provide a timer name';
+		}
 		var timer = timers[ name ];
 
 		if ( !timer ) {
@@ -25,11 +35,7 @@ var actions = {
 function timer ( msg ) {
 	var args = msg.parse(),
 		act = args.shift(),
-		//if Crockford ever reads this, I want to reassure him: I did mean
-		// postfix increment. I want to grab the original value of id while
-		// increasing its value
-		//now you may continue reading the code at ease
-		name = args.shift() || (id++);
+		name = args.shift();
 
 	if ( !actions[act] ) {
 		return 'Action {0} not recognized, see `/help timer`'.supplant( act );
@@ -45,7 +51,7 @@ bot.addCommand({
 	},
 	description : 'Starts/stops a timer. ' +
 		'`/timer start [name]` starts a timer, ' +
-		'`/timer stop [name]` stops a timer.'
+		'`/timer stop name` stops a timer.'
 });
 
 })();
