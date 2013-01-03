@@ -209,42 +209,44 @@ Object.defineProperty( RegExp.prototype, 'toJSON', {
 // two dates
 Date.timeSince = function ( d0, d1 ) {
 	d1 = d1 || (new Date);
-	//our resolution goes starts with seconds, we don't care about ms
-	var seconds = Math.floor( (d1 - d0) / 1000 ),
+
+	var ms = d1 - d0,
 		delay, interval;
 
 	var delays = [
 		{
-			delta : 31536000,
+			delta : 3.1536e+10,
 			suffix : 'year'
 		},
 		{
-			delta : 2592000,
+			delta : 2.592e+9,
 			suffix : 'month'
 		},
 		{
-			delta : 86400,
+			delta : 8.64e+7,
 			suffix : 'day'
 		},
 		{
-			delta : 3600,
+			delta : 3.6e+6,
 			suffix : 'hour'
 		},
 		{
-			delta : 60,
+			delta : 6e+4,
 			suffix : 'minute'
 		},
-		//anything else is seconds
+		{
+			delta : 1000,
+			suffix : 'second'
+		}
+		//anything else is ms
 	];
 
 	while ( delay = delays.shift() ) {
-		interval = seconds / delay.delta;
-
-		if ( interval >= 1 ) {
-			return format( interval, delay.suffix );
+		if ( ms >= delay.delta ) {
+			return format( ms / delay.delta, delay.suffix );
 		}
 	}
-	return format( seconds, 'second' );
+	return format( ms, 'millisecond' );
 
 	function format ( interval, suffix ) {
 		interval = Math.floor( interval );
