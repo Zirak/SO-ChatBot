@@ -42,11 +42,12 @@ var whitey = {
 	'Blob'              : 1,
 	'Float32Array'      : 1,
 	'Float64Array'      : 1,
+	'Int8Array'         : 1,
 	'Int16Array'        : 1,
 	'Int32Array'        : 1,
-	'Int8Array'         : 1,
-	'Uint32Array'       : 1,
 	'Uint8Array'        : 1,
+	'Uint16Array'       : 1,
+	'Uint32Array'       : 1,
 	'Uint8ClampedArray' : 1,
 
 	/*
