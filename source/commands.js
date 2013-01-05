@@ -622,15 +622,16 @@ return function ( args ) {
 	}
 
 	//check if the user wants to reply to a message
-	var direct = false, msgObj = args.get();
+	var direct = false,
+		extended = {};
 	if ( /^:?\d+$/.test(replyTo) ) {
-		msgObj.message_id = replyTo.replace( /^:/, '' );
-		direct = true;
+		extended.message_id = replyTo.replace( /^:/, '' );
 	}
 	else {
-		msgObj.user_name = replyTo;
+		extended.user_name = replyTo;
 	}
 
+	var msgObj = Object.merge( args.get(), extended );
 	var cmdArgs = bot.Message(
 		//the + 2 is for the two spaces after each arg
 		// /tell replyTo1cmdName2args
