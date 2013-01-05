@@ -2041,8 +2041,7 @@ return function parse ( args, extraVars ) {
 }());
 
 commands.tell = (function () {
-
-var invalidCommands = { tell : true, forget : true, ring : true };
+var invalidCommands = { tell : true, forget : true };
 
 return function ( args ) {
 	var props = args.parse();
@@ -2080,17 +2079,20 @@ return function ( args ) {
 		extended = {};
 	if ( /^:?\d+$/.test(replyTo) ) {
 		extended.message_id = replyTo.replace( /^:/, '' );
+		direct = true;
 	}
 	else {
 		extended.user_name = replyTo;
 	}
 
 	var msgObj = Object.merge( args.get(), extended );
+	console.log( msgObj );
 	var cmdArgs = bot.Message(
 		//the + 2 is for the two spaces after each arg
 		// /tell replyTo1cmdName2args
 		args.slice( replyTo.length + cmdName.length + 2 ).trim(),
 		msgObj );
+	console.log( cmdArgs.get() );
 	bot.log( cmdArgs, '/tell calling ' + cmdName );
 
 	//if the command is async, it'll accept a callback
@@ -2107,10 +2109,10 @@ return function ( args ) {
 		}
 
 		if ( direct ) {
-			args.directreply( res );
+			cmdArgs.directreply( res );
 		}
 		else {
-			args.reply( res );
+			cmdArgs.reply( res );
 		}
 	}
 };
