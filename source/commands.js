@@ -79,8 +79,8 @@ var commands = {
 		function ban ( usrid ) {
 			var id = Number( usrid ),
 				msg;
-			if ( /\D/.test(usrid) ) {
-				id = args.findUserid( id.replace(/^@/, '') );
+			if ( isNaN(id) ) {
+				id = args.findUserid( usrid.replace(/^@/, '') );
 			}
 
 			if ( id < 0 ) {
@@ -110,7 +110,7 @@ var commands = {
 		function unban ( usrid ) {
 			var id = Number( usrid ),
 				msg;
-			if ( /\D/.test(usrid) ) {
+			if ( isNaN(id) ) {
 				id = args.findUserid( usrid.replace(/^@/, '') );
 			}
 
