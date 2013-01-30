@@ -309,11 +309,11 @@ var commands = {
 
 		var start = page * pageSize,
 			end = start + pageSize,
-			left = Math.max( 0, commands.length - end ) / pageSize;
+			total = Math.ceil( Math.max(0, commands.length) / pageSize ) - 1;
 
 		var ret = commands.slice( start, end ).join( ', ' );
-		if ( left ) {
-			ret += ' ({0} pages left)'.supplant(left);
+		if ( total ) {
+			ret += ' (page {0}/{1})'.supplant( page, total );
 		}
 
 		return ret;
