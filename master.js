@@ -665,7 +665,7 @@ bot.CommunityCommand = function ( command, req ) {
 	cmd.exec = function ( msg ) {
 		var err = register( msg.get('user_id') );
 		if ( err ) {
-			console.log( err );
+			bot.log( err );
 			return err;
 		}
 		return old_execute.apply( cmd, arguments );
@@ -682,7 +682,7 @@ bot.CommunityCommand = function ( command, req ) {
 		clean();
 		var count = Object.keys( used ).length,
 			needed = req - count;
-		console.log( used, count, req );
+		bot.log( used, count, req );
 
 		if ( usrid in used ) {
 			return 'Already registered; still need {0} more'.supplant( needed );
@@ -691,7 +691,7 @@ bot.CommunityCommand = function ( command, req ) {
 			used[ usrid ] = new Date;
 			return 'Registered; need {0} more to execute'.supplant( needed-1 );
 		}
-		console.log( 'should execute' );
+		bot.log( 'should execute' );
 		return false; //huzzah!
 	}
 
@@ -2018,7 +2018,7 @@ return function parse ( args, extraVars ) {
 	}
 
 	function parseMacroArgs ( macroArgs ) {
-		console.log( macroArgs, '/parse parseMacroArgs' );
+		bot.log( macroArgs, '/parse parseMacroArgs' );
 		if ( !macroArgs ) {
 			return [];
 		}
@@ -2088,13 +2088,11 @@ return function ( args ) {
 	}
 
 	var msgObj = Object.merge( args.get(), extended );
-	console.log( msgObj );
 	var cmdArgs = bot.Message(
 		//the + 2 is for the two spaces after each arg
 		// /tell replyTo1cmdName2args
 		args.slice( replyTo.length + cmdName.length + 2 ).trim(),
 		msgObj );
-	console.log( cmdArgs.get() );
 	bot.log( cmdArgs, '/tell calling ' + cmdName );
 
 	//if the command is async, it'll accept a callback
@@ -2742,7 +2740,6 @@ var undo = {
 	},
 
 	update_id : function ( xhr ) {
-		console.log( xhr );
 		this.last_id = JSON.parse( xhr.responseText ).id;
 	}
 };
@@ -2842,7 +2839,7 @@ function update () {
 	setTimeout( update, interval );
 }
 function sendNudge ( nudge ) {
-	console.log( nudge, 'nudge fire' );
+	bot.log( nudge, 'nudge fire' );
 	//check to see if the nudge was sent after a bigger delay than expected
 	//TODO: that ^
 	nudge.msg.reply( nudge.message );
@@ -2852,7 +2849,7 @@ setTimeout( update, interval );
 //now for the command itself
 function addNudge ( delay, message, msgObj ) {
 	var inMS;
-	console.log( delay, message, '/nudge input' );
+	bot.log( delay, message, '/nudge input' );
 
 	//interval will be one of these (where n is a number):
 	// nm  =>  n minutes
@@ -2878,7 +2875,7 @@ function addNudge ( delay, message, msgObj ) {
 		time    : inMS
 	};
 	nudges.push( nudge );
-	console.log( nudge, nudges, '/nudge register' );
+	bot.log( nudge, nudges, '/nudge register' );
 
 	return 'Nudge registered.';
 }
@@ -2928,7 +2925,7 @@ function zzz () {
 	//let my naming expertise astound you once more
 	function stuff ( roomid ) {
 		//...I...don't know, really.
-		console.log( 'triggered bored' );
+		bot.log( 'triggered bored' );
 	}
 
 	function timeCheck ( roomid ) {
@@ -6226,7 +6223,6 @@ var cowsay = {
 		this.tongue   = rightPad( opts.T || defs.T, 2 ).slice( 0, 2 );
 		this.line     = opts.t ? 'O' : '\\';
 		this.thinking = opts.t;
-		console.log( this.eyes, this.tongue );
 
 		this.message  = wordWrap( message, opts.W || defs.W ).trim();
 

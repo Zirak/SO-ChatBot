@@ -39,7 +39,6 @@ var cowsay = {
 		this.tongue   = rightPad( opts.T || defs.T, 2 ).slice( 0, 2 );
 		this.line     = opts.t ? 'O' : '\\';
 		this.thinking = opts.t;
-		console.log( this.eyes, this.tongue );
 
 		this.message  = wordWrap( message, opts.W || defs.W ).trim();
 

@@ -58,7 +58,6 @@ var undo = {
 	},
 
 	update_id : function ( xhr ) {
-		console.log( xhr );
 		this.last_id = JSON.parse( xhr.responseText ).id;
 	}
 };

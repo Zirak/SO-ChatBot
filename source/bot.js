@@ -302,7 +302,7 @@ bot.CommunityCommand = function ( command, req ) {
 	cmd.exec = function ( msg ) {
 		var err = register( msg.get('user_id') );
 		if ( err ) {
-			console.log( err );
+			bot.log( err );
 			return err;
 		}
 		return old_execute.apply( cmd, arguments );
@@ -319,7 +319,7 @@ bot.CommunityCommand = function ( command, req ) {
 		clean();
 		var count = Object.keys( used ).length,
 			needed = req - count;
-		console.log( used, count, req );
+		bot.log( used, count, req );
 
 		if ( usrid in used ) {
 			return 'Already registered; still need {0} more'.supplant( needed );
@@ -328,7 +328,7 @@ bot.CommunityCommand = function ( command, req ) {
 			used[ usrid ] = new Date;
 			return 'Registered; need {0} more to execute'.supplant( needed-1 );
 		}
-		console.log( 'should execute' );
+		bot.log( 'should execute' );
 		return false; //huzzah!
 	}
 

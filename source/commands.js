@@ -562,7 +562,7 @@ return function parse ( args, extraVars ) {
 	}
 
 	function parseMacroArgs ( macroArgs ) {
-		console.log( macroArgs, '/parse parseMacroArgs' );
+		bot.log( macroArgs, '/parse parseMacroArgs' );
 		if ( !macroArgs ) {
 			return [];
 		}
@@ -632,13 +632,11 @@ return function ( args ) {
 	}
 
 	var msgObj = Object.merge( args.get(), extended );
-	console.log( msgObj );
 	var cmdArgs = bot.Message(
 		//the + 2 is for the two spaces after each arg
 		// /tell replyTo1cmdName2args
 		args.slice( replyTo.length + cmdName.length + 2 ).trim(),
 		msgObj );
-	console.log( cmdArgs.get() );
 	bot.log( cmdArgs, '/tell calling ' + cmdName );
 
 	//if the command is async, it'll accept a callback

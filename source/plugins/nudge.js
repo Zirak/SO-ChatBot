@@ -19,7 +19,7 @@ function update () {
 	setTimeout( update, interval );
 }
 function sendNudge ( nudge ) {
-	console.log( nudge, 'nudge fire' );
+	bot.log( nudge, 'nudge fire' );
 	//check to see if the nudge was sent after a bigger delay than expected
 	//TODO: that ^
 	nudge.msg.reply( nudge.message );
@@ -29,7 +29,7 @@ setTimeout( update, interval );
 //now for the command itself
 function addNudge ( delay, message, msgObj ) {
 	var inMS;
-	console.log( delay, message, '/nudge input' );
+	bot.log( delay, message, '/nudge input' );
 
 	//interval will be one of these (where n is a number):
 	// nm  =>  n minutes
@@ -55,7 +55,7 @@ function addNudge ( delay, message, msgObj ) {
 		time    : inMS
 	};
 	nudges.push( nudge );
-	console.log( nudge, nudges, '/nudge register' );
+	bot.log( nudge, nudges, '/nudge register' );
 
 	return 'Nudge registered.';
 }

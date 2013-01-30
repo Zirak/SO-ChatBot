@@ -16,7 +16,7 @@ function zzz () {
 	//let my naming expertise astound you once more
 	function stuff ( roomid ) {
 		//...I...don't know, really.
-		console.log( 'triggered bored' );
+		bot.log( 'triggered bored' );
 	}
 
 	function timeCheck ( roomid ) {
