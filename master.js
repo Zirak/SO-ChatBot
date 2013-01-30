@@ -1732,7 +1732,7 @@ var commands = {
 
 		return opts[ Math.floor(Math.random() * len) ];
 
-		//TODO: add support for words like and, e.g.
+		//TODO: add support for words like "and", e.g.
 		// skip and jump or cry and die
 		//  =>
 		// "skip and jump", "cry and die"
@@ -1760,19 +1760,27 @@ var commands = {
 
 	listcommands : function ( args ) {
 		var commands = Object.keys( bot.commands ),
+
+			valid = /^(\d+|$)/.test( args.content ),
 			page = Number( args.content ) || 0,
-			pageSize = 50;
+			pageSize = 50,
+
+			total = Math.ceil( Math.max(0, commands.length) / pageSize ) - 1;
+
+		if ( page > total || !valid ) {
+			return [
+				args.codify( 'StackOverflow: Could not access page' ),
+				'This unicorn has killed itself because of you',
+				'Accordion to recent surveys, you suck'
+			].random();
+		}
 
 		var start = page * pageSize,
 			end = start + pageSize,
-			total = Math.ceil( Math.max(0, commands.length) / pageSize ) - 1;
 
-		var ret = commands.slice( start, end ).join( ', ' );
-		if ( total ) {
-			ret += ' (page {0}/{1})'.supplant( page, total );
-		}
+			ret = commands.slice( start, end ).join( ', ' );
 
-		return ret;
+		return ret + ' (page {0}/{1})'.supplant( page, total );;
 	},
 
 	purgecommands : function ( args ) {
