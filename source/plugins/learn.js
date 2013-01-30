@@ -101,11 +101,27 @@ function loadCommands () {
 
 	function teach ( key ) {
 		var cmd = JSON.parse( storage[key] );
-		cmd.input = new RegExp( cmd.input );
+		cmd.input = turnToRegexp( cmd.input );
 		cmd.date = new Date( Date.parse(cmd.date) );
 
 		bot.log( cmd, '/learn loadCommands' );
 		addCustomCommand( cmd );
+	}
+
+	//input: strung regexp, e.g. /abc/i
+	//return: regexp
+	//algo: we split by /.
+	//  the first item is empty, the part before the first /
+	//  the second to second-before-last are the regexp body. there will be more
+	//    than one item in that range if the regexp contained escaped slashes,
+	//    like /abc\/def/
+	//  the last item is the flags (or the empty string, if no flags are set)
+	function turnToRegexp ( input ) {
+		var parts = input.toString().split( '/' );
+		return new RegExp(
+			parts.slice( 1, -1 ).join( '/' ), //to compensate for escaped /
+			parts[ parts.length-1 ]
+		);
 	}
 }
 function saveCommand ( command ) {

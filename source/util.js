@@ -35,7 +35,9 @@ Object.defineProperty( Array.prototype, 'invoke', {
 	value : function ( funName ) {
 		var args = [].slice.call( arguments, 1 );
 
-		return this.map(function ( item, index ) {
+		return this.map( invoke );
+
+		function invoke ( item, index ) {
 			var res = item;
 
 			if ( item[funName] && item[funName].apply ) {
@@ -43,7 +45,7 @@ Object.defineProperty( Array.prototype, 'invoke', {
 			}
 
 			return res;
-		});
+		}
 	},
 
 	configurable : true,
@@ -75,7 +77,7 @@ Object.defineProperty( Array.prototype, 'random', {
 Function.prototype.memoize = function () {
 	var cache = Object.create( null ), fun = this;
 
-	return function ( hash ) {
+	return function memoized ( hash ) {
 		if ( hash in cache ) {
 			return cache[ hash ];
 		}
@@ -92,9 +94,9 @@ Function.prototype.memoizeAsync = function ( hasher ) {
 	var cache = Object.create( null ), fun = this,
 		hasher = hasher || function (x) { return x; };
 
-	return function () {
+	return function memoized () {
 		var args = [].slice.call( arguments ),
-			cb = args.pop(), //HEAVY assumption that cb is always passed
+			cb = args.pop(), //HEAVY assumption that cb is always passed last
 			hash = hasher.apply( null, arguments );
 
 		if ( hash in cache ) {
