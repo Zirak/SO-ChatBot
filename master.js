@@ -808,19 +808,29 @@ bot.Message = function ( text, msgObj ) {
 
 bot.owners = [
 	94197,   //Andy E
+	154112,  //Simon Sarris
 	170224,  //Ivo Wetzel
+	263525,  //dystroy
 	322395,  //Loktar
+	363815,  //Ryan Kinal
 	401137,  //Amaan Cheval
 	418183,  //Octavian Damiean
 	419970,  //Raynos
+	561731,  //Neal
 	617762,  //Zirak
+	727208,  //tereško
 	809950,  //GNi33
 	829835,  //rlemon
 	851498,  //Florian Margaine
-	855760,  //Abhishek
+	855760,  //Darkyen
 	995876,  //Esailija
+	1078067, //copy
+	1216976, //SomeKittens
+	1386166, //phenomnomnominal
 	1386886, //jAndy
+	1839506  //SO ChatBot
 ];
+
 bot.isOwner = function ( usrid ) {
 	return this.owners.indexOf( usrid ) > -1;
 };
