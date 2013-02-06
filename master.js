@@ -3202,8 +3202,8 @@ IO.register( 'input', function ( msgObj ) {
 	var content = msgObj.content;
 
 	if (
-		//only 5% chance
-		Math.random() > 0.05 ||
+		//only 0.5% chance
+		Math.random() > 0.005 ||
 			//no dealing with special users
 			msgObj.user_id < 1 ||
 			//no playing with yourself (TODO: change...)
