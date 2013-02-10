@@ -160,8 +160,15 @@ var minify = function ( code, callback, outName ) {
 	outName = outName || 'master.min.js';
 	build.print( '\nminifying...' );
 
-	var min = require( 'uglify-js2' )
-		.minify( code, { fromString : true } ).code;
+	var min;
+	try {
+		min = require( 'uglify-js2' )
+			.minify( code, { fromString : true } ).code;
+	}
+	catch ( e ) {
+		console.error( e.toString() );
+		return;
+	}
 
 	fs.writeFile( outName, min, finish );
 
