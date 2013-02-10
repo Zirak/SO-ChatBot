@@ -26,28 +26,4 @@ bot.addCommand({
 	description : 'tks a sntnc and trns i awsm'
 });
 
-IO.register( 'input', function ( msgObj ) {
-	var content = msgObj.content;
-
-	if (
-		//only 0.5% chance
-		Math.random() > 0.005 ||
-			//no dealing with special users
-			msgObj.user_id < 1 ||
-			//no playing with yourself (TODO: change...)
-			msgObj.user_id === 1839506 ||
-			//no messing around with invocations
-			content.startsWith(bot.invocationPattern) ||
-			//no code tinkering
-			content.startsWith('<pre') ||
-			content.startsWith('<code') ||
-			//no multi-line messages
-			content.startsWith("<div class='full'")
-	) {
-		return;
-	}
-
-	bot.adapter.out.add( mk_awsm(content), msgObj.room_id );
-});
-
 }());
