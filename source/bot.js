@@ -474,6 +474,14 @@ bot.isOwner = function ( usrid ) {
 
 IO.register( 'input', bot.parseMessage, bot );
 
+bot.beatInterval = 5000; //once every 5 seconds is Good Enough ™
+(function beat () {
+	bot.beat = setTimeout(function () {
+		IO.fire( 'heartbeat' );
+		beat();
+	}, bot.beatInterval );
+}())
+
 //#build util.js
 //#build parseCommandArgs.js
 //#build suggestionDict.js

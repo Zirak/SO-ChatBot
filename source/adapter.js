@@ -147,7 +147,6 @@ var polling = bot.adapter.in = {
 
 		//handle all the input
 		IO.in.flush();
-		IO.fire( 'heartbeat' );
 	},
 
 	handleMessageObject : function ( msg ) {
@@ -262,8 +261,14 @@ var output = bot.adapter.out = {
 						' (message probably too long)'
 					, roomid );
 			}
+			else if ( xhr.status !== 200 ) {
+				console.error( xhr );
+				output.add(
+					'Error ' + xhr.status + ' occured, I will call the maid ' +
+					' (@Zirak)' );
+			}
 			else {
-				IO.fire( 'sendoutput', xhr );
+				IO.fire( 'sendoutput', xhr, text, roomid );
 			}
 		}
 	},
