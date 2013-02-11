@@ -55,8 +55,7 @@ var responses = [
 var len = responses.length;
 
 var delay = 300000, //1000(ms) * 60 (sec) * 5 = 5min
-	lastISpoke = {},
-	messagesSinceLastSpoke = {};
+	lastISpoke = {};
 
 function zzz () {
 	var now = Date.now(),
@@ -66,17 +65,13 @@ function zzz () {
 
 	//let my naming expertise astound you once more
 	function stuff ( roomid ) {
-		bot.log( 'triggered bored on room#' + roomid );
+		bot.log( 'triggered bored on room #' + roomid );
 		bot.adapter.out.add( responses.random() );
 	}
 
 	//checks, for a specific room, whether enough time has passed since someone
 	// (who wasn't us) spoke
 	function roomcheck ( roomid ) {
-		if ( messagesSinceLastSpoke[roomid] < 10 ) {
-			return false;
-		}
-
 		var last = times[ roomid ];
 
 		return last > ( lastISpoke[roomid] || 0 ) && last + delay <= now;
@@ -85,9 +80,6 @@ function zzz () {
 
 function spoke ( xhr, text, roomid ) {
 	lastISpoke[ roomid ] = Date.now();
-	//shorter names? maybe.
-	messagesSinceLastSpoke[ roomid ] =
-		( messagesSinceLastSpoke[roomid] || 0 ) + 1;
 }
 
 IO.register( 'heartbeat', zzz );
