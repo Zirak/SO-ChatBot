@@ -3005,7 +3005,7 @@ var delay = 300000, //1000(ms) * 60 (sec) * 5 = 5min
 
 function zzz () {
 	var now = Date.now(),
-		times = bot.adapter.in.lastTimes;
+		times = bot.adapter.in.lastTimes || {};
 
 	Object.keys( times ).filter( roomcheck ).forEach( stuff );
 
