@@ -3012,7 +3012,7 @@ function zzz () {
 	//let my naming expertise astound you once more
 	function stuff ( roomid ) {
 		bot.log( 'triggered bored on room #' + roomid );
-		bot.adapter.out.add( responses.random() );
+		bot.adapter.out.add( responses.random(), roomid );
 	}
 
 	//checks, for a specific room, whether enough time has passed since someone
