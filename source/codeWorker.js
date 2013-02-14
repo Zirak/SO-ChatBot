@@ -5,36 +5,38 @@ var whitey = {
 	'Array'              : 1,
 	'Boolean'            : 1,
 	'Date'               : 1,
-	'decodeURI'          : 1,
-	'decodeURIComponent' : 1,
-	'encodeURI'          : 1,
-	'encodeURIComponent' : 1,
 	'Error'              : 1,
-	'eval'               : 1,
 	'EvalError'          : 1,
 	'Function'           : 1,
-	'global'             : 1,
 	'Infinity'           : 1,
-	'isFinite'           : 1,
-	'isNaN'              : 1,
 	'JSON'               : 1,
 	'Math'               : 1,
 	'NaN'                : 1,
 	'Number'             : 1,
 	'Object'             : 1,
+	'RangeError'         : 1,
+	'ReferenceError'     : 1,
+	'RegExp'             : 1,
+	'String'             : 1,
+	'SyntaxError'        : 1,
+	'TypeError'          : 1,
+	'URIError'           : 1,
+	'atob'               : 1,
+	'btoa'               : 1,
+	'decodeURI'          : 1,
+	'decodeURIComponent' : 1,
+	'encodeURI'          : 1,
+	'encodeURIComponent' : 1,
+	'eval'               : 1,
+	'global'             : 1,
+	'isFinite'           : 1,
+	'isNaN'              : 1,
 	'onmessage'          : 1,
 	'parseFloat'         : 1,
 	'parseInt'           : 1,
 	'postMessage'        : 1,
-	'RangeError'         : 1,
-	'ReferenceError'     : 1,
-	'RegExp'             : 1,
 	'self'               : 1,
-	'String'             : 1,
-	'SyntaxError'        : 1,
-	'TypeError'          : 1,
 	'undefined'          : 1,
-	'URIError'           : 1,
 	'whitey'             : 1,
 
 	/* typed arrays and shit */
@@ -113,16 +115,25 @@ Object.defineProperty( Array.prototype, 'join', {
 		var jsonStringify = JSON.stringify, /*backup*/
 			result = exec( event.data );
 
+		/*JSON does not like any of the following*/
 		var strung = {
 			Function  : true, Error  : true,
 			Undefined : true, RegExp : true
 		};
-		var reviver = function ( key, value ) {
-			var type = ( {} ).toString.call( value ).slice( 8, -1 ),
-				output;
+		var should_string = function ( value ) {
+			var type = ( {} ).toString.call( value ).slice( 8, -1 );
 
-			/*JSON.stringify does not like functions, errors, NaN or undefined*/
-			if ( type in strung || value !== value ) {
+			if ( type in strung ) {
+				return true;
+			}
+			/*neither does it feel compassionate about NaN or Infinity*/
+			return isNaN( value ) || !isFinite( value );
+		};
+
+		var reviver = function ( key, value ) {
+			var output;
+
+			if ( should_string(value) ) {
 				output = '' + value;
 			}
 			else {
