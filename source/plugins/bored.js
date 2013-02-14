@@ -23,11 +23,11 @@ var responses = [
 	'Dart is a good language and idea',
 	'TypeScript will outdate javascript',
 	'Optimization is king',
-	'Preumature optimization is the root of all evil',
+	'Premature optimization is the root of all evil',
 	'Perl is written in base64',
 	'ROT13 is sufficient encryption',
 	'Braces should only appear on the right `if () {`, not on the left',
-	'Braches should only appear on the left `if ()\\n{`, not on the right',
+	'Braces should only appear on the left `if ()\\n{`, not on the right',
 
 	'I really hate it when people don\'t',
 	'Accordion to recent surveys, you may insert random instrument names into' +
@@ -62,8 +62,7 @@ var responses = [
 ];
 var len = responses.length;
 
-//TODO: change back to 5mins after debugging
-var delay = 60000, //1000(ms) * 60 (sec) * 5 = 5min
+var delay = 300000, //1000(ms) * 60 (sec) * 5 = 5min
 	lastISpoke = {};
 
 function zzz () {
