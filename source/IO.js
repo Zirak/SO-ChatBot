@@ -245,7 +245,7 @@ IO.jsonp = function ( opts ) {
 		semiRandom;
 
 	do {
-		semiRandom = 'IO_' + ( Date.now() * Math.ceil(Math.random()) );
+		semiRandom = 'IO' + ( Date.now() * Math.ceil(Math.random()) );
 	} while ( window[semiRandom] );
 
 	//this is the callback function, called from the "jsonp file"

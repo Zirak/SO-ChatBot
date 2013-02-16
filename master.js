@@ -246,7 +246,7 @@ IO.jsonp = function ( opts ) {
 		semiRandom;
 
 	do {
-		semiRandom = 'IO_' + ( Date.now() * Math.ceil(Math.random()) );
+		semiRandom = 'IO' + ( Date.now() * Math.ceil(Math.random()) );
 	} while ( window[semiRandom] );
 
 	//this is the callback function, called from the "jsonp file"
@@ -2948,7 +2948,8 @@ function nudgeListener ( args ) {
 (function () {
 "use strict";
 
-var responses = [
+var responses; //will be filled in the following line
+responses = [
 	'jQuery is a better language than javascript',
 	'World hunger will be solved by eating cats',
 	'php is good',
@@ -2974,6 +2975,19 @@ var responses = [
 	'ROT13 is sufficient encryption',
 	'Braces should only appear on the right `if () {`, not on the left',
 	'Braces should only appear on the left `if ()\\n{`, not on the right',
+	'Duck-Typing is best typing',
+	'Strong typing ftw',
+	'Static typing will prevent most bugs',
+	'Dynamic typing brings 70% more happiness units',
+
+	'NetTuts+ is a GREAT SITE!',
+	'expertsexchange is better than StackOverflow',
+	'WordPress is bread & butter for any decent website',
+
+	'Can anyone help me with a Java question?',
+	'http://stackoverflow.com/a/778275/617762',
+	'http://stackoverflow.com/users/22656/jon-skeet',
+
 
 	'I really hate it when people don\'t',
 	'Accordion to recent surveys, you may insert random instrument names into' +
@@ -2984,6 +2998,17 @@ var responses = [
 		'She mopped up the floor\n' +
 		'And went to the door\n' +
 		'To answer it.', //what did you expect? perv.
+
+	//stolen from copy (ha!)
+	'We all know Linux is great...it does infinite loops in 5 seconds. ~ Linus Torvalds',
+	'Everything should be made as simple as possible, but not simpler. ~ Albert Einstein',
+	'If A = B and B = C, then A = C, except where void or prohibited by law. ~ Roy Santoro',
+	'Has anyone really been far even as decided to use even go want to do look more like?',
+
+	//nice snippets
+	'    Math.sign = function (n) {\n' +
+		'        return (x > 0) - (x < 0);\n' +
+		'    }',
 
 	//anti-jokes start here
 	'Why can\'t Elvis Presley drive in reverse? Because he\'s dead',
@@ -3006,10 +3031,47 @@ var responses = [
 	'What did the farmer say when he couldn\'t find his tractor?\n' +
 		'"Where\'s my tractor?"'
 ];
-var len = responses.length;
 
-var delay = 300000, //1000(ms) * 60 (sec) * 5 = 5min
-	lastISpoke = {};
+//query xkcd to find the last comic id. generate links to comic pages from that
+(function () {
+IO.jsonp({
+	url : 'http://dynamic.xkcd.com/api-0/jsonp/comic',
+	jsonpName : 'callback',
+	fun : finish
+});
+
+function finish ( resp ) {
+	var maxID = resp.num;
+
+	//to avoid adding hundreds of links to the responses array and fucking up
+	// the probabilities, we'll add just 2, and use a "nice" getter hack
+	var descriptor = {
+		get : function () {
+			return 'http://xkcd.com/' + Math.rand( 1, maxID );
+		},
+		configurable : true,
+		enumerable : true
+	};
+
+	//js does not allow dynamic key creation on object literals
+	var props = {};
+	props[ responses.length ] = props[ responses.length + 1 ] = descriptor;
+
+	Object.defineProperties( responses, props );
+	//arrays truly are magic. Chrome automatically adjusts the length after this
+	//perhaps it shouldn't surprise me. special behaviour on integer-ish is to
+	// be expected
+}
+})();
+
+
+var lastISpoke = {},
+	messagesSinceLast = {},
+
+	config  = {
+		delay : 300000, //1000(ms) * 60 (sec) * 5 = 5min
+		shortestConvo : 10
+	};
 
 function zzz () {
 	var now = Date.now(),
@@ -3019,23 +3081,37 @@ function zzz () {
 
 	//let my naming expertise astound you once more
 	function stuff ( roomid ) {
-		console.log( times[roomid], lastISpoke[roomid] );
 		bot.log( 'triggered bored on room #' + roomid );
 
 		//10 seconds into the future, just to be sure
 		lastISpoke[ roomid ] = now + 1000 * 10;
+		messagesSinceLast[ roomid ] = 0;
+
 		bot.adapter.out.add( responses.random(), roomid );
 	}
 
 	//checks, for a specific room, whether enough time has passed since someone
 	// (who wasn't us) spoke
 	function roomcheck ( roomid ) {
+		//max + 1. when the bot sends a message, it also counts as 1
+		if ( messagesSinceLast[roomid] < config.shortestConvo+1 ) {
+			return false;
+		}
+
 		var last = times[ roomid ];
-		return last > ( lastISpoke[roomid] || 0 ) && last + delay <= now;
+		return (
+			last > ( lastISpoke[roomid] || 0 ) &&
+			last + config.delay <= now );
 	}
 }
 
+function someoneSpoke ( msgObj ) {
+	var base = messagesSinceLast[ msgObj.room_id ] || 0;
+	messagesSinceLast[ msgObj.room_id ] = base + 1;
+}
+
 IO.register( 'heartbeat', zzz );
+IO.register( 'input', someoneSpoke );
 
 })();
 
