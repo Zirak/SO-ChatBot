@@ -78,7 +78,8 @@ responses = [
 	'*knock knock* Who\'s there? "Jehova\'s witnesses"',
 	'How do you make a plumber cry? Kill his family',
 	'What did the farmer say when he couldn\'t find his tractor?\n' +
-		'"Where\'s my tractor?"'
+		'"Where\'s my tractor?"',
+	'@jAndy, THE GAME!'
 ];
 
 //query xkcd to find the last comic id. generate links to comic pages from that
