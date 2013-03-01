@@ -79,8 +79,11 @@ responses = [
 	'How do you make a plumber cry? Kill his family',
 	'What did the farmer say when he couldn\'t find his tractor?\n' +
 		'"Where\'s my tractor?"',
-	
-	// added by dystroy
+
+	//added by rlemon
+	'@jAndy, THE GAME!',
+
+	//added by dystroy
 	"You should always put at the start of your HTML files a comment for browsers that don't handle HTML",
 	'Java and JavaScript are similar like and Script are similar',
 	'Ruby is short for rubbish',
@@ -137,8 +140,6 @@ responses = [
 	'Languages that try to disallow idiocy become themselves idiotic. — Rob Pike',
 	'Premature optimization, that’s like a fart. Premature abstraction is like taking a dump on another developer’s desk.  Chris Eric',
 	'Benchmarks don’t lie, but liars do benchmarks.'
-
-	
 ];
 
 //query xkcd to find the last comic id. generate links to comic pages from that
