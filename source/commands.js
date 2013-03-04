@@ -447,7 +447,7 @@ return function ( args, cb ) {
 	}
 
 	IO.jsonp({
-		url:'http://www.urbandictionary.com/iphone/search/define',
+		url : 'http://api.urbandictionary.com/v0/define',
 		data : {
 			term : args.content
 		},
@@ -479,9 +479,17 @@ return function ( args, cb ) {
 	}
 
 	function formatTop ( top ) {
-		return args.link( top.word, top.permalink ) +
-			' ' +
-			top.definition;
+		//replace [tag] in definition with links
+		var def = top.definition.replace( /\[(\w+)\]/g, formatTag );
+
+		return args.link( top.word, top.permalink ) + ' ' + def;
+	}
+	function formatTag ( $0, $1 ) {
+		var href =
+			'http://urbandictionary.com/define.php?term=' +
+			encodeURIComponent( $1 )
+
+		return args.link( $0, href );
 	}
 };
 }());
