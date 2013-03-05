@@ -261,7 +261,7 @@ var commands = {
 		var opts = args.parse().filter( conjunctions ),
 			len = opts.length;
 
-		bot.log( opts, rnd, '/choose input' );
+		bot.log( opts, '/choose input' );
 
 		//5% chance to get a "none-of-the-above"
 		if ( Math.random() < 0.05 ) {
