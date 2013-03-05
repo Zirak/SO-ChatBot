@@ -16,6 +16,8 @@ bot.personality = {
 	},
 	//what an incredible name
 	stuff : {
+		0   : [ "Life is just *perfect*", "What\'s there to bitch about, as long as I have *you*..." ],
+
 		1   : [ "Oh don't mind me, that isn't difficult at all..." ],
 		1.2 : [
 			"You don't appreciate me enough. Not that I need to be thanked.." ],

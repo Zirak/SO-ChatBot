@@ -259,18 +259,16 @@ var commands = {
 
 	choose : function ( args ) {
 		var opts = args.parse().filter( conjunctions ),
-			rnd = Math.random(),
 			len = opts.length;
 
 		bot.log( opts, rnd, '/choose input' );
 
-		//10% chance to get a "none-of-the-above"
-		if ( rnd < 0.1 ) {
+		//5% chance to get a "none-of-the-above"
+		if ( Math.random() < 0.05 ) {
 			return len === 2 ? 'Neither' : 'None of the above';
 		}
-		//15% chance to get "all-of-the-above"
-		// (the first 10% are covered in the previous option)
-		else if ( rnd < 0.25 ) {
+		//5% chance to get "all-of-the-above"
+		else if ( Math.random() < 0.05 ) {
 			return len === 2 ? 'Both!' : 'All of the above';
 		}
 
