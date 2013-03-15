@@ -6296,7 +6296,8 @@ function get_matching_message ( re, onlyBefore ) {
 (function () {
 var nulls = [
 	'The Google contains no such knowledge',
-	'There are no search results. Run.' ];
+	'There are no search results. Run.',
+	'My Google Fu has failed.'];
 
 function google ( args, cb ) {
 	IO.jsonp.google( args.toString() + ' -site:w3schools.com', finishCall );
@@ -6317,13 +6318,24 @@ function google ( args, cb ) {
 			finish( nulls.random() );
 			return;
 		}
-		finish(
-			results.map( format ).join( ' ; ' ) );
+		finish( format(args.content, results) );
+	}
 
-		function format ( result ) {
-			var title = IO.decodehtmlEntities( result.titleNoFormatting );
-			return args.link( title, result.url );
-		}
+	function format ( query, results ) {
+		return formatLink( query ) +
+			' ' +
+			results.map( formatResult ).join( ' ; ' );
+	}
+
+	function formatResult ( result ) {
+		var title = IO.decodehtmlEntities( result.titleNoFormatting );
+		return args.link( title, result.url );
+	}
+	function formatLink ( query ) {
+		return args.link(
+			'*',
+			'http://google.com/search?q=' +
+				encodeURIComponent( query ) );
 	}
 
 	function finish ( res ) {
