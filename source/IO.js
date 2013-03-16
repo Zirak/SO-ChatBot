@@ -200,6 +200,29 @@ return function ( html ) {
 	};
 });
 
+//a very incomplete circular-buffer implementation, used for the bored responses
+IO.CBuffer = function ( size ) {
+	var ret = {
+		items : [],
+		pos : 0,
+		size : size,
+	};
+
+	ret.add = function ( item ) {
+		if ( this.pos === size ) {
+			this.pos = 0;
+		}
+
+		this.items[ this.pos ] = item;
+		this.pos += 1;
+	};
+	ret.contains = function ( item ) {
+		return this.items.indexOf( item ) > -1;
+	};
+
+	return ret;
+};
+
 IO.xhr = function ( params ) {
 	//merge in the defaults
 	params = Object.merge({

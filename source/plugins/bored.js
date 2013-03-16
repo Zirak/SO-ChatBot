@@ -10,8 +10,11 @@ var lastISpoke = {},
 
 	config  = {
 		delay : 300000, //1000(ms) * 60 (sec) * 5 = 5min
-		shortestConvo : 10
+		shortestConvo : 10,
+		memorySize    : responses.length / 2,
 	};
+
+var memory = IO.CBuffer( config.memorySize );
 
 function zzz () {
 	var now = Date.now(),
@@ -27,7 +30,13 @@ function zzz () {
 		lastISpoke[ roomid ] = now + 1000 * 10;
 		messagesSinceLast[ roomid ] = 0;
 
-		bot.adapter.out.add( responses.random(), roomid );
+		var resp;
+		do {
+			resp = responses.random();
+		} while ( memory.contains(resp) );
+
+		memory.add( resp );
+		bot.adapter.out.add( resp, roomid );
 	}
 
 	//checks, for a specific room, whether enough time has passed since someone

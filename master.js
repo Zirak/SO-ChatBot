@@ -201,6 +201,29 @@ return function ( html ) {
 	};
 });
 
+//a very incomplete circular-buffer implementation, used for the bored responses
+IO.CBuffer = function ( size ) {
+	var ret = {
+		items : [],
+		pos : 0,
+		size : size,
+	};
+
+	ret.add = function ( item ) {
+		if ( this.pos === size ) {
+			this.pos = 0;
+		}
+
+		this.items[ this.pos ] = item;
+		this.pos += 1;
+	};
+	ret.contains = function ( item ) {
+		return this.items.indexOf( item ) > -1;
+	};
+
+	return ret;
+};
+
 IO.xhr = function ( params ) {
 	//merge in the defaults
 	params = Object.merge({
@@ -3267,8 +3290,11 @@ var lastISpoke = {},
 
 	config  = {
 		delay : 300000, //1000(ms) * 60 (sec) * 5 = 5min
-		shortestConvo : 10
+		shortestConvo : 10,
+		memorySize    : responses.length / 2,
 	};
+
+var memory = IO.CBuffer( config.memorySize );
 
 function zzz () {
 	var now = Date.now(),
@@ -3284,7 +3310,13 @@ function zzz () {
 		lastISpoke[ roomid ] = now + 1000 * 10;
 		messagesSinceLast[ roomid ] = 0;
 
-		bot.adapter.out.add( responses.random(), roomid );
+		var resp;
+		do {
+			resp = responses.random();
+		} while ( memory.contains(resp) );
+
+		memory.add( resp );
+		bot.adapter.out.add( resp, roomid );
 	}
 
 	//checks, for a specific room, whether enough time has passed since someone
