@@ -2,7 +2,7 @@
 /*
   ^\s*         #tolerate pre-whitespace
   s            #substitution prefix
-  (.)          #delimiter declaration
+  (\/|\|)      #delimiter declaration
   (            #begin matching regex
     (?:        #match shit which isn't an...
       (?:\\\1) #escaped delimeter
@@ -24,7 +24,7 @@
     i?   #case insensitive (optional)
   )      #FIN
  */
-var sub = /s(.)((?:(?:\\\1)|[^\1])*?)\1((?:(?:\\\1)|[^\1])*?)\1(g?i?)/;
+var sub = /^\s*s(\/|\|)((?:(?:\\\1)|[^\1])*?)\1((?:(?:\\\1)|[^\1])*?)\1(g?i?)/;
 bot.listen( sub, substitute );
 
 function substitute ( msg ) {
