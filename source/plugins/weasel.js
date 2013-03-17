@@ -1,3 +1,4 @@
+(function () {
 //meet Winded Weasel. he helps you make decisions and he answers questions.
 //x or y [or z ...]
 // => one of x, y, z, ...
@@ -5,8 +6,13 @@
 //can x y
 // => yes or no
 
-var chooseRe = /(^choose|or)[^$]/i,
-	questionRe = /^(is|are|can|will|would)[^$]/;
+var chooseRe = /(^choose|\sor\s)[^$]/i,
+    questionRe = /^(is|are|can|will|would|do|does)[^$]/i;
+
+var undecided = [
+	'I\'m not sure',
+	'ERROR CALCULATING RESULT',
+	'I know just one thing, and that is that I\'m a lumberjack' ];
 
 bot.listen(chooseRe, function ( msg ) {
 	var parts = msg.replace( /^choose\s/i, '' ).split( /\s*or\s*/i ),
@@ -37,6 +43,10 @@ bot.listen(chooseRe, function ( msg ) {
 	if ( Math.random() < 0.01 ) {
 		return len === 2 ? 'Neither' : 'None of them!';
 	}
+	//I don't know (1%)
+	if ( Math.random() < 0.01 ) {
+		return undecided.random();
+	}
 
 	//choose!
 	return parts.random();
@@ -50,10 +60,40 @@ bot.listen(questionRe, function ( msg ) {
 	}[ verb ];
 
 	if ( Math.random() < 0.005 ) {
-		return ['The person on your left has the answer']
+		//TODO: add more stuff. magic 8ball things.
+		return [ 'The person on your left has the answer' ]
 	}
 
-	var replies = [ 'Yes!', 'No' ];
+	var replies = [];
+
+	//positive
+	Object.defineProperty(replies, 0, {
+		get : function () {
+			var rand = Math.random() * 100;
+
+			if ( rand < 99 ) {
+				return 'Yes' + ( rand < 2 ? '!' : '' );
+			}
+
+			return undecided.random();
+		}
+	});
+
+	//negative
+	Object.defineProperty(replies, 1, {
+		get : function () {
+			var rand = Math.random() * 100;
+
+			if ( rand < 90 ) {
+				return 'No';
+			}
+			if ( rand < 99 ) {
+				return isFuture ? 'My pet goat disagrees' : 'Not at all';
+			}
+
+			return undecided.random();
+		}
+	});
 
 	if ( isFuture ) {
 		replies.concat([
@@ -63,3 +103,4 @@ bot.listen(questionRe, function ( msg ) {
 
 	return replies.random();
 });
+}());
