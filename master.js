@@ -6552,7 +6552,7 @@ IO.register( 'input', function ( msgObj ) {
 //can x y
 // => yes or no
 
-var chooseRe = /(^choose|^should).*\sor\s[^$]/i,
+var chooseRe = /^\s*(choose|should)?.*\sor\s[^$]/i,
     questionRe = /^(is|are|can|am|will|would|do|does)[^$]/i;
 
 var undecided = [
@@ -6561,8 +6561,11 @@ var undecided = [
 	'I know just one thing, and that is that I\'m a lumberjack' ];
 
 bot.listen(chooseRe, function ( msg ) {
-	var parts = msg.replace( /^(choose|should)\s/i, '' ).split( /\s+or\s+/i ),
-		len = parts.length;
+	var parts = msg
+		.replace( /^\s*(choose|should)\s/i, '' )
+		.split( /\s+or\s+/i );
+
+	var len = parts.length;
 
 	//check to see whether there's only 1 thing asked to choose about, e.g.
 	// choose a or a or a
