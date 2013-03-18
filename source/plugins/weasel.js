@@ -6,8 +6,8 @@
 //can x y
 // => yes or no
 
-var chooseRe = /(^choose|\sor\s)[^$]/i,
-    questionRe = /^(is|are|can|will|would|do|does)[^$]/i;
+var chooseRe = /(^choose|^should).*\sor\s[^$]/i,
+    questionRe = /^(is|are|can|am|will|would|do|does)[^$]/i;
 
 var undecided = [
 	'I\'m not sure',
@@ -15,7 +15,7 @@ var undecided = [
 	'I know just one thing, and that is that I\'m a lumberjack' ];
 
 bot.listen(chooseRe, function ( msg ) {
-	var parts = msg.replace( /^choose\s/i, '' ).split( /\s*or\s*/i ),
+	var parts = msg.replace( /^(choose|should)\s/i, '' ).split( /\s+or\s+/i ),
 		len = parts.length;
 
 	//check to see whether there's only 1 thing asked to choose about, e.g.
@@ -71,8 +71,13 @@ bot.listen(questionRe, function ( msg ) {
 		get : function () {
 			var rand = Math.random() * 100;
 
+			if ( rand < 80 ) {
+				return ( rand < 15 ? 'All signs point to ' : '') +
+					'Yes' +
+					( rand < 20 ? '!' : '' );
+			}
 			if ( rand < 99 ) {
-				return 'Yes' + ( rand < 2 ? '!' : '' );
+				return isFuture ? 'My pet goes agrees' : 'Indubitably'
 			}
 
 			return undecided.random();
@@ -84,8 +89,10 @@ bot.listen(questionRe, function ( msg ) {
 		get : function () {
 			var rand = Math.random() * 100;
 
-			if ( rand < 90 ) {
-				return 'No';
+			if ( rand < 80 ) {
+				return ( rand < 15 ? 'All signs point to ' : '' ) +
+					'No' +
+					( rand < 10 ? '!' : '' );
 			}
 			if ( rand < 99 ) {
 				return isFuture ? 'My pet goat disagrees' : 'Not at all';
