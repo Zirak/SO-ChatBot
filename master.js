@@ -6562,7 +6562,11 @@ var undecided = [
 
 bot.listen(chooseRe, function ( msg ) {
 	var parts = msg
-		.replace( /^\s*(choose|should)\s/i, '' )
+		//remove the choose prefix. "should" will always be accompanied by a
+		// subject (should I, should he, ...), so remove that as well
+		.replace( /^\s*(choose|should \S+)\s/i, '' )
+		//also remove the trailing question mark
+		.replace( /\?$/, '' )
 		.split( /\s+or\s+/i );
 
 	var len = parts.length;
