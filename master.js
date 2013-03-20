@@ -5989,11 +5989,12 @@ bot.addCommand({
 	name : 'karma',
 	//basic front-end for now
 	fun : function ( args ) {
-		var subject = args.content;
+		var subject = args.content,
+			votes = storage[ subject ];
 
 		return '{0} has {1} karma'.supplant(
 			subject,
-			storage[ subject ] || 'no' );
+			votes === undefined ? 'no' : votes );
 	}
 });
 
