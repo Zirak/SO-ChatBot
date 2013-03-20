@@ -373,8 +373,7 @@ var bot = window.bot = {
 			else if ( !this.callListeners(msg) ) {
 				//no listener fancied the message. this is the last frontier,
 				// so just give up in a classy, dignified way
-				msg.reply(
-					'Y U NO MAEK SENSE!? Could not understand `' + msg + '`' );
+				giveUp();
 			}
 		}
 		catch ( e ) {
@@ -394,6 +393,23 @@ var bot = window.bot = {
 		}
 		finally {
 			this.info.invoked += 1;
+		}
+
+		function giveUp () {
+			var reply =
+				'Y U NO MAEK SENSE!? Could not understand ' +
+				bot.adapter.codify( msg.content );
+
+			//check if the user may have intended to execute a command
+			var possibleName = msg.trim().split( ' ' )[ 0 ],
+				cmd = bot.getCommand( possibleName );
+
+			if ( !cmd.error || cmd.guesses.length ) {
+				reply += ' (perhaps you meant to execute a command? If so,' +
+					' prepend the command name with a /)';
+			}
+
+			msg.reply( reply );
 		}
 	},
 
@@ -495,7 +511,7 @@ var bot = window.bot = {
 			msg += ' Did you mean: ' + guesses.join( ', ' );
 		}
 
-		return { error : msg };
+		return { error : msg, guesses : guesses };
 	},
 
 	//the function women think is lacking in men
