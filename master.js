@@ -373,7 +373,7 @@ var bot = window.bot = {
 			else if ( !this.callListeners(msg) ) {
 				//no listener fancied the message. this is the last frontier,
 				// so just give up in a classy, dignified way
-				giveUp();
+				msg.reply( this.giveUpMessage(msg) );
 			}
 		}
 		catch ( e ) {
@@ -394,23 +394,23 @@ var bot = window.bot = {
 		finally {
 			this.info.invoked += 1;
 		}
+	},
 
-		function giveUp () {
-			var reply =
-				'Y U NO MAEK SENSE!? Could not understand ' +
-				bot.adapter.codify( msg.content );
+	giveUpMessage : function ( msg ) {
+		var reply =
+			'Y U NO MAEK SENSE!? Could not understand ' +
+			this.adapter.codify( msg );
 
-			//check if the user may have intended to execute a command
-			var possibleName = msg.trim().split( ' ' )[ 0 ],
-				cmd = bot.getCommand( possibleName );
+		//check if the user may have intended to execute a command
+		var possibleName = msg.trim().split( ' ' )[ 0 ],
+			cmd = this.getCommand( possibleName );
 
-			if ( !cmd.error || cmd.guesses.length ) {
-				reply += ' (perhaps you meant to execute a command? If so,' +
-					' prepend the command name with a /)';
-			}
-
-			msg.reply( reply );
+		if ( !cmd.error || cmd.guesses.length ) {
+			reply += ' (perhaps you meant to execute a command? If so,' +
+				' prepend the command name with a /)';
 		}
+
+		return reply;
 	},
 
 	prepareMessage : function ( msgObj ) {
@@ -1531,7 +1531,7 @@ var commands = {
 	},
 
 	listen : function ( msg ) {
-		return bot.callListeners( msg );
+		return bot.callListeners( msg ) || bot.giveUpMessage( msg );
 	},
 
 	eval : function ( msg ) {

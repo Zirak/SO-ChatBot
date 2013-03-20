@@ -22,7 +22,7 @@ var commands = {
 	},
 
 	listen : function ( msg ) {
-		return bot.callListeners( msg );
+		return bot.callListeners( msg ) || bot.giveUpMessage( msg );
 	},
 
 	eval : function ( msg ) {
