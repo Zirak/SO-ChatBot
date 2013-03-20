@@ -5924,6 +5924,7 @@ bot.addCommand({
 (function () {
 "use strict";
 
+//rlemon asked for a hardcoded vote against AmberRoxannaReal
 var storage = JSON.parse(
 	localStorage.bot_karma || '{"AmberRoxannaReal":-1}' );
 IO.register( 'input', function ( msgObj ) {
@@ -5969,14 +5970,14 @@ function vote ( subject, op ) {
 //
 
 bot.addCommand({
-	name : 'votes',
+	name : 'karma',
 	//basic front-end for now
 	fun : function ( args ) {
 		var subject = args.content;
 
-		return '{0} votes for {1}'.supplant(
-			storage[ subject ] || 'No',
-			subject );
+		return '{0} has {1} karma'.supplant(
+			subject,
+			storage[ subject ] || 'no' );
 	}
 });
 
