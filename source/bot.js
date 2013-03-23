@@ -334,7 +334,7 @@ bot.CommunityCommand = function ( command, req ) {
 
 		clean();
 		var count = Object.keys( used ).length,
-			needed = req - count;
+			needed = req - count - 1; //0 based indexing vs. 1 based humans
 		bot.log( used, count, req );
 
 		if ( usrid in used ) {
