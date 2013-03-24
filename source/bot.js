@@ -14,6 +14,7 @@ var bot = window.bot = {
 		forgotten : 0,
 		start     : new Date,
 	},
+	users : users, //the chat has gracefully granted us a global users variable
 
 	parseMessage : function ( msgObj ) {
 		if ( !this.validateMessage(msgObj) ) {
@@ -411,28 +412,12 @@ bot.Message = function ( text, msgObj ) {
 		},
 
 		findUserid : function ( username ) {
-			var users = [].slice.call( document
-					.getElementById( 'sidebar' )
-					.getElementsByClassName( 'user-container' )
-				);
+			username = username.toLowerCase();
+			var ids = Object.keys( bot.users );
 
-			//grab a list of user ids
-			var ids = users.map(function ( container ) {
-				return container.id.match( /\d+/ )[ 0 ];
-			});
-			//and a list of their names
-			var names = users.map(function ( container ) {
-				return container.getElementsByTagName( 'img' )[ 0 ]
-					.title.toLowerCase().replace( /\s/g, '' );
-			});
-
-			var idx = names.indexOf(
-				username.toString().toLowerCase().replace( /\s/g, '' ) );
-			if ( idx < 0 ) {
-				return -1;
-			}
-
-			return Number( ids[idx] );
+			return ids.first(function ( id ) {
+				return bot.users[ id ].name.toLowerCase() === username;
+			}) || -1;
 		}.memoize(),
 
 		codify : bot.adapter.codify.bind( bot.adapter ),
@@ -459,26 +444,14 @@ bot.Message = function ( text, msgObj ) {
 	return ret;
 };
 
-bot.owners = [
-	154112,  //Simon Sarris
-	170224,  //Ivo Wetzel
-	263525,  //dystroy
-	322395,  //Loktar
-	363815,  //Ryan Kinal
-	401137,  //Amaan Cheval
-	418183,  //Octavian Damiean
-	617762,  //Zirak
-	727208,  //tereško
-	809950,  //GNi33
-	829835,  //rlemon
-	851498,  //Florian Margaine
-	855760,  //Darkyen
-	1078067, //copy
-	1216976, //SomeKittens
-	1348195, //Benjamin Gruenbaum
-	1386166, //phenomnomnominal
-	1386886, //jAndy
-];
+bot.owners = (function () {
+	return Object.keys( bot.users ).filter( ownerCheck ).map( Number );
+
+	function ownerCheck ( id ) {
+		var user = bot.users[id];
+		return user.is_moderator || user.is_owner;
+	}
+}());
 
 bot.isOwner = function ( usrid ) {
 	return this.owners.indexOf( usrid ) > -1;
