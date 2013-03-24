@@ -9,10 +9,9 @@
 var chooseRe = /^\s*(choose|should)?.*\sor\s[^$]/i,
     questionRe = /^(is|are|can|am|will|would|do|does)[^$]/i;
 
-var undecided = [
-	'I\'m not sure',
-	'ERROR CALCULATING RESULT',
-	'I know just one thing, and that is that I\'m a lumberjack' ];
+//will be filled in the build
+var answers, undecided, sameness;
+//#build ../static/weaselReplies.js
 
 bot.listen(chooseRe, function ( msg ) {
 	var parts = msg
@@ -36,10 +35,7 @@ bot.listen(chooseRe, function ( msg ) {
 	}
 
 	if ( same ) {
-		return [
-			'That\'s not really a choice, now is it?',
-			'Sounds like you have already decided',
-			'Cheater cheater your house is a heater' ].random();
+		return sameness.random();
 	}
 
 	//all of them (1%)
@@ -60,61 +56,6 @@ bot.listen(chooseRe, function ( msg ) {
 });
 
 bot.listen(questionRe, function ( msg ) {
-	var verb = msg.matches[ 0 ]; //is, will, can, ...
-
-	var isFuture = {
-		will : true, would : true
-	}[ verb ];
-
-	if ( Math.random() < 0.005 ) {
-		//TODO: add more stuff. magic 8ball things.
-		return [ 'The person on your left has the answer' ]
-	}
-
-	var replies = [];
-
-	//positive
-	Object.defineProperty(replies, 0, {
-		get : function () {
-			var rand = Math.random() * 100;
-
-			if ( rand < 80 ) {
-				return ( rand < 15 ? 'All signs point to ' : '') +
-					'Yes' +
-					( rand < 20 ? '!' : '' );
-			}
-			if ( rand < 99 ) {
-				return isFuture ? 'My pet goes agrees' : 'Indubitably'
-			}
-
-			return undecided.random();
-		}
-	});
-
-	//negative
-	Object.defineProperty(replies, 1, {
-		get : function () {
-			var rand = Math.random() * 100;
-
-			if ( rand < 80 ) {
-				return ( rand < 15 ? 'All signs point to ' : '' ) +
-					'No' +
-					( rand < 10 ? '!' : '' );
-			}
-			if ( rand < 99 ) {
-				return isFuture ? 'My pet goat disagrees' : 'Not at all';
-			}
-
-			return undecided.random();
-		}
-	});
-
-	if ( isFuture ) {
-		replies.concat([
-			'I wouldn\'t count on it', 'Definitely!'
-		]);
-	}
-
-	return replies.random();
+	return answers.random();
 });
 }());

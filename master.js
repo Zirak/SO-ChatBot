@@ -6783,10 +6783,17 @@ IO.register( 'input', function ( msgObj ) {
 var chooseRe = /^\s*(choose|should)?.*\sor\s[^$]/i,
     questionRe = /^(is|are|can|am|will|would|do|does)[^$]/i;
 
-var undecided = [
-	'I\'m not sure',
-	'ERROR CALCULATING RESULT',
-	'I know just one thing, and that is that I\'m a lumberjack' ];
+//will be filled in the build
+var answers, undecided, sameness;
+//"encoded" to leave some surprise
+undecided=["SSdtIG5vdCBzdXJl", "RVJST1IgQ0FMQ1VMQVRJTkcgUkVTVUxU","SSBrbm93IGp1c3Qgb25lIHRoaW5nLCBhbmQgdGhhdCBpcyB0aGF0IEknbSBhIGx1bWJlcmphY2s="].map(atob);
+
+sameness=["VGhhdCdzIG5vdCByZWFsbHkgYSBjaG9pY2UsIG5vdyBpcyBpdD8=","U291bmRzIGxpa2UgeW91IGhhdmUgYWxyZWFkeSBkZWNpZGVk","Q2hlYXRlciBjaGVhdGVyIHlvdXIgaG91c2UgaXMgYSBoZWF0ZXI="].map(atob);
+
+//now for the juicy part
+answers=["QWJzb2x1dGVseSBub3Q=","QWJzb2x1dGVseSBub3Q=","QWJzb2x1dGVseSBub3Q=","QWxsIHNpZ25zIHBvaW50IHRvIG5v","QWxsIHNpZ25zIHBvaW50IHRvIG5v","QWxsIHNpZ25zIHBvaW50IHRvIG5v","QWxsIHNpZ25zIHBvaW50IHRvIHllcw==","QWxsIHNpZ25zIHBvaW50IHRvIHllcw==","QWxsIHNpZ25zIHBvaW50IHRvIHllcw==","QnV0IG9mIGNvdXJzZQ==","QnV0IG9mIGNvdXJzZQ==","QnV0IG9mIGNvdXJzZQ==","QnkgYWxsIG1lYW5z","QnkgYWxsIG1lYW5z","QnkgYWxsIG1lYW5z","Q2VydGFpbmx5IG5vdA==","Q2VydGFpbmx5IG5vdA==","Q2VydGFpbmx5IG5vdA==","Q2VydGFpbmx5","Q2VydGFpbmx5","Q2VydGFpbmx5","RGVmaW5pdGVseQ==","RGVmaW5pdGVseQ==","RGVmaW5pdGVseQ==","RG91YnRmdWxseQ==","RG91YnRmdWxseQ==","RG91YnRmdWxseQ==","SSBjYW4gbmVpdGhlciBjb25maXJtIG5vciBkZW55","SSBleHBlY3Qgc28=","SSBleHBlY3Qgc28=","SSBleHBlY3Qgc28=","SSdtIG5vdCBzbyBzdXJlIGFueW1vcmUuIEl0IGNhbiBnbyBlaXRoZXIgd2F5","SW1wb3NzaWJsZQ==","SW1wb3NzaWJsZQ==","SW1wb3NzaWJsZQ==","SW5kZWVk","SW5kZWVk","SW5kZWVk","SW5kdWJpdGFibHk=","SW5kdWJpdGFibHk=","SW5kdWJpdGFibHk=","Tm8gd2F5","Tm8gd2F5","Tm8gd2F5","Tm8=","Tm8=","Tm8=","Tm8=","Tm9wZQ==","Tm9wZQ==","Tm9wZQ==","Tm90IGEgY2hhbmNl","Tm90IGEgY2hhbmNl","Tm90IGEgY2hhbmNl","Tm90IGF0IGFsbA==","Tm90IGF0IGFsbA==","Tm90IGF0IGFsbA==","TnVoLXVo","TnVoLXVo","TnVoLXVo","T2YgY291cnNlIG5vdA==","T2YgY291cnNlIG5vdA==","T2YgY291cnNlIG5vdA==","T2YgY291cnNlIQ==","T2YgY291cnNlIQ==","T2YgY291cnNlIQ==","UHJvYmFibHk=","UHJvYmFibHk=","UHJvYmFibHk=","WWVzIQ==","WWVzIQ==","WWVzIQ==","WWVzIQ==","WWVzLCBhYnNvbHV0ZWx5","WWVzLCBhYnNvbHV0ZWx5","WWVzLCBhYnNvbHV0ZWx5"].map(atob);
+//can you feel the nectar?
+
 
 bot.listen(chooseRe, function ( msg ) {
 	var parts = msg
@@ -6810,10 +6817,7 @@ bot.listen(chooseRe, function ( msg ) {
 	}
 
 	if ( same ) {
-		return [
-			'That\'s not really a choice, now is it?',
-			'Sounds like you have already decided',
-			'Cheater cheater your house is a heater' ].random();
+		return sameness.random();
 	}
 
 	//all of them (1%)
@@ -6834,61 +6838,6 @@ bot.listen(chooseRe, function ( msg ) {
 });
 
 bot.listen(questionRe, function ( msg ) {
-	var verb = msg.matches[ 0 ]; //is, will, can, ...
-
-	var isFuture = {
-		will : true, would : true
-	}[ verb ];
-
-	if ( Math.random() < 0.005 ) {
-		//TODO: add more stuff. magic 8ball things.
-		return [ 'The person on your left has the answer' ]
-	}
-
-	var replies = [];
-
-	//positive
-	Object.defineProperty(replies, 0, {
-		get : function () {
-			var rand = Math.random() * 100;
-
-			if ( rand < 80 ) {
-				return ( rand < 15 ? 'All signs point to ' : '') +
-					'Yes' +
-					( rand < 20 ? '!' : '' );
-			}
-			if ( rand < 99 ) {
-				return isFuture ? 'My pet goes agrees' : 'Indubitably'
-			}
-
-			return undecided.random();
-		}
-	});
-
-	//negative
-	Object.defineProperty(replies, 1, {
-		get : function () {
-			var rand = Math.random() * 100;
-
-			if ( rand < 80 ) {
-				return ( rand < 15 ? 'All signs point to ' : '' ) +
-					'No' +
-					( rand < 10 ? '!' : '' );
-			}
-			if ( rand < 99 ) {
-				return isFuture ? 'My pet goat disagrees' : 'Not at all';
-			}
-
-			return undecided.random();
-		}
-	});
-
-	if ( isFuture ) {
-		replies.concat([
-			'I wouldn\'t count on it', 'Definitely!'
-		]);
-	}
-
-	return replies.random();
+	return answers.random();
 });
 }());
