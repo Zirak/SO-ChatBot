@@ -251,8 +251,8 @@ IO.xhr = function ( params ) {
 		}
 	});
 
-	Object.keys( params.headers ).forEach(function ( header ) {
-		xhr.setRequestHeader( header, params.headers[header] );
+	Object.iterate( params.headers, function ( header, value ) {
+		xhr.setRequestHeader( header, value );
 	});
 
 	xhr.send( params.data );

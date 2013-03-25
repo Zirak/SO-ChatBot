@@ -97,10 +97,10 @@ function checkCommand ( cmd ) {
 }
 
 function loadCommands () {
-	Object.keys( storage ).forEach( teach );
+	Object.iterage( storage, teach );
 
-	function teach ( key ) {
-		var cmd = JSON.parse( storage[key] );
+	function teach ( key, cmd ) {
+		cmd = JSON.parse( cmd );
 		cmd.input = turnToRegexp( cmd.input );
 		cmd.date = new Date( Date.parse(cmd.date) );
 

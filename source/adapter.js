@@ -131,9 +131,7 @@ var polling = bot.adapter.in = {
 		resp = JSON.parse( resp );
 
 		//each key will be in the form of rROOMID
-		Object.keys( resp ).forEach(function ( key ) {
-			var msgObj = resp[ key ];
-
+		Object.iterate(resp, function ( key, msgObj ) {
 			//t is a...something important
 			if ( msgObj.t ) {
 				this.times[ key ] = msgObj.t;
@@ -220,9 +218,7 @@ var output = bot.adapter.out = {
 		// the freezer and never let it out. not until it can talk again. what
 		// was I intending to say?
 		if ( !bot.stopped ) {
-			Object.keys( this.messages ).forEach(function ( room ) {
-				var message = this.messages[ room ];
-
+			Object.iterate(this.messages, function ( room, message ) {
 				if ( !message ) {
 					return;
 				}

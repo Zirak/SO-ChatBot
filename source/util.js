@@ -10,6 +10,12 @@ Object.merge = function () {
 	}, {} );
 };
 
+Object.iterate = function ( obj, cb, thisArg ) {
+	Object.keys( obj ).forEach(function (key) {
+		cb.call( thisArg, key, obj[key], obj );
+	});
+}
+
 String.prototype.indexesOf = function ( str, fromIndex ) {
 	//since we also use index to tell indexOf from where to begin, and since
 	// telling it to begin from where it found the match will cause it to just

@@ -587,11 +587,14 @@ return function parse ( args, extraVars ) {
 			parse( macroArgs, extraVars )
 				.split( ',' ).invoke( 'trim' ).concat( args )
 		);
+		//this is not good code
 	}
 
 	function findMacro ( macro ) {
-		return (
-			[ macros, msgObj, extraVars ].first( hasMacro ) || [] )[ macro ];
+		var user = bot.users[ args.get('user_id') ],
+			container = [ macros, msgObj, user, extraVars ].first( hasMacro );
+
+		return ( container || {} )[ macro ];
 
 		function hasMacro ( obj ) {
 			return obj.hasOwnProperty( macro );
@@ -744,10 +747,10 @@ var communal = {
 	die : true, ban : true
 };
 
-Object.keys( commands ).forEach(function ( cmdName ) {
+Object.iterate( commands, function ( cmdName, fun ) {
 	var cmd = {
 		name : cmdName,
-		fun  : commands[ cmdName ],
+		fun  : fun,
 		permissions : {
 			del : 'NONE',
 			use : privilegedCommands[ cmdName ] ? bot.owners : 'ALL'

@@ -252,8 +252,8 @@ IO.xhr = function ( params ) {
 		}
 	});
 
-	Object.keys( params.headers ).forEach(function ( header ) {
-		xhr.setRequestHeader( header, params.headers[header] );
+	Object.iterate( params.headers, function ( header, value ) {
+		xhr.setRequestHeader( header, value );
 	});
 
 	xhr.send( params.data );
@@ -864,6 +864,12 @@ Object.merge = function () {
 		return ret;
 	}, {} );
 };
+
+Object.iterate = function ( obj, cb, thisArg ) {
+	Object.keys( obj ).forEach(function (key) {
+		cb.call( thisArg, key, obj[key], obj );
+	});
+}
 
 String.prototype.indexesOf = function ( str, fromIndex ) {
 	//since we also use index to tell indexOf from where to begin, and since
@@ -2069,11 +2075,14 @@ return function parse ( args, extraVars ) {
 			parse( macroArgs, extraVars )
 				.split( ',' ).invoke( 'trim' ).concat( args )
 		);
+		//this is not good code
 	}
 
 	function findMacro ( macro ) {
-		return (
-			[ macros, msgObj, extraVars ].first( hasMacro ) || [] )[ macro ];
+		var user = bot.users[ args.get('user_id') ],
+			container = [ macros, msgObj, user, extraVars ].first( hasMacro );
+
+		return ( container || {} )[ macro ];
 
 		function hasMacro ( obj ) {
 			return obj.hasOwnProperty( macro );
@@ -2226,10 +2235,10 @@ var communal = {
 	die : true, ban : true
 };
 
-Object.keys( commands ).forEach(function ( cmdName ) {
+Object.iterate( commands, function ( cmdName, fun ) {
 	var cmd = {
 		name : cmdName,
-		fun  : commands[ cmdName ],
+		fun  : fun,
 		permissions : {
 			del : 'NONE',
 			use : privilegedCommands[ cmdName ] ? bot.owners : 'ALL'
@@ -2556,9 +2565,7 @@ var polling = bot.adapter.in = {
 		resp = JSON.parse( resp );
 
 		//each key will be in the form of rROOMID
-		Object.keys( resp ).forEach(function ( key ) {
-			var msgObj = resp[ key ];
-
+		Object.iterate(resp, function ( key, msgObj ) {
 			//t is a...something important
 			if ( msgObj.t ) {
 				this.times[ key ] = msgObj.t;
@@ -2645,9 +2652,7 @@ var output = bot.adapter.out = {
 		// the freezer and never let it out. not until it can talk again. what
 		// was I intending to say?
 		if ( !bot.stopped ) {
-			Object.keys( this.messages ).forEach(function ( room ) {
-				var message = this.messages[ room ];
-
+			Object.iterate(this.messages, function ( room, message ) {
 				if ( !message ) {
 					return;
 				}
@@ -6073,10 +6078,10 @@ function checkCommand ( cmd ) {
 }
 
 function loadCommands () {
-	Object.keys( storage ).forEach( teach );
+	Object.iterage( storage, teach );
 
-	function teach ( key ) {
-		var cmd = JSON.parse( storage[key] );
+	function teach ( key, cmd ) {
+		cmd = JSON.parse( cmd );
 		cmd.input = turnToRegexp( cmd.input );
 		cmd.date = new Date( Date.parse(cmd.date) );
 
