@@ -97,7 +97,7 @@ function checkCommand ( cmd ) {
 }
 
 function loadCommands () {
-	Object.iterage( storage, teach );
+	Object.iterate( storage, teach );
 
 	function teach ( key, cmd ) {
 		cmd = JSON.parse( cmd );
