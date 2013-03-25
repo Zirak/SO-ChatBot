@@ -412,11 +412,14 @@ bot.Message = function ( text, msgObj ) {
 		},
 
 		findUserid : function ( username ) {
-			username = username.toLowerCase();
+			username = username.toLowerCase().replace( /\s/g, '' );
 			var ids = Object.keys( bot.users );
 
 			return ids.first(function ( id ) {
-				return bot.users[ id ].name.toLowerCase() === username;
+				var name = bot.users[ id ].name
+					.toLowerCase().replace( /\s/g, '' );
+
+				return name === username;
 			}) || -1;
 		}.memoize(),
 
