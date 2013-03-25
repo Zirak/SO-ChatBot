@@ -16,7 +16,9 @@ function mustachify ( args ) {
 		return 'User {0} was not found.'.supplant( usrid );
 	}
 
-	return 'http://mustachify.me/?src=http://www.gravatar.com/avatar/{0}?s=256#.jpg'.supplant( bot.users[usrid].email_hash );
+	args.directreply(
+		'http://mustachify.me/?src=http://www.gravatar.com/avatar/{0}?s=256#.jpg'
+			.supplant( bot.users[usrid].email_hash ) );
 }
 
 bot.addCommand({
