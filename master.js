@@ -1515,10 +1515,8 @@ var commands = {
 			return args + ': ' + desc;
 		}
 
-		return (
-			'https://github.com/Zirak/SO-ChatBot/wiki/' +
-				'Interacting-with-the-bot'
-		);
+		return 'https://github.com/Zirak/SO-ChatBot/wiki/' +
+		       'Interacting-with-the-bot';
 	},
 
 	listen : function ( msg ) {
@@ -1571,7 +1569,7 @@ var commands = {
 			args.parse().forEach( ban );
 		}
 		else {
-			ret = Object.keys( bot.banlist ).filter( Number );
+			ret = Object.keys( bot.banlist ).filter( Number ).map( format );
 		}
 
 		return ret.join( ' ' ) || 'Nothing to show/do.';
@@ -1598,6 +1596,13 @@ var commands = {
 			}
 
 			ret.push( msg.supplant(usrid) );
+		}
+
+		function format ( id ) {
+			var user = bot.users[ id ],
+				name = user ? user.name : '?';
+
+			return '{0} ({1})'.supplant( id, name );
 		}
 	},
 
