@@ -14,7 +14,7 @@ var bot = window.bot = {
 		forgotten : 0,
 		start     : new Date,
 	},
-	users : users, //the chat has gracefully granted us a global users variable
+	users : {}, //will be filled in build
 
 	parseMessage : function ( msgObj ) {
 		if ( !this.validateMessage(msgObj) ) {
@@ -243,8 +243,6 @@ var bot = window.bot = {
 	}
 };
 
-//#build eval.js
-
 bot.banlist = JSON.parse( localStorage.bot_ban || '{}' );
 if ( Array.isArray(bot.banlist) ) {
 	bot.banlist = bot.banlist.reduce(function ( ret, id ) {
@@ -288,8 +286,9 @@ bot.Command = function ( cmd ) {
 		cmd[ 'can' + perm ] = function ( usrid ) {
 			var canDo = this.permissions[ low ];
 
-			return canDo === 'ALL' || canDo !== 'NONE' &&
-				canDo.indexOf( usrid ) > -1;
+			return canDo === 'ALL' || canDo !== 'NONE' && (
+				( canDo === 'OWNER' && bot.isOwner(usrid) ) ||
+				canDo.indexOf( usrid ) > -1 );
 		};
 	});
 
@@ -440,24 +439,16 @@ bot.Message = function ( text, msgObj ) {
 		}
 	};
 
-	Object.keys( deliciousObject ).forEach(function ( key ) {
-		ret[ key ] = deliciousObject[ key ];
+	Object.iterate( deliciousObject, function ( key, prop ) {
+		ret[ key ] = prop;
 	});
 
 	return ret;
 };
 
-bot.owners = (function () {
-	return Object.keys( bot.users ).filter( ownerCheck ).map( Number );
-
-	function ownerCheck ( id ) {
-		var user = bot.users[id];
-		return user.is_moderator || user.is_owner;
-	}
-}());
-
 bot.isOwner = function ( usrid ) {
-	return this.owners.indexOf( usrid ) > -1;
+	var user = this.users[ usrid ];
+	return user && ( user.is_owner || user.is_moderator );
 };
 
 IO.register( 'input', bot.parseMessage, bot );
@@ -469,6 +460,8 @@ bot.beatInterval = 5000; //once every 5 seconds is Good Enough ™
 		beat();
 	}, bot.beatInterval );
 }())
+
+//#build eval.js
 
 //#build util.js
 //#build parseCommandArgs.js

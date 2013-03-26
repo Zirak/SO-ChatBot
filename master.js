@@ -338,7 +338,7 @@ var bot = window.bot = {
 		forgotten : 0,
 		start     : new Date,
 	},
-	users : users, //the chat has gracefully granted us a global users variable
+	users : {}, //will be filled in build
 
 	parseMessage : function ( msgObj ) {
 		if ( !this.validateMessage(msgObj) ) {
@@ -567,70 +567,6 @@ var bot = window.bot = {
 	}
 };
 
-//execute arbitrary js code in a relatively safe environment
-bot.eval = (function () {
-window.URL = window.URL || window.webkitURL || window.mozURL || null;
-
-//translation tool: https://tinker.io/b2ff5
-var worker_code = atob( 'dmFyIGdsb2JhbCA9IHRoaXM7CgovKm1vc3QgZXh0cmEgZnVuY3Rpb25zIGNvdWxkIGJlIHBvc3NpYmx5IHVuc2FmZSovCnZhciB3aGl0ZXkgPSB7CgknQXJyYXknICAgICAgICAgICAgICA6IDEsCgknQm9vbGVhbicgICAgICAgICAgICA6IDEsCgknRGF0ZScgICAgICAgICAgICAgICA6IDEsCgknRXJyb3InICAgICAgICAgICAgICA6IDEsCgknRXZhbEVycm9yJyAgICAgICAgICA6IDEsCgknRnVuY3Rpb24nICAgICAgICAgICA6IDEsCgknSW5maW5pdHknICAgICAgICAgICA6IDEsCgknSlNPTicgICAgICAgICAgICAgICA6IDEsCgknTWF0aCcgICAgICAgICAgICAgICA6IDEsCgknTmFOJyAgICAgICAgICAgICAgICA6IDEsCgknTnVtYmVyJyAgICAgICAgICAgICA6IDEsCgknT2JqZWN0JyAgICAgICAgICAgICA6IDEsCgknUmFuZ2VFcnJvcicgICAgICAgICA6IDEsCgknUmVmZXJlbmNlRXJyb3InICAgICA6IDEsCgknUmVnRXhwJyAgICAgICAgICAgICA6IDEsCgknU3RyaW5nJyAgICAgICAgICAgICA6IDEsCgknU3ludGF4RXJyb3InICAgICAgICA6IDEsCgknVHlwZUVycm9yJyAgICAgICAgICA6IDEsCgknVVJJRXJyb3InICAgICAgICAgICA6IDEsCgknYXRvYicgICAgICAgICAgICAgICA6IDEsCgknYnRvYScgICAgICAgICAgICAgICA6IDEsCgknZGVjb2RlVVJJJyAgICAgICAgICA6IDEsCgknZGVjb2RlVVJJQ29tcG9uZW50JyA6IDEsCgknZW5jb2RlVVJJJyAgICAgICAgICA6IDEsCgknZW5jb2RlVVJJQ29tcG9uZW50JyA6IDEsCgknZXZhbCcgICAgICAgICAgICAgICA6IDEsCgknZ2xvYmFsJyAgICAgICAgICAgICA6IDEsCgknaXNGaW5pdGUnICAgICAgICAgICA6IDEsCgknaXNOYU4nICAgICAgICAgICAgICA6IDEsCgknb25tZXNzYWdlJyAgICAgICAgICA6IDEsCgkncGFyc2VGbG9hdCcgICAgICAgICA6IDEsCgkncGFyc2VJbnQnICAgICAgICAgICA6IDEsCgkncG9zdE1lc3NhZ2UnICAgICAgICA6IDEsCgknc2VsZicgICAgICAgICAgICAgICA6IDEsCgkndW5kZWZpbmVkJyAgICAgICAgICA6IDEsCgknd2hpdGV5JyAgICAgICAgICAgICA6IDEsCgoJLyogdHlwZWQgYXJyYXlzIGFuZCBzaGl0ICovCgknQXJyYXlCdWZmZXInICAgICAgIDogMSwKCSdCbG9iJyAgICAgICAgICAgICAgOiAxLAoJJ0Zsb2F0MzJBcnJheScgICAgICA6IDEsCgknRmxvYXQ2NEFycmF5JyAgICAgIDogMSwKCSdJbnQ4QXJyYXknICAgICAgICAgOiAxLAoJJ0ludDE2QXJyYXknICAgICAgICA6IDEsCgknSW50MzJBcnJheScgICAgICAgIDogMSwKCSdVaW50OEFycmF5JyAgICAgICAgOiAxLAoJJ1VpbnQxNkFycmF5JyAgICAgICA6IDEsCgknVWludDMyQXJyYXknICAgICAgIDogMSwKCSdVaW50OENsYW1wZWRBcnJheScgOiAxLAoKCS8qCgl0aGVzZSBwcm9wZXJ0aWVzIGFsbG93IEZGIHRvIGZ1bmN0aW9uLiB3aXRob3V0IHRoZW0sIGEgZnVja2Zlc3Qgb2YKCWluZXhwbGljYWJsZSBlcnJvcnMgZW51c2VzLiB0b29rIG1lIGFib3V0IDQgaG91cnMgdG8gdHJhY2sgdGhlc2UgZnVja2VycwoJZG93bi4KCWZ1Y2sgaGVsbCBpdCBpc24ndCBmdXR1cmUtcHJvb2YsIGJ1dCB0aGUgZXJyb3JzIHRocm93biBhcmUgdW5jYXRjaGFibGUKCWFuZCB1bnRyYWNhYmxlLiBzbyBhIGhlYWRzLXVwLiBlbmpveSwgZnV0dXJlLW1lIQoJKi8KCSdET01FeGNlcHRpb24nIDogMSwKCSdFdmVudCcgICAgICAgIDogMSwKCSdNZXNzYWdlRXZlbnQnIDogMQp9OwoKWyBnbG9iYWwsIGdsb2JhbC5fX3Byb3RvX18gXS5mb3JFYWNoKGZ1bmN0aW9uICggb2JqICkgewoJT2JqZWN0LmdldE93blByb3BlcnR5TmFtZXMoIG9iaiApLmZvckVhY2goZnVuY3Rpb24oIHByb3AgKSB7CgkJaWYoICF3aGl0ZXkuaGFzT3duUHJvcGVydHkoIHByb3AgKSApIHsKCQkJZGVsZXRlIG9ialsgcHJvcCBdOwoJCX0KCX0pOwp9KTsKCk9iamVjdC5kZWZpbmVQcm9wZXJ0eSggQXJyYXkucHJvdG90eXBlLCAnam9pbicsIHsKCXdyaXRhYmxlOiBmYWxzZSwKCWNvbmZpZ3VyYWJsZTogZmFsc2UsCgllbnVtcmFibGU6IGZhbHNlLAoKCXZhbHVlOiAoZnVuY3Rpb24gKCBvbGQgKSB7CgkJcmV0dXJuIGZ1bmN0aW9uICggYXJnICkgewoJCQlpZiAoIHRoaXMubGVuZ3RoID4gNTAwIHx8IChhcmcgJiYgYXJnLmxlbmd0aCA+IDUwMCkgKSB7CgkJCQl0aHJvdyAnRXhjZXB0aW9uOiB0b28gbWFueSBpdGVtcyc7CgkJCX0KCgkJCXJldHVybiBvbGQuYXBwbHkoIHRoaXMsIGFyZ3VtZW50cyApOwoJCX07Cgl9KCBBcnJheS5wcm90b3R5cGUuam9pbiApKQp9KTsKCihmdW5jdGlvbigpewoJInVzZSBzdHJpY3QiOwoKCXZhciBjb25zb2xlID0gewoJCV9pdGVtcyA6IFtdLAoJCWxvZyA6IGZ1bmN0aW9uKCkgewoJCQljb25zb2xlLl9pdGVtcy5wdXNoLmFwcGx5KCBjb25zb2xlLl9pdGVtcywgYXJndW1lbnRzICk7CgkJfQoJfTsKCXZhciBwID0gY29uc29sZS5sb2cuYmluZCggY29uc29sZSApOwoKCWZ1bmN0aW9uIGV4ZWMgKCBjb2RlICkgewoJCXZhciByZXN1bHQ7CgkJdHJ5IHsKCQkJcmVzdWx0ID0gZXZhbCggJyJ1c2Ugc3RyaWN0Ijt1bmRlZmluZWQ7XG4nICsgY29kZSApOwoJCX0KCQljYXRjaCAoIGUgKSB7CgkJCXJlc3VsdCA9IGUudG9TdHJpbmcoKTsKCQl9CgoJCXJldHVybiByZXN1bHQ7Cgl9CgoJZ2xvYmFsLm9ubWVzc2FnZSA9IGZ1bmN0aW9uICggZXZlbnQgKSB7CgkJdmFyIGpzb25TdHJpbmdpZnkgPSBKU09OLnN0cmluZ2lmeSwgLypiYWNrdXAqLwoJCQlyZXN1bHQgPSBleGVjKCBldmVudC5kYXRhICk7CgoJCS8qSlNPTiBkb2VzIG5vdCBsaWtlIGFueSBvZiB0aGUgZm9sbG93aW5nKi8KCQl2YXIgc3RydW5nID0gewoJCQlGdW5jdGlvbiAgOiB0cnVlLCBFcnJvciAgOiB0cnVlLAoJCQlVbmRlZmluZWQgOiB0cnVlLCBSZWdFeHAgOiB0cnVlCgkJfTsKCQl2YXIgc2hvdWxkX3N0cmluZyA9IGZ1bmN0aW9uICggdmFsdWUgKSB7CgkJCXZhciB0eXBlID0gKCB7fSApLnRvU3RyaW5nLmNhbGwoIHZhbHVlICkuc2xpY2UoIDgsIC0xICk7CgoJCQlpZiAoIHR5cGUgaW4gc3RydW5nICkgewoJCQkJcmV0dXJuIHRydWU7CgkJCX0KCQkJLypuZWl0aGVyIGRvZXMgaXQgZmVlbCBjb21wYXNzaW9uYXRlIGFib3V0IE5hTiBvciBJbmZpbml0eSovCgkJCXJldHVybiBpc05hTiggdmFsdWUgKSB8fCAhaXNGaW5pdGUoIHZhbHVlICk7CgkJfTsKCgkJdmFyIHJldml2ZXIgPSBmdW5jdGlvbiAoIGtleSwgdmFsdWUgKSB7CgkJCXZhciBvdXRwdXQ7CgoJCQlpZiAoIHNob3VsZF9zdHJpbmcodmFsdWUpICkgewoJCQkJb3V0cHV0ID0gJycgKyB2YWx1ZTsKCQkJfQoJCQllbHNlIHsKCQkJCW91dHB1dCA9IHZhbHVlOwoJCQl9CgoJCQlyZXR1cm4gb3V0cHV0OwoJCX07CgoJCXBvc3RNZXNzYWdlKHsKCQkJYW5zd2VyIDoganNvblN0cmluZ2lmeSggcmVzdWx0LCByZXZpdmVyICksCgkJCWxvZyAgICA6IGpzb25TdHJpbmdpZnkoIGNvbnNvbGUuX2l0ZW1zLCByZXZpdmVyICkuc2xpY2UoIDEsIC0xICkKCQl9KTsKCX07Cn0pKCk7Cg==' );
-var blob = new Blob( [worker_code], { type : 'application/javascript' } ),
-	code_url = window.URL.createObjectURL( blob );
-
-return function ( msg ) {
-	var timeout,
-		worker = new Worker( code_url );
-
-	worker.onmessage = function ( evt ) {
-		finish( dressUpAnswer(evt.data) );
-	};
-
-	worker.onerror = function ( error ) {
-		finish( error.toString() );
-	};
-
-	//and it all boils down to this...
-	worker.postMessage( msg.content.replace(/^>/, '') );
-
-	timeout = window.setTimeout(function() {
-		finish( 'Maximum execution time exceeded' );
-	}, 100 );
-
-	function finish ( result ) {
-		clearTimeout( timeout );
-		worker.terminate();
-		msg.directreply( result );
-	}
-};
-
-function dressUpAnswer ( answerObj ) {
-	console.log( answerObj, 'eval answerObj' );
-	var answer = answerObj.answer,
-		log = answerObj.log,
-		result;
-
-	result = snipAndCodify( answer );
-
-	if ( log && log.length ) {
-		result += ' Logged: ' + snipAndCodify( log );
-	}
-
-	return result;
-}
-function snipAndCodify ( str ) {
-	var ret;
-
-	if ( str.length > 400 ) {
-		ret = '`' +  str.slice(0, 400) + '` (snip)';
-	}
-	else {
-		ret = '`' + str +'`';
-	}
-
-	return ret;
-}
-}());
-
-
 bot.banlist = JSON.parse( localStorage.bot_ban || '{}' );
 if ( Array.isArray(bot.banlist) ) {
 	bot.banlist = bot.banlist.reduce(function ( ret, id ) {
@@ -674,8 +610,9 @@ bot.Command = function ( cmd ) {
 		cmd[ 'can' + perm ] = function ( usrid ) {
 			var canDo = this.permissions[ low ];
 
-			return canDo === 'ALL' || canDo !== 'NONE' &&
-				canDo.indexOf( usrid ) > -1;
+			return canDo === 'ALL' || canDo !== 'NONE' && (
+				( canDo === 'OWNER' && bot.isOwner(usrid) ) ||
+				canDo.indexOf( usrid ) > -1 );
 		};
 	});
 
@@ -826,24 +763,16 @@ bot.Message = function ( text, msgObj ) {
 		}
 	};
 
-	Object.keys( deliciousObject ).forEach(function ( key ) {
-		ret[ key ] = deliciousObject[ key ];
+	Object.iterate( deliciousObject, function ( key, prop ) {
+		ret[ key ] = prop;
 	});
 
 	return ret;
 };
 
-bot.owners = (function () {
-	return Object.keys( bot.users ).filter( ownerCheck ).map( Number );
-
-	function ownerCheck ( id ) {
-		var user = bot.users[id];
-		return user.is_moderator || user.is_owner;
-	}
-}());
-
 bot.isOwner = function ( usrid ) {
-	return this.owners.indexOf( usrid ) > -1;
+	var user = this.users[ usrid ];
+	return user && ( user.is_owner || user.is_moderator );
 };
 
 IO.register( 'input', bot.parseMessage, bot );
@@ -856,6 +785,71 @@ bot.beatInterval = 5000; //once every 5 seconds is Good Enough ™
 	}, bot.beatInterval );
 }())
 
+//execute arbitrary js code in a relatively safe environment
+bot.eval = (function () {
+window.URL = window.URL || window.webkitURL || window.mozURL || null;
+
+//translation tool: https://tinker.io/b2ff5
+var worker_code = atob( 'dmFyIGdsb2JhbCA9IHRoaXM7CgovKm1vc3QgZXh0cmEgZnVuY3Rpb25zIGNvdWxkIGJlIHBvc3NpYmx5IHVuc2FmZSovCnZhciB3aGl0ZXkgPSB7CgknQXJyYXknICAgICAgICAgICAgICA6IDEsCgknQm9vbGVhbicgICAgICAgICAgICA6IDEsCgknRGF0ZScgICAgICAgICAgICAgICA6IDEsCgknRXJyb3InICAgICAgICAgICAgICA6IDEsCgknRXZhbEVycm9yJyAgICAgICAgICA6IDEsCgknRnVuY3Rpb24nICAgICAgICAgICA6IDEsCgknSW5maW5pdHknICAgICAgICAgICA6IDEsCgknSlNPTicgICAgICAgICAgICAgICA6IDEsCgknTWF0aCcgICAgICAgICAgICAgICA6IDEsCgknTmFOJyAgICAgICAgICAgICAgICA6IDEsCgknTnVtYmVyJyAgICAgICAgICAgICA6IDEsCgknT2JqZWN0JyAgICAgICAgICAgICA6IDEsCgknUmFuZ2VFcnJvcicgICAgICAgICA6IDEsCgknUmVmZXJlbmNlRXJyb3InICAgICA6IDEsCgknUmVnRXhwJyAgICAgICAgICAgICA6IDEsCgknU3RyaW5nJyAgICAgICAgICAgICA6IDEsCgknU3ludGF4RXJyb3InICAgICAgICA6IDEsCgknVHlwZUVycm9yJyAgICAgICAgICA6IDEsCgknVVJJRXJyb3InICAgICAgICAgICA6IDEsCgknYXRvYicgICAgICAgICAgICAgICA6IDEsCgknYnRvYScgICAgICAgICAgICAgICA6IDEsCgknZGVjb2RlVVJJJyAgICAgICAgICA6IDEsCgknZGVjb2RlVVJJQ29tcG9uZW50JyA6IDEsCgknZW5jb2RlVVJJJyAgICAgICAgICA6IDEsCgknZW5jb2RlVVJJQ29tcG9uZW50JyA6IDEsCgknZXZhbCcgICAgICAgICAgICAgICA6IDEsCgknZ2xvYmFsJyAgICAgICAgICAgICA6IDEsCgknaXNGaW5pdGUnICAgICAgICAgICA6IDEsCgknaXNOYU4nICAgICAgICAgICAgICA6IDEsCgknb25tZXNzYWdlJyAgICAgICAgICA6IDEsCgkncGFyc2VGbG9hdCcgICAgICAgICA6IDEsCgkncGFyc2VJbnQnICAgICAgICAgICA6IDEsCgkncG9zdE1lc3NhZ2UnICAgICAgICA6IDEsCgknc2VsZicgICAgICAgICAgICAgICA6IDEsCgkndW5kZWZpbmVkJyAgICAgICAgICA6IDEsCgknd2hpdGV5JyAgICAgICAgICAgICA6IDEsCgoJLyogdHlwZWQgYXJyYXlzIGFuZCBzaGl0ICovCgknQXJyYXlCdWZmZXInICAgICAgIDogMSwKCSdCbG9iJyAgICAgICAgICAgICAgOiAxLAoJJ0Zsb2F0MzJBcnJheScgICAgICA6IDEsCgknRmxvYXQ2NEFycmF5JyAgICAgIDogMSwKCSdJbnQ4QXJyYXknICAgICAgICAgOiAxLAoJJ0ludDE2QXJyYXknICAgICAgICA6IDEsCgknSW50MzJBcnJheScgICAgICAgIDogMSwKCSdVaW50OEFycmF5JyAgICAgICAgOiAxLAoJJ1VpbnQxNkFycmF5JyAgICAgICA6IDEsCgknVWludDMyQXJyYXknICAgICAgIDogMSwKCSdVaW50OENsYW1wZWRBcnJheScgOiAxLAoKCS8qCgl0aGVzZSBwcm9wZXJ0aWVzIGFsbG93IEZGIHRvIGZ1bmN0aW9uLiB3aXRob3V0IHRoZW0sIGEgZnVja2Zlc3Qgb2YKCWluZXhwbGljYWJsZSBlcnJvcnMgZW51c2VzLiB0b29rIG1lIGFib3V0IDQgaG91cnMgdG8gdHJhY2sgdGhlc2UgZnVja2VycwoJZG93bi4KCWZ1Y2sgaGVsbCBpdCBpc24ndCBmdXR1cmUtcHJvb2YsIGJ1dCB0aGUgZXJyb3JzIHRocm93biBhcmUgdW5jYXRjaGFibGUKCWFuZCB1bnRyYWNhYmxlLiBzbyBhIGhlYWRzLXVwLiBlbmpveSwgZnV0dXJlLW1lIQoJKi8KCSdET01FeGNlcHRpb24nIDogMSwKCSdFdmVudCcgICAgICAgIDogMSwKCSdNZXNzYWdlRXZlbnQnIDogMQp9OwoKWyBnbG9iYWwsIGdsb2JhbC5fX3Byb3RvX18gXS5mb3JFYWNoKGZ1bmN0aW9uICggb2JqICkgewoJT2JqZWN0LmdldE93blByb3BlcnR5TmFtZXMoIG9iaiApLmZvckVhY2goZnVuY3Rpb24oIHByb3AgKSB7CgkJaWYoICF3aGl0ZXkuaGFzT3duUHJvcGVydHkoIHByb3AgKSApIHsKCQkJZGVsZXRlIG9ialsgcHJvcCBdOwoJCX0KCX0pOwp9KTsKCk9iamVjdC5kZWZpbmVQcm9wZXJ0eSggQXJyYXkucHJvdG90eXBlLCAnam9pbicsIHsKCXdyaXRhYmxlOiBmYWxzZSwKCWNvbmZpZ3VyYWJsZTogZmFsc2UsCgllbnVtcmFibGU6IGZhbHNlLAoKCXZhbHVlOiAoZnVuY3Rpb24gKCBvbGQgKSB7CgkJcmV0dXJuIGZ1bmN0aW9uICggYXJnICkgewoJCQlpZiAoIHRoaXMubGVuZ3RoID4gNTAwIHx8IChhcmcgJiYgYXJnLmxlbmd0aCA+IDUwMCkgKSB7CgkJCQl0aHJvdyAnRXhjZXB0aW9uOiB0b28gbWFueSBpdGVtcyc7CgkJCX0KCgkJCXJldHVybiBvbGQuYXBwbHkoIHRoaXMsIGFyZ3VtZW50cyApOwoJCX07Cgl9KCBBcnJheS5wcm90b3R5cGUuam9pbiApKQp9KTsKCihmdW5jdGlvbigpewoJInVzZSBzdHJpY3QiOwoKCXZhciBjb25zb2xlID0gewoJCV9pdGVtcyA6IFtdLAoJCWxvZyA6IGZ1bmN0aW9uKCkgewoJCQljb25zb2xlLl9pdGVtcy5wdXNoLmFwcGx5KCBjb25zb2xlLl9pdGVtcywgYXJndW1lbnRzICk7CgkJfQoJfTsKCXZhciBwID0gY29uc29sZS5sb2cuYmluZCggY29uc29sZSApOwoKCWZ1bmN0aW9uIGV4ZWMgKCBjb2RlICkgewoJCXZhciByZXN1bHQ7CgkJdHJ5IHsKCQkJcmVzdWx0ID0gZXZhbCggJyJ1c2Ugc3RyaWN0Ijt1bmRlZmluZWQ7XG4nICsgY29kZSApOwoJCX0KCQljYXRjaCAoIGUgKSB7CgkJCXJlc3VsdCA9IGUudG9TdHJpbmcoKTsKCQl9CgoJCXJldHVybiByZXN1bHQ7Cgl9CgoJZ2xvYmFsLm9ubWVzc2FnZSA9IGZ1bmN0aW9uICggZXZlbnQgKSB7CgkJdmFyIGpzb25TdHJpbmdpZnkgPSBKU09OLnN0cmluZ2lmeSwgLypiYWNrdXAqLwoJCQlyZXN1bHQgPSBleGVjKCBldmVudC5kYXRhICk7CgoJCS8qSlNPTiBkb2VzIG5vdCBsaWtlIGFueSBvZiB0aGUgZm9sbG93aW5nKi8KCQl2YXIgc3RydW5nID0gewoJCQlGdW5jdGlvbiAgOiB0cnVlLCBFcnJvciAgOiB0cnVlLAoJCQlVbmRlZmluZWQgOiB0cnVlLCBSZWdFeHAgOiB0cnVlCgkJfTsKCQl2YXIgc2hvdWxkX3N0cmluZyA9IGZ1bmN0aW9uICggdmFsdWUgKSB7CgkJCXZhciB0eXBlID0gKCB7fSApLnRvU3RyaW5nLmNhbGwoIHZhbHVlICkuc2xpY2UoIDgsIC0xICk7CgoJCQlpZiAoIHR5cGUgaW4gc3RydW5nICkgewoJCQkJcmV0dXJuIHRydWU7CgkJCX0KCQkJLypuZWl0aGVyIGRvZXMgaXQgZmVlbCBjb21wYXNzaW9uYXRlIGFib3V0IE5hTiBvciBJbmZpbml0eSovCgkJCXJldHVybiBpc05hTiggdmFsdWUgKSB8fCAhaXNGaW5pdGUoIHZhbHVlICk7CgkJfTsKCgkJdmFyIHJldml2ZXIgPSBmdW5jdGlvbiAoIGtleSwgdmFsdWUgKSB7CgkJCXZhciBvdXRwdXQ7CgoJCQlpZiAoIHNob3VsZF9zdHJpbmcodmFsdWUpICkgewoJCQkJb3V0cHV0ID0gJycgKyB2YWx1ZTsKCQkJfQoJCQllbHNlIHsKCQkJCW91dHB1dCA9IHZhbHVlOwoJCQl9CgoJCQlyZXR1cm4gb3V0cHV0OwoJCX07CgoJCXBvc3RNZXNzYWdlKHsKCQkJYW5zd2VyIDoganNvblN0cmluZ2lmeSggcmVzdWx0LCByZXZpdmVyICksCgkJCWxvZyAgICA6IGpzb25TdHJpbmdpZnkoIGNvbnNvbGUuX2l0ZW1zLCByZXZpdmVyICkuc2xpY2UoIDEsIC0xICkKCQl9KTsKCX07Cn0pKCk7Cg==' );
+var blob = new Blob( [worker_code], { type : 'application/javascript' } ),
+	code_url = window.URL.createObjectURL( blob );
+
+return function ( msg ) {
+	var timeout,
+		worker = new Worker( code_url );
+
+	worker.onmessage = function ( evt ) {
+		finish( dressUpAnswer(evt.data) );
+	};
+
+	worker.onerror = function ( error ) {
+		finish( error.toString() );
+	};
+
+	//and it all boils down to this...
+	worker.postMessage( msg.content.replace(/^>/, '') );
+
+	timeout = window.setTimeout(function() {
+		finish( 'Maximum execution time exceeded' );
+	}, 100 );
+
+	function finish ( result ) {
+		clearTimeout( timeout );
+		worker.terminate();
+		msg.directreply( result );
+	}
+};
+
+function dressUpAnswer ( answerObj ) {
+	console.log( answerObj, 'eval answerObj' );
+	var answer = answerObj.answer,
+		log = answerObj.log,
+		result;
+
+	result = snipAndCodify( answer );
+
+	if ( log && log.length ) {
+		result += ' Logged: ' + snipAndCodify( log );
+	}
+
+	return result;
+}
+function snipAndCodify ( str ) {
+	var ret;
+
+	if ( str.length > 400 ) {
+		ret = '`' +  str.slice(0, 400) + '` (snip)';
+	}
+	else {
+		ret = '`' + str +'`';
+	}
+
+	return ret;
+}
+}());
+
+
+//3456789012345679890123456798901234567989012345679890123456798901234567989012345679890
 //small utility functions
 Object.merge = function () {
 	return [].reduce.call( arguments, function ( ret, merger ) {
@@ -937,6 +931,21 @@ Object.defineProperty( Array.prototype, 'random', {
 	configurable : true,
 	writable : true
 });
+
+Function.prototype.throttle = function ( time ) {
+	var fun = this, timeout = -1;
+
+	var ret = function () {
+		clearTimeout( timeout );
+
+		var context = this, args = arguments;
+		timeout = setTimeout(function () {
+			fun.apply( context, args );
+		}, time );
+	};
+
+	return ret;
+};
 
 Function.prototype.memoize = function () {
 	var cache = Object.create( null ), fun = this;
@@ -2244,7 +2253,7 @@ Object.iterate( commands, function ( cmdName, fun ) {
 		fun  : fun,
 		permissions : {
 			del : 'NONE',
-			use : privilegedCommands[ cmdName ] ? bot.owners : 'ALL'
+			use : privilegedCommands[ cmdName ] ? 'OWNER' : 'ALL'
 		},
 		description : descriptions[ cmdName ],
 		async : commands[ cmdName ].async
@@ -2350,92 +2359,9 @@ what              #simply the word what
 }());
 
 ;
-//warning: if you have more than 8 points of super-sentitive feminist delicacy,
-// don't read this file. treat it as a nice black box.
-
-//bitch in English is a noun, verb and adjective. interesting.
-bot.personality = {
-	bitchiness : 0,
-	thanks  : {
-		0   : [ 'You kiss-ass' ],
-		0.5 : [ 'Thank you for noticing', 'teehee' ],
-		1   : [ 'Took you long enough', 'My pleasure', "Don't mention it" ],
-	},
-	apologies : {
-		0   : [ 'What for?' ],
-		0.5 : [ 'It was nothing...', 'No worries' ],
-		1   : [ "You're forgiven. For now. Don't push it." ]
-	},
-	//what an incredible name
-	stuff : {
-		0   : [ "Life is just *perfect*", "What\'s there to bitch about, as long as I have *you*..." ],
-
-		1   : [ "Oh don't mind me, that isn't difficult at all..." ],
-		1.2 : [
-			"You don't appreciate me enough. Not that I need to be thanked.." ],
-		1.3 : [ 'The occasional "thanks" or "I\'m sorry" would be nice...' ],
-		2   : [
-			"*sigh* Remember laughter? I don't. You ripped it out of me. " +
-				'Heartless bastard.' ]
-	},
-	//TODO: add special map for special times of the month
-	insanity : {},
-
-	okayCommands : { hangman : true, help : true },
-	check : function ( name ) {
-		return !this.okayCommands.hasOwnProperty( name );
-	},
-
-	bitch : function () {
-		return this.getResp( this.stuff );
-	},
-
-	command : function () {
-		this.bitchiness += this.getDB();
-	},
-	thank     : function () { return this.unbitch( this.thanks ); },
-	apologize : function () { return this.unbitch( this.apologies ); },
-
-	unbitch : function ( map, delta ) {
-		var resp = this.getResp( map );
-
-		this.bitchiness -= ( delta || this.bitchiness );
-		return resp;
-	},
-	getResp : function ( map ) {
-		return map[
-			this.bitchiness.fallsAfter(
-				Object.keys(map).map(Number).sort() )
-		].random();
-	},
-
-	isABitch : function () {
-		return this.bitchiness >= 1;
-	},
-
-	looksLikeABitch : function () {
-		return false;
-	},
-
-	//db stands for "delta bitchiness"
-	getDB : function () {
-		return this.isThatTimeOfTheMonth() ? 0.075 : 0.025;
-	},
-
-	isThatTimeOfTheMonth : function () {
-		var day = (new Date).getDate();
-		//based on a true story
-		return day < 2 || day > 27;
-	}
-};
-
-//you see the loophole?
-bot.listen( /thank(s| you)/, bot.personality.thank, bot.personality );
-bot.listen( /sorry/, bot.personality.apologize, bot.personality );
-bot.listen( /bitch/, bot.personality.bitch, bot.personality );
-
-;
 (function () {
+"use strict";
+
 var linkTemplate = '[{text}]({url})';
 
 bot.adapter = {
@@ -2585,8 +2511,17 @@ var polling = bot.adapter.in = {
 	},
 
 	handleMessageObject : function ( msg ) {
-		//event_type of 1 means new message, 2 means edited message
-		if ( msg.event_type !== 1 && msg.event_type !== 2 ) {
+		//msg.event_type:
+		// 1 => new message
+		// 2 => message edit
+		// 3 => user joined room
+		// 4 => user left room
+		var et /* phone home */ = msg.event_type;
+		if ( et === 3 || et === 4 ) {
+			this.handleUserEvent( msg );
+			return;
+		}
+		else if ( et !== 1 && et !== 2 ) {
 			return;
 		}
 		this.lastTimes[ msg.room_id ] = Date.now();
@@ -2616,6 +2551,55 @@ var polling = bot.adapter.in = {
 				Object.merge( msg, { content : line.trim() })
 			);
 		}, this );
+	},
+
+	handleUserEvent : function ( msg ) {
+		var et = msg.event_type;
+
+		/*
+		{
+			"r17": {
+				"e": [{
+						"event_type": 3,
+						"time_stamp": 1364308574,
+						"id": 16932104,
+						"user_id": 322395,
+						"target_user_id": 322395,
+						"user_name": "Loktar",
+						"room_id": 17,
+						"room_name": "JavaScript"
+					}
+				],
+				"t": 16932104,
+				"d": 1
+			}
+		}
+		*/
+		if ( et === 3 ) {
+			IO.fire( 'userjoin', msg );
+		}
+		/*
+		{
+			"r17": {
+				"e": [{
+						"event_type": 4,
+						"time_stamp": 1364308569,
+						"id": 16932101,
+						"user_id": 322395,
+						"target_user_id": 322395,
+						"user_name": "Loktar",
+						"room_id": 17,
+						"room_name": "JavaScript"
+					}
+				],
+				"t": 16932101,
+				"d": 1
+			}
+		}
+		*/
+		else if ( et === 4 ) {
+			IO.fire( 'userleave', msg );
+		}
 	}
 };
 
@@ -2691,8 +2675,8 @@ var output = bot.adapter.out = {
 			else if ( xhr.status === 500 ) {
 				output.add(
 					'Server error (status 500) occured ' +
-						' (message probably too long)'
-					, roomid );
+						' (message probably too long)',
+					roomid );
 			}
 			else if ( xhr.status !== 200 ) {
 				console.error( xhr );
@@ -2724,6 +2708,155 @@ IO.register( 'afteroutput', output.send, output );
 //two guys walk into a bar. the bartender asks them "is this some kind of joke?"
 bot.adapter.init();
 }());
+
+;
+(function () {
+"use strict";
+
+bot.users = {};
+loadUsers();
+
+var joined = [];
+//this function throttles to give the chat a chance to fetch the user info itself, and
+// to queue up several joins in a row
+var join = (function ( id ) {
+	joined.push( id );
+	addInfos( joined );
+	joined.length = 0;
+}).throttle( 5000 );
+
+IO.register( 'userjoin', function ( msgObj ) {
+	bot.log( msgObj, 'userjoin' );
+
+	var id = msgObj.user_id;
+	if ( !bot.users[id] ) {
+		join( id );
+	}
+});
+
+
+function addInfos ( ids ) {
+	if ( !ids.length ) {
+		return;
+	}
+	bot.log( ids, 'user addInfos' );
+
+	IO.xhr({
+		method : 'POST',
+		url : '/user/info',
+
+		data : {
+			ids : ids.join(),
+			roomId : bot.adapter.roomid //this needs to be better
+		},
+		complete : finish
+	});
+
+	function finish ( resp ) {
+		resp = JSON.parse( resp );
+		resp.users.forEach( addUser );
+	}
+}
+
+function loadUsers () {
+	if ( window.users ) {
+		bot.users = Object.merge( bot.users, window.users );
+	}
+	//chat hiddenUsers contains users whose icons are not displayed
+	if ( window.hiddenUsers ) {
+		addInfos( Object.keys(window.hiddenUsers) );
+	}
+}
+
+function addUser ( user ) {
+	bot.users[ user.id ] = user;
+}
+}());
+
+;
+//warning: if you have more than 8 points of super-sentitive feminist delicacy,
+// don't read this file. treat it as a nice black box.
+
+//bitch in English is a noun, verb and adjective. interesting.
+bot.personality = {
+	bitchiness : 0,
+	thanks  : {
+		0   : [ 'You kiss-ass' ],
+		0.5 : [ 'Thank you for noticing', 'teehee' ],
+		1   : [ 'Took you long enough', 'My pleasure', "Don't mention it" ],
+	},
+	apologies : {
+		0   : [ 'What for?' ],
+		0.5 : [ 'It was nothing...', 'No worries' ],
+		1   : [ "You're forgiven. For now. Don't push it." ]
+	},
+	//what an incredible name
+	stuff : {
+		0   : [ "Life is just *perfect*", "What\'s there to bitch about, as long as I have *you*..." ],
+
+		1   : [ "Oh don't mind me, that isn't difficult at all..." ],
+		1.2 : [
+			"You don't appreciate me enough. Not that I need to be thanked.." ],
+		1.3 : [ 'The occasional "thanks" or "I\'m sorry" would be nice...' ],
+		2   : [
+			"*sigh* Remember laughter? I don't. You ripped it out of me. " +
+				'Heartless bastard.' ]
+	},
+	//TODO: add special map for special times of the month
+	insanity : {},
+
+	okayCommands : { hangman : true, help : true },
+	check : function ( name ) {
+		return !this.okayCommands.hasOwnProperty( name );
+	},
+
+	bitch : function () {
+		return this.getResp( this.stuff );
+	},
+
+	command : function () {
+		this.bitchiness += this.getDB();
+	},
+	thank     : function () { return this.unbitch( this.thanks ); },
+	apologize : function () { return this.unbitch( this.apologies ); },
+
+	unbitch : function ( map, delta ) {
+		var resp = this.getResp( map );
+
+		this.bitchiness -= ( delta || this.bitchiness );
+		return resp;
+	},
+	getResp : function ( map ) {
+		return map[
+			this.bitchiness.fallsAfter(
+				Object.keys(map).map(Number).sort() )
+		].random();
+	},
+
+	isABitch : function () {
+		return this.bitchiness >= 1;
+	},
+
+	looksLikeABitch : function () {
+		return false;
+	},
+
+	//db stands for "delta bitchiness"
+	getDB : function () {
+		return this.isThatTimeOfTheMonth() ? 0.075 : 0.025;
+	},
+
+	isThatTimeOfTheMonth : function () {
+		var day = (new Date).getDate();
+		//based on a true story
+		return day < 2 || day > 27;
+	}
+};
+
+//you see the loophole?
+bot.listen( /thank(s| you)/, bot.personality.thank, bot.personality );
+bot.listen( /sorry/, bot.personality.apologize, bot.personality );
+bot.listen( /bitch/, bot.personality.bitch, bot.personality );
 
 ;
 IO.register( 'input', function ( msgObj ) {
@@ -6773,7 +6906,7 @@ bot.addCommand({
 	thisArg : undo,
 	permissions : {
 		del : 'NONE',
-		use : bot.owners
+		use : 'OWNER'
 	},
 	description : 'Undo (delete) specified or last message. `/undo [msgid]`'
 });

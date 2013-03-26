@@ -753,7 +753,7 @@ Object.iterate( commands, function ( cmdName, fun ) {
 		fun  : fun,
 		permissions : {
 			del : 'NONE',
-			use : privilegedCommands[ cmdName ] ? bot.owners : 'ALL'
+			use : privilegedCommands[ cmdName ] ? 'OWNER' : 'ALL'
 		},
 		description : descriptions[ cmdName ],
 		async : commands[ cmdName ].async

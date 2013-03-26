@@ -1,3 +1,4 @@
+//3456789012345679890123456798901234567989012345679890123456798901234567989012345679890
 //small utility functions
 Object.merge = function () {
 	return [].reduce.call( arguments, function ( ret, merger ) {
@@ -79,6 +80,21 @@ Object.defineProperty( Array.prototype, 'random', {
 	configurable : true,
 	writable : true
 });
+
+Function.prototype.throttle = function ( time ) {
+	var fun = this, timeout = -1;
+
+	var ret = function () {
+		clearTimeout( timeout );
+
+		var context = this, args = arguments;
+		timeout = setTimeout(function () {
+			fun.apply( context, args );
+		}, time );
+	};
+
+	return ret;
+};
 
 Function.prototype.memoize = function () {
 	var cache = Object.create( null ), fun = this;

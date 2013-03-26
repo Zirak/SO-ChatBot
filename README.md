@@ -18,14 +18,12 @@ The provided `publi.sh` automagically does building, adds all changed items to c
 $ ./publi.sh commit-message
 ```
 
+To build manually:
+
 ```sh
-#to build something
 $ node build.js
-#or, to skip minification
+#to skip minification
 $ node build.js no-min
-#or, to not add the adapter
-$ node build.js no-adapter
-#you can combine the two options above in whichever order
 ```
 The result will be in `master.js` and `master.min.js`
 

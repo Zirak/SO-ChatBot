@@ -69,7 +69,7 @@ bot.addCommand({
 	thisArg : undo,
 	permissions : {
 		del : 'NONE',
-		use : bot.owners
+		use : 'OWNER'
 	},
 	description : 'Undo (delete) specified or last message. `/undo [msgid]`'
 });
