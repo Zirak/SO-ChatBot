@@ -31,7 +31,7 @@ bot.listen(chooseRe, function ( msg ) {
 		.replace( /^\s*choose\s/i, '' )
 		//also remove the trailing question mark
 		.replace( /\?$/, '' )
-		.split( /\s*or\s*/i )
+		.split( /\s*\bor\b\s*/i )
 		//remove whatever empty items there may be
 		.filter( Boolean );
 
@@ -76,7 +76,6 @@ bot.listen(chooseRe, function ( msg ) {
 		var sub = $1.toLowerCase(),
 			conv;
 
-		console.log( sub );
 		//if we recognize this word, map it properly
 		if ( capitalize.hasOwnProperty(sub) ) {
 			conv = capitalize[ sub ];
