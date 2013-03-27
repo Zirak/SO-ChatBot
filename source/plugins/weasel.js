@@ -7,7 +7,19 @@
 // => yes or no
 
 var chooseRe = /^\s*(choose|should)?.*\sor\s[^$]/i,
-    questionRe = /^(is|are|can|am|will|would|do|does)[^$]/i;
+    questionRe = /^(is|are|can|am|will|would|do|does|should)[^$]/i;
+
+//personal pronouns to capitalize and their mapping
+//TODO: add possessives (should my cat => your cat should)
+var capitalize = {
+	he  : 'He',
+	i   : 'You',
+	it  : 'It',
+	she : 'She',
+	they: 'They',
+	we  : 'You',
+	you : 'I',
+};
 
 //will be filled in the build
 var answers, undecided, sameness;
@@ -15,12 +27,13 @@ var answers, undecided, sameness;
 
 bot.listen(chooseRe, function ( msg ) {
 	var parts = msg
-		//remove the choose prefix. "should" will always be accompanied by a
-		// subject (should I, should he, ...), so remove that as well
-		.replace( /^\s*(choose|should \S+)\s/i, '' )
+		//remove the choose prefix
+		.replace( /^\s*choose\s/i, '' )
 		//also remove the trailing question mark
 		.replace( /\?$/, '' )
-		.split( /\s+or\s+/i );
+		.split( /\s*or\s*/i )
+		//remove whatever empty items there may be
+		.filter( Boolean );
 
 	var len = parts.length;
 
@@ -52,10 +65,33 @@ bot.listen(chooseRe, function ( msg ) {
 	}
 
 	//choose!
-	return parts.random();
+	var choice = parts.random();
+	//convert:
+	// "should I" => "you should"
+	// "should you" => "I should"
+	//anything else just switch the order
+	return choice.replace( /^should (\S+)/, subject );
+
+	function subject ( $0, $1 ) {
+		var sub = $1.toLowerCase(),
+			conv;
+
+		console.log( sub );
+		//if we recognize this word, map it properly
+		if ( capitalize.hasOwnProperty(sub) ) {
+			conv = capitalize[ sub ];
+		}
+		//otherwise, use the original spelling
+		else {
+			conv = $1;
+		}
+
+		return conv + ' should';
+	}
 });
 
 bot.listen(questionRe, function ( msg ) {
+	//TODO: same question => same mapping (negative/positive, not specific)
 	return answers.random();
 });
 }());

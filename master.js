@@ -849,7 +849,7 @@ function snipAndCodify ( str ) {
 }());
 
 
-//3456789012345679890123456798901234567989012345679890123456798901234567989012345679890
+//345678901234567989012345679890123456798901234567989012345679890123456798901234
 //small utility functions
 Object.merge = function () {
 	return [].reduce.call( arguments, function ( ret, merger ) {
@@ -867,25 +867,6 @@ Object.iterate = function ( obj, cb, thisArg ) {
 		cb.call( thisArg, key, obj[key], obj );
 	});
 }
-
-String.prototype.indexesOf = function ( str, fromIndex ) {
-	//since we also use index to tell indexOf from where to begin, and since
-	// telling it to begin from where it found the match will cause it to just
-	// match it again and again, inside the indexOf we do `index + 1`
-	// to compensate for that 1, we need to subtract 1 from the original
-	// starting position
-	var index = ( fromIndex || 0 ) - 1,
-		ret = [];
-
-	while ( (index = this.indexOf(str, index + 1)) > -1 ) {
-		ret.push( index );
-	}
-
-	return ret;
-};
-String.prototype.startsWith = function ( str ) {
-	return this.indexOf( str ) === 0;
-};
 
 //SO chat uses an unfiltered for...in to iterate over an array somewhere, so
 // that I have to use Object.defineProperty to make these non-enumerable
@@ -931,6 +912,41 @@ Object.defineProperty( Array.prototype, 'random', {
 	configurable : true,
 	writable : true
 });
+
+String.prototype.indexesOf = function ( str, fromIndex ) {
+	//since we also use index to tell indexOf from where to begin, and since
+	// telling it to begin from where it found the match will cause it to just
+	// match it again and again, inside the indexOf we do `index + 1`
+	// to compensate for that 1, we need to subtract 1 from the original
+	// starting position
+	var index = ( fromIndex || 0 ) - 1,
+		ret = [];
+
+	while ( (index = this.indexOf(str, index + 1)) > -1 ) {
+		ret.push( index );
+	}
+
+	return ret;
+};
+
+//Crockford's supplant
+String.prototype.supplant = function ( arg ) {
+	//if it's an object, use that. otherwise, use the arguments list.
+	var obj = (
+		Object(arg) === arg ?
+			arg : arguments );
+	return this.replace( /\{([^\}]+)\}/g, replace );
+
+	function replace ( $0, $1 ) {
+		return obj.hasOwnProperty( $1 ) ?
+			obj[ $1 ] :
+			$0;
+	}
+};
+
+String.prototype.startsWith = function ( str ) {
+	return this.indexOf( str ) === 0;
+};
 
 Function.prototype.throttle = function ( time ) {
 	var fun = this, timeout = -1;
@@ -1053,21 +1069,6 @@ Math.rand = function ( min, max ) {
 	}
 
 	return Math.floor( Math.random() * (max - min + 1) ) + min;
-};
-
-//Crockford's supplant
-String.prototype.supplant = function ( arg ) {
-	//if it's an object, use that. otherwise, use the arguments list.
-	var obj = (
-		Object(arg) === arg ?
-		arg : arguments );
-	return this.replace( /\{([^\}]+)\}/g, replace );
-
-	function replace ( $0, $1 ) {
-		return obj.hasOwnProperty( $1 ) ?
-			obj[ $1 ] :
-			$0;
-	}
 };
 
 //I got annoyed that RegExps don't automagically turn into correct shit when
@@ -6936,7 +6937,19 @@ IO.register( 'input', function ( msgObj ) {
 // => yes or no
 
 var chooseRe = /^\s*(choose|should)?.*\sor\s[^$]/i,
-    questionRe = /^(is|are|can|am|will|would|do|does)[^$]/i;
+    questionRe = /^(is|are|can|am|will|would|do|does|should)[^$]/i;
+
+//personal pronouns to capitalize and their mapping
+//TODO: add possessives (should my cat => your cat should)
+var capitalize = {
+	he  : 'He',
+	i   : 'You',
+	it  : 'It',
+	she : 'She',
+	they: 'They',
+	we  : 'You',
+	you : 'I',
+};
 
 //will be filled in the build
 var answers, undecided, sameness;
@@ -6952,12 +6965,13 @@ answers=["QWJzb2x1dGVseSBub3Q=","QWJzb2x1dGVseSBub3Q=","QWJzb2x1dGVseSBub3Q=","Q
 
 bot.listen(chooseRe, function ( msg ) {
 	var parts = msg
-		//remove the choose prefix. "should" will always be accompanied by a
-		// subject (should I, should he, ...), so remove that as well
-		.replace( /^\s*(choose|should \S+)\s/i, '' )
+		//remove the choose prefix
+		.replace( /^\s*choose\s/i, '' )
 		//also remove the trailing question mark
 		.replace( /\?$/, '' )
-		.split( /\s+or\s+/i );
+		.split( /\s*or\s*/i )
+		//remove whatever empty items there may be
+		.filter( Boolean );
 
 	var len = parts.length;
 
@@ -6989,10 +7003,33 @@ bot.listen(chooseRe, function ( msg ) {
 	}
 
 	//choose!
-	return parts.random();
+	var choice = parts.random();
+	//convert:
+	// "should I" => "you should"
+	// "should you" => "I should"
+	//anything else just switch the order
+	return choice.replace( /^should (\S+)/, subject );
+
+	function subject ( $0, $1 ) {
+		var sub = $1.toLowerCase(),
+			conv;
+
+		console.log( sub );
+		//if we recognize this word, map it properly
+		if ( capitalize.hasOwnProperty(sub) ) {
+			conv = capitalize[ sub ];
+		}
+		//otherwise, use the original spelling
+		else {
+			conv = $1;
+		}
+
+		return conv + ' should';
+	}
 });
 
 bot.listen(questionRe, function ( msg ) {
+	//TODO: same question => same mapping (negative/positive, not specific)
 	return answers.random();
 });
 }());

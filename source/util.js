@@ -1,4 +1,4 @@
-//3456789012345679890123456798901234567989012345679890123456798901234567989012345679890
+//345678901234567989012345679890123456798901234567989012345679890123456798901234
 //small utility functions
 Object.merge = function () {
 	return [].reduce.call( arguments, function ( ret, merger ) {
@@ -16,25 +16,6 @@ Object.iterate = function ( obj, cb, thisArg ) {
 		cb.call( thisArg, key, obj[key], obj );
 	});
 }
-
-String.prototype.indexesOf = function ( str, fromIndex ) {
-	//since we also use index to tell indexOf from where to begin, and since
-	// telling it to begin from where it found the match will cause it to just
-	// match it again and again, inside the indexOf we do `index + 1`
-	// to compensate for that 1, we need to subtract 1 from the original
-	// starting position
-	var index = ( fromIndex || 0 ) - 1,
-		ret = [];
-
-	while ( (index = this.indexOf(str, index + 1)) > -1 ) {
-		ret.push( index );
-	}
-
-	return ret;
-};
-String.prototype.startsWith = function ( str ) {
-	return this.indexOf( str ) === 0;
-};
 
 //SO chat uses an unfiltered for...in to iterate over an array somewhere, so
 // that I have to use Object.defineProperty to make these non-enumerable
@@ -80,6 +61,41 @@ Object.defineProperty( Array.prototype, 'random', {
 	configurable : true,
 	writable : true
 });
+
+String.prototype.indexesOf = function ( str, fromIndex ) {
+	//since we also use index to tell indexOf from where to begin, and since
+	// telling it to begin from where it found the match will cause it to just
+	// match it again and again, inside the indexOf we do `index + 1`
+	// to compensate for that 1, we need to subtract 1 from the original
+	// starting position
+	var index = ( fromIndex || 0 ) - 1,
+		ret = [];
+
+	while ( (index = this.indexOf(str, index + 1)) > -1 ) {
+		ret.push( index );
+	}
+
+	return ret;
+};
+
+//Crockford's supplant
+String.prototype.supplant = function ( arg ) {
+	//if it's an object, use that. otherwise, use the arguments list.
+	var obj = (
+		Object(arg) === arg ?
+			arg : arguments );
+	return this.replace( /\{([^\}]+)\}/g, replace );
+
+	function replace ( $0, $1 ) {
+		return obj.hasOwnProperty( $1 ) ?
+			obj[ $1 ] :
+			$0;
+	}
+};
+
+String.prototype.startsWith = function ( str ) {
+	return this.indexOf( str ) === 0;
+};
 
 Function.prototype.throttle = function ( time ) {
 	var fun = this, timeout = -1;
@@ -202,21 +218,6 @@ Math.rand = function ( min, max ) {
 	}
 
 	return Math.floor( Math.random() * (max - min + 1) ) + min;
-};
-
-//Crockford's supplant
-String.prototype.supplant = function ( arg ) {
-	//if it's an object, use that. otherwise, use the arguments list.
-	var obj = (
-		Object(arg) === arg ?
-		arg : arguments );
-	return this.replace( /\{([^\}]+)\}/g, replace );
-
-	function replace ( $0, $1 ) {
-		return obj.hasOwnProperty( $1 ) ?
-			obj[ $1 ] :
-			$0;
-	}
 };
 
 //I got annoyed that RegExps don't automagically turn into correct shit when
