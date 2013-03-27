@@ -34,6 +34,7 @@ responses = [
 	'WordPress is bread & butter for any decent website',
 
 	'Can anyone help me with a Java question?',
+	'can i ask you guys a question?',
 	'http://stackoverflow.com/a/778275/617762',
 	'http://stackoverflow.com/users/22656/jon-skeet',
 
