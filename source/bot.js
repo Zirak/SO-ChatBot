@@ -454,7 +454,7 @@ bot.beatInterval = 5000; //once every 5 seconds is Good Enough ™
 		IO.fire( 'heartbeat' );
 		beat();
 	}, bot.beatInterval );
-}())
+}());
 
 //#build eval.js
 

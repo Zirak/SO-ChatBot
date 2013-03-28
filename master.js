@@ -778,7 +778,7 @@ bot.beatInterval = 5000; //once every 5 seconds is Good Enough ™
 		IO.fire( 'heartbeat' );
 		beat();
 	}, bot.beatInterval );
-}())
+}());
 
 //execute arbitrary js code in a relatively safe environment
 bot.eval = (function () {
@@ -5424,8 +5424,7 @@ var converters = {
 		return converters.g( kg * 1000 );
 	}
 };
-var alias = {
-	lbs : 'lb' };
+converters.lbs = converters.lb;
 
 /*
   (        #start number matching
@@ -5436,44 +5435,124 @@ var alias = {
   )
   \s*      #optional whitespace, just 'cus
   (        #start unit matching
-   [^\s]+  #the unit. we don't know anyhing about it, besides having no ws
+   \S+  #the unit. we don't know anyhing about it, besides having no ws
   )
  */
-var re = /(-?\d+\.?\d*)\s*([^\s]+)/;
+var rUnits = /(-?\d+\.?\d*)\s*(\S+)(\s+(?:to|in)\s+(.+))?/;
 
 //string is in the form of:
 // <number><unit>
 //note that units are case-sensitive: F is the temperature, f is the length
-var convert = function ( inp ) {
+var convert = function ( inp, cb ) {
 	bot.log( inp, '/convert input' );
 	if ( inp.toString() === 'list' ) {
 		return listUnits().join( ', ' );
 	}
 
-	var parts = re.exec( inp ),
-		number = Number( parts[1] ),
-		unit = parts[ 2 ];
-	bot.log( parts, '/convert broken' );
+	var parts = rUnits.exec( inp );
 
-	if ( alias[unit] ) {
-		unit = alias[ unit ];
+	if ( !parts ) {
+		finish( 'Unidentified format; please see `/help convert`' );
 	}
-	if ( !converters[unit] ) {
-		return 'Confuse converter with ' + unit + ', receive error message';
+	else if ( parts[3] ) {
+		convertMoney( parts, finish );
+	}
+	else {
+		convertUnit( parts, finish );
 	}
 
-	var res = converters[ unit ]( number );
-	bot.log( res, '/console answer' );
-	return Object.keys( res ).map( format ).join( ', ' );
+	function finish ( res ) {
+		bot.log( res, '/console answer' );
+		var reply = Object.keys( res ).map( format ).join( ', ' );
 
-	function format ( key ) {
-		return res[ key ].maxDecimal( 4 ) + key;
+		if ( cb && cb.call ) {
+			cb( reply );
+		}
+		else {
+			inp.reply( reply );
+		}
+
+		function format ( key ) {
+			return res[ key ].maxDecimal( 4 ) + key;
+		}
 	}
 };
 
+function convertUnit ( parts, cb ) {
+	var number = Number( parts[1] ),
+		unit = parts[ 2 ];
+
+	bot.log( parts, '/convert unit broken' );
+
+	if ( !converters[unit] ) {
+		cb( 'Confuse converter with ' + unit + ', receive error message' );
+	}
+	else {
+		cb( converters[unit](number) );
+	}
+}
+
+var ratesCache = {};
+function convertMoney ( parts, cb ) {
+	var number = Number( parts[1] ),
+		from = parts[ 2 ].toUpperCase(),
+		to = parts[ 4 ].toUpperCase(); //[3] contains "to" and ws as well
+
+	bot.log( number, from, to, '/convert money broken' );
+
+	getRate( from, to, function ( rate ) {
+		var res = {}; //once again, the lack of dynamic key names sucks.
+		res[ to ] = number * rate;
+
+		cb( res );
+	});
+}
+
+function getRate ( from, to, cb ) {
+	if ( checkCache(from, to) ) {
+		cb( ratesCache[from][to].rate );
+		return;
+	}
+
+	IO.jsonp({
+		url : 'http://rate-exchange.appspot.com/currency',
+		jsonpName : 'callback',
+		data : {
+			from : from,
+			to : to
+		},
+		fun : finish
+	});
+
+	function finish ( resp ) {
+		ratesCache[ from ] = ratesCache[ to ] || {};
+		ratesCache[ from ][ to ] = {
+			rate : resp.rate,
+			time : Date.now()
+		};
+
+		cb( resp.rate );
+	}
+}
+
+function checkCache ( from, to ) {
+	var now = Date.now(), obj;
+
+	var exists = (
+		ratesCache[ from ] &&
+			( obj = ratesCache[from][to] ) &&
+			//so we won't request again, keep it in memory for 5 hours
+			// 5(hours) = 1000(ms) * 60(seconds) * 60(minutes) * 5 = 18000000
+			obj.time - now <= 18e6 );
+
+	console.log( ratesCache, exists );
+
+	return exists;
+}
+
+
 function listUnits () {
-	return Object.keys( converters )
-		.concat( Object.keys(alias) );
+	return Object.keys( converters );
 }
 
 bot.addCommand({
@@ -5484,7 +5563,9 @@ bot.addCommand({
 	},
 	description : 'Converts several units, case sensitive. ' +
 		'`/convert <num><unit>` ' +
-		'Pass in list for supported units `/convert list`'
+		'For money: `/convert [<num>]<currency> to|in <currency>` ' +
+		'Pass in list for supported units `/convert list`',
+	async : true
 });
 }());
 
