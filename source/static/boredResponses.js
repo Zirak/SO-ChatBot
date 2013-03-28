@@ -139,7 +139,25 @@ responses = [
 	'When there is no type hierarchy you don’t have to manage the type hierarchy. — Rob Pike',
 	'Languages that try to disallow idiocy become themselves idiotic. — Rob Pike',
 	'Premature optimization, that’s like a fart. Premature abstraction is like taking a dump on another developer’s desk.  Chris Eric',
-	'Benchmarks don’t lie, but liars do benchmarks.'
+	'Benchmarks don’t lie, but liars do benchmarks.',
+	
+	// food for thought by rlemon
+	' Can fat people go skinny dipping? ',
+	' If quizzes are quizzical then why are tests not testical? ',
+	' Can you be a closet claustrophobic? ',
+	' What are Preparation A through Preparation G? ',
+	' Is a metaphor like a simile? ',
+	' How do you remove a club soda stain? ',
+	' If practice makes perfect, and no one is perfect, why bother practice? ',
+	' Why does the arcade game "Donkey Kong" have a monkey? Why isn\'t it called Monkey Kong? ',
+	' If a rabbit\'s foot was actually lucky, wouldn\'t it still be attached to the rabbit\'s leg? ',
+	' If a chicken had lips, could it whistle? ',
+	' How much wind could a windbreaker break if a windbreaker could break wind? ',
+	' Does expecting the unexpected make the unexpected expected? ',
+	' If you had three quarters, four dimes and four pennies in your pocket you would have $1.19. You would also have the largest number (11) and combination of coins possible without being able to provide change for a dollar. ',
+	' Where in the nursery rhyme does it say Humpty Dumpty is an egg? ',
+	' How do vampires have such well-kept hair if they can\'t see themselves in the mirror? ' 
+		
 ];
 
 //query xkcd to find the last comic id. generate links to comic pages from that
