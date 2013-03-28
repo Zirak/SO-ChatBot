@@ -208,9 +208,7 @@ var bot = window.bot = {
 	},
 
 	callListeners : function ( msg ) {
-		var fired = false;
-
-		this.listeners.forEach(function ( listener ) {
+		return this.listeners.some(function ( listener ) {
 			var match = msg.exec( listener.pattern ), resp;
 
 			if ( match ) {
@@ -220,12 +218,9 @@ var bot = window.bot = {
 				if ( resp ) {
 					msg.reply( resp );
 				}
-
-				fired = resp !== false;
+				return resp !== false;
 			}
 		});
-
-		return fired;
 	},
 
 	stoplog : false,
