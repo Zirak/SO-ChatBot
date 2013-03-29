@@ -5406,17 +5406,20 @@ var converters = {
 	//weights
 	g : function ( g ) {
 		return {
-			lb : g * 0.0022 };
+			lb : g * 0.0022,
+			//the following will be horribly inaccurate
+			st : g * 0.000157473 };
 	},
 	lb : function ( lb ) {
-		var g = lb * 453.592;
-		if ( g > 1000 ) {
-			return {
-				kg : g / 1000 };
-		}
-
 		return {
-			g : lb * 453.592 };
+			g : lb * 453.592,
+			st : lb * 0.0714286 };
+	},
+	//stones: 1st = 6350g = 14lb
+	st : function ( st ) {
+		return {
+			g : st * 6350.29,
+			lb : st * 14 };
 	},
 
 	//kg: 1g = 1kg * 1000
@@ -5424,7 +5427,23 @@ var converters = {
 		return converters.g( kg * 1000 );
 	}
 };
-converters.lbs = converters.lb;
+
+Object.iterate({
+	lbs : 'lb',
+	ft : 'f',
+	foot : 'f',
+	metres : 'm',
+	millimetres : 'mm',
+	killometres : 'km',
+	degrees : 'd',
+	radians : 'r',
+	grams : 'g',
+	kilograms : 'kg',
+	inches : 'i',
+	stones : 'st',
+}, function ( alias, orig ) {
+	converters[ alias ] = converters[ orig ];
+});
 
 /*
   (        #start number matching
@@ -5452,7 +5471,7 @@ var convert = function ( inp, cb ) {
 	var parts = rUnits.exec( inp );
 
 	if ( !parts ) {
-		finish( 'Unidentified format; please see `/help convert`' );
+		finish( {error : 'Unidentified format; please see `/help convert`'} );
 	}
 	else if ( parts[3] ) {
 		convertMoney( parts, finish );
@@ -5463,7 +5482,14 @@ var convert = function ( inp, cb ) {
 
 	function finish ( res ) {
 		bot.log( res, '/console answer' );
-		var reply = Object.keys( res ).map( format ).join( ', ' );
+
+		var reply;
+		if ( res.error ) {
+			reply = res.error;
+		}
+		else {
+			reply = Object.keys( res ).map( format ).join( ', ' );
+		}
 
 		if ( cb && cb.call ) {
 			cb( reply );
@@ -5485,7 +5511,9 @@ function convertUnit ( parts, cb ) {
 	bot.log( parts, '/convert unit broken' );
 
 	if ( !converters[unit] ) {
-		cb( 'Confuse converter with ' + unit + ', receive error message' );
+		cb({
+			error:'Confuse converter with ' + unit + ', receive error message'
+		});
 	}
 	else {
 		cb( converters[unit](number) );
