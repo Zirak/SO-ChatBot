@@ -62,11 +62,11 @@ var converters = {
 	//angles
 	d : function ( d ) {
 		return {
-			r : d * 180 / Math.PI };
+			r : d * Math.PI / 180 };
 	},
 	r : function ( r ) {
 		return {
-			d : r * Math.PI / 180 };
+			d : r * 180 / Math.PI };
 	},
 
 	//weights
@@ -112,7 +112,7 @@ var rUnits = /(-?\d+\.?\d*)\s*(\S+)(\s+(?:to|in)\s+(.+))?/;
 var convert = function ( inp, cb ) {
 	bot.log( inp, '/convert input' );
 	if ( inp.toString() === 'list' ) {
-		return listUnits().join( ', ' );
+		cb( listUnits().join(', ') );
 	}
 
 	var parts = rUnits.exec( inp );
