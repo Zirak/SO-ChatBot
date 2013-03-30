@@ -19,7 +19,6 @@ var join = function ( msgObj ) {
 
 IO.register( 'userjoin', function ( msgObj ) {
 	bot.log( msgObj, 'userjoin' );
-	console.log( bot.users[msgObj.user_id] );
 
 	if ( !bot.users[msgObj.user_id] ) {
 		join( msgObj );
@@ -61,7 +60,6 @@ var addInfos = (function () {
 
 		function addUser ( user ) {
 			bot.users[ user.id ] = user;
-			console.log( 'add user' );
 			//temporary. TODO: add higher-level event handling to bot obj
 			IO.fire( 'userregister', user, room );
 		}

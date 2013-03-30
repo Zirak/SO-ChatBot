@@ -2732,7 +2732,6 @@ var join = function ( msgObj ) {
 
 IO.register( 'userjoin', function ( msgObj ) {
 	bot.log( msgObj, 'userjoin' );
-	console.log( bot.users[msgObj.user_id] );
 
 	if ( !bot.users[msgObj.user_id] ) {
 		join( msgObj );
@@ -2774,7 +2773,6 @@ var addInfos = (function () {
 
 		function addUser ( user ) {
 			bot.users[ user.id ] = user;
-
 			//temporary. TODO: add higher-level event handling to bot obj
 			IO.fire( 'userregister', user, room );
 		}
@@ -2784,10 +2782,6 @@ var addInfos = (function () {
 function loadUsers () {
 	if ( window.users ) {
 		bot.users = Object.merge( bot.users, window.users );
-	}
-	//chat hiddenUsers contains users whose icons are not displayed
-	if ( window.hiddenUsers ) {
-		addInfos( Object.keys(window.hiddenUsers) );
 	}
 }
 
@@ -7184,20 +7178,23 @@ bot.listen(questionRe, function ( msg ) {
 
 var seen = JSON.parse( localStorage.bot_users || '{}' );
 
-var message = "Welcome to the JavaScript chat! Please review the {rules}. " +
+var message = "Welcome to the JavaScript chat! Please review the " +
+		bot.adapter.link(
+			"room pseudo-rules",
+			"http://rlemon.github.com/so-chat-javascript-rules/" ) + ". " +
 	"Please don't ask if you can ask or if anyone's around; just ask " +
-	"your question, and if anyone's free and interested they'll help."
-	.supplant({
-		rules : bot.adapter.link(
-			'room pseudo-rules',
-			'http://rlemon.github.com/so-chat-javascript-rules/' )
-	});
+	"your question, and if anyone's free and interested they'll help.";
 
 IO.register( 'userregister', function ( user, room ) {
-	if ( room !== 17 || seen[user.id] || bot.isOwner(user.id) ) {
+	if ( Number(room) !== 17 || seen[user.id] || bot.isOwner(user.id) ) {
 		return;
 	}
 
-	bot.adapter.output.add( message, room );
+	seen[ user.id ] = true;
+	localStorage.bot_users = JSON.stringify( seen );
+
+	bot.adapter.out.add(
+		bot.adapter.reply(user.name) + " " + message,
+		room );
 });
 }());
