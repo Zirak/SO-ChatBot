@@ -2715,49 +2715,71 @@ bot.adapter.init();
 "use strict";
 
 bot.users = {};
-loadUsers();
 
-var joined = [];
-//this function throttles to give the chat a chance to fetch the user info itself, and
-// to queue up several joins in a row
-var join = (function ( id ) {
-	joined.push( id );
-	addInfos( joined );
-	joined.length = 0;
-}).throttle( 5000 );
+var joined = {};
+
+var join = function ( msgObj ) {
+	var room = msgObj.room_id;
+
+	if ( !joined[room] ) {
+		joined[ room ] = [];
+	}
+
+	joined[ room ].push( msgObj.user_id );
+
+	addInfos();
+};
 
 IO.register( 'userjoin', function ( msgObj ) {
 	bot.log( msgObj, 'userjoin' );
+	console.log( bot.users[msgObj.user_id] );
 
-	var id = msgObj.user_id;
-	if ( !bot.users[id] ) {
-		join( id );
+	if ( !bot.users[msgObj.user_id] ) {
+		join( msgObj );
 	}
 });
 
+// 1839506
 
-function addInfos ( ids ) {
-	if ( !ids.length ) {
-		return;
+//this function throttles to give the chat a chance to fetch the user info
+// itself, and to queue up several joins in a row
+var addInfos = (function () {
+	bot.log( joined, 'user addInfos' );
+
+	Object.iterate( joined, sendRequest )
+
+	function sendRequest ( room, ids ) {
+		//TODO: filter ids to remove already listed users
+		if ( !ids.length ) {
+			return;
+		}
+
+		IO.xhr({
+			method : 'POST',
+			url : '/user/info',
+
+			data : {
+				ids : ids.join(),
+				roomId : room
+			},
+			complete : finish
+		});
+
+		function finish ( resp ) {
+			resp = JSON.parse( resp );
+			resp.users.forEach( addUser );
+
+			joined = {};
+		}
+
+		function addUser ( user ) {
+			bot.users[ user.id ] = user;
+
+			//temporary. TODO: add higher-level event handling to bot obj
+			IO.fire( 'userregister', user, room );
+		}
 	}
-	bot.log( ids, 'user addInfos' );
-
-	IO.xhr({
-		method : 'POST',
-		url : '/user/info',
-
-		data : {
-			ids : ids.join(),
-			roomId : bot.adapter.roomid //this needs to be better
-		},
-		complete : finish
-	});
-
-	function finish ( resp ) {
-		resp = JSON.parse( resp );
-		resp.users.forEach( addUser );
-	}
-}
+}).throttle( 5000 );
 
 function loadUsers () {
 	if ( window.users ) {
@@ -2769,9 +2791,7 @@ function loadUsers () {
 	}
 }
 
-function addUser ( user ) {
-	bot.users[ user.id ] = user;
-}
+loadUsers();
 }());
 
 ;
@@ -7154,5 +7174,30 @@ bot.listen(chooseRe, function ( msg ) {
 bot.listen(questionRe, function ( msg ) {
 	//TODO: same question => same mapping (negative/positive, not specific)
 	return answers.random();
+});
+}());
+
+;
+(function () {
+"use strict";
+//welcomes new users with a link to the room rules
+
+var seen = JSON.parse( localStorage.bot_users || '{}' );
+
+var message = "Welcome to the JavaScript chat! Please review the {rules}. " +
+	"Please don't ask if you can ask or if anyone's around; just ask " +
+	"your question, and if anyone's free and interested they'll help."
+	.supplant({
+		rules : bot.adapter.link(
+			'room pseudo-rules',
+			'http://rlemon.github.com/so-chat-javascript-rules/' )
+	});
+
+IO.register( 'userregister', function ( user, room ) {
+	if ( room !== 17 || seen[user.id] || bot.isOwner(user.id) ) {
+		return;
+	}
+
+	bot.adapter.output.add( message, room );
 });
 }());
