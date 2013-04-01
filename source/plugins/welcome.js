@@ -12,6 +12,7 @@ var message = "Welcome to the JavaScript chat! Please review the " +
 	"your question, and if anyone's free and interested they'll help.";
 
 IO.register( 'userregister', function ( user, room ) {
+	return;
 	if ( Number(room) !== 17 || seen[user.id] || bot.isOwner(user.id) ) {
 		return;
 	}
