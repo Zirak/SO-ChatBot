@@ -158,6 +158,20 @@ responses = [
 	'If you had three quarters, four dimes and four pennies in your pocket you would have $1.19. You would also have the largest number (11) and combination of coins possible without being able to provide change for a dollar.',
 	'Where in the nursery rhyme does it say Humpty Dumpty is an egg?',
 	'How do vampires have such well-kept hair if they can\'t see themselves in the mirror?',
+	
+	// Ulysses quotes (added by rlemon)
+	'He proves by algebra that Hamlet\'s grandson is Shakespeare\'s grandfather and that he himself is the ghost of his own father',
+	'The son unborn mars beauty: born, he brings his own pain, divides affection, increases care. He is a male: his growth is his father\'s decline, his youth his father\'s envy, his friend his father\'s enemy',
+	'Every life is in many days, day after day. We walk through ourselves, meeting robbers, ghosts, giants, old men, young men, wives, widows, brothers-in-love. But always meeting ourselves',
+	'Old lardyface standing up to the business end of a gun. Gob, he\'d adorn a sweepingbrush, so would, if only he had a nurse\'s apron on him',
+	'Mendelssohn was a jew and Karl Marx and Mercadante and Spinoza. And the Saviour was a jew and his father was a jew. Your God',
+	'Ought to go home and laugh at themselves. Always wanting to be swilling in company. Afraid to be alone like a child of two',
+	'And when all is said and done, the lies a fellow told about himself couldn\'t probably hold a proverbial candle to the wholesale whoppers other fellows coined about him',
+	'People could put up with being bitten by a wolf but properly riled them was a bite from a sheep. The most vulnerable point too of tender Achilles, your God was a Jew, because mostly they appeared to imagine he came from Carrick-on-Shannon or somewhere about in the county of Sligo',
+	'I hate that in women no wonder they treat us they way they do we are a dreadful lot of bitches I suppose its all the troubles we have makes us so snappy'
+
+
+	
 ];
 
 //query xkcd to find the last comic id. generate links to comic pages from that
