@@ -6263,7 +6263,7 @@ bot.addCommand({
 	name : 'karma',
 	//basic front-end for now
 	fun : function ( args ) {
-		var subject = args.content,
+		var subject = args.content.toLowerCase(),
 			votes = storage[ subject ];
 
 		if ( !subject ) {
