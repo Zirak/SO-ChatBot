@@ -2874,17 +2874,25 @@ bot.listen( /sorry/, bot.personality.apologize, bot.personality );
 bot.listen( /bitch/, bot.personality.bitch, bot.personality );
 
 ;
-IO.register( 'input', function ( msgObj ) {
-	var sentence = msgObj.content.toUpperCase();
+IO.register( 'input', function STOP ( msgObj ) {
+	var sentence = msgObj.content.toUpperCase(),
+		res;
 
 	//for probably good reason, it didn't allow me to apply the optional
 	// operator on beginnin-of-input, i.e. ^?
 	//so we have to wrap the ^ in parens
 	if ( /(^)?STOP[\.!\?]?$/.test(sentence) ) {
-		bot.adapter.out.add( 'HAMMERTIME!', msgObj.room_id );
+		res = 'HAMMERTIME!';
+	}
+	else if ( /(^)?STAHP[\.!\?]?$/.test(sentence) ) {
+		res = 'HAMMAHTIME!';
 	}
 	else if ( /(^)?HALT[\.!\?]?$/.test(sentence) ) {
-		bot.adapter.out.add( 'HAMMERZEIT!', msgObj.room_id );
+		res = 'HAMMERZEIT!';
+	}
+
+	if ( res ) {
+		bot.adapter.out.add( res, msgObj.room_id );
 	}
 });
 
@@ -6200,16 +6208,24 @@ bot.addCommand({
 
 //rlemon asked for a hardcoded vote against AmberRoxannaReal
 var storage = JSON.parse(
-	localStorage.bot_karma || '{"AmberRoxannaReal":-1}' );
-IO.register( 'input', function ( msgObj ) {
+	localStorage.bot_karma || '{"amberroxannareal":-1}' );
+
+IO.register( 'input', function karma ( msgObj ) {
 	var content = msgObj.content, parts;
 
-	if ( parts = /([\w\-]+)(\+\+|\-\-)/.exec(content) ) {
-		vote( parts[1], parts[2] );
+	if (
+		//only accept new messages to prevent idiots like Nexxpresso
+		msgObj.event_type === 1 &&
+		(parts = /([\w\-]+)(\+\+|\-\-)/.exec(content))
+	) {
+		vote( parts[1], parts[2], msgObj.user_id );
 	}
 });
 
+//TODO: implement a system which yells at a user if he's abusing the karma
+// system, and suspends him
 function vote ( subject, op ) {
+	subject = subject.toLowerCase();
 	var dir = {
 		'++' :  1,
 		'--' : -1
@@ -6250,6 +6266,9 @@ bot.addCommand({
 		var subject = args.content,
 			votes = storage[ subject ];
 
+		if ( !subject ) {
+			return 'Unlike beauty, karma is not in the eye of the beholder';
+		}
 		return '{0} has {1} karma'.supplant(
 			subject,
 			votes === undefined ? 'no' : votes );
