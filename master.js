@@ -7120,7 +7120,7 @@ IO.register( 'input', function ( msgObj ) {
 // => yes or no
 
 var chooseRe = /^\s*(choose|should)?.*\sor\s[^$]/i,
-    questionRe = /^(is|are|can|am|will|would|do|does|should)[^$]/i;
+    questionRe = /^(is|are|can|am|will|would|could|should|do|does)[^$]/i;
 
 //personal pronouns to capitalize and their mapping
 //TODO: add possessives (should my cat => your cat should)
@@ -7145,6 +7145,11 @@ sameness=["VGhhdCdzIG5vdCByZWFsbHkgYSBjaG9pY2UsIG5vdyBpcyBpdD8=","U291bmRzIGxpa2
 answers=["QWJzb2x1dGVseSBub3Q=","QWJzb2x1dGVseSBub3Q=","QWJzb2x1dGVseSBub3Q=","QWxsIHNpZ25zIHBvaW50IHRvIG5v","QWxsIHNpZ25zIHBvaW50IHRvIG5v","QWxsIHNpZ25zIHBvaW50IHRvIG5v","QWxsIHNpZ25zIHBvaW50IHRvIHllcw==","QWxsIHNpZ25zIHBvaW50IHRvIHllcw==","QWxsIHNpZ25zIHBvaW50IHRvIHllcw==","QnV0IG9mIGNvdXJzZQ==","QnV0IG9mIGNvdXJzZQ==","QnV0IG9mIGNvdXJzZQ==","QnkgYWxsIG1lYW5z","QnkgYWxsIG1lYW5z","QnkgYWxsIG1lYW5z","Q2VydGFpbmx5IG5vdA==","Q2VydGFpbmx5IG5vdA==","Q2VydGFpbmx5IG5vdA==","Q2VydGFpbmx5","Q2VydGFpbmx5","Q2VydGFpbmx5","RGVmaW5pdGVseQ==","RGVmaW5pdGVseQ==","RGVmaW5pdGVseQ==","RG91YnRmdWxseQ==","RG91YnRmdWxseQ==","RG91YnRmdWxseQ==","SSBjYW4gbmVpdGhlciBjb25maXJtIG5vciBkZW55","SSBleHBlY3Qgc28=","SSBleHBlY3Qgc28=","SSBleHBlY3Qgc28=","SSdtIG5vdCBzbyBzdXJlIGFueW1vcmUuIEl0IGNhbiBnbyBlaXRoZXIgd2F5","SW1wb3NzaWJsZQ==","SW1wb3NzaWJsZQ==","SW1wb3NzaWJsZQ==","SW5kZWVk","SW5kZWVk","SW5kZWVk","SW5kdWJpdGFibHk=","SW5kdWJpdGFibHk=","SW5kdWJpdGFibHk=","Tm8gd2F5","Tm8gd2F5","Tm8gd2F5","Tm8=","Tm8=","Tm8=","Tm8=","Tm9wZQ==","Tm9wZQ==","Tm9wZQ==","Tm90IGEgY2hhbmNl","Tm90IGEgY2hhbmNl","Tm90IGEgY2hhbmNl","Tm90IGF0IGFsbA==","Tm90IGF0IGFsbA==","Tm90IGF0IGFsbA==","TnVoLXVo","TnVoLXVo","TnVoLXVo","T2YgY291cnNlIG5vdA==","T2YgY291cnNlIG5vdA==","T2YgY291cnNlIG5vdA==","T2YgY291cnNlIQ==","T2YgY291cnNlIQ==","T2YgY291cnNlIQ==","UHJvYmFibHk=","UHJvYmFibHk=","UHJvYmFibHk=","WWVzIQ==","WWVzIQ==","WWVzIQ==","WWVzIQ==","WWVzLCBhYnNvbHV0ZWx5","WWVzLCBhYnNvbHV0ZWx5","WWVzLCBhYnNvbHV0ZWx5"].map(atob);
 //can you feel the nectar?
 
+
+bot.listen(questionRe, function ( msg ) {
+	//TODO: same question => same mapping (negative/positive, not specific)
+	return answers.random();
+});
 
 bot.listen(chooseRe, function ( msg ) {
 	var parts = msg
@@ -7187,12 +7192,36 @@ bot.listen(chooseRe, function ( msg ) {
 
 	//choose!
 	var choice = parts.random();
+
+	//bots can be fickley too
+	if ( Math.random() < 0.01 ) {
+		bot.log( 'weasel decision mind change jedi nun-chuck' );
+		setTimeout( changeMind, 10000 );
+	}
+
+	return format( choice );
+
+	function changeMind () {
+		var second;
+		//this won't be an infinite loop as we guruantee there will be at least
+		// 2 distinct results
+		//possible blocking point for large N. but there won't be a
+		// sufficiently large N, so this is probably not a problem
+		do {
+			second = parts.random();
+		} while ( second === choice );
+
+		msg.reply( 'Wait, I changed my mind! ' + format(second) );
+	}
+
+	function format ( ans ) {
+		return ans.replace( /^should (\S+)/, subject );
+	}
+
 	//convert:
 	// "should I" => "you should"
 	// "should you" => "I should"
 	//anything else just switch the order
-	return choice.replace( /^should (\S+)/, subject );
-
 	function subject ( $0, $1 ) {
 		var sub = $1.toLowerCase(),
 			conv;
@@ -7208,11 +7237,6 @@ bot.listen(chooseRe, function ( msg ) {
 
 		return conv + ' should';
 	}
-});
-
-bot.listen(questionRe, function ( msg ) {
-	//TODO: same question => same mapping (negative/positive, not specific)
-	return answers.random();
 });
 }());
 

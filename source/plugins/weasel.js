@@ -7,7 +7,7 @@
 // => yes or no
 
 var chooseRe = /^\s*(choose|should)?.*\sor\s[^$]/i,
-    questionRe = /^(is|are|can|am|will|would|do|does|should)[^$]/i;
+    questionRe = /^(is|are|can|am|will|would|could|should|do|does)[^$]/i;
 
 //personal pronouns to capitalize and their mapping
 //TODO: add possessives (should my cat => your cat should)
@@ -24,6 +24,11 @@ var capitalize = {
 //will be filled in the build
 var answers, undecided, sameness;
 //#build ../static/weaselReplies.js
+
+bot.listen(questionRe, function ( msg ) {
+	//TODO: same question => same mapping (negative/positive, not specific)
+	return answers.random();
+});
 
 bot.listen(chooseRe, function ( msg ) {
 	var parts = msg
@@ -66,12 +71,36 @@ bot.listen(chooseRe, function ( msg ) {
 
 	//choose!
 	var choice = parts.random();
+
+	//bots can be fickley too
+	if ( Math.random() < 0.01 ) {
+		bot.log( 'weasel decision mind change jedi nun-chuck' );
+		setTimeout( changeMind, 10000 );
+	}
+
+	return format( choice );
+
+	function changeMind () {
+		var second;
+		//this won't be an infinite loop as we guruantee there will be at least
+		// 2 distinct results
+		//possible blocking point for large N. but there won't be a
+		// sufficiently large N, so this is probably not a problem
+		do {
+			second = parts.random();
+		} while ( second === choice );
+
+		msg.reply( 'Wait, I changed my mind! ' + format(second) );
+	}
+
+	function format ( ans ) {
+		return ans.replace( /^should (\S+)/, subject );
+	}
+
 	//convert:
 	// "should I" => "you should"
 	// "should you" => "I should"
 	//anything else just switch the order
-	return choice.replace( /^should (\S+)/, subject );
-
 	function subject ( $0, $1 ) {
 		var sub = $1.toLowerCase(),
 			conv;
@@ -87,10 +116,5 @@ bot.listen(chooseRe, function ( msg ) {
 
 		return conv + ' should';
 	}
-});
-
-bot.listen(questionRe, function ( msg ) {
-	//TODO: same question => same mapping (negative/positive, not specific)
-	return answers.random();
 });
 }());
