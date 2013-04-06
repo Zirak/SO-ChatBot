@@ -230,6 +230,16 @@ Object.defineProperty( RegExp.prototype, 'toJSON', {
 	writable : true
 });
 
+//takes a string and escapes any special regexp characters
+RegExp.escape = function ( str ) {
+	//do I smell irony?
+	return str.replace( /[-^$\\\/\.*+?()[\]{}|]/g, '\\$&' );
+	//using a character class to get away with escaping some things. the - in
+	// the beginning doesn't denote a range because it only denotes one when
+	// it's in the middle of a class, and the ^ doesn't mean negation because
+	// it's not in the beginning of the class
+};
+
 //not the most efficient thing, but who cares. formats the difference between
 // two dates
 Date.timeSince = function ( d0, d1 ) {

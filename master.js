@@ -1076,6 +1076,16 @@ Object.defineProperty( RegExp.prototype, 'toJSON', {
 	writable : true
 });
 
+//takes a string and escapes any special regexp characters
+RegExp.escape = function ( str ) {
+	//do I smell irony?
+	return str.replace( /[-^$\\\/\.*+?()[\]{}|]/g, '\\$&' );
+	//using a character class to get away with escaping some things. the - in
+	// the beginning doesn't denote a range because it only denotes one when
+	// it's in the middle of a class, and the ^ doesn't mean negation because
+	// it's not in the beginning of the class
+};
+
 //not the most efficient thing, but who cares. formats the difference between
 // two dates
 Date.timeSince = function ( d0, d1 ) {
@@ -6210,6 +6220,9 @@ bot.addCommand({
 var storage = JSON.parse(
 	localStorage.bot_karma || '{"amberroxannareal":-1}' );
 
+//the people we told they can't karma themselves up
+var toldOn = {};
+
 IO.register( 'input', function karma ( msgObj ) {
 	var content = msgObj.content, parts;
 
@@ -6218,13 +6231,13 @@ IO.register( 'input', function karma ( msgObj ) {
 		msgObj.event_type === 1 &&
 		(parts = /([\w\-]+)(\+\+|\-\-)/.exec(content))
 	) {
-		vote( parts[1], parts[2], msgObj.user_id );
+		vote( parts[1], parts[2], msgObj );
 	}
 });
 
 //TODO: implement a system which yells at a user if he's abusing the karma
 // system, and suspends him
-function vote ( subject, op ) {
+function vote ( subject, op, msgObj ) {
 	subject = subject.toLowerCase();
 	var dir = {
 		'++' :  1,
@@ -6232,8 +6245,21 @@ function vote ( subject, op ) {
 	}[ op ];
 	bot.log( subject, dir, 'vote' );
 
-	storage[ subject ] = ( storage[subject] || 0 ) + dir;
-	localStorage.bot_karma = JSON.stringify( storage );
+	if ( subject === msgObj.user_name.toLowerCase() ) {
+		if ( toldOn[msgObj.user_id] ) {
+			return;
+		};
+
+		bot.adapter.out.add(
+			bot.adapter.reply(msgObj.user_name) + ' Don\'t be an idiot',
+			msgObj.room_id );
+
+		toldOn[ msgObj.user_id ] = true;
+	}
+	else {
+		storage[ subject ] = ( storage[subject] || 0 ) + dir;
+		localStorage.bot_karma = JSON.stringify( storage );
+	}
 }
 
 //and that's it!
@@ -6263,8 +6289,8 @@ bot.addCommand({
 	name : 'karma',
 	//basic front-end for now
 	fun : function ( args ) {
-		var subject = args.content.toLowerCase(),
-			votes = storage[ subject ];
+		var subject = args.content,
+			votes = storage[ subject.toLowerCase() ];
 
 		if ( !subject ) {
 			return 'Unlike beauty, karma is not in the eye of the beholder';
@@ -7120,7 +7146,10 @@ IO.register( 'input', function ( msgObj ) {
 // => yes or no
 
 var chooseRe = /^\s*(choose|should)?.*\sor\s[^$]/i,
-    questionRe = /^(is|are|can|am|will|would|could|should|do|does)[^$]/i;
+	questionRe = new RegExp([
+		"am", "are", "can", "could", "do", "does", "is", "may", "might",
+		"shall", "should", "will", "would"
+	].map(RegExp.escape).join('|'));
 
 //personal pronouns to capitalize and their mapping
 //TODO: add possessives (should my cat => your cat should)
@@ -7145,11 +7174,6 @@ sameness=["VGhhdCdzIG5vdCByZWFsbHkgYSBjaG9pY2UsIG5vdyBpcyBpdD8=","U291bmRzIGxpa2
 answers=["QWJzb2x1dGVseSBub3Q=","QWJzb2x1dGVseSBub3Q=","QWJzb2x1dGVseSBub3Q=","QWxsIHNpZ25zIHBvaW50IHRvIG5v","QWxsIHNpZ25zIHBvaW50IHRvIG5v","QWxsIHNpZ25zIHBvaW50IHRvIG5v","QWxsIHNpZ25zIHBvaW50IHRvIHllcw==","QWxsIHNpZ25zIHBvaW50IHRvIHllcw==","QWxsIHNpZ25zIHBvaW50IHRvIHllcw==","QnV0IG9mIGNvdXJzZQ==","QnV0IG9mIGNvdXJzZQ==","QnV0IG9mIGNvdXJzZQ==","QnkgYWxsIG1lYW5z","QnkgYWxsIG1lYW5z","QnkgYWxsIG1lYW5z","Q2VydGFpbmx5IG5vdA==","Q2VydGFpbmx5IG5vdA==","Q2VydGFpbmx5IG5vdA==","Q2VydGFpbmx5","Q2VydGFpbmx5","Q2VydGFpbmx5","RGVmaW5pdGVseQ==","RGVmaW5pdGVseQ==","RGVmaW5pdGVseQ==","RG91YnRmdWxseQ==","RG91YnRmdWxseQ==","RG91YnRmdWxseQ==","SSBjYW4gbmVpdGhlciBjb25maXJtIG5vciBkZW55","SSBleHBlY3Qgc28=","SSBleHBlY3Qgc28=","SSBleHBlY3Qgc28=","SSdtIG5vdCBzbyBzdXJlIGFueW1vcmUuIEl0IGNhbiBnbyBlaXRoZXIgd2F5","SW1wb3NzaWJsZQ==","SW1wb3NzaWJsZQ==","SW1wb3NzaWJsZQ==","SW5kZWVk","SW5kZWVk","SW5kZWVk","SW5kdWJpdGFibHk=","SW5kdWJpdGFibHk=","SW5kdWJpdGFibHk=","Tm8gd2F5","Tm8gd2F5","Tm8gd2F5","Tm8=","Tm8=","Tm8=","Tm8=","Tm9wZQ==","Tm9wZQ==","Tm9wZQ==","Tm90IGEgY2hhbmNl","Tm90IGEgY2hhbmNl","Tm90IGEgY2hhbmNl","Tm90IGF0IGFsbA==","Tm90IGF0IGFsbA==","Tm90IGF0IGFsbA==","TnVoLXVo","TnVoLXVo","TnVoLXVo","T2YgY291cnNlIG5vdA==","T2YgY291cnNlIG5vdA==","T2YgY291cnNlIG5vdA==","T2YgY291cnNlIQ==","T2YgY291cnNlIQ==","T2YgY291cnNlIQ==","UHJvYmFibHk=","UHJvYmFibHk=","UHJvYmFibHk=","WWVzIQ==","WWVzIQ==","WWVzIQ==","WWVzIQ==","WWVzLCBhYnNvbHV0ZWx5","WWVzLCBhYnNvbHV0ZWx5","WWVzLCBhYnNvbHV0ZWx5"].map(atob);
 //can you feel the nectar?
 
-
-bot.listen(questionRe, function ( msg ) {
-	//TODO: same question => same mapping (negative/positive, not specific)
-	return answers.random();
-});
 
 bot.listen(chooseRe, function ( msg ) {
 	var parts = msg
@@ -7238,6 +7262,12 @@ bot.listen(chooseRe, function ( msg ) {
 		return conv + ' should';
 	}
 });
+
+bot.listen(questionRe, function ( msg ) {
+	//TODO: same question => same mapping (negative/positive, not specific)
+	return answers.random();
+});
+
 }());
 
 ;

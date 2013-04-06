@@ -5,6 +5,9 @@
 var storage = JSON.parse(
 	localStorage.bot_karma || '{"amberroxannareal":-1}' );
 
+//the people we told they can't karma themselves up
+var toldOn = {};
+
 IO.register( 'input', function karma ( msgObj ) {
 	var content = msgObj.content, parts;
 
@@ -13,13 +16,13 @@ IO.register( 'input', function karma ( msgObj ) {
 		msgObj.event_type === 1 &&
 		(parts = /([\w\-]+)(\+\+|\-\-)/.exec(content))
 	) {
-		vote( parts[1], parts[2], msgObj.user_id );
+		vote( parts[1], parts[2], msgObj );
 	}
 });
 
 //TODO: implement a system which yells at a user if he's abusing the karma
 // system, and suspends him
-function vote ( subject, op ) {
+function vote ( subject, op, msgObj ) {
 	subject = subject.toLowerCase();
 	var dir = {
 		'++' :  1,
@@ -27,8 +30,21 @@ function vote ( subject, op ) {
 	}[ op ];
 	bot.log( subject, dir, 'vote' );
 
-	storage[ subject ] = ( storage[subject] || 0 ) + dir;
-	localStorage.bot_karma = JSON.stringify( storage );
+	if ( subject === msgObj.user_name.toLowerCase() ) {
+		if ( toldOn[msgObj.user_id] ) {
+			return;
+		};
+
+		bot.adapter.out.add(
+			bot.adapter.reply(msgObj.user_name) + ' Don\'t be an idiot',
+			msgObj.room_id );
+
+		toldOn[ msgObj.user_id ] = true;
+	}
+	else {
+		storage[ subject ] = ( storage[subject] || 0 ) + dir;
+		localStorage.bot_karma = JSON.stringify( storage );
+	}
 }
 
 //and that's it!
@@ -58,8 +74,8 @@ bot.addCommand({
 	name : 'karma',
 	//basic front-end for now
 	fun : function ( args ) {
-		var subject = args.content.toLowerCase(),
-			votes = storage[ subject ];
+		var subject = args.content,
+			votes = storage[ subject.toLowerCase() ];
 
 		if ( !subject ) {
 			return 'Unlike beauty, karma is not in the eye of the beholder';

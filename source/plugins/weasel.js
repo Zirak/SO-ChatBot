@@ -7,7 +7,10 @@
 // => yes or no
 
 var chooseRe = /^\s*(choose|should)?.*\sor\s[^$]/i,
-    questionRe = /^(is|are|can|am|will|would|could|should|do|does)[^$]/i;
+	questionRe = new RegExp([
+		"am", "are", "can", "could", "do", "does", "is", "may", "might",
+		"shall", "should", "will", "would"
+	].map(RegExp.escape).join('|'));
 
 //personal pronouns to capitalize and their mapping
 //TODO: add possessives (should my cat => your cat should)
@@ -24,11 +27,6 @@ var capitalize = {
 //will be filled in the build
 var answers, undecided, sameness;
 //#build ../static/weaselReplies.js
-
-bot.listen(questionRe, function ( msg ) {
-	//TODO: same question => same mapping (negative/positive, not specific)
-	return answers.random();
-});
 
 bot.listen(chooseRe, function ( msg ) {
 	var parts = msg
@@ -117,4 +115,10 @@ bot.listen(chooseRe, function ( msg ) {
 		return conv + ' should';
 	}
 });
+
+bot.listen(questionRe, function ( msg ) {
+	//TODO: same question => same mapping (negative/positive, not specific)
+	return answers.random();
+});
+
 }());
