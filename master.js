@@ -7149,7 +7149,7 @@ var chooseRe = /^\s*(choose|should)?.*\sor\s[^$]/i,
 	questionRe = new RegExp([
 		"am", "are", "can", "could", "do", "does", "is", "may", "might",
 		"shall", "should", "will", "would"
-	].map(RegExp.escape).join('|'));
+	].map(RegExp.escape).join('|'), 'i');
 
 //personal pronouns to capitalize and their mapping
 //TODO: add possessives (should my cat => your cat should)
