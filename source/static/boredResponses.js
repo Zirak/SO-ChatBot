@@ -158,6 +158,10 @@ responses = [
 	'If you had three quarters, four dimes and four pennies in your pocket you would have $1.19. You would also have the largest number (11) and combination of coins possible without being able to provide change for a dollar.',
 	'Where in the nursery rhyme does it say Humpty Dumpty is an egg?',
 	'How do vampires have such well-kept hair if they can\'t see themselves in the mirror?',
+	
+	// Woody Allen quote, added by rlemon
+	'In my next life I want to live my life backwards. You start out dead and get that out of the way. Then you wake up in an old people\'s home feeling better every day. You get kicked out for being too healthy, go collect your pension, and then when you start work, you get a gold watch and a party on your first day. You work for 40 years until you\'re young enough to enjoy your retirement.\nYou party, drink alcohol, and are generally promiscuous, then you are ready for high school. You then go to primary school, you become a kid, you play. You have no responsibilities, you become a baby until you are born. And then you spend your last 9 months floating in luxurious spa-like conditions with central heating and room service on tap, larger quarters every day and then Voila! You finish off as an orgasm!'
+
 ];
 
 //query xkcd to find the last comic id. generate links to comic pages from that
