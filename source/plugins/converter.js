@@ -111,6 +111,9 @@ Object.iterate({
 	converters[ alias ] = converters[ orig ];
 });
 
+var currencies, symbols; //to be filled in next line by build
+//#build ../static/currencies.js
+
 /*
   (        #start number matching
    -?      #optional negative
@@ -127,9 +130,9 @@ var rUnits = /(-?\d+\.?\d*)\s*(\S+)(\s+(?:to|in)\s+(.+))?/;
 
 //string is in the form of:
 // <number><unit>
+// <number><unit> to|in <unit>
 //note that units are case-sensitive: F is the temperature, f is the length
 var convert = function ( inp, cb ) {
-	bot.log( inp, '/convert input' );
 	if ( inp.toString() === 'list' ) {
 		cb( listUnits().join(', ') );
 	}
@@ -138,23 +141,48 @@ var convert = function ( inp, cb ) {
 
 	if ( !parts ) {
 		finish( {error : 'Unidentified format; please see `/help convert`'} );
+		return;
 	}
-	else if ( parts[3] ) {
-		convertMoney( parts, finish );
+
+	var num = Number( parts[1] ),
+		unit = parts[ 2 ],
+		target = parts[ 4 ] || '',
+		moneh = false;
+	bot.log( num, unit, target, '/convert input' );
+
+	//blegh
+	if ( symbols.hasOwnProperty(unit.toUpperCase()) ) {
+		unit = symbols[ unit ];
+	}
+	if ( symbols.hasOwnProperty(target.toUpperCase()) ) {
+		target = symbols[ target ];
+	}
+	if ( currencies.hasOwnProperty(unit) ) {
+		moneh = true;
+	}
+
+	var err = errorMessage( unit, target, moneh );
+	if ( err ) {
+		finish( {error : err} );
+		return;
+	}
+
+	if ( moneh ) {
+		convertMoney( num, unit, target, finish );
 	}
 	else {
-		convertUnit( parts, finish );
+		convertUnit( num, unit, finish );
 	}
 
 	function finish ( res ) {
-		bot.log( res, '/console answer' );
+		bot.log( res, '/convert answer' );
 
 		var reply;
 		if ( res.error ) {
 			reply = res.error;
 		}
 		else {
-			reply = Object.keys( res ).map( format ).join( ', ' );
+			reply = format( res );
 		}
 
 		if ( cb && cb.call ) {
@@ -163,18 +191,27 @@ var convert = function ( inp, cb ) {
 		else {
 			inp.reply( reply );
 		}
+	}
 
-		function format ( key ) {
+	function format ( res ) {
+		var keys = Object.keys( res );
+
+		if ( !keys.length ) {
+			return 'Could not convert {0} to {1}'.supplant( unit, target );
+		}
+		return keys.filter( nameGoesHere ).map( formatKey ).join( ', ' );
+
+		function nameGoesHere ( key ) {
+			return !target || target === key;
+		}
+		function formatKey ( key ) {
 			return res[ key ].maxDecimal( 4 ) + key;
 		}
 	}
 };
 
-function convertUnit ( parts, cb ) {
-	var number = Number( parts[1] ),
-		unit = parts[ 2 ];
-
-	bot.log( parts, '/convert unit broken' );
+function convertUnit ( number, unit, cb ) {
+	bot.log( number, unit, '/convert unit broken' );
 
 	if ( !converters[unit] ) {
 		cb({
@@ -187,10 +224,8 @@ function convertUnit ( parts, cb ) {
 }
 
 var ratesCache = {};
-function convertMoney ( parts, cb ) {
-	var number = Number( parts[1] ),
-		from = parts[ 2 ].toUpperCase(),
-		to = parts[ 4 ].toUpperCase(); //[3] contains "to" and ws as well
+function convertMoney ( number, from, to, cb ) {
+	from = from.toUpperCase();
 
 	bot.log( number, from, to, '/convert money broken' );
 
@@ -244,6 +279,21 @@ function checkCache ( from, to ) {
 	return exists;
 }
 
+function errorMessage ( unit, target, moneh ) {
+	var map = moneh ? currencies : converters;
+
+	var unknown = 'Confuse converter with {0}, get error message';
+	if ( !map.hasOwnProperty(unit) ) {
+		return unknown.supplant( unit );
+	}
+	if ( target && !map.hasOwnProperty(target) ) {
+		return unknown.supplant( target );
+	}
+
+	if ( moneh && !target ) {
+		return 'What do I need to convert ' + unit + ' to?';
+	}
+}
 
 function listUnits () {
 	return Object.keys( converters );
@@ -256,8 +306,7 @@ bot.addCommand({
 		del : 'NONE'
 	},
 	description : 'Converts several units, case sensitive. ' +
-		'`/convert <num><unit>` ' +
-		'For money: `/convert [<num>]<currency> to|in <currency>` ' +
+		'`/convert <num><unit> [to|in <unit>]` ' +
 		'Pass in list for supported units `/convert list`',
 	async : true
 });

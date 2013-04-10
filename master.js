@@ -5477,6 +5477,135 @@ Object.iterate({
 	converters[ alias ] = converters[ orig ];
 });
 
+var currencies, symbols; //to be filled in next line by build
+/* acquired by going to google.com/finance/converter and running
+JSON.stringify([].reduce.call(f.from.options, function (r, e) { return (r[e.value] = true, r); }, {}), null, 4)
+for some reason, NIS (New Israeli Shekel) does not appear there, only ILS,
+despite Google accepting both. it was added manually
+*/
+currencies = {
+    "AED": true,
+    "ANG": true,
+    "ARS": true,
+    "AUD": true,
+    "BDT": true,
+    "BGN": true,
+    "BHD": true,
+    "BND": true,
+    "BOB": true,
+    "BRL": true,
+    "BWP": true,
+    "CAD": true,
+    "CHF": true,
+    "CLP": true,
+    "CNY": true,
+    "COP": true,
+    "CRC": true,
+    "CZK": true,
+    "DKK": true,
+    "DOP": true,
+    "DZD": true,
+    "EEK": true,
+    "EGP": true,
+    "EUR": true,
+    "FJD": true,
+    "GBP": true,
+    "HKD": true,
+    "HNL": true,
+    "HRK": true,
+    "HUF": true,
+    "IDR": true,
+    "ILS": true,
+    "INR": true,
+    "JMD": true,
+    "JOD": true,
+    "JPY": true,
+    "KES": true,
+    "KRW": true,
+    "KWD": true,
+    "KYD": true,
+    "KZT": true,
+    "LBP": true,
+    "LKR": true,
+    "LTL": true,
+    "LVL": true,
+    "MAD": true,
+    "MDL": true,
+    "MKD": true,
+    "MUR": true,
+    "MVR": true,
+    "MXN": true,
+    "MYR": true,
+    "NAD": true,
+    "NGN": true,
+    "NIO": true,
+    "NIS": true,
+    "NOK": true,
+    "NPR": true,
+    "NZD": true,
+    "OMR": true,
+    "PEN": true,
+    "PGK": true,
+    "PHP": true,
+    "PKR": true,
+    "PLN": true,
+    "PYG": true,
+    "QAR": true,
+    "RON": true,
+    "RSD": true,
+    "RUB": true,
+    "SAR": true,
+    "SCR": true,
+    "SEK": true,
+    "SGD": true,
+    "SKK": true,
+    "SLL": true,
+    "SVC": true,
+    "THB": true,
+    "TND": true,
+    "TRY": true,
+    "TTD": true,
+    "TWD": true,
+    "TZS": true,
+    "UAH": true,
+    "UGX": true,
+    "USD": true,
+    "UYU": true,
+    "UZS": true,
+    "VEF": true,
+    "VND": true,
+    "XOF": true,
+    "YER": true,
+    "ZAR": true,
+    "ZMK": true
+};
+symbols = {
+    //euro €
+    "\u20ac" : "EUR",
+
+    //pound sterling £
+    "\u00a3" : "GBP",
+    //pound sterling ₤
+    "\u20a4" : "GBP",
+
+    //indian rupee ₨
+    "\u20a8" : "INR",
+    //indian rupee ₹
+    "\u20b9" : "INR",
+
+    //yen ¥
+    '\u00a5' : "JPY",
+    //double-width yen ￥
+    '\uffe5' : "JPY",
+
+    //israeli shekels ₪
+    "\u20aa" : "ILS",
+
+    //united states dollar $
+    "\u0024" : "USD",
+};
+
+
 /*
   (        #start number matching
    -?      #optional negative
@@ -5493,9 +5622,9 @@ var rUnits = /(-?\d+\.?\d*)\s*(\S+)(\s+(?:to|in)\s+(.+))?/;
 
 //string is in the form of:
 // <number><unit>
+// <number><unit> to|in <unit>
 //note that units are case-sensitive: F is the temperature, f is the length
 var convert = function ( inp, cb ) {
-	bot.log( inp, '/convert input' );
 	if ( inp.toString() === 'list' ) {
 		cb( listUnits().join(', ') );
 	}
@@ -5504,23 +5633,48 @@ var convert = function ( inp, cb ) {
 
 	if ( !parts ) {
 		finish( {error : 'Unidentified format; please see `/help convert`'} );
+		return;
 	}
-	else if ( parts[3] ) {
-		convertMoney( parts, finish );
+
+	var num = Number( parts[1] ),
+		unit = parts[ 2 ],
+		target = parts[ 4 ] || '',
+		moneh = false;
+	bot.log( num, unit, target, '/convert input' );
+
+	//blegh
+	if ( symbols.hasOwnProperty(unit.toUpperCase()) ) {
+		unit = symbols[ unit ];
+	}
+	if ( symbols.hasOwnProperty(target.toUpperCase()) ) {
+		target = symbols[ target ];
+	}
+	if ( currencies.hasOwnProperty(unit) ) {
+		moneh = true;
+	}
+
+	var err = errorMessage( unit, target, moneh );
+	if ( err ) {
+		finish( {error : err} );
+		return;
+	}
+
+	if ( moneh ) {
+		convertMoney( num, unit, target, finish );
 	}
 	else {
-		convertUnit( parts, finish );
+		convertUnit( num, unit, finish );
 	}
 
 	function finish ( res ) {
-		bot.log( res, '/console answer' );
+		bot.log( res, '/convert answer' );
 
 		var reply;
 		if ( res.error ) {
 			reply = res.error;
 		}
 		else {
-			reply = Object.keys( res ).map( format ).join( ', ' );
+			reply = format( res );
 		}
 
 		if ( cb && cb.call ) {
@@ -5529,18 +5683,27 @@ var convert = function ( inp, cb ) {
 		else {
 			inp.reply( reply );
 		}
+	}
 
-		function format ( key ) {
+	function format ( res ) {
+		var keys = Object.keys( res );
+
+		if ( !keys.length ) {
+			return 'Could not convert {0} to {1}'.supplant( unit, target );
+		}
+		return keys.filter( nameGoesHere ).map( formatKey ).join( ', ' );
+
+		function nameGoesHere ( key ) {
+			return !target || target === key;
+		}
+		function formatKey ( key ) {
 			return res[ key ].maxDecimal( 4 ) + key;
 		}
 	}
 };
 
-function convertUnit ( parts, cb ) {
-	var number = Number( parts[1] ),
-		unit = parts[ 2 ];
-
-	bot.log( parts, '/convert unit broken' );
+function convertUnit ( number, unit, cb ) {
+	bot.log( number, unit, '/convert unit broken' );
 
 	if ( !converters[unit] ) {
 		cb({
@@ -5553,10 +5716,8 @@ function convertUnit ( parts, cb ) {
 }
 
 var ratesCache = {};
-function convertMoney ( parts, cb ) {
-	var number = Number( parts[1] ),
-		from = parts[ 2 ].toUpperCase(),
-		to = parts[ 4 ].toUpperCase(); //[3] contains "to" and ws as well
+function convertMoney ( number, from, to, cb ) {
+	from = from.toUpperCase();
 
 	bot.log( number, from, to, '/convert money broken' );
 
@@ -5610,6 +5771,21 @@ function checkCache ( from, to ) {
 	return exists;
 }
 
+function errorMessage ( unit, target, moneh ) {
+	var map = moneh ? currencies : converters;
+
+	var unknown = 'Confuse converter with {0}, get error message';
+	if ( !map.hasOwnProperty(unit) ) {
+		return unknown.supplant( unit );
+	}
+	if ( target && !map.hasOwnProperty(target) ) {
+		return unknown.supplant( target );
+	}
+
+	if ( moneh && !target ) {
+		return 'What do I need to convert ' + unit + ' to?';
+	}
+}
 
 function listUnits () {
 	return Object.keys( converters );
@@ -5622,8 +5798,7 @@ bot.addCommand({
 		del : 'NONE'
 	},
 	description : 'Converts several units, case sensitive. ' +
-		'`/convert <num><unit>` ' +
-		'For money: `/convert [<num>]<currency> to|in <currency>` ' +
+		'`/convert <num><unit> [to|in <unit>]` ' +
 		'Pass in list for supported units `/convert list`',
 	async : true
 });
