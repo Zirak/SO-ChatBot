@@ -15,7 +15,16 @@ Object.iterate = function ( obj, cb, thisArg ) {
 	Object.keys( obj ).forEach(function (key) {
 		cb.call( thisArg, key, obj[key], obj );
 	});
-}
+};
+
+Object.TruthMap = function ( props ) {
+	return ( props || [] ).reduce( assignTrue, Object.create(null) );
+
+	function assignTrue ( ret, key ) {
+		ret[ key ] = true;
+		return ret;
+	}
+};
 
 //SO chat uses an unfiltered for...in to iterate over an array somewhere, so
 // that I have to use Object.defineProperty to make these non-enumerable

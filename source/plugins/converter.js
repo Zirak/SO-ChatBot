@@ -31,17 +31,6 @@ var converters = {
 			f : m * 3.280839895 };
 	},
 	f : function ( f ) {
-		//I don't quite like this solution for re-writing the units, but
-		// this idea is good (praise rlemon!), so I'll just clean it later.
-		var m = f / 3.28083989;
-		if ( m > 1000 ) {
-			return {
-				km : m / 1000 };
-		}
-		else if ( m < 0.01 ) {
-			return {
-				mm : m * 1000 };
-		}
 		return {
 			m : f / 3.28083989 };
 	},
@@ -94,7 +83,7 @@ var converters = {
 	}
 };
 
-Object.iterate({
+var longNames = {
 	lbs : 'lb',
 	ft : 'f',
 	foot : 'f',
@@ -107,12 +96,22 @@ Object.iterate({
 	kilograms : 'kg',
 	inches : 'i',
 	stones : 'st',
-}, function ( alias, orig ) {
-	converters[ alias ] = converters[ orig ];
-});
+};
 
 var currencies, symbols; //to be filled in next line by build
 //#build ../static/currencies.js
+
+function unalias ( unit ) {
+	var up = unit.toUpperCase();
+	if ( symbols.hasOwnProperty(up) ) {
+		return symbols[ up ];
+	}
+	if ( longNames.hasOwnProperty(unit) ) {
+		return longNames[ unit ];
+	}
+
+	return unit;
+}
 
 /*
   (        #start number matching
@@ -123,10 +122,20 @@ var currencies, symbols; //to be filled in next line by build
   )
   \s*      #optional whitespace, just 'cus
   (        #start unit matching
-   \S+  #the unit. we don't know anyhing about it, besides having no ws
+   \S+     #the unit. we don't know anyhing about it, besides having no ws
   )
+  (        #begin matching optional target unit (required for currencies)
+    \s+
+    (?:
+     (?:
+      to|in #10 X to Y, 10 X in Y
+     )
+     \s+
+    )?
+    (\S+)  #the unit itself
+  )?
  */
-var rUnits = /(-?\d+\.?\d*)\s*(\S+)(\s+(?:to|in)\s+(.+))?/;
+var rUnits = /(-?\d+\.?\d*)\s*(\S+)(\s+(?:(?:to|in)\s+)?(\S+))?$/;
 
 //string is in the form of:
 // <number><unit>
@@ -134,7 +143,8 @@ var rUnits = /(-?\d+\.?\d*)\s*(\S+)(\s+(?:to|in)\s+(.+))?/;
 //note that units are case-sensitive: F is the temperature, f is the length
 var convert = function ( inp, cb ) {
 	if ( inp.toString() === 'list' ) {
-		cb( listUnits().join(', ') );
+		finish( listUnits().join(', ') );
+		return;
 	}
 
 	var parts = rUnits.exec( inp );
@@ -145,30 +155,19 @@ var convert = function ( inp, cb ) {
 	}
 
 	var num = Number( parts[1] ),
-		unit = parts[ 2 ],
-		target = parts[ 4 ] || '',
-		moneh = false;
+	    unit = parts[ 2 ],
+	    target = parts[ 4 ] || '',
+	    moneh = false;
 	bot.log( num, unit, target, '/convert input' );
 
-	//blegh
-	if ( symbols.hasOwnProperty(unit.toUpperCase()) ) {
-		unit = symbols[ unit ];
-	}
-	if ( symbols.hasOwnProperty(target.toUpperCase()) ) {
-		target = symbols[ target ];
-	}
-	if ( currencies.hasOwnProperty(unit) ) {
+	unit   = unalias( unit );
+	target = unalias( target );
+	if ( currencies[unit.toUpperCase()] ) {
 		moneh = true;
 	}
 
-	var err = errorMessage( unit, target, moneh );
-	if ( err ) {
-		finish( {error : err} );
-		return;
-	}
-
 	if ( moneh ) {
-		convertMoney( num, unit, target, finish );
+		moneyConverter.convert( num, unit, target, finish );
 	}
 	else {
 		convertUnit( num, unit, finish );
@@ -223,77 +222,91 @@ function convertUnit ( number, unit, cb ) {
 	}
 }
 
-var ratesCache = {};
-function convertMoney ( number, from, to, cb ) {
-	from = from.toUpperCase();
+var moneyConverter = {
+	ratesCache : {},
 
-	bot.log( number, from, to, '/convert money broken' );
+	convert : function ( number, from, to, cb ) {
+		this.from = from;
+		this.to = to;
 
-	getRate( from, to, function ( rate ) {
-		var res = {}; //once again, the lack of dynamic key names sucks.
-		res[ to ] = number * rate;
+		this.upFrom = from.toUpperCase();
+		this.upTo = to.toUpperCase();
 
-		cb( res );
-	});
-}
+		var err = this.errorMessage();
+		if ( err ) {
+			cb( { error : err } );
+			return;
+		}
+		bot.log( number, from, to, '/convert money broken' );
 
-function getRate ( from, to, cb ) {
-	if ( checkCache(from, to) ) {
-		cb( ratesCache[from][to].rate );
-		return;
-	}
+		this.getRate(function ( rate ) {
+			var res = {}; //once again, the lack of dynamic key names sucks.
+			res[ to ] = number * rate;
 
-	IO.jsonp({
-		url : 'http://rate-exchange.appspot.com/currency',
-		jsonpName : 'callback',
-		data : {
-			from : from,
-			to : to
-		},
-		fun : finish
-	});
+			cb( res );
+		});
+	},
 
-	function finish ( resp ) {
-		ratesCache[ from ] = ratesCache[ to ] || {};
-		ratesCache[ from ][ to ] = {
-			rate : resp.rate,
+	getRate : function ( cb ) {
+		var self = this,
+		    rate;
+
+		if ( rate = this.checkCache() ) {
+			cb( rate );
+			return;
+		}
+
+		IO.jsonp({
+			url : 'http://rate-exchange.appspot.com/currency',
+			jsonpName : 'callback',
+			data : {
+				from : self.from,
+				to : self.to
+			},
+			fun : finish
+		});
+
+		function finish ( resp ) {
+			rate = resp.rate;
+
+			self.updateCache( rate );
+			cb( rate );
+		}
+	},
+
+	updateCache : function ( rate ) {
+		this.ratesCache[ this.upFrom ] = this.ratesCache[ this.upFrom ] || {};
+		this.ratesCache[ this.upFrom ][ this.upTo ] = {
+			rate : rate,
 			time : Date.now()
 		};
+	},
 
-		cb( resp.rate );
+	checkCache : function () {
+		var now = Date.now(), obj;
+
+		var exists = (
+			this.ratesCache[ this.upFrom ] &&
+				( obj = this.ratesCache[this.upFrom][this.upTo] ) &&
+				//so we won't request again, keep it in memory for 5 hours
+				// 5(hours) = 1000(ms) * 60(seconds)
+				//            * 60(minutes) * 5 = 18000000
+				obj.time - now <= 18e6 );
+
+		console.log( this.ratesCache, exists );
+
+		return exists ? obj.rate : false;
+	},
+
+	errorMessage : function () {
+		if ( !this.to ) {
+			return 'What do you want to convert ' + this.from + ' to?';
+		}
+		if ( !currencies[this.upTo] ) {
+			return this.to + ' aint no currency I ever heard of';
+		}
 	}
-}
-
-function checkCache ( from, to ) {
-	var now = Date.now(), obj;
-
-	var exists = (
-		ratesCache[ from ] &&
-			( obj = ratesCache[from][to] ) &&
-			//so we won't request again, keep it in memory for 5 hours
-			// 5(hours) = 1000(ms) * 60(seconds) * 60(minutes) * 5 = 18000000
-			obj.time - now <= 18e6 );
-
-	console.log( ratesCache, exists );
-
-	return exists;
-}
-
-function errorMessage ( unit, target, moneh ) {
-	var map = moneh ? currencies : converters;
-
-	var unknown = 'Confuse converter with {0}, get error message';
-	if ( !map.hasOwnProperty(unit) ) {
-		return unknown.supplant( unit );
-	}
-	if ( target && !map.hasOwnProperty(target) ) {
-		return unknown.supplant( target );
-	}
-
-	if ( moneh && !target ) {
-		return 'What do I need to convert ' + unit + ' to?';
-	}
-}
+};
 
 function listUnits () {
 	return Object.keys( converters );
@@ -305,7 +318,7 @@ bot.addCommand({
 	permissions : {
 		del : 'NONE'
 	},
-	description : 'Converts several units, case sensitive. ' +
+	description : 'Converts several units and currencies, case sensitive. '+
 		'`/convert <num><unit> [to|in <unit>]` ' +
 		'Pass in list for supported units `/convert list`',
 	async : true
