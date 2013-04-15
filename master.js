@@ -7436,15 +7436,15 @@ bot.listen(chooseRe, function ( msg ) {
 	}
 
 	function format ( ans ) {
-		return ans.replace( /^should (\S+)/, subject );
+		return ans.replace( /^(should(?:n'?t)?) (\S+)/, subject );
 	}
 
 	//convert:
 	// "should I" => "you should"
 	// "should you" => "I should"
 	//anything else just switch the order
-	function subject ( $0, $1 ) {
-		var sub = $1.toLowerCase(),
+	function subject ( $0, $1, $2 ) {
+		var sub = $2.toLowerCase(),
 			conv;
 
 		//if we recognize this word, map it properly
@@ -7453,10 +7453,10 @@ bot.listen(chooseRe, function ( msg ) {
 		}
 		//otherwise, use the original spelling
 		else {
-			conv = $1;
+			conv = $2;
 		}
 
-		return conv + ' should';
+		return conv + ' ' + $1;
 	}
 });
 
