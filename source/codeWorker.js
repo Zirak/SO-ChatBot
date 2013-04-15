@@ -88,6 +88,11 @@ Object.defineProperty( Array.prototype, 'join', {
 	}( Array.prototype.join ))
 });
 
+/* we define it outside so it'll not be in strict mode */
+function exec ( code ) {
+	return eval( 'undefined;\n' + code );
+}
+
 (function(){
 	"use strict";
 
@@ -99,21 +104,20 @@ Object.defineProperty( Array.prototype, 'join', {
 	};
 	var p = console.log.bind( console );
 
-	function exec ( code ) {
-		var result;
+	global.onmessage = function ( event ) {
+		postMessage({
+			event : 'start'
+		});
+
+		var jsonStringify = JSON.stringify, /*backup*/
+			result;
+
 		try {
-			result = eval( '"use strict";undefined;\n' + code );
+			result = exec( event.data );
 		}
 		catch ( e ) {
 			result = e.toString();
 		}
-
-		return result;
-	}
-
-	global.onmessage = function ( event ) {
-		var jsonStringify = JSON.stringify, /*backup*/
-			result = exec( event.data );
 
 		/*JSON does not like any of the following*/
 		var strung = {
@@ -127,7 +131,7 @@ Object.defineProperty( Array.prototype, 'join', {
 				return true;
 			}
 			/*neither does it feel compassionate about NaN or Infinity*/
-			return isNaN( value ) || !isFinite( value );
+			return value !== value || value === Infinity;
 		};
 
 		var reviver = function ( key, value ) {
