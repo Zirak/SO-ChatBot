@@ -7595,21 +7595,17 @@ var weather = {
 		return list.map( this.formatter ).join( '; ' );
 	},
 	formatter : function ( data ) {
-		var ret = '',
+		var ret,
 			temps = data.main,
 			min = temps.temp_min, max = temps.temp_max;
 
-		ret +=
+		temps.celsius = ( temps.temp - 273.15 ).maxDecimal( 4 );
+
+		ret =
 			bot.adapter.link(
 				data.name, 'http://openweathermap.org/city/' + data.id
-			) + ': ';
-
-		if ( min && max && min !== max ) {
-			ret += '{0}K-{1}K'.supplant( min, max );
-		}
-		else {
-			ret += temps.temp + 'K';
-		}
+			) +
+			': {celsius}C ({temp}K)'.supplant( temps );
 
 		var descs = ( data.weather || [] ).map(function ( w ) {
 			return w.description;
