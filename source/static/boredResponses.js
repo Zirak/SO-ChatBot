@@ -165,14 +165,14 @@ responses = [
 IO.jsonp({
 	url : 'http://dynamic.xkcd.com/api-0/jsonp/comic',
 	jsonpName : 'callback',
-	fun : finish
+	fun : finishXKCD
 });
 
-function finish ( resp ) {
+function finishXKCD ( resp ) {
 	var maxID = resp.num;
 
 	//to avoid adding hundreds of links to the responses array and fucking up
-	// the probabilities, we'll add just 2, and use a "nice" getter hack
+	// the probabilities, we'll add just a few, and use a "nice" getter hack
 	var descriptor = {
 		get : function () {
 			return 'http://xkcd.com/' + Math.rand( 1, maxID );
@@ -191,5 +191,75 @@ function finish ( resp ) {
 	//arrays truly are magic. Chrome automatically adjusts the length after this
 	//perhaps it shouldn't surprise me. special behaviour on integer-ish is to
 	// be expected
+}
+
+})();
+
+(function () {
+var items = {
+	actual : [],
+	fetch : function () {
+		var index = Math.floor(Math.random() * this.actual.length);
+
+		if ( this.actual.length <= 2 ) {
+			request( finishSE );
+		}
+		return this.actual.splice( index, 1 )[ 0 ].link;
+	}
+};
+var first = true;
+
+request( finishSE );
+
+function request ( cb ) {
+	IO.jsonp({
+		url : 'http://api.stackexchange.com/2.1/questions',
+		jsonpName : 'callback',
+		data : {
+			order : 'desc',
+			sort  : 'hot',
+			tagged : 'javascript',
+			//only wrapper stuff and a few question details
+			filter : '!BGS1(RNaQDIyAm(R7hhoosE8U0HdKY',
+			site : 'stackoverflow'
+		},
+		fun : cb
+	});
+}
+
+function finishSE ( resp ) {
+	if ( resp.errorMessage ) {
+		console.error( resp.errorMessage );
+		return;
+	}
+	var fit = resp.items.filter( scoreCheck );
+
+	items.actual.push.apply( items.actual, fit );
+
+	if ( first ) {
+		//see comments on xkcd above
+		//IMPORTANT NOTE: because getting an item removes it, this is
+		// a Schrödinger's array: seeing the value causes its removal, so you
+		// cannot inspect the responses array without altering it.
+		//that is so cool.
+		var descriptor = {
+			get : items.fetch.bind( items ),
+			configurable : true,
+			enumerable : true
+		};
+
+		var props = {};
+		for (var i = 0; i < 5; i++) {
+			props[ responses.length + i ] = descriptor;
+		}
+
+		Object.defineProperties( responses, props );
+
+		first = false;
+	}
+
+	function scoreCheck ( item ) {
+		return item.score >= 1;
+	}
 }
 })();

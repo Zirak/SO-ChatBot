@@ -155,6 +155,7 @@ var polling = bot.adapter.in = {
 		// 2 => message edit
 		// 3 => user joined room
 		// 4 => user left room
+		// 10 => message deleted
 		var et /* phone home */ = msg.event_type;
 		if ( et === 3 || et === 4 ) {
 			this.handleUserEvent( msg );
