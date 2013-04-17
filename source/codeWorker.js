@@ -92,17 +92,17 @@ Object.defineProperty( Array.prototype, 'join', {
 function exec ( code ) {
 	return eval( 'undefined;\n' + code );
 }
+var console = {
+	_items : [],
+	log : function() {
+		console._items.push.apply( console._items, arguments );
+	}
+};
+console.error = console.info = console.debug = console.log;
+var p = console.log.bind( console );
 
 (function(){
 	"use strict";
-
-	var console = {
-		_items : [],
-		log : function() {
-			console._items.push.apply( console._items, arguments );
-		}
-	};
-	var p = console.log.bind( console );
 
 	global.onmessage = function ( event ) {
 		postMessage({
