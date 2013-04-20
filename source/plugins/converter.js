@@ -249,7 +249,7 @@ var moneyConverter = {
 
 	getRate : function ( cb ) {
 		var self = this,
-		    rate;
+			rate;
 
 		if ( rate = this.checkCache() ) {
 			cb( rate );

@@ -28,7 +28,7 @@ var capitalize = {
 var answers, undecided, sameness;
 //#build ../static/weaselReplies.js
 
-bot.listen(chooseRe, function ( msg ) {
+bot.listen(chooseRe, function chooseListener ( msg ) {
 	var parts = msg
 		//remove the choose prefix
 		.replace( /^\s*choose\s/i, '' )
@@ -116,7 +116,7 @@ bot.listen(chooseRe, function ( msg ) {
 	}
 });
 
-bot.listen(questionRe, function ( msg ) {
+bot.listen(questionRe, function questionListener ( msg ) {
 	//TODO: same question => same mapping (negative/positive, not specific)
 	return answers.random();
 });
