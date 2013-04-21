@@ -6494,6 +6494,10 @@ var history = {
 	command : function historyCommand ( args ) {
 		var params = this.extractParams( args );
 
+		if ( params.error ) {
+			return params.error;
+		}
+
 		this.fetchData( params, finish );
 
 		function finish ( results ) {
@@ -6524,8 +6528,8 @@ var history = {
 			return ret;
 		}
 
-		var parts = /(\d{2})-(\d{2})/.exec( args );
-		if ( parts ) {
+		var parts = /(\d{2})(?:-|\/)?(\d{2})/.exec( args );
+		if ( parts && parts.length === 3 ) {
 			ret.month = Number( parts[1] );
 			ret.day = Number( parts[2] );
 		}
