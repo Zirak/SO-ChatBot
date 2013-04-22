@@ -92,7 +92,7 @@ bot.listen(chooseRe, function chooseListener ( msg ) {
 	}
 
 	function format ( ans ) {
-		return ans.replace( /^(should(?:n'?t)?) (\S+)/, subject );
+		return ans.replace( /(should(?:n'?t)?) (\S+)/, subject );
 	}
 
 	//convert:

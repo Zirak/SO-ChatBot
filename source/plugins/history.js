@@ -1,6 +1,8 @@
 (function () {
+"use strict";
+
 var history = {
-	command : function historyCommand ( args ) {
+	command : function historyCommand ( args, cb ) {
 		var params = this.extractParams( args );
 
 		if ( params.error ) {
@@ -10,7 +12,14 @@ var history = {
 		this.fetchData( params, finish );
 
 		function finish ( results ) {
-			args.reply( results.random() );
+			var res = results.random();
+
+			if ( cb && cb.call ) {
+				cb( res );
+			}
+			else {
+				args.reply( res );
+			}
 		}
 	},
 
@@ -143,6 +152,7 @@ bot.addCommand({
 	},
 
 	description : 'Grabs a historical event from today\'s date or a date ' +
-		'given in MM-DD format. `/inhistory [MM-DD]`'
+		'given in MM-DD format. `/inhistory [MM-DD]`',
+	async : true
 });
 })();

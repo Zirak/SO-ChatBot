@@ -347,65 +347,6 @@ var commands = {
 	}
 };
 
-commands.define = (function () {
-var cache = Object.create( null );
-
-//cb is for internal usage by other commands/listeners
-return function ( args, cb ) {
-	//we already defined it, grab from memory
-	//unless you have alzheimer
-	//in which case, you have bigger problems
-	if ( cache[args] ) {
-		return finish( cache[args] );
-	}
-
-	IO.jsonp.ddg( 'define ' + args.toString(), finishCall );
-
-	//the duck talked back! either the xhr is complete, or the hallucinations
-	// are back
-	function finishCall ( resp ) {
-		var url = resp.AbstractURL,
-			def = resp.AbstractText;
-
-		bot.log( url, def, '/define finishCall input' );
-
-		//Webster returns the definition as
-		// wordName definition: the actual definition
-		// instead of just the actual definition
-		if ( resp.AbstractSource === 'Merriam-Webster' ) {
-			def = def.replace( args + ' definition: ', '' );
-			bot.log( def, '/define finishCall webster' );
-		}
-
-		if ( !def ) {
-			def = 'Could not find definition for ' + args +
-				'. Trying Urban Dictionary';
-			bot.getCommand( 'urban' ).exec( args );
-		}
-		else {
-			def = args + ': ' + def; //problem?
-			//the chat treats ( as a special character, so we escape!
-			def += ' [\\(source\\)](' + url + ')';
-			//add to cache
-			cache[ args ] = def;
-		}
-		bot.log( def, '/define finishCall output' );
-
-		finish( def );
-	}
-
-	function finish ( def ) {
-		if ( cb && cb.call ) {
-			cb( def );
-		}
-		else {
-			args.directreply( def );
-		}
-	}
-};
-}());
-commands.define.async = true;
-
 //cb is for internal usage by other commands/listeners
 commands.norris = function ( args, cb ) {
 	var chucky = 'http://api.icndb.com/jokes/random';
@@ -462,7 +403,7 @@ return function ( args, cb ) {
 		var msg;
 
 		if ( resp.result_type === 'no_results' ) {
-			msg = 'Y U NO MAEK SENSE!!!???!!?11 No results for ' + args;
+			msg = 'No definition found for ' + args;
 		}
 		else {
 			msg = formatTop( resp.list[0] );
@@ -490,7 +431,7 @@ return function ( args, cb ) {
 	function formatTag ( $0, $1 ) {
 		var href =
 			'http://urbandictionary.com/define.php?term=' +
-			encodeURIComponent( $1 )
+			encodeURIComponent( $1 );
 
 		return args.link( $0, href );
 	}
@@ -714,7 +655,6 @@ var descriptions = {
 	ban : 'Bans user(s) from using me. Lacking arguments, prints the banlist.' +
 		' `/ban [usr_id|usr_name, [...]`',
 	choose : '"Randomly" choose an option given. `/choose option0 option1 ...`',
-	define : 'Fetches definition for a given word. `/define something`',
 	die  : 'Kills me :(',
 	eval : 'Forwards message to javascript code-eval',
 	forget : 'Forgets a given command. `/forget cmdName`',
