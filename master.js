@@ -328,7 +328,7 @@ IO.jsonp.google = function ( query, cb ) {
 var bot = window.bot = {
 	invocationPattern : '!!',
 
-	commandRegex : /^\/\s*([\w\-]+)(?:\s(.+))?$/,
+	commandRegex : /^\/\s*([\w\-$]+)(?:\s(.+))?$/,
 	commands : {}, //will be filled as needed
 	commandDictionary : null, //it's null at this point, won't be for long
 	listeners : [],
@@ -6945,7 +6945,7 @@ function checkCommand ( cmd ) {
 	if ( somethingUndefined ) {
 		error = 'Illegal /learn object; see `/help learn`';
 	}
-	else if ( !/^[\w\-]+$/.test(cmd.name) ) {
+	else if ( !/^[\w\-$]+$/.test(cmd.name) ) {
 		error = 'Invalid command name';
 	}
 	else if ( bot.commandExists(cmd.name.toLowerCase()) ) {

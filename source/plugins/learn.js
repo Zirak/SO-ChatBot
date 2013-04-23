@@ -86,7 +86,7 @@ function checkCommand ( cmd ) {
 	if ( somethingUndefined ) {
 		error = 'Illegal /learn object; see `/help learn`';
 	}
-	else if ( !/^[\w\-]+$/.test(cmd.name) ) {
+	else if ( !/^[\w\-$]+$/.test(cmd.name) ) {
 		error = 'Invalid command name';
 	}
 	else if ( bot.commandExists(cmd.name.toLowerCase()) ) {
