@@ -1,6 +1,23 @@
 (function () {
+"use strict";
+
 var weather = {
 	latlon : function ( lat, lon, cb ) {
+		var nlat = Number( lat ),
+			nlon = Number( lon );
+
+		var errs = [];
+		if ( nlat < -180 || nlat > 180 ) {
+			errs.push( 'Latitude must be between -180 and 180' );
+		}
+		if ( nlon < -180 || nlon > 180 ) {
+			errs.push( 'Longitude must be between -180 and 180' );
+		}
+
+		if ( errs.length ) {
+			cb( errs.join('; ') );
+		}
+
 		IO.jsonp({
 			url : 'http://api.openweathermap.org/data/2.1/find/city',
 			jsonpName : 'callback',
@@ -75,8 +92,11 @@ function weatherCommand ( args ) {
 	if ( parts ) {
 		weather.latlon( parts[1], parts[2], args.reply.bind(args) );
 	}
-	else {
+	else if ( args.content ) {
 		weather.city( args.content, args.reply.bind(args) );
+	}
+	else {
+		return 'See `/help weather` for usage info';
 	}
 }
 
@@ -84,7 +104,7 @@ bot.addCommand({
 	name : 'weather',
 	fun : weatherCommand,
 	permissions : {
-		del : 'NONE',
+		del : 'NONE'
 	},
 	async : true,
 
