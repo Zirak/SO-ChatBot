@@ -47,7 +47,16 @@ var history = {
 			return ret;
 		}
 
-		var parts = /(\d{4})?(?:-|\/)?(\d{2})(?:-|\/)?(\d{2})/.exec( args );
+		var parts;
+
+		//simple YYYY
+		parts = /\d{4}/.exec( args );
+		if ( parts ) {
+			ret.year = Number( parts[0] );
+			return ret;
+		}
+
+		parts = /(\d{4})?(?:-|\/)?(\d{2})(?:-|\/)?(\d{2})/.exec( args );
 		if ( parts ) {
 			parts[1] && ( ret.year = Number(parts[1]) );
 			ret.month = Number( parts[2] );
@@ -87,7 +96,15 @@ var history = {
 	},
 
 	fetchData : function ( params, cb ) {
-		var param = [ this.monthName(params.month), params.day ].join( ' ' );
+		var titles = [];
+
+		if ( params.year && !params.month ) {
+			titles = [ params.year ];
+		}
+		else {
+			titles = [ this.monthName(params.month), params.day ];
+		}
+
 		var url = 'http://en.wikipedia.org/w/api.php';
 
 		var self = this;
@@ -99,7 +116,7 @@ var history = {
 				action : 'query',
 				prop : 'extracts',
 				indexpageids : true,
-				titles : param
+				titles : titles.join( ' ' )
 			},
 			fun : function ( resp ) {
 				self.handleResponse( resp, params, cb );

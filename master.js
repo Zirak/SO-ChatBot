@@ -6631,22 +6631,23 @@ var history = {
 		}
 	},
 
-	handleResponse : function ( resp, cb ) {
+	handleResponse : function ( resp, params, cb ) {
 		var query = resp.query,
 			html = query.pages[ query.pageids[0] ].extract;
 		var root = document.createElement( 'body' );
 		root.innerHTML = html; //forgive me
 
-		var headers = root.getElementsByTagName( 'h2' );
+		var headers = root.getElementsByTagName( 'h2' ),
+			events = getEvents( root, headers[1] );
 
-		cb( getEvents(root, headers[1]) );
+		cb( this.filter(events, params) );
 	},
 
 	extractParams : function ( args ) {
 		var ret = {},
 			date;
 
-		if ( !args.length ) {
+		if ( !args.length || args.toLowerCase() === 'today' ) {
 			date = new Date();
 
 			ret.month = date.getMonth() + 1;
@@ -6654,10 +6655,20 @@ var history = {
 			return ret;
 		}
 
-		var parts = /(\d{2})(?:-|\/)?(\d{2})/.exec( args );
-		if ( parts && parts.length === 3 ) {
-			ret.month = Number( parts[1] );
-			ret.day = Number( parts[2] );
+		var parts;
+
+		//simple YYYY
+		parts = /\d{4}/.exec( args );
+		if ( parts ) {
+			ret.year = Number( parts[0] );
+			return ret;
+		}
+
+		parts = /(\d{4})?(?:-|\/)?(\d{2})(?:-|\/)?(\d{2})/.exec( args );
+		if ( parts ) {
+			parts[1] && ( ret.year = Number(parts[1]) );
+			ret.month = Number( parts[2] );
+			ret.day = Number( parts[3] );
 		}
 		else {
 			return error();
@@ -6678,8 +6689,30 @@ var history = {
 		}
 	},
 
+	filter : function ( events, params ) {
+		//we only need to apply filtering for YYYY-MM-DD, not for MM-DD or YYYY
+		if ( !params.year || !params.month ) {
+			return events;
+		}
+
+		//limit to only the parameter year
+		return events.filter(function ( data ) {
+			var year = ( /^\d+/.exec(data) || [] )[ 0 ];
+
+			return Number( year ) === params.year;
+		});
+	},
+
 	fetchData : function ( params, cb ) {
-		var param = [ this.monthName(params.month), params.day ].join( ' ' );
+		var titles = [];
+
+		if ( params.year && !params.month ) {
+			titles = [ params.year ];
+		}
+		else {
+			titles = [ this.monthName(params.month), params.day ];
+		}
+
 		var url = 'http://en.wikipedia.org/w/api.php';
 
 		var self = this;
@@ -6691,10 +6724,10 @@ var history = {
 				action : 'query',
 				prop : 'extracts',
 				indexpageids : true,
-				titles : param
+				titles : titles.join( ' ' )
 			},
 			fun : function ( resp ) {
-				self.handleResponse( resp, cb );
+				self.handleResponse( resp, params, cb );
 			}
 		});
 	},
