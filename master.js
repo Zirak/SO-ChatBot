@@ -6658,14 +6658,12 @@ var history = {
 		var parts;
 
 		//simple YYYY
-		parts = /\d{4}/.exec( args );
-		if ( parts ) {
+		if ( parts = /\d{4}$/.exec(args) ) {
 			ret.year = Number( parts[0] );
-			return ret;
 		}
-
-		parts = /(\d{4})?(?:-|\/)?(\d{2})(?:-|\/)?(\d{2})/.exec( args );
-		if ( parts ) {
+		else if (
+			parts = /(?:(\d{4})(?:-|\/))?(\d{2})(?:-|\/)(\d{2})/.exec( args )
+		) {
 			parts[1] && ( ret.year = Number(parts[1]) );
 			ret.month = Number( parts[2] );
 			ret.day = Number( parts[3] );
@@ -6674,10 +6672,9 @@ var history = {
 			return error();
 		}
 
-		if (
-			ret.month < 1 || ret.month > 12 || ret.day < 1 || ret.day > 31 ||
-			( ret.month === 2 && ret.day > 29 )
-		) {
+		bot.log( ret, '/inhistory extractParams' );
+
+		if ( !this.paramsCheck(ret) ) {
 			return error();
 		}
 		return ret;
@@ -6687,6 +6684,27 @@ var history = {
 				error : 'That format confuses me! See `/help inhistory`'
 			};
 		}
+	},
+	paramsCheck : function ( params ) {
+		var year  = params[ year ],
+			month = params[ month ],
+			day   = params[ day ];
+
+		//fuck this shit, I have nowhere else to put it
+		if ( month === 2 && day > 29 ) {
+			return false;
+		}
+
+		//we're not very picky, since wikipedia may contain future dates
+		var yearCheck = year === undefined || year > 0;
+		var monthCheck = month === undefined || (
+			month >= 1 && month <= 12
+		);
+		var dayCheck = day === undefined || (
+			day >= 1 && day <= 31
+		);
+
+		return yearCheck && monthCheck && dayCheck;
 	},
 
 	filter : function ( events, params ) {
