@@ -6658,11 +6658,11 @@ var history = {
 		var parts;
 
 		//simple YYYY
-		if ( parts = /\d{4}$/.exec(args) ) {
+		if ( parts = /^\d{4}$/.exec(args) ) {
 			ret.year = Number( parts[0] );
 		}
 		else if (
-			parts = /(?:(\d{4})(?:-|\/))?(\d{2})(?:-|\/)(\d{2})/.exec( args )
+			parts = /^(?:(\d{4})(?:-|\/))?(\d{2})(?:-|\/)(\d{2})$/.exec( args )
 		) {
 			parts[1] && ( ret.year = Number(parts[1]) );
 			ret.month = Number( parts[2] );
@@ -8045,5 +8045,65 @@ IO.register( 'userregister', function ( user, room ) {
 			bot.adapter.reply(user.name) + " " + message,
 			room );
 	}
+});
+}());
+
+;
+(function () {
+var nulls = [
+	'Video not found (rule 35?)',
+	'I could not find such a video',
+	'The Lords of YouTube did not find your query favorable' ];
+function youtube ( args, cb ) {
+	IO.jsonp({
+		url : 'https://gdata.youtube.com/feeds/api/videos',
+		jsonpName : 'callback',
+		data : {
+			q : args.toString(),
+			'max-results' : 1,
+			v : 2,
+			alt : 'json'
+		},
+		fun : finish
+	});
+
+	//the response looks something like this:
+	/*
+	{
+	  tons of crap
+	  "entry" : [
+	    {
+	      lots of crap
+	      "link" : [
+	        {
+	          some crap
+			  "href" : what we care about
+	        }
+	      ]
+		  some more crap
+	    }
+	  ]
+	  and then some more
+	}
+	*/
+	function finish ( resp ) {
+		var entry = resp.feed.entry;
+		if ( !entry || !entry.length ) {
+			args.reply( nulls.random() );
+		}
+		else {
+			args.send( entry[0].link[0].href );
+		}
+	}
+}
+
+bot.addCommand({
+	name : 'youtube',
+	fun : youtube,
+	permissions : {
+		del : 'NONE',
+	},
+	description : 'Search Youtube. `/youtube query`',
+	async : true
 });
 }());

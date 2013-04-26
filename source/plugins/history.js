@@ -50,11 +50,11 @@ var history = {
 		var parts;
 
 		//simple YYYY
-		if ( parts = /\d{4}$/.exec(args) ) {
+		if ( parts = /^\d{4}$/.exec(args) ) {
 			ret.year = Number( parts[0] );
 		}
 		else if (
-			parts = /(?:(\d{4})(?:-|\/))?(\d{2})(?:-|\/)(\d{2})/.exec( args )
+			parts = /^(?:(\d{4})(?:-|\/))?(\d{2})(?:-|\/)(\d{2})$/.exec( args )
 		) {
 			parts[1] && ( ret.year = Number(parts[1]) );
 			ret.month = Number( parts[2] );
