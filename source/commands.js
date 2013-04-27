@@ -5,7 +5,7 @@ var commands = {
 	help : function ( args ) {
 		if ( args && args.length ) {
 
-			var cmd = bot.getCommand( args );
+			var cmd = bot.getCommand( args.toLowerCase() );
 			if ( cmd.error ) {
 				return cmd.error;
 			}
@@ -16,7 +16,7 @@ var commands = {
 		}
 
 		return 'https://github.com/Zirak/SO-ChatBot/wiki/' +
-		       'Interacting-with-the-bot';
+			'Interacting-with-the-bot';
 	},
 
 	listen : function ( msg ) {
