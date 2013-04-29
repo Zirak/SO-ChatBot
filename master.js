@@ -6833,7 +6833,7 @@ IO.register( 'input', function karma ( msgObj ) {
 	if (
 		//only accept new messages to prevent idiots like Nexxpresso
 		msgObj.event_type === 1 &&
-		(parts = /([\w\-]+)(\+\+|\-\-)/.exec(content))
+		(parts = /(\S+)(\+\+|\-\-)/.exec(content))
 	) {
 		vote( parts[1], parts[2], msgObj );
 	}
