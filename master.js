@@ -5433,6 +5433,10 @@ var converters = {
 	km : function ( km ) {
 		return converters.m( km * 1000 );
 	},
+	//centimeter: 1m = 100cm
+	cm : function ( cm ) {
+		return converters.m( cm / 100 );
+	},
 	//millimeters: 1m = 1mm / 1000
 	mm : function ( mm ) {
 		return converters.m( mm / 1000 );
