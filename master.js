@@ -8039,8 +8039,8 @@ IO.register( 'userregister', function ( user, room ) {
 
 		//2(weeks) = 1000(ms/s) * 60(s/min) * 60(min/hour) *
 		//           24(hour/day) * 7(day/week) * 2 = 1209600000ms
-		if (Date.now() - seniority < 12096e5) {
-			welcome();
+		if ( Date.now() - seniority < 12096e5 ) {
+			welcome( user.name, room );
 		}
 		finish();
 	}
@@ -8049,11 +8049,23 @@ IO.register( 'userregister', function ( user, room ) {
 		seen[ user.id ] = true;
 		localStorage.bot_users = JSON.stringify( seen );
 	}
+});
 
-	function welcome () {
-		bot.adapter.out.add(
-			bot.adapter.reply(user.name) + " " + message,
-			room );
+function welcome ( name, room ) {
+	bot.adapter.out.add(
+		bot.adapter.reply( name ) + " " + message,
+		room );
+}
+
+bot.addCommand({
+	name : 'welcome',
+	fun : function ( args ) {
+		if (!args) {
+			return message;
+		}
+		else {
+			welcome( args, args.get('roomid') );
+		}
 	}
 });
 }());
