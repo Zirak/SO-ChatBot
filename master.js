@@ -2076,11 +2076,11 @@ commands.tell = (function () {
 var invalidCommands = { tell : true, forget : true };
 
 return function ( args ) {
-	var props = args.parse();
-	bot.log( args.valueOf(), props, '/tell input' );
+	var parts = args.split( ' ');
+	bot.log( args.valueOf(), parts, '/tell input' );
 
-	var replyTo = props[ 0 ],
-		cmdName = props[ 1 ],
+	var replyTo = parts[ 0 ],
+		cmdName = parts[ 1 ],
 		cmd;
 
 	if ( !replyTo || !cmdName ) {
@@ -2119,9 +2119,7 @@ return function ( args ) {
 
 	var msgObj = Object.merge( args.get(), extended );
 	var cmdArgs = bot.Message(
-		//the + 2 is for the two spaces after each arg
-		// /tell replyTo1cmdName2args
-		args.slice( replyTo.length + cmdName.length + 2 ).trim(),
+		parts.slice( 2 ).join( ' ' ),
 		msgObj );
 	bot.log( cmdArgs, '/tell calling ' + cmdName );
 
