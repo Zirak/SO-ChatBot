@@ -57,12 +57,15 @@ function welcome ( name, room ) {
 bot.addCommand({
 	name : 'welcome',
 	fun : function ( args ) {
-		if (!args) {
+		if (!args.length) {
 			return message;
 		}
-		else {
-			welcome( args, args.get('roomid') );
-		}
-	}
+
+		welcome( args, args.get('roomid') );
+	},
+	permission : {
+		del : 'NONE'
+	},
+	description : 'Welcomes a user. `/welcome user`'
 });
 }());
