@@ -122,12 +122,20 @@ var replaceEntities = function ( entities ) {
 	return entities.slice( 1 ).split( ';' ).map( decodeEntity ).join( '' );
 };
 var decodeEntity = function ( entity ) {
+	if ( !entity ) {
+		return '';
+	}
+
 	//starts with a #, it's charcode
 	if ( entity[0] === '#' ) {
 		return decodeCharcodeEntity( entity );
 	}
 
-	return entities[ entity ] || entity;
+	if ( !entities.hasOwnProperty(entity) ) {
+		//I hate this so. so. so much. it's just wrong.
+		return '&' + entity +';';
+	}
+	return entities[ entity ];
 };
 var decodeCharcodeEntity = function ( entity ) {
 	//remove the # prefix
