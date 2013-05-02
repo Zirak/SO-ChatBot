@@ -13,8 +13,8 @@ var message = "Welcome to the JavaScript chat! Please review the " +
 
 IO.register( 'userregister', function ( user, room ) {
 	if (
-		Number(room) !== 17  || seen[user.id] ||
-		bot.isOwner(user.id) || user.reputation > 1000 || user.reputation < 20
+		Number( room ) !== 17  || seen[ user.id ] ||
+		bot.isOwner( user.id ) || user.reputation > 1000 || user.reputation < 20
 	) {
 		return;
 	}

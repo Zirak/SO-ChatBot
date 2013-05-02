@@ -71,6 +71,14 @@ Object.defineProperty( Array.prototype, 'random', {
 	writable : true
 });
 
+//define generic array methods on Array, like FF does
+[ 'forEach', 'map', 'filter', 'reduce' ].forEach(function ( name ) {
+	var fun = [][ name ]; //teehee
+	Array[ name ] = function () {
+		return fun.call.apply( fun, arguments );
+	};
+});
+
 String.prototype.indexesOf = function ( str, fromIndex ) {
 	//since we also use index to tell indexOf from where to begin, and since
 	// telling it to begin from where it found the match will cause it to just

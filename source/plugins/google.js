@@ -27,8 +27,7 @@ function google ( args, cb ) {
 	}
 
 	function format ( query, results ) {
-		return formatLink( query ) +
-			' ' +
+		return formatLink( query ) + ' ' +
 			results.map( formatResult ).join( ' ; ' );
 	}
 

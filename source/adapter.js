@@ -90,6 +90,8 @@ var polling = bot.adapter.in = {
 	// while
 	lastTimes : {},
 
+	firstPoll : true,
+
 	interval : 5000,
 
 	init : function () {
@@ -120,14 +122,61 @@ var polling = bot.adapter.in = {
 		// number do? (spoiler: it "works")
 		var socket = this.socket = new WebSocket( url + '?l=99999999999' );
 		socket.onmessage = this.ondata.bind( this );
+
+		socket.onclose = this.socketFail.bind( this );
 	},
 
 	ondata : function ( messageEvent ) {
 		this.pollComplete( messageEvent.data );
 	},
 
+	poll : function () {
+		if ( this.firstPoll ) {
+			this.initialPoll();
+			return;
+		}
+
+		var that = this;
+
+		IO.xhr({
+			url : '/events',
+			data : fkey( that.times ),
+			method : 'POST',
+			complete : that.pollComplete,
+			thisArg : that
+		});
+	},
+
+	initialPoll : function () {
+		bot.log( 'adapter: initial poll' );
+		var roomid = bot.adapter.roomid,
+			that = this;
+
+		IO.xhr({
+			url : '/chats/' + roomid + '/events/',
+			data : fkey({
+				since : 0,
+				mode : 'Messages',
+				msgCount : 0
+			}),
+			method : 'POST',
+			complete : finish
+		});
+
+		function finish ( resp ) {
+			resp = JSON.parse( resp );
+			bot.log( resp );
+
+			that.times[ 'r' + roomid ] = resp.time;
+			that.firstPoll = false;
+
+			that.loopage();
+		}
+	},
+
 	pollComplete : function ( resp ) {
 		if ( !resp ) {
+			this.loopage();
 			return;
 		}
 		resp = JSON.parse( resp );
@@ -147,6 +196,8 @@ var polling = bot.adapter.in = {
 
 		//handle all the input
 		IO.in.flush();
+		//and move on with our lives
+		this.loopage();
 	},
 
 	handleMessageObject : function ( msg ) {
@@ -240,6 +291,24 @@ var polling = bot.adapter.in = {
 		else if ( et === 4 ) {
 			IO.fire( 'userleave', msg );
 		}
+	},
+
+	socketFail : function () {
+		bot.log( 'adapter: socket failed', this );
+		this.socket.close();
+		this.socket = null;
+		this.loopage();
+	},
+
+	loopage : function () {
+		if ( this.socket ) {
+			return;
+		}
+
+		var that = this;
+		setTimeout(function () {
+			that.poll();
+		}, this.interval );
 	}
 };
 
