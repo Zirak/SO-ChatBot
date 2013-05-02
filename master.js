@@ -7300,7 +7300,7 @@ function nudgeListener ( args ) {
 (function () {
 /* jslint browser:true */
 /* global IO */
-
+/*
 var template = 'Please don\'t repeatatedly ask the same question or spam the room (looks like you repeated $0)';
 IO.register( 'input', function spamDetect ( msgObj ) {
 	var msg = bot.prepareMessage( msgObj );
@@ -7330,6 +7330,7 @@ IO.register( 'input', function spamDetect ( msgObj ) {
 function grabMessage ( ret, container ) {
 	return ret.concat( container.getElementsByClassName('message') );
 }
+*/
 })();
 
 ;
