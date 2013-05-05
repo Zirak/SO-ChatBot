@@ -6292,6 +6292,16 @@ bot.addCommand({
 }());
 
 ;
+//listener to help decide which Firefly episode to watch
+
+bot.listen( /(which |what |give me a )?firefly ep(isode)?/i, function () {
+	var names = ["Serenity", "The Train Job", "Bushwhacked", "Shindig", "Safe", "Our Mrs. Reynolds", "Jaynestown", "Out of Gas", "Ariel", "War Stories", "Trash", "The Message", "Heart of Gold", "Objects in Space"];
+
+	var r = Math.floor(Math.random() * 14);
+	return 'Episode {0} - {1}'.supplant(r, names[r]);
+});
+
+;
 (function () {
 var types = {
 	answer   : true,
@@ -7873,10 +7883,10 @@ IO.register( 'input', function ( msgObj ) {
 // => yes or no
 
 var chooseRe = /^\s*(choose|should)?.*\sor\s[^$]/i,
-	questionRe = new RegExp([
+	questionRe = new RegExp('\b(' +[
 		"am", "are", "can", "could", "do", "does", "is", "may", "might",
 		"shall", "should", "will", "would"
-	].map(RegExp.escape).join('|'), 'i');
+	].map(RegExp.escape).join('|') + ')\b', 'i');
 
 //personal pronouns to capitalize and their mapping
 //TODO: add possessives (should my cat => your cat should)
@@ -7887,7 +7897,7 @@ var capitalize = {
 	she : 'She',
 	they: 'They',
 	we  : 'You',
-	you : 'I',
+	you : 'I'
 };
 
 //will be filled in the build
@@ -7990,7 +8000,7 @@ bot.listen(chooseRe, function chooseListener ( msg ) {
 	}
 });
 
-bot.listen(questionRe, function questionListener ( msg ) {
+bot.listen(questionRe, function questionListener () {
 	//TODO: same question => same mapping (negative/positive, not specific)
 	return answers.random();
 });

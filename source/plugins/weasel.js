@@ -7,10 +7,10 @@
 // => yes or no
 
 var chooseRe = /^\s*(choose|should)?.*\sor\s[^$]/i,
-	questionRe = new RegExp([
+	questionRe = new RegExp('\b(' +[
 		"am", "are", "can", "could", "do", "does", "is", "may", "might",
 		"shall", "should", "will", "would"
-	].map(RegExp.escape).join('|'), 'i');
+	].map(RegExp.escape).join('|') + ')\b', 'i');
 
 //personal pronouns to capitalize and their mapping
 //TODO: add possessives (should my cat => your cat should)
@@ -21,7 +21,7 @@ var capitalize = {
 	she : 'She',
 	they: 'They',
 	we  : 'You',
-	you : 'I',
+	you : 'I'
 };
 
 //will be filled in the build
@@ -116,7 +116,7 @@ bot.listen(chooseRe, function chooseListener ( msg ) {
 	}
 });
 
-bot.listen(questionRe, function questionListener ( msg ) {
+bot.listen(questionRe, function questionListener () {
 	//TODO: same question => same mapping (negative/positive, not specific)
 	return answers.random();
 });
