@@ -2941,6 +2941,12 @@ IO.register( 'input', function STOP ( msgObj ) {
 	else if ( /(^)?HALT[\.!\?]?$/.test(sentence) ) {
 		res = 'HAMMERZEIT!';
 	}
+    else if ( /(^)?STOY[\.!\?]?$/.test(sentence) ) {
+        res = 'ZABIVAT\' VREMYA!';
+    }
+    else if ( /(^)?CAESUM[\.!\?]?$/.test(sentence) ) {
+        res = 'MALLEUS TEMPUS!';
+    }
 
 	if ( res ) {
 		bot.adapter.out.add( res, msgObj.room_id );
@@ -7310,43 +7316,6 @@ function nudgeListener ( args ) {
 }
 
 }());
-
-;
-(function () {
-/* jslint browser:true */
-/* global IO */
-/*
-var template = 'Please don\'t repeatatedly ask the same question or spam the room (looks like you repeated $0)';
-IO.register( 'input', function spamDetect ( msgObj ) {
-	var msg = bot.prepareMessage( msgObj );
-	var text = msg.content.toLowerCase(),
-		usrid = msg.get('user_id');
-
-	var tooShort = text.length < 50,
-		okUser = bot.users[usrid] && bot.users[usrid].reputation > 1000;
-	if ( tooShort || okUser ) {
-		return false;
-	}
-
-	var messages = Array.reduce(document.getElementsByClassName(
-		'monologue user-' + usrid
-	), grabMessage, [] );
-
-	var match = messages.first(function ( el ) {
-		return el.textContent.toLowerCase() === text;
-	});
-
-	if ( !match ) {
-		return;
-	}
-	bot.adapter.out.add();
-});
-
-function grabMessage ( ret, container ) {
-	return ret.concat( container.getElementsByClassName('message') );
-}
-*/
-})();
 
 ;
 (function () {

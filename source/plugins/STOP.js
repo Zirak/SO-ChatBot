@@ -14,6 +14,12 @@ IO.register( 'input', function STOP ( msgObj ) {
 	else if ( /(^)?HALT[\.!\?]?$/.test(sentence) ) {
 		res = 'HAMMERZEIT!';
 	}
+    else if ( /(^)?STOY[\.!\?]?$/.test(sentence) ) {
+        res = 'ZABIVAT\' VREMYA!';
+    }
+    else if ( /(^)?CAESUM[\.!\?]?$/.test(sentence) ) {
+        res = 'MALLEUS TEMPUS!';
+    }
 
 	if ( res ) {
 		bot.adapter.out.add( res, msgObj.room_id );
