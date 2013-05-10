@@ -7196,7 +7196,7 @@ function mustachify ( args ) {
 	//SO now allows non-gravatar images. the email_hash will be a link to the
 	// image in that case, prepended with a ! for some reason
 	if ( hash[0] === '!' ) {
-		finish( encodeURIComponent(hash.slice(1)) );
+		finish( encodeURIComponent(hash.slice(1)) + '#.png' );
 	}
 	else {
 		finish(
