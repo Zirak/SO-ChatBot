@@ -328,22 +328,6 @@ var commands = {
 			ret = commands.slice( start, end ).join( ', ' );
 
 		return ret + ' (page {0}/{1})'.supplant( page, total );;
-	},
-
-	purgecommands : function ( args ) {
-		var id = args.get( 'user_id' );
-		Object.keys( bot.commands ).map( mapper ).forEach( del );
-
-		return 'The deed has been done.';
-
-		function mapper ( cmdName ) {
-			return bot.commands[ cmdName ];
-		}
-		function del ( cmd ) {
-			if ( cmd.learned && cmd.canDel(id) ) {
-				cmd.del();
-			}
-		}
 	}
 };
 
@@ -669,7 +653,6 @@ var descriptions = {
 	norris : 'Random chuck norris joke!',
 	parse : 'Returns result of "parsing" message according to the my mini' +
 		'-macro capabilities (see online docs)',
-	purgecommands : 'Deletes all user-taught commands.',
 	refresh : 'Reloads the browser window I live in',
 	regex : 'Executes a regex against text input. `/regex text regex [flags]`',
 	tell : 'Redirect command result to user/message.' +
@@ -683,7 +666,7 @@ var descriptions = {
 var privilegedCommands = {
 	die : true, live  : true,
 	ban : true, unban : true,
-	refresh : true, purgecommands : true
+	refresh : true
 };
 //voting-based commands for unpriviledged users
 var communal = {
