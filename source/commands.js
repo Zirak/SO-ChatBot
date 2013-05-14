@@ -527,7 +527,7 @@ return function parse ( args, extraVars ) {
 		return ( container || {} )[ macro ];
 
 		function hasMacro ( obj ) {
-			return obj.hasOwnProperty( macro );
+			return obj && obj.hasOwnProperty( macro );
 		}
 	}
 };
