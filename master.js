@@ -5738,7 +5738,7 @@ var rUnits = /(-?\d+\.?\d*)\s*(\S+)(\s+(?:(?:to|in)\s+)?(\S+))?$/;
 // <number><unit> to|in <unit>
 //note that units are case-sensitive: F is the temperature, f is the length
 var convert = function ( inp, cb ) {
-	if ( inp.toString() === 'list' ) {
+	if ( inp.toLowerCase() === 'list' ) {
 		finish( listUnits().join(', ') );
 		return;
 	}
@@ -5773,9 +5773,15 @@ var convert = function ( inp, cb ) {
 		bot.log( res, '/convert answer' );
 
 		var reply;
-		if ( res.error ) {
+		// list was passed
+		if ( res.substr ) {
+			reply = res;
+		}
+		//an error occured
+		else if ( res.error ) {
 			reply = res.error;
 		}
+		//just a normal result
 		else {
 			reply = format( res );
 		}
