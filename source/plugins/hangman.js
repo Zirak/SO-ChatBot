@@ -135,8 +135,6 @@ var game = {
 		if ( guess.length > this.word.length ) {
 			return bot.adapter.codify( guess ) + ' is too long to fit';
 		}
-
-		λ
 	},
 
 	//unearth a portion of the secret word
