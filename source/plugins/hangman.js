@@ -1,9 +1,15 @@
 (function () {
 "use strict";
 
-var randomWord = function ( cb ) {
+var randomWord = function ( length, cb ) {
+	var url = 'http://sleepy-bastion-8674.herokuapp.com/';
+
+	if ( Number(length) ) {
+		url += '?length=' + length;
+	}
+
 	IO.jsonp({
-		url : 'http://sleepy-bastion-8674.herokuapp.com/',
+		url : url,
 		jsonpName : 'callback',
 		fun : complete //aaawwww yyeeaaahhhh
 	});
@@ -41,7 +47,7 @@ var game = {
 	end : true,
 	msg : null,
 
-	validGuessRegex : /^[\w\s]+$/,
+	validGuessRegex : /^[a-zA-Z]+$/,
 
 	receiveMessage : function ( msg ) {
 		this.msg = msg;
@@ -49,14 +55,14 @@ var game = {
 		if ( this.end ) {
 			this.new( msg );
 		}
-		else if ( msg.content ) {
+		else {
 			return this.handleGuess( msg );
 		}
 	},
 
 	new : function ( msg ) {
 		var self = this;
-		randomWord( finish );
+		randomWord( msg, finish );
 
 		function finish ( word ) {
 			bot.log( word + ' /hang random' );
@@ -69,7 +75,10 @@ var game = {
 			// hangman is codified
 			self.guessMade = true;
 			self.register();
-			self.receiveMessage( msg );
+
+			if ( msg.length && !Number(msg) ) {
+				self.receiveMessage( msg );
+			}
 		}
 	},
 
@@ -109,8 +118,12 @@ var game = {
 	},
 
 	checkGuess : function ( guess ) {
+		if ( !guess.length || Number(guess) ) {
+			return 'We\'re already playing!';
+		}
+
 		if ( !this.validGuessRegex.test(guess) ) {
-			return 'Only alphanumeric and whitespace characters allowed';
+			return 'I will only accept alpha characters';
 		}
 
 		//check if it was already submitted
@@ -120,8 +133,10 @@ var game = {
 
 		//or if it's the wrong length
 		if ( guess.length > this.word.length ) {
-			return bot.adapter.codify( guess ) + ' is longer than the phrase';
+			return bot.adapter.codify( guess ) + ' is too long to fit';
 		}
+
+		λ
 	},
 
 	//unearth a portion of the secret word
@@ -153,13 +168,13 @@ var game = {
 	//win the game
 	win : function () {
 		this.unregister();
-		return 'Correct! The phrase is ' + this.word + '.';
+		return 'Correct! The word is ' + this.word + '.';
 	},
 
 	//lose the game. less bitter messages? maybe.
 	lose : function () {
 		this.unregister();
-		return 'You people suck. The phrase was ' + this.word;
+		return 'You people suck. The word is ' + this.word;
 	},
 
 	winCheck : function () {

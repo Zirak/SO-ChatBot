@@ -297,7 +297,7 @@ IO.jsonp = function ( opts ) {
 	}
 
 	//append the data to be sent, in string form, to the url
-	opts.url += this.urlstringify( opts.data );
+	opts.url += '&' + this.urlstringify( opts.data );
 
 	script.src = opts.url;
 	document.head.appendChild( script );
