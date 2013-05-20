@@ -12,7 +12,7 @@ var bot = window.bot = {
 		invoked   : 0,
 		learned   : 0,
 		forgotten : 0,
-		start     : new Date,
+		start     : new Date
 	},
 	users : {}, //will be filled in build
 
@@ -39,7 +39,7 @@ var bot = window.bot = {
 
 		try {
 			//it wants to execute some code
-			if ( msg.startsWith('>') ) {
+			if ( /^c?>/.test(msg) ) {
 				this.eval( msg );
 			}
 			//it's a command

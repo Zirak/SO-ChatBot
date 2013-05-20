@@ -232,6 +232,14 @@ IO.CBuffer = function ( size ) {
 	return ret;
 };
 
+IO.injectScript = function ( url ) {
+	var script = document.createElement( 'script' );
+	script.src = url;
+
+	document.head.appendChild( script );
+	return script;
+};
+
 IO.xhr = function ( params ) {
 	//merge in the defaults
 	params = Object.merge({
@@ -344,7 +352,7 @@ var bot = window.bot = {
 		invoked   : 0,
 		learned   : 0,
 		forgotten : 0,
-		start     : new Date,
+		start     : new Date
 	},
 	users : {}, //will be filled in build
 
@@ -371,7 +379,7 @@ var bot = window.bot = {
 
 		try {
 			//it wants to execute some code
-			if ( msg.startsWith('>') ) {
+			if ( /^c?>/.test(msg) ) {
 				this.eval( msg );
 			}
 			//it's a command
@@ -797,9 +805,19 @@ var worker_code = atob( 'dmFyIGdsb2JhbCA9IHRoaXM7CgovKm1vc3QgZXh0cmEgZnVuY3Rpb25
 var blob = new Blob( [worker_code], { type : 'application/javascript' } ),
 	code_url = window.URL.createObjectURL( blob );
 
+IO.injectScript( 'https://raw.github.com/jashkenas/coffee-script/master/extras/coffee-script.js' );
+
 return function ( msg ) {
 	var worker = new Worker( code_url ),
 		timeout;
+
+	var code = msg.toString();
+	if ( code[0] === 'c' ) {
+		code = CoffeeScript.compile( code.replace(/^c>/, ''), {bare:1} );
+	}
+	else {
+		code = code.replace( /^>/, '' );
+	}
 
 	worker.onmessage = function ( evt ) {
 		var type = evt.data.event;
@@ -816,7 +834,7 @@ return function ( msg ) {
 	};
 
 	//and it all boils down to this...
-	worker.postMessage( msg.content.replace(/^>/, '') );
+	worker.postMessage( code );
 
 	function start () {
 		timeout = window.setTimeout(function() {

@@ -231,6 +231,14 @@ IO.CBuffer = function ( size ) {
 	return ret;
 };
 
+IO.injectScript = function ( url ) {
+	var script = document.createElement( 'script' );
+	script.src = url;
+
+	document.head.appendChild( script );
+	return script;
+};
+
 IO.xhr = function ( params ) {
 	//merge in the defaults
 	params = Object.merge({
