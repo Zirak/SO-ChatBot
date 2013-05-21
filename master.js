@@ -3826,7 +3826,7 @@ var cowsay = {
 			border = this.chooseBorders( lineCount );
 
 		var balloon = lines.map( baloonLine );
-		var boundaryOccurences = new Array( longest + 2 )
+		var boundaryOccurences = new Array( longest + 2 );
 		balloon.unshift( ' ' + boundaryOccurences.join('_') );
 		balloon.push   ( ' ' + boundaryOccurences.join('-') );
 
@@ -4299,8 +4299,16 @@ function google ( args, cb ) {
 	}
 
 	function format ( query, results ) {
-		return formatLink( query ) + ' ' +
+		var res = formatLink( query ) + ' ' +
 			results.map( formatResult ).join( ' ; ' );
+
+		if ( res.length > 200 ) {
+			res = results.map(function (r) {
+				return r.url;
+			}).join( ' ; ' );
+		}
+
+		return res;
 	}
 
 	function formatResult ( result ) {

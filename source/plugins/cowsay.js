@@ -61,7 +61,7 @@ var cowsay = {
 			border = this.chooseBorders( lineCount );
 
 		var balloon = lines.map( baloonLine );
-		var boundaryOccurences = new Array( longest + 2 )
+		var boundaryOccurences = new Array( longest + 2 );
 		balloon.unshift( ' ' + boundaryOccurences.join('_') );
 		balloon.push   ( ' ' + boundaryOccurences.join('-') );
 

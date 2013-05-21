@@ -27,8 +27,16 @@ function google ( args, cb ) {
 	}
 
 	function format ( query, results ) {
-		return formatLink( query ) + ' ' +
+		var res = formatLink( query ) + ' ' +
 			results.map( formatResult ).join( ' ; ' );
+
+		if ( res.length > 200 ) {
+			res = results.map(function (r) {
+				return r.url;
+			}).join( ' ; ' );
+		}
+
+		return res;
 	}
 
 	function formatResult ( result ) {
