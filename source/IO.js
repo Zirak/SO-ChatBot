@@ -213,7 +213,7 @@ IO.CBuffer = function ( size ) {
 	var ret = {
 		items : [],
 		pos : 0,
-		size : size,
+		size : size
 	};
 
 	ret.add = function ( item ) {

@@ -11,11 +11,21 @@ var message = "Welcome to the JavaScript chat! Please review the " +
 	"Please don't ask if you can ask or if anyone's around; just ask " +
 	"your question, and if anyone's free and interested they'll help.";
 
+function welcome ( name, room ) {
+	bot.adapter.out.add(
+		bot.adapter.reply( name ) + " " + message, room );
+}
+
 IO.register( 'userregister', function ( user, room ) {
+	var semiLegitUser = bot.isOwner( user.id ) ||
+		user.reputation > 1000 || user.reputation < 20;
+
 	if (
-		Number( room ) !== 17  || seen[ user.id ] ||
-		bot.isOwner( user.id ) || user.reputation > 1000 || user.reputation < 20
+		Number( room ) !== 17 || semiLegitUser  || seen[ user.id ]
 	) {
+		if ( semiLegitUser ) {
+			finish( true );
+		}
 		return;
 	}
 
@@ -26,33 +36,30 @@ IO.register( 'userregister', function ( user, room ) {
 		complete : complete
 	});
 
-	function complete (resp) {
-		//lulz, I'm parsing html with regexps
-		//OH GOD CTHULU DON'T EAT ME
-		//<td class="user-keycell">chat user since</td><td class="user-valuecell">YYYY-MM-DD</td>
-		var seniority = Date.parse(
-			/since.+cell">(\d{4}-\d{2}-\d{2})/
-				.exec(resp)[1]);
+	function complete ( resp ) {
+		//I'm parsing html with regexps. hopefully Cthulu won't eat me.
+		// <a href="/transcript/17">7</a>
+		// <a href="/transcript/17">47.1k</a>
+		var chatMessages = /transcript\/17(?:'|")>([\d\.]+)(k?)/.exec( resp );
 
-		//2(weeks) = 1000(ms/s) * 60(s/min) * 60(min/hour) *
-		//           24(hour/day) * 7(day/week) * 2 = 1209600000ms
-		if ( Date.now() - seniority < 12096e5 ) {
+		if ( !chatMessages || (
+			!chatMessages[ 2 ] || parseFloat( chatMessages[1] ) < 2
+		)) {
 			welcome( user.name, room );
 		}
 		finish();
 	}
 
-	function finish () {
-		seen[ user.id ] = true;
+	function finish ( unsee ) {
+		if ( unsee ) {
+			delete seen[ user.id ];
+		}
+		else {
+			seen[ user.id ] = true;
+		}
 		localStorage.bot_users = JSON.stringify( seen );
 	}
 });
-
-function welcome ( name, room ) {
-	bot.adapter.out.add(
-		bot.adapter.reply( name ) + " " + message,
-		room );
-}
 
 bot.addCommand({
 	name : 'welcome',
