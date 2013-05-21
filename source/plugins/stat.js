@@ -4,17 +4,15 @@ var template = '[{display_name}]({link}) '           +
 		'has {reputation} reputation, '              +
 		'earned {reputation_change_day} rep today, ' +
 		'asked {question_count} questions, '         +
-		'gave {answer_count} answers, '              +
-		'for a q:a ratio of {ratio}.\n';
+		'gave {answer_count} answers.';
 
-var extended_template = 'avg. rep/post: {avg_rep_post}. Badges: ' +
-		'{gold}g ' +
-		'{silver}s ' +
-		'{bronze}b ';
+var extended_template = 'avg. rep/post: {avg_rep_post}. ' +
+		'Badges: {gold}g {silver}s {bronze}b ';
 
 function stat ( msg, cb ) {
 	var args = msg.parse(),
-		id = args[ 0 ], extended = args[ 1 ] === 'extended';
+		id = args[ 0 ],
+		extended = ( args[1] === 'extended' );
 
 	if ( !id ) {
 		id = msg.get( 'user_id' );
@@ -27,8 +25,8 @@ function stat ( msg, cb ) {
 		return 'User Elusio proved elusive.';
 	}
 
-	//~10% chance
-	if ( Math.random() <= 0.1 ) {
+	//~5% chance
+	if ( Math.random() <= 0.05 ) {
 		finish( 'That dude sucks' );
 		return;
 	}
@@ -77,43 +75,25 @@ function handle_user_object ( user, extended ) {
 		res += extended_template.supplant( calc_extended_stats(user) );
 	}
 
+	bot.log( res, '/stat templated' );
 	return res;
 }
 
 function normalize_stats ( stats ) {
-	stats = Object.merge(
-		{
+	stats = Object.merge({
 			question_count        : 0,
 			answer_count          : 0,
 			reputation_change_day : 0
-		},
-		stats );
+		}, stats );
 
-	//for teh lulz
-	if ( !stats.question_count && stats.answer_count ) {
-		stats.ratio = "H̸̡̪̯ͨ͊̽̅̾̎Ȩ̬̩̾͛ͪ̈́̀́͘ ̶̧̨̱̹̭̯ͧ̾ͬC̷̙̲̝͖ͭ̏ͥͮ͟Oͮ͏̮̪̝͍M̲̖͊̒ͪͩͬ̚̚͜Ȇ̴̟̟͙̞ͩ͌͝S̨̥̫͎̭ͯ̿̔̀ͅ";
-	}
-	else if ( !stats.answer_count && stats.question_count ) {
-		stats.ratio = "TO͇̹̺ͅƝ̴ȳ̳ TH̘Ë͖́̉ ͠P̯͍̭O̚​N̐Y̡";
-	}
-	else if ( !stats.answer_count && !stats.question_count ) {
-		stats.ratio = 'http://i.imgur.com/F79hP.png';
-	}
-	else {
-		stats.ratio =
-			Math.ratio( stats.question_count, stats.answer_count );
-	}
-
-	bot.log( stats, '/stat normalized' );
 	return stats;
 }
 
 function calc_extended_stats ( stats ) {
 	stats = Object.merge( stats.badge_counts, stats );
 
-	stats.avg_rep_post =
-		( stats.reputation /
-		  ( stats.question_count + stats.answer_count )
+	stats.avg_rep_post = (
+			stats.reputation / ( stats.question_count + stats.answer_count )
 		).maxDecimal( 2 );
 
 	//1 / 0 === Infinity
