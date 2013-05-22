@@ -32,7 +32,7 @@ IO.register( 'userjoin', function ( msgObj ) {
 var addInfos = (function () {
 	bot.log( joined, 'user addInfos' );
 
-	Object.iterate( joined, sendRequest )
+	Object.iterate( joined, sendRequest );
 
 	function sendRequest ( room, ids ) {
 		//TODO: filter ids to remove already listed users

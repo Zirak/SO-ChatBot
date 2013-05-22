@@ -41,7 +41,7 @@ function timer ( msg ) {
 		return 'Action {0} not recognized, see `/help timer`'.supplant( act );
 	}
 	return actions[ act ]( name );
-};
+}
 
 bot.addCommand({
 	name : 'timer',

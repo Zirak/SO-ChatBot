@@ -120,7 +120,7 @@ var commands = {
 			}
 
 			if ( id < 0 ) {
-				msg = 'Cannot find user {0}.'
+				msg = 'Cannot find user {0}.';
 			}
 			else if ( !bot.banlist.contains(id) ) {
 				msg = 'User {0} isn\'t in mindjail.';
@@ -327,7 +327,7 @@ var commands = {
 
 			ret = commands.slice( start, end ).join( ', ' );
 
-		return ret + ' (page {0}/{1})'.supplant( page, total );;
+		return ret + ' (page {0}/{1})'.supplant( page, total );
 	}
 };
 

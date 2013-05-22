@@ -19,20 +19,16 @@ function youtube ( args, cb ) {
 	//the response looks something like this:
 	/*
 	{
-	  tons of crap
-	  "entry" : [
-	    {
-	      lots of crap
-	      "link" : [
-	        {
-	          some crap
-			  "href" : what we care about
-	        }
-	      ]
-		  some more crap
-	    }
-	  ]
-	  and then some more
+		tons of crap
+		"entry" : [{
+			lots of crap
+			"link" : [{
+				some crap
+				"href" : what we care about
+			}]
+			some more crap
+		}]
+		and then some more
 	}
 	*/
 	function finish ( resp ) {
@@ -50,7 +46,7 @@ bot.addCommand({
 	name : 'youtube',
 	fun : youtube,
 	permissions : {
-		del : 'NONE',
+		del : 'NONE'
 	},
 	description : 'Search Youtube. `/youtube query`',
 	async : true

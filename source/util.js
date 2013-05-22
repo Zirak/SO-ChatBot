@@ -146,8 +146,9 @@ Function.prototype.memoize = function () {
 
 //async memoizer
 Function.prototype.memoizeAsync = function ( hasher ) {
-	var cache = Object.create( null ), fun = this,
-		hasher = hasher || function (x) { return x; };
+	var cache = Object.create( null ), fun = this;
+
+	hasher = hasher || function (x) { return x; };
 
 	return function memoized () {
 		var args = [].slice.call( arguments ),
@@ -263,7 +264,7 @@ Date.timeSince = function ( d0, d1 ) {
 	d1 = d1 || (new Date);
 
 	var ms = d1 - d0,
-		delay, interval;
+		delay;
 
 	var delays = [
 		{

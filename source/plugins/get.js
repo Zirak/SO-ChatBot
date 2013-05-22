@@ -117,7 +117,7 @@ function get ( args, cb ) {
 			return post.link;
 		}).join ( ' ; ');
 	}
-};
+}
 
 bot.addCommand({
 	name : 'get',

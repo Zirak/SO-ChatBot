@@ -1026,8 +1026,9 @@ Function.prototype.memoize = function () {
 
 //async memoizer
 Function.prototype.memoizeAsync = function ( hasher ) {
-	var cache = Object.create( null ), fun = this,
-		hasher = hasher || function (x) { return x; };
+	var cache = Object.create( null ), fun = this;
+
+	hasher = hasher || function (x) { return x; };
 
 	return function memoized () {
 		var args = [].slice.call( arguments ),
@@ -1143,7 +1144,7 @@ Date.timeSince = function ( d0, d1 ) {
 	d1 = d1 || (new Date);
 
 	var ms = d1 - d0,
-		delay, interval;
+		delay;
 
 	var delays = [
 		{
@@ -1677,7 +1678,7 @@ var commands = {
 			}
 
 			if ( id < 0 ) {
-				msg = 'Cannot find user {0}.'
+				msg = 'Cannot find user {0}.';
 			}
 			else if ( !bot.banlist.contains(id) ) {
 				msg = 'User {0} isn\'t in mindjail.';
@@ -1884,7 +1885,7 @@ var commands = {
 
 			ret = commands.slice( start, end ).join( ', ' );
 
-		return ret + ' (page {0}/{1})'.supplant( page, total );;
+		return ret + ' (page {0}/{1})'.supplant( page, total );
 	}
 };
 
@@ -2362,7 +2363,7 @@ bot.adapter = {
 			return;
 		}
 		this.fkey = fkey.value;
-		this.roomid = /\d+/.exec(location)[ 0 ];
+		this.roomid = Number( /\d+/.exec(location)[0] );
 		this.site = /chat\.(\w+)/.exec( location )[ 1 ];
 
 		this.in.init();
@@ -2438,9 +2439,10 @@ var polling = bot.adapter.in = {
 
 	interval : 5000,
 
-	init : function () {
+	init : function ( roomid ) {
 		var that = this,
-			roomid = bot.adapter.roomid;
+			providedRoomid = ( roomid !== undefined );
+		roomid = roomid || bot.adapter.roomid;
 
 		IO.xhr({
 			url : '/ws-auth',
@@ -2455,46 +2457,14 @@ var polling = bot.adapter.in = {
 			resp = JSON.parse( resp );
 			bot.log( resp );
 
-			that.openSocket( resp.url );
+			that.openSocket( resp.url, providedRoomid );
 		}
-	},
-
-	openSocket : function ( url ) {
-		//chat sends an l query string parameter. seems to be the same as the
-		// since xhr parameter, but I didn't know what that was either so...
-		//putting in 0 got the last shitload of messages, so what does a high
-		// number do? (spoiler: it "works")
-		var socket = this.socket = new WebSocket( url + '?l=99999999999' );
-		socket.onmessage = this.ondata.bind( this );
-
-		socket.onclose = this.socketFail.bind( this );
-	},
-
-	ondata : function ( messageEvent ) {
-		this.pollComplete( messageEvent.data );
-	},
-
-	poll : function () {
-		if ( this.firstPoll ) {
-			this.initialPoll();
-			return;
-		}
-
-		var that = this;
-
-		IO.xhr({
-			url : '/events',
-			data : fkey( that.times ),
-			method : 'POST',
-			complete : that.pollComplete,
-			thisArg : that
-		});
 	},
 
 	initialPoll : function () {
 		bot.log( 'adapter: initial poll' );
 		var roomid = bot.adapter.roomid,
-			that = this;
+		that = this;
 
 		IO.xhr({
 			url : '/chats/' + roomid + '/events/',
@@ -2516,6 +2486,45 @@ var polling = bot.adapter.in = {
 
 			that.loopage();
 		}
+	},
+
+	openSocket : function ( url, discard ) {
+		//chat sends an l query string parameter. seems to be the same as the
+		// since xhr parameter, but I didn't know what that was either so...
+		//putting in 0 got the last shitload of messages, so what does a high
+		// number do? (spoiler: it "works")
+		var socket = this.socket = new WebSocket( url + '?l=99999999999' );
+
+		if ( discard ) {
+			socket.onmessage = function () {
+				socket.close();
+			};
+		}
+		else {
+			socket.onmessage = this.ondata.bind( this );
+			socket.onclose = this.socketFail.bind( this );
+		}
+	},
+
+	ondata : function ( messageEvent ) {
+		this.pollComplete( messageEvent.data );
+	},
+
+	poll : function () {
+		if ( this.firstPoll ) {
+			this.initialPoll();
+			return;
+		}
+
+		var that = this;
+
+		IO.xhr({
+			url : '/events',
+			data : fkey( that.times ),
+			method : 'POST',
+			complete : that.pollComplete,
+			thisArg : that
+		});
 	},
 
 	pollComplete : function ( resp ) {
@@ -2635,6 +2644,24 @@ var polling = bot.adapter.in = {
 		else if ( et === 4 ) {
 			IO.fire( 'userleave', msg );
 		}
+	},
+
+	leaveRoom : function ( roomid, cb ) {
+		if ( roomid === bot.adapter.roomid ) {
+			cb( 'base_room' );
+			return;
+		}
+
+		IO.xhr({
+			method : 'POST',
+			url : '/chats/leave/' + roomid,
+			data : fkey({
+				quiet : true
+			}),
+			complete : function () {
+				cb();
+			}
+		});
 	},
 
 	socketFail : function () {
@@ -2797,7 +2824,7 @@ IO.register( 'userjoin', function ( msgObj ) {
 var addInfos = (function () {
 	bot.log( joined, 'user addInfos' );
 
-	Object.iterate( joined, sendRequest )
+	Object.iterate( joined, sendRequest );
 
 	function sendRequest ( room, ids ) {
 		//TODO: filter ids to remove already listed users
@@ -3586,9 +3613,9 @@ var convert = function ( inp, cb ) {
 	}
 
 	var num = Number( parts[1] ),
-	    unit = parts[ 2 ],
-	    target = parts[ 4 ] || '',
-	    moneh = false;
+		unit = parts[ 2 ],
+		target = parts[ 4 ] || '',
+		moneh = false;
 	bot.log( num, unit, target, '/convert input' );
 
 	unit   = unalias( unit );
@@ -4256,7 +4283,7 @@ function get ( args, cb ) {
 			return post.link;
 		}).join ( ' ; ');
 	}
-};
+}
 
 bot.addCommand({
 	name : 'get',
@@ -5111,7 +5138,7 @@ function spec ( args ) {
 		var name = args.escape( obj.name );
 		return '[' + name + '](http://es5.github.com/#' + obj.section + ')';
 	}
-};
+}
 
 bot.addCommand({
 	name : 'spec',
@@ -5306,6 +5333,68 @@ function get_matching_message ( re, onlyBefore ) {
 
 ;
 (function () {
+"use strict";
+
+var summon = function ( args ) {
+	var room = Number( args );
+
+	if ( !room ) {
+		return 'That aint no room I ever heard of! ' +
+			'`/help summon` for usage info';
+	}
+
+	bot.adapter.in.init( room );
+};
+var unsummon = function ( args, cb ) {
+	var room = Number( args );
+
+	if ( !room ) {
+		return 'That aint no room I ever heard of! ' +
+			'`/help summon` for usage info';
+	}
+
+	bot.adapter.in.leaveRoom( room, function ( err ) {
+		if ( err === 'base_room' ) {
+			finish( 'I can\'t leave my home.' );
+		}
+	});
+
+	function finish ( res ) {
+		if ( cb && cb.call ) {
+			cb( res );
+		}
+		else {
+			args.reply( res );
+		}
+	}
+};
+
+bot.addCommand( bot.CommunityCommand({
+	name : 'summon',
+	fun : summon,
+	permissions : {
+		del : 'NONE',
+		use : 'OWNER'
+	},
+	description : 'Say boopidi bee and in the room I shall appear. '+
+		'`/summon roomid`'
+}));
+
+bot.addCommand( bot.CommunityCommand({
+	name : 'unsummon',
+	fun : unsummon,
+	permissions : {
+		del : 'NONE',
+		use : 'OWNER'
+	},
+	description : 'Chant zippidi dee and from the room I shall take my leave. ' +
+		'`/unsummon roomid`'
+}));
+
+})();
+
+;
+(function () {
 var timers = Object.create( null ),
 	id = 0;
 
@@ -5348,7 +5437,7 @@ function timer ( msg ) {
 		return 'Action {0} not recognized, see `/help timer`'.supplant( act );
 	}
 	return actions[ act ]( name );
-};
+}
 
 bot.addCommand({
 	name : 'timer',
@@ -5520,7 +5609,7 @@ var undo = {
 		bot.log( id, '/undo input' );
 
 		if ( !id ) {
-			id = this.last_id
+			id = this.last_id;
 		}
 
 		if ( !id ) {
@@ -5559,7 +5648,7 @@ var undo = {
 				msg = 'TimeError: Could not reach 88mph';
 			}
 			else if ( /only delete your own/i.test(resp) ) {
-				 //...I can't think of anything clever
+				//...I can't think of anything clever
 				msg = 'I can only delete my own messages';
 			}
 			else {
@@ -5949,20 +6038,16 @@ function youtube ( args, cb ) {
 	//the response looks something like this:
 	/*
 	{
-	  tons of crap
-	  "entry" : [
-	    {
-	      lots of crap
-	      "link" : [
-	        {
-	          some crap
-			  "href" : what we care about
-	        }
-	      ]
-		  some more crap
-	    }
-	  ]
-	  and then some more
+		tons of crap
+		"entry" : [{
+			lots of crap
+			"link" : [{
+				some crap
+				"href" : what we care about
+			}]
+			some more crap
+		}]
+		and then some more
 	}
 	*/
 	function finish ( resp ) {
@@ -5980,7 +6065,7 @@ bot.addCommand({
 	name : 'youtube',
 	fun : youtube,
 	permissions : {
-		del : 'NONE',
+		del : 'NONE'
 	},
 	description : 'Search Youtube. `/youtube query`',
 	async : true

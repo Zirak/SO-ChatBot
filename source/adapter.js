@@ -18,7 +18,7 @@ bot.adapter = {
 			return;
 		}
 		this.fkey = fkey.value;
-		this.roomid = /\d+/.exec(location)[ 0 ];
+		this.roomid = Number( /\d+/.exec(location)[0] );
 		this.site = /chat\.(\w+)/.exec( location )[ 1 ];
 
 		this.in.init();
@@ -94,9 +94,10 @@ var polling = bot.adapter.in = {
 
 	interval : 5000,
 
-	init : function () {
+	init : function ( roomid ) {
 		var that = this,
-			roomid = bot.adapter.roomid;
+			providedRoomid = ( roomid !== undefined );
+		roomid = roomid || bot.adapter.roomid;
 
 		IO.xhr({
 			url : '/ws-auth',
@@ -111,46 +112,14 @@ var polling = bot.adapter.in = {
 			resp = JSON.parse( resp );
 			bot.log( resp );
 
-			that.openSocket( resp.url );
+			that.openSocket( resp.url, providedRoomid );
 		}
-	},
-
-	openSocket : function ( url ) {
-		//chat sends an l query string parameter. seems to be the same as the
-		// since xhr parameter, but I didn't know what that was either so...
-		//putting in 0 got the last shitload of messages, so what does a high
-		// number do? (spoiler: it "works")
-		var socket = this.socket = new WebSocket( url + '?l=99999999999' );
-		socket.onmessage = this.ondata.bind( this );
-
-		socket.onclose = this.socketFail.bind( this );
-	},
-
-	ondata : function ( messageEvent ) {
-		this.pollComplete( messageEvent.data );
-	},
-
-	poll : function () {
-		if ( this.firstPoll ) {
-			this.initialPoll();
-			return;
-		}
-
-		var that = this;
-
-		IO.xhr({
-			url : '/events',
-			data : fkey( that.times ),
-			method : 'POST',
-			complete : that.pollComplete,
-			thisArg : that
-		});
 	},
 
 	initialPoll : function () {
 		bot.log( 'adapter: initial poll' );
 		var roomid = bot.adapter.roomid,
-			that = this;
+		that = this;
 
 		IO.xhr({
 			url : '/chats/' + roomid + '/events/',
@@ -172,6 +141,45 @@ var polling = bot.adapter.in = {
 
 			that.loopage();
 		}
+	},
+
+	openSocket : function ( url, discard ) {
+		//chat sends an l query string parameter. seems to be the same as the
+		// since xhr parameter, but I didn't know what that was either so...
+		//putting in 0 got the last shitload of messages, so what does a high
+		// number do? (spoiler: it "works")
+		var socket = this.socket = new WebSocket( url + '?l=99999999999' );
+
+		if ( discard ) {
+			socket.onmessage = function () {
+				socket.close();
+			};
+		}
+		else {
+			socket.onmessage = this.ondata.bind( this );
+			socket.onclose = this.socketFail.bind( this );
+		}
+	},
+
+	ondata : function ( messageEvent ) {
+		this.pollComplete( messageEvent.data );
+	},
+
+	poll : function () {
+		if ( this.firstPoll ) {
+			this.initialPoll();
+			return;
+		}
+
+		var that = this;
+
+		IO.xhr({
+			url : '/events',
+			data : fkey( that.times ),
+			method : 'POST',
+			complete : that.pollComplete,
+			thisArg : that
+		});
 	},
 
 	pollComplete : function ( resp ) {
@@ -291,6 +299,24 @@ var polling = bot.adapter.in = {
 		else if ( et === 4 ) {
 			IO.fire( 'userleave', msg );
 		}
+	},
+
+	leaveRoom : function ( roomid, cb ) {
+		if ( roomid === bot.adapter.roomid ) {
+			cb( 'base_room' );
+			return;
+		}
+
+		IO.xhr({
+			method : 'POST',
+			url : '/chats/leave/' + roomid,
+			data : fkey({
+				quiet : true
+			}),
+			complete : function () {
+				cb();
+			}
+		});
 	},
 
 	socketFail : function () {

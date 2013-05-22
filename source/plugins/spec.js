@@ -20,7 +20,7 @@ function spec ( args ) {
 		var name = args.escape( obj.name );
 		return '[' + name + '](http://es5.github.com/#' + obj.section + ')';
 	}
-};
+}
 
 bot.addCommand({
 	name : 'spec',

@@ -159,9 +159,9 @@ var convert = function ( inp, cb ) {
 	}
 
 	var num = Number( parts[1] ),
-	    unit = parts[ 2 ],
-	    target = parts[ 4 ] || '',
-	    moneh = false;
+		unit = parts[ 2 ],
+		target = parts[ 4 ] || '',
+		moneh = false;
 	bot.log( num, unit, target, '/convert input' );
 
 	unit   = unalias( unit );
