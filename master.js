@@ -4567,12 +4567,28 @@ function addCustomCommand ( command ) {
 	bot.addCommand( cmd );
 }
 function makeCustomCommand ( command ) {
+	var replyPattern = /^<(\w*)>/i,
+		output = command.output.replace( replyPattern, '' ).trim(),
+		replyMethod = ( replyPattern.exec(command.output) || [0, 'user'] )[ 1 ];
+
 	bot.log( command, '/learn makeCustomCommand' );
+
 	return function ( args ) {
 		bot.log( args, command.name + ' input' );
 
-		var cmdArgs = bot.Message( command.output, args.get() );
-		return parse.exec( cmdArgs, command.input.exec(args) );
+		var cmdArgs = bot.Message( output, args.get() ),
+			res = parse.exec( cmdArgs, command.input.exec(args) );
+
+		switch ( replyMethod ) {
+		case '':
+			args.send( res );
+			break;
+		case 'msg':
+			args.directreply( res );
+			break;
+		default:
+			args.reply( res );
+		}
 	};
 }
 
