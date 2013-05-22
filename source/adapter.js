@@ -9,6 +9,8 @@ bot.adapter = {
 	fkey   : null,
 	//used in commands calling the SO API
 	site   : null,
+	//our user id
+	user_id : CHAT.user.current().id,
 
 	//not a necessary function, used in here to set some variables
 	init : function () {

@@ -487,8 +487,12 @@ var bot = window.bot = {
 
 	validateMessage : function ( msgObj ) {
 		var msg = msgObj.content.trim();
-		//all we really care about
-		return msg.startsWith( this.invocationPattern );
+
+		return (
+			//make sure we don't process our own messages,
+			msgObj.user_id !== bot.adapter.user_id &&
+			//and the message begins with the invocationPattern
+			msg.startsWith( this.invocationPattern ) );
 	},
 
 	addCommand : function ( cmd ) {
@@ -2354,6 +2358,8 @@ bot.adapter = {
 	fkey   : null,
 	//used in commands calling the SO API
 	site   : null,
+	//our user id
+	user_id : CHAT.user.current().id,
 
 	//not a necessary function, used in here to set some variables
 	init : function () {
