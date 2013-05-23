@@ -23,8 +23,13 @@ var commands = {
 		return bot.callListeners( msg ) || bot.giveUpMessage( msg );
 	},
 
-	eval : function ( msg ) {
-		return bot.eval( msg );
+	eval : function ( msg, cb ) {
+		return bot.eval( msg, cb );
+	},
+	coffee : function ( msg, cb ) {
+		//yes, this is a bit yucky
+		var arg = bot.Message( 'c> ' + msg, msg.get() );
+		return commands.eval( arg, cb );
 	},
 
 	live : function () {
@@ -330,6 +335,8 @@ var commands = {
 		return ret + ' (page {0}/{1})'.supplant( page, total );
 	}
 };
+
+commands.eval.async = commands.coffee.async = true;
 
 //cb is for internal usage by other commands/listeners
 commands.norris = function ( args, cb ) {

@@ -811,7 +811,7 @@ var blob = new Blob( [worker_code], { type : 'application/javascript' } ),
 
 IO.injectScript( 'https://raw.github.com/jashkenas/coffee-script/master/extras/coffee-script.js' );
 
-return function ( msg ) {
+return function ( msg, cb ) {
 	var worker = new Worker( code_url ),
 		timeout;
 
@@ -849,12 +849,18 @@ return function ( msg ) {
 	function finish ( result ) {
 		clearTimeout( timeout );
 		worker.terminate();
-		msg.directreply( result );
+
+		if ( cb && cb.call ) {
+			cb( result );
+		}
+		else {
+			msg.directreply( result );
+		}
 	}
 };
 
 function dressUpAnswer ( answerObj ) {
-	console.log( answerObj, 'eval answerObj' );
+	bot.log( answerObj, 'eval answerObj' );
 	var answer = answerObj.answer,
 		log = answerObj.log,
 		result;
@@ -1585,8 +1591,13 @@ var commands = {
 		return bot.callListeners( msg ) || bot.giveUpMessage( msg );
 	},
 
-	eval : function ( msg ) {
-		return bot.eval( msg );
+	eval : function ( msg, cb ) {
+		return bot.eval( msg, cb );
+	},
+	coffee : function ( msg, cb ) {
+		//yes, this is a bit yucky
+		var arg = bot.Message( 'c> ' + msg, msg.get() );
+		return commands.eval( arg, cb );
 	},
 
 	live : function () {
@@ -1892,6 +1903,8 @@ var commands = {
 		return ret + ' (page {0}/{1})'.supplant( page, total );
 	}
 };
+
+commands.eval.async = commands.coffee.async = true;
 
 //cb is for internal usage by other commands/listeners
 commands.norris = function ( args, cb ) {
@@ -4488,22 +4501,6 @@ bot.addCommand({
 	async : true
 });
 })();
-
-;
-(function () {
-"use strict";
-
-bot.addCommand({
-	name : 'karma',
-	fun : function ( args ) {
-		var removal = new Date('2013-05-20');
-		var msg = 'Deprecated command (will be removed in aprrox. {0}). ' +
-			'If you have any objections, comment [here](https://github.com/Zirak/SO-ChatBot/issues/34)';
-		return msg.supplant(Date.timeSince(Date.now(), removal));
-	}
-});
-
-}());
 
 ;
 (function () {

@@ -9,7 +9,7 @@ var blob = new Blob( [worker_code], { type : 'application/javascript' } ),
 
 IO.injectScript( 'https://raw.github.com/jashkenas/coffee-script/master/extras/coffee-script.js' );
 
-return function ( msg ) {
+return function ( msg, cb ) {
 	var worker = new Worker( code_url ),
 		timeout;
 
@@ -47,12 +47,18 @@ return function ( msg ) {
 	function finish ( result ) {
 		clearTimeout( timeout );
 		worker.terminate();
-		msg.directreply( result );
+
+		if ( cb && cb.call ) {
+			cb( result );
+		}
+		else {
+			msg.directreply( result );
+		}
 	}
 };
 
 function dressUpAnswer ( answerObj ) {
-	console.log( answerObj, 'eval answerObj' );
+	bot.log( answerObj, 'eval answerObj' );
 	var answer = answerObj.answer,
 		log = answerObj.log,
 		result;
