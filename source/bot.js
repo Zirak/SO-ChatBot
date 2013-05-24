@@ -374,11 +374,11 @@ bot.Message = function ( text, msgObj ) {
 
 		reply : function ( resp ) {
 			var prefix = bot.adapter.reply( msgObj.user_name );
-			this.send( prefix + ' ' + resp );
+			bot.adapter.out.add( prefix + ' ' + resp );
 		},
 		directreply : function ( resp ) {
 			var prefix = bot.adapter.directreply( msgObj.message_id );
-			this.send( prefix + ' ' + resp );
+			bot.adapter.out.add( prefix + ' ' + resp );
 		},
 
 		//parse() parses the original message

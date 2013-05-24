@@ -714,11 +714,11 @@ bot.Message = function ( text, msgObj ) {
 
 		reply : function ( resp ) {
 			var prefix = bot.adapter.reply( msgObj.user_name );
-			this.send( prefix + ' ' + resp );
+			bot.adapter.out.add( prefix + ' ' + resp );
 		},
 		directreply : function ( resp ) {
 			var prefix = bot.adapter.directreply( msgObj.message_id );
-			this.send( prefix + ' ' + resp );
+			bot.adapter.out.add( prefix + ' ' + resp );
 		},
 
 		//parse() parses the original message
@@ -2157,6 +2157,15 @@ return function ( args ) {
 	var cmdArgs = bot.Message(
 		parts.slice( 2 ).join( ' ' ),
 		msgObj );
+
+	//this is an ugly, but functional thing, much like your high-school prom date
+	//to make sure a command's output goes through us, we simply override the
+	// standard ways to do output
+	var reply = cmdArgs.reply.bind( cmdArgs ),
+		directreply = cmdArgs.directreply.bind( cmdArgs );
+
+	cmdArgs.reply = cmdArgs.directreply = cmdArgs.send = callFinished;
+
 	bot.log( cmdArgs, '/tell calling ' + cmdName );
 
 	//if the command is async, it'll accept a callback
@@ -2173,10 +2182,10 @@ return function ( args ) {
 		}
 
 		if ( direct ) {
-			cmdArgs.directreply( res );
+			directreply( res );
 		}
 		else {
-			cmdArgs.reply( res );
+			reply( res );
 		}
 	}
 };
