@@ -707,18 +707,19 @@ bot.Message = function ( text, msgObj ) {
 	var ret = Object( text );
 	ret.content = text;
 
+	var rawSend = function ( text ) {
+		bot.adapter.out.add( text, msgObj.room_id );
+	};
 	var deliciousObject = {
-		send : function ( resp ) {
-			bot.adapter.out.add( resp, msgObj.room_id );
-		},
+		send : rawSend,
 
 		reply : function ( resp ) {
 			var prefix = bot.adapter.reply( msgObj.user_name );
-			bot.adapter.out.add( prefix + ' ' + resp );
+			rawSend( prefix + ' ' + resp );
 		},
 		directreply : function ( resp ) {
 			var prefix = bot.adapter.directreply( msgObj.message_id );
-			bot.adapter.out.add( prefix + ' ' + resp );
+			rawSend( prefix + ' ' + resp );
 		},
 
 		//parse() parses the original message
