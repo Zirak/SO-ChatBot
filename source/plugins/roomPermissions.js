@@ -61,9 +61,10 @@ function muteList () {
 }
 
 IO.register( 'userregister', function permissionCb ( user, room ) {
+	bot.log( user, room, 'permissionCb' );
 	var id = user.id;
 
-	if ( room !== ownerRoom || bot.isOwner(id) || muted[id] ) {
+	if ( Number(room) !== ownerRoom || bot.isOwner(id) || muted[id] ) {
 		bot.log( 'not giving voice', user, room );
 		return;
 	}

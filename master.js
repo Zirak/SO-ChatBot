@@ -2840,10 +2840,10 @@ var join = function ( msgObj ) {
 };
 
 IO.register( 'userjoin', function ( msgObj ) {
-	bot.log( msgObj, 'userjoin' );
+	bot.log( msgObj, bot.users[msgObj.user_id], 'userjoin' );
 
 	var user = bot.users[ msgObj.user_id ];
-	if ( user ) {
+	if ( !user ) {
 		join( msgObj );
 	}
 	else {
@@ -4899,9 +4899,10 @@ function muteList () {
 }
 
 IO.register( 'userregister', function permissionCb ( user, room ) {
+	bot.log( user, room, 'permissionCb' );
 	var id = user.id;
 
-	if ( room !== ownerRoom || bot.isOwner(id) || muted[id] ) {
+	if ( Number(room) !== ownerRoom || bot.isOwner(id) || muted[id] ) {
 		bot.log( 'not giving voice', user, room );
 		return;
 	}

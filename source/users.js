@@ -18,10 +18,10 @@ var join = function ( msgObj ) {
 };
 
 IO.register( 'userjoin', function ( msgObj ) {
-	bot.log( msgObj, 'userjoin' );
+	bot.log( msgObj, bot.users[msgObj.user_id], 'userjoin' );
 
 	var user = bot.users[ msgObj.user_id ];
-	if ( user ) {
+	if ( !user ) {
 		join( msgObj );
 	}
 	else {
