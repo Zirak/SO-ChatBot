@@ -4859,9 +4859,11 @@ function giveVoice ( id, cb ) {
 
 	function finish () {
 		delete muted[ id ];
-		console.dir( muted );
-		localStorage.bot_muted = JSON.strict( muted );
-		cb && ( cb.apply(null, arguments) );
+
+		if ( cb ) {
+			localStorage.bot_muted = JSON.stringify( muted );
+			cb && ( cb.apply(null, arguments) );
+		}
 	}
 }
 function takeVoice ( id, reason, cb ) {
@@ -4880,9 +4882,8 @@ function takeVoice ( id, reason, cb ) {
 
 	function finish () {
 		muted[ id ] = { reason : reason };
-		console.dir( muted );
-		localStorage.bot_muted = JSON.stringify( muted );
 
+		localStorage.bot_muted = JSON.stringify( muted );
 		cb.apply( null, arguments );
 	}
 }
