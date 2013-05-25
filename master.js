@@ -625,9 +625,16 @@ bot.Command = function ( cmd ) {
 		cmd[ 'can' + perm ] = function ( usrid ) {
 			var canDo = this.permissions[ low ];
 
-			return canDo === 'ALL' || canDo !== 'NONE' && (
-				( canDo === 'OWNER' && bot.isOwner(usrid) ) ||
-				canDo.indexOf( usrid ) > -1 );
+			if ( canDo === 'ALL' ) {
+				return true;
+			}
+			else if ( canDo === 'NONE' ) {
+				return false;
+			}
+			else if ( canDo === 'OWNER' ) {
+				return bot.isOwner( usrid );
+			}
+			return canDo.indexOf( usrid ) > -1;
 		};
 	});
 
@@ -4946,7 +4953,7 @@ bot.addCommand({
 		}
 	},
 
-	permission : {
+	permissions : {
 		del : 'NONE',
 		use : 'OWNER'
 	},

@@ -108,7 +108,7 @@ bot.addCommand({
 		}
 	},
 
-	permission : {
+	permissions : {
 		del : 'NONE',
 		use : 'OWNER'
 	},
