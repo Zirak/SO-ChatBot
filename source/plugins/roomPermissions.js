@@ -60,11 +60,11 @@ function muteList () {
 	}).join( '; ' );
 }
 
-IO.register( 'userjoin', function ( msgObj ) {
-	var id = msgObj.user_id,
-		room = msgObj.room_id;
+IO.register( 'userregister', function permissionCb ( user, room ) {
+	var id = user.id;
 
-	if ( room !== ownerRoom || muted[id] ) {
+	if ( room !== ownerRoom || bot.isOwner(id) || muted[id] ) {
+		bot.log( 'not giving voice', user, room );
 		return;
 	}
 
