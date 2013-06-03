@@ -4995,7 +4995,7 @@ function stringMuteList () {
 	var base = 'http://chat.stackoverflow.com/transcript/message/';
 
 	return keys.map(function ( k ) {
-		return bot.adapter.link( k, base + keys[k].invokingId );
+		return bot.adapter.link( k, base + muted[k].invokingId );
 	}).join( '; ' );
 }
 
