@@ -720,8 +720,8 @@ bot.Message = function ( text, msgObj ) {
 	var deliciousObject = {
 		send : rawSend,
 
-		reply : function ( resp ) {
-			var prefix = bot.adapter.reply( msgObj.user_name );
+		reply : function ( resp, user_name ) {
+			var prefix = bot.adapter.reply( user_name || msgObj.user_name );
 			rawSend( prefix + ' ' + resp );
 		},
 		directreply : function ( resp ) {
@@ -768,6 +768,29 @@ bot.Message = function ( text, msgObj ) {
 				return name === username;
 			}) || -1;
 		}.memoize(),
+
+		findUsername : (function () {
+			var cache = {};
+
+			return function ( id, cb ) {
+				if ( cache[id] ) {
+					finish( cache[id] );
+				}
+				else if ( bot.users[id] ) {
+					finish( bot.users[id].name );
+				}
+				else {
+					bot.users.request( bot.adapter.roomId, id, reqFinish );
+				}
+
+				function reqFinish ( user ) {
+					finish( user.name );
+				}
+				function finish ( name ) {
+					cb( cache[id] = name );
+				}
+			};
+		})(),
 
 		codify : bot.adapter.codify.bind( bot.adapter ),
 		escape : bot.adapter.escape.bind( bot.adapter ),
@@ -2834,7 +2857,7 @@ bot.users = {};
 
 var joined = {};
 
-var join = function ( msgObj ) {
+var join = function ( msgObj, cb ) {
 	var room = msgObj.room_id;
 
 	if ( !joined[room] ) {
@@ -2843,17 +2866,21 @@ var join = function ( msgObj ) {
 
 	joined[ room ].push( msgObj.user_id );
 
-	addInfos();
+	addInfos( cb );
 };
 
-IO.register( 'userjoin', function ( msgObj ) {
+IO.register( 'userjoin', function userjoin ( msgObj ) {
 	bot.log( msgObj, bot.users[msgObj.user_id], 'userjoin' );
 
 	var user = bot.users[ msgObj.user_id ];
 	if ( !user ) {
-		join( msgObj );
+		join( msgObj, finish );
 	}
 	else {
+		finish( user );
+	}
+
+	function finish ( user ) {
 		IO.fire( 'userregister', user, msgObj.room_id );
 	}
 });
@@ -2862,42 +2889,47 @@ IO.register( 'userjoin', function ( msgObj ) {
 
 //this function throttles to give the chat a chance to fetch the user info
 // itself, and to queue up several joins in a row
-var addInfos = (function () {
+var addInfos = (function ( cb ) {
 	bot.log( joined, 'user addInfos' );
 
-	Object.iterate( joined, sendRequest );
+	Object.iterate( joined, function ( room, ids ) {
+		requestInfo( room, ids, cb );
+	});
 
-	function sendRequest ( room, ids ) {
-		//TODO: filter ids to remove already listed users
-		if ( !ids.length ) {
-			return;
-		}
-
-		IO.xhr({
-			method : 'POST',
-			url : '/user/info',
-
-			data : {
-				ids : ids.join(),
-				roomId : room
-			},
-			complete : finish
-		});
-
-		function finish ( resp ) {
-			resp = JSON.parse( resp );
-			resp.users.forEach( addUser );
-
-			joined = {};
-		}
-
-		function addUser ( user ) {
-			bot.users[ user.id ] = user;
-			//temporary. TODO: add higher-level event handling to bot obj
-			IO.fire( 'userregister', user, room );
-		}
-	}
+	joined = {};
 }).throttle( 5000 );
+
+function requestInfo ( room, ids, cb ) {
+	if ( !Array.isArray(ids) ) {
+		ids = [ ids ];
+	}
+
+	if ( !ids.length ) {
+		return;
+	}
+
+	IO.xhr({
+		method : 'POST',
+		url : '/user/info',
+
+		data : {
+			ids : ids.join(),
+			roomId : room
+		},
+		complete : finish
+	});
+
+	function finish ( resp ) {
+		resp = JSON.parse( resp );
+		resp.users.forEach( addUser );
+	}
+
+	function addUser ( user ) {
+		bot.users[ user.id ] = user;
+		cb( user );
+	}
+}
+bot.users.request = requestInfo;
 
 function loadUsers () {
 	if ( window.users ) {
@@ -4853,6 +4885,19 @@ if ( bot.adapter.roomid !== ownerRoom ) {
 
 var muted = JSON.parse( localStorage.bot_muted || '{}' );
 
+function checkMuted () {
+	var now = Date.now();
+
+	Object.iterate( muted, function ( id, obj ) {
+		if ( obj.endDate < now ) {
+			giveVoice( id );
+		}
+	});
+
+	setTimeout( checkMuted, 60 * 1000 );
+}
+setTimeout( checkMuted, 60 * 1000 );
+
 function giveVoice ( id, cb ) {
 	bot.log( 'giving voice to ' + id );
 
@@ -4869,21 +4914,25 @@ function giveVoice ( id, cb ) {
 	});
 
 	function finish () {
+		var args = [].slice.call( arguments );
+		args.unshift( id );
+
 		delete muted[ id ];
 
 		if ( cb ) {
 			localStorage.bot_muted = JSON.stringify( muted );
-			cb && ( cb.apply(null, arguments) );
+			cb && ( cb.apply(null, args) );
 		}
 	}
 }
-function takeVoice ( id, reason, cb ) {
-	bot.log( 'taking voice from %s because: %s', id, reason );
+function takeVoice ( params, cb ) {
+	bot.log( 'taking voice', params );
+
 	IO.xhr({
 		method : 'POST',
 		url : '/rooms/setuseraccess/' + ownerRoom,
 		data : {
-			aclUserId : id,
+			aclUserId : params.id,
 			fkey : bot.adapter.fkey,
 			userAccess : 'remove'
 		},
@@ -4892,17 +4941,36 @@ function takeVoice ( id, reason, cb ) {
 	});
 
 	function finish () {
-		muted[ id ] = { reason : reason };
+		muted[ params.id ] = {
+			name : params.name,
+			invokingId : params.invokingId,
+			endDate : calcEndDate( params.duration ).getTime()
+		};
 
 		localStorage.bot_muted = JSON.stringify( muted );
 		cb.apply( null, arguments );
 	}
-}
 
-function muteList () {
-	return Object.keys( muted ).map(function ( k ) {
-		return k + ' (' + muted[ k ].reason + ')';
-	}).join( '; ' );
+	function calcEndDate ( duration ) {
+		var ret = new Date(),
+			mod = duration.slice( -1 ),
+			delta = Number( duration.slice(0, -1) );
+
+		var modifiers = {
+			m : function ( offset ) {
+				ret.setMinutes( ret.getMinutes() + offset );
+			},
+			h : function ( offset ) {
+				ret.setHours( ret.getHours() + offset );
+			},
+			d : function ( offset ) {
+				ret.setDate( ret.getDate() + offset );
+			}
+		};
+		modifiers[ mod ]( delta );
+
+		return ret;
+	}
 }
 
 IO.register( 'userregister', function permissionCb ( user, room ) {
@@ -4917,39 +4985,79 @@ IO.register( 'userregister', function permissionCb ( user, room ) {
 	giveVoice( id );
 });
 
+function stringMuteList () {
+	var keys = Object.keys( muted );
+
+	if ( !keys.length ) {
+		return 'Nobody is muted';
+	}
+
+	var base = 'http://chat.stackoverflow.com/transcript/message/';
+
+	return keys.map(function ( k ) {
+		return bot.adapter.link( k, base + keys[k].invokingId );
+	}).join( '; ' );
+}
+
+function infoFromName ( name, args ) {
+	var ret = {
+		id : name
+	};
+
+	if ( /\D/.test(name) ) {
+		ret.id = args.findUserId( name );
+	}
+
+	if ( ret.id < 0 ) {
+		ret.error = 'User ' + name + ' not found';
+	}
+	return ret;
+}
+
+function parseDuration ( str ) {
+	var parts = /\d+([dhm]?)/.exec( str );
+	if ( !parts ) {
+		return null;
+	}
+
+	if ( !parts[1] ) {
+		parts[ 0 ] += 'm';
+	}
+	return parts[ 0 ];
+}
+
 bot.addCommand({
 	name : 'mute',
 	fun : function mute ( args ) {
-		var parts = args.parse();
+		var parts = args.parse(), userID, duration;
 
 		if ( !parts.length ) {
-			return muteList();
+			return stringMuteList();
 		}
 		else if ( parts.length < 2 ) {
-			return 'Please give mute reason, see `/help mute`';
+			return 'Please give mute duration, see `/help mute`';
 		}
 
 		bot.log( parts, '/mute input' );
 
-		var id = parts[ 0 ],
-			name;
-		if ( /\D/.test(id) ) {
-			name = id;
-			id = args.findUserid( id );
-		}
-		if ( id < 0 ) {
-			return 'User ' + name + ' not found';
+		userID = infoFromName( parts[0], args );
+		if ( userID.error ) {
+			return userID.error;
 		}
 
-		takeVoice( id, parts[1], finish );
+		duration = parseDuration( parts[1] );
+		if ( !duration ) {
+			return 'I don\'t know how to follow that format, see `/help mute`';
+		}
+
+		takeVoice({
+			id : userID.id,
+			invokingId : args.get('message_id'),
+			duration : duration
+		}, finish );
 
 		function finish () {
-			var msg = 'Muted user ' + id;
-			if ( name ) {
-				msg += ' (' + name + ')';
-			}
-
-			args.reply( msg );
+			args.reply( 'Muted user {0} for {1}'.supplant(userID.id, duration) );
 		}
 	},
 
@@ -4957,37 +5065,31 @@ bot.addCommand({
 		del : 'NONE',
 		use : 'OWNER'
 	},
-	description : 'Mutes a user. `/mute usrid reason`'
+	description : 'Mutes a user. `/mute usrid duration` ' +
+		'Duration should be in the format `n[mhd]` for n minutes/hours/days. ' +
+		'If only n is provided, minutes is assumed.'
 });
 
 bot.addCommand({
 	name : 'unmute',
 	fun : function umute ( args ) {
-		var id = args.parse()[ 0 ],
-			name;
+		var parts = args.parse();
 
-		bot.log( id, '/unmute input' );
+		bot.log( parts, '/unmute input' );
 
-		if ( !id ) {
+		if ( !parts.length ) {
 			return 'Who shall I unmute?';
 		}
 
-		if ( /\D/.test(id) ) {
-			name = id;
-			id = args.findUserid( id );
-		}
-		if ( id < 0 ) {
-			return 'User ' + name + ' not found';
+		var userID = infoFromName( parts[0], args );
+		if ( userID.error ) {
+			return userID.error;
 		}
 
-		giveVoice( id, finish );
+		giveVoice( userID.id, finish );
 
 		function finish () {
-			var msg = 'Unmuted user ' + id;
-			if ( name ) {
-				msg += ' (' + name + ')';
-			}
-			args.reply( msg );
+			args.reply( 'Unmuted user ' + userID.id );
 		}
 	},
 

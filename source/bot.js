@@ -380,8 +380,8 @@ bot.Message = function ( text, msgObj ) {
 	var deliciousObject = {
 		send : rawSend,
 
-		reply : function ( resp ) {
-			var prefix = bot.adapter.reply( msgObj.user_name );
+		reply : function ( resp, user_name ) {
+			var prefix = bot.adapter.reply( user_name || msgObj.user_name );
 			rawSend( prefix + ' ' + resp );
 		},
 		directreply : function ( resp ) {
@@ -428,6 +428,29 @@ bot.Message = function ( text, msgObj ) {
 				return name === username;
 			}) || -1;
 		}.memoize(),
+
+		findUsername : (function () {
+			var cache = {};
+
+			return function ( id, cb ) {
+				if ( cache[id] ) {
+					finish( cache[id] );
+				}
+				else if ( bot.users[id] ) {
+					finish( bot.users[id].name );
+				}
+				else {
+					bot.users.request( bot.adapter.roomId, id, reqFinish );
+				}
+
+				function reqFinish ( user ) {
+					finish( user.name );
+				}
+				function finish ( name ) {
+					cb( cache[id] = name );
+				}
+			};
+		})(),
 
 		codify : bot.adapter.codify.bind( bot.adapter ),
 		escape : bot.adapter.escape.bind( bot.adapter ),
