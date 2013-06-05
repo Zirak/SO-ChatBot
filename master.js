@@ -4679,6 +4679,9 @@ loadCommands();
 (function () {
 "use strict";
 
+var unexsito = 'User {0} was not found (if the user is not in room {1}, pass ' +
+		'a user-id instead of a username).';
+
 function mustachify ( args ) {
 	var usrid = args.content;
 
@@ -4698,7 +4701,13 @@ function mustachify ( args ) {
 	bot.log( usrid, '/mustache mapped' );
 
 	if ( usrid < 0 || !bot.users.hasOwnProperty(usrid) ) {
-		return 'User {0} was not found.'.supplant( usrid );
+		return unexsito.supplant( usrid, bot.adapter.roomid );
+	}
+	else if ( Number(usrid) === bot.adapter.user_id ) {
+		return [
+			'Nobody puts a mustache on me. Again.',
+			'Mustache me once, shame on you. Mustache me ---twice--- 12 times...'
+		].random();
 	}
 
 	var hash = bot.users[ usrid ].email_hash;
@@ -6018,7 +6027,6 @@ bot.addCommand({
 	description : 'Search Wikipedia. `/wiki term`',
 	async : true
 });
-
 })();
 
 ;

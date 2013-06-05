@@ -59,5 +59,4 @@ bot.addCommand({
 	description : 'Search Wikipedia. `/wiki term`',
 	async : true
 });
-
 })();
