@@ -3737,6 +3737,12 @@ bot.listen(
 //this and the history.js file are nearly identical, as they both manually have
 // to grab and parse from the wikimedia API
 
+var notFoundMsgs = [
+	'No definition found.',
+	'It means I aint got time to learn your $5 words',
+	'My pocket dictionary just isn\'t good enough for you.'
+];
+
 var define = {
 	command : function defineCommand ( args, cb ) {
 		bot.log( args, '/define input' );
@@ -3748,12 +3754,12 @@ var define = {
 			var res = results[ 0 ];
 
 			if ( !res ) {
-				res = 'No definition found';
+				res = notFoundMsgs.random();
 			}
 			else {
 				res = bot.adapter.link(
-					args, 'http://en.wiktionary.org/wiki?curid=' + pageid ) +
-					' ' + res;
+					args, 'http://en.wiktionary.org/wiki?curid=' + pageid
+				) + ' ' + res;
 			}
 
 			if ( cb && cb.call ) {
@@ -3802,60 +3808,6 @@ var define = {
 	}
 };
 
-//cb is for internal usage by other commands/listeners
-function command ( args, cb ) {
-	//we already defined it, grab from memory
-	//unless you have alzheimer
-	//in which case, you have bigger problems
-	if ( cache[args] ) {
-		return finish( cache[args] );
-	}
-
-	IO.jsonp.ddg( 'define ' + args.toString(), finishCall );
-
-	//the duck talked back! either the xhr is complete, or the hallucinations
-	// are back
-	function finishCall ( resp ) {
-		var url = resp.AbstractURL,
-			def = resp.AbstractText;
-
-		bot.log( url, def, '/define finishCall input' );
-
-		//Webster returns the definition as
-		// wordName definition: the actual definition
-		// instead of just the actual definition
-		if ( resp.AbstractSource === 'Merriam-Webster' ) {
-			def = def.replace( args + ' definition: ', '' );
-			bot.log( def, '/define finishCall webster' );
-		}
-
-		if ( !def ) {
-			//if no definition was found, try Urban Dictionary
-			bot.getCommand( 'urban' ).exec( args );
-			return;
-		}
-		else {
-			def = args + ': ' + def; //problem?
-			//the chat treats ( as a special character, so we escape!
-			def += ' [\\(source\\)](' + url + ')';
-			//add to cache
-			cache[ args ] = def;
-		}
-		bot.log( def, '/define finishCall output' );
-
-		finish( def );
-	}
-
-	function finish ( def ) {
-		if ( cb && cb.call ) {
-			cb( def );
-		}
-		else {
-			args.directreply( def );
-		}
-	}
-}
-
 //example of partial extract:
 /*
   <h2> Translingual</h2>\n\n
@@ -3888,10 +3840,10 @@ function getEvents ( root, stopNode ) {
 	return flatten(matches);
 }
 function flatten ( lis ) {
-	return [].map.call(lis, extract);
+	return [].map.call( lis, extract );
 
 	function extract ( li ) {
-		return( li.firstChild.data );
+		return li.firstChild.data;
 	}
 }
 
@@ -6003,6 +5955,8 @@ bot.addCommand({
 	description : 'Welcomes a user. `/welcome user`'
 });
 }());
+
+;
 
 ;
 (function () {
