@@ -4091,7 +4091,7 @@ function google ( args, cb ) {
 
 		if ( res.length > 200 ) {
 			res = results.map(function (r) {
-				return r.url;
+				return r.unescapedUrl;
 			}).join( ' ; ' );
 		}
 
@@ -4100,7 +4100,7 @@ function google ( args, cb ) {
 
 	function formatResult ( result ) {
 		var title = IO.decodehtmlEntities( result.titleNoFormatting );
-		return args.link( title, result.url );
+		return args.link( title, result.unescapedUrl );
 	}
 	function formatLink ( query ) {
 		return args.link(
