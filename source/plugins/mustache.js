@@ -1,7 +1,7 @@
 (function () {
 "use strict";
 
-var unexsito = 'User {0} was not found (if the user is not in room {1}, pass ' +
+var unexisto = 'User {0} was not found (if the user is not in room {1}, pass ' +
 		'a user-id instead of a username).';
 
 function mustachify ( args ) {
@@ -23,7 +23,7 @@ function mustachify ( args ) {
 	bot.log( usrid, '/mustache mapped' );
 
 	if ( usrid < 0 || !bot.users.hasOwnProperty(usrid) ) {
-		return unexsito.supplant( usrid, bot.adapter.roomid );
+		return unexisto.supplant( usrid, bot.adapter.roomid );
 	}
 	else if ( Number(usrid) === bot.adapter.user_id ) {
 		return [
@@ -52,8 +52,7 @@ function mustachify ( args ) {
 }
 
 function linkCheck ( suspect ) {
-	return ( suspect.startsWith('http') || suspect.startsWith('www') ) &&
-		/png|gif|jpe?g$/.test( suspect );
+	return suspect.startsWith( 'http' ) || suspect.startsWith( 'www' );
 }
 
 bot.addCommand({
