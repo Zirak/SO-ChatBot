@@ -4074,6 +4074,13 @@ bot.addCommand({
 }());
 
 ;
+// issue #51 https://github.com/Zirak/SO-ChatBot/issues/51
+
+function github ( args ) {
+	var parts = /([\S]+)\/([\S]+)/.exec( args );
+}
+
+;
 (function () {
 var nulls = [
 	'The Google contains no such knowledge',
@@ -4670,7 +4677,7 @@ function makeCustomCommand ( command ) {
 	};
 
 	function extractPattern () {
-		var matches = ( replyPatterns.exec(command.output) || [''] )[ 1 ];
+		var matches = ( replyPatterns.exec(command.output) || [,''] )[ 1 ];
 		console.log(matches, '/learn extractPattern');
 		return matches.slice(1, -1);
 	}

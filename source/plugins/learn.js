@@ -95,7 +95,7 @@ function makeCustomCommand ( command ) {
 	};
 
 	function extractPattern () {
-		var matches = ( replyPatterns.exec(command.output) || [''] )[ 1 ];
+		var matches = ( replyPatterns.exec(command.output) || [,''] )[ 1 ];
 		console.log(matches, '/learn extractPattern');
 		return matches.slice(1, -1);
 	}
