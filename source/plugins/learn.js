@@ -3,6 +3,9 @@
 var parse = bot.getCommand( 'parse' );
 var storage = JSON.parse( localStorage.bot_learn || '{}' );
 
+var replyPatterns = /^(<>|<user>|<msg>)/i,
+	onlyReply = new RegExp( replyPatterns.source + '$', 'i' );
+
 function learn ( args ) {
 	bot.log( args, '/learn input' );
 
@@ -66,11 +69,12 @@ function addCustomCommand ( command ) {
 	bot.addCommand( cmd );
 }
 function makeCustomCommand ( command ) {
-	var replyPattern = /^<(\w*)>/i,
-		output = command.output.replace( replyPattern, '' ).trim(),
-		replyMethod = ( replyPattern.exec(command.output) || [0, 'user'] )[ 1 ];
+	var output = command.output.replace( replyPatterns, '' ).trim(),
+		replyMethod = extractPattern();
 
 	bot.log( command, '/learn makeCustomCommand' );
+	console.log(replyMethod, '/learn replyMethod');
+
 
 	return function ( args ) {
 		bot.log( args, command.name + ' input' );
@@ -89,6 +93,12 @@ function makeCustomCommand ( command ) {
 			args.reply( res );
 		}
 	};
+
+	function extractPattern () {
+		var matches = ( replyPatterns.exec(command.output) || [''] )[ 1 ];
+		console.log(matches, '/learn extractPattern');
+		return matches.slice(1, -1);
+	}
 }
 
 //return a truthy value (an error message) if it's invalid, falsy if it's
@@ -107,6 +117,9 @@ function checkCommand ( cmd ) {
 	}
 	else if ( bot.commandExists(cmd.name.toLowerCase()) ) {
 		error = 'Command ' + cmd.name + ' already exists';
+	}
+	else if ( onlyReply.test(cmd.output) ) {
+		error = 'Please enter some output';
 	}
 
 	return error;
