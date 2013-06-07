@@ -2073,7 +2073,12 @@ var macroRegex = /(?:.|^)\$(\w+)(?:\((.*?)\))?/g;
 
 //extraVars is for internal usage via other commands
 return function parse ( args, extraVars ) {
-	var msgObj = ( args.get && args.get() ) || {};
+	var isMsg = !!args.get,
+		//filler objects, solves
+		// https://github.com/Zirak/SO-ChatBot/issues/66
+		msgObj = isMsg ? args.get() : {},
+		user = isMsg ? bot.users[ args.get('user_id') ] : {};
+
 	extraVars = extraVars || {};
 	bot.log( args, extraVars, '/parse input' );
 
@@ -2127,8 +2132,7 @@ return function parse ( args, extraVars ) {
 	}
 
 	function findMacro ( macro ) {
-		var user = bot.users[ args.get('user_id') ],
-			container = [ macros, msgObj, user, extraVars ].first( hasMacro );
+		var container = [ macros, msgObj, user, extraVars ].first( hasMacro );
 
 		return ( container || {} )[ macro ];
 
