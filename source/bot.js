@@ -42,15 +42,8 @@ var bot = window.bot = {
 			if ( /^c?>/.test(msg) ) {
 				this.eval( msg );
 			}
-			//it's a command
-			else if ( msg.startsWith('/') ) {
-				this.parseCommand( msg );
-			}
-			//see if some hobo listener wants this
-			else if ( !this.callListeners(msg) ) {
-				//no listener fancied the message. this is the last frontier,
-				// so just give up in a classy, dignified way
-				msg.reply( this.giveUpMessage(msg) );
+			else {
+				this.invokeAction( msg );
 			}
 		}
 		catch ( e ) {
@@ -73,21 +66,68 @@ var bot = window.bot = {
 		}
 	},
 
-	giveUpMessage : function ( msg ) {
-		var reply =
-			'Y U NO MAEK SENSE!? Could not understand ' +
-			this.adapter.codify( msg );
+	//this conditionally calls execCommand or callListeners, depending on what
+	// the input. if the input begins with a command name, it's assumed to be a
+	// command. otherwise, it tries matching against the listener.
+	invokeAction : function ( msg ) {
+		var possibleName = msg.trim().split( ' ' )[ 0 ].replace( /^\//, '' ),
+			cmd = this.getCommand( possibleName ),
 
-		//check if the user may have intended to execute a command
-		var possibleName = msg.trim().split( ' ' )[ 0 ],
-			cmd = this.getCommand( possibleName );
+			//this is the best name I could come up with
+			//messages beginning with / want to specifically invoke a command
+			coolnessFlag = msg.startsWith('/') ? !cmd.error : true;
 
-		if ( !cmd.error || cmd.guesses.length ) {
-			reply += ' (perhaps you meant to execute a command? If so,' +
-				' prepend the command name with a /)';
+		if ( !cmd.error ) {
+			this.execCommand( cmd, msg );
+		}
+		else if ( coolnessFlag ) {
+			coolnessFlag = this.callListeners( msg );
 		}
 
-		return reply;
+		//nothing to see here, move along
+		if ( coolnessFlag ) {
+			return;
+		}
+
+		//man, I can't believe it worked...room full of nachos for me
+		var errMsg = 'That didn\'t make much sense.';
+		if ( cmd.guesses ) {
+			errMsg += ' Maybe you meant: ' + cmd.guesses.join( ', ' );
+		}
+		//mmmm....nachos
+		else {
+			errMsg += ' Use the help command to learn more.';
+		}
+		//wait a minute, these aren't nachos. these are bear cubs.
+		msg.reply( errMsg );
+		//good mama bear...nice mama bear...tasty mama be---
+	},
+
+	execCommand : function ( cmd, msg ) {
+		bot.log( cmd, msg, 'execCommand input' );
+
+		if ( !cmd.canUse(msg.get('user_id')) ) {
+			msg.reply([
+				'You do not have permission to use the command ' + cmd.name,
+				"I'm afraid I can't let you do that, " + msg.get('user_name')
+			].random());
+			return;
+		}
+
+		bot.log( cmd, 'execCommand calling' );
+
+		var args = this.Message(
+				msg.replace( /^\/\s*/, '' ).slice( cmd.name.length ).trim(),
+				msg.get()
+			),
+			//it always amazed me how, in dynamic systems, the trigger of the
+			// actions is always a small, nearly unidentifiable line
+			//this line right here activates a command
+			res = cmd.exec( args );
+
+		if ( res ) {
+			msg.reply( res );
+		}
 	},
 
 	prepareMessage : function ( msgObj ) {
@@ -97,52 +137,6 @@ var bot = window.bot = {
 		return this.Message(
 			msg.slice( this.invocationPattern.length ).trim(),
 			msgObj );
-	},
-
-	parseCommand : function ( msg ) {
-		bot.log( msg, 'parseCommand input' );
-
-		var commandParts = this.commandRegex.exec( msg );
-		if ( !commandParts ) {
-			msg.reply( 'Invalid command ' + msg );
-			return;
-		}
-		bot.log( commandParts, 'parseCommand matched' );
-
-		var commandName = commandParts[ 1 ].toLowerCase(),
-			cmdObj = this.getCommand( commandName );
-
-		if ( this.personality.check(commandName) ) {
-			this.personality.command();
-		}
-		//see if there was some error fetching the command
-		if ( cmdObj.error ) {
-			msg.reply( cmdObj.error );
-			return;
-		}
-
-		if ( !cmdObj.canUse(msg.get('user_id')) ) {
-			msg.reply([
-				'You do not have permission to use the command ' + commandName,
-				"I'm afraid I can't let you do that, " + msg.get('user_name')
-			].random());
-			return;
-		}
-
-		bot.log( cmdObj, 'parseCommand calling' );
-
-		var args = this.Message(
-				msg.replace(/^\/\s*/, '').slice( commandName.length ).trim(),
-				msg.get()
-			),
-			//it always amazed me how, in dynamic systems, the trigger of the
-			// actions is always a small, nearly unidentifiable line
-			//this line right here activates a command
-			res = cmdObj.exec( args );
-
-		if ( res ) {
-			msg.reply( res );
-		}
 	},
 
 	validateMessage : function ( msgObj ) {
@@ -212,7 +206,7 @@ var bot = window.bot = {
 	},
 
 	callListeners : function ( msg ) {
-		return this.listeners.some(function ( listener ) {
+		return this.listeners.some(function callListener ( listener ) {
 			var match = msg.exec( listener.pattern ), resp;
 
 			if ( match ) {
@@ -331,7 +325,7 @@ bot.CommunityCommand = function ( command, req ) {
 	};
 	return cmd;
 
-	//once again, a switched return statement truthy means a message, falsy
+	//once again, a switched return statement: truthy means a message, falsy
 	// means to go on ahead
 	function register ( usrid ) {
 		if ( old_canUse.call(cmd, usrid) ) {
