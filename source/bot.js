@@ -434,7 +434,7 @@ bot.Message = function ( text, msgObj ) {
 					finish( bot.users[id].name );
 				}
 				else {
-					bot.users.request( bot.adapter.roomId, id, reqFinish );
+					bot.users.request( bot.adapter.roomid, id, reqFinish );
 				}
 
 				function reqFinish ( user ) {

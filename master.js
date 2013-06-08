@@ -764,7 +764,7 @@ bot.Message = function ( text, msgObj ) {
 					finish( bot.users[id].name );
 				}
 				else {
-					bot.users.request( bot.adapter.roomId, id, reqFinish );
+					bot.users.request( bot.adapter.roomid, id, reqFinish );
 				}
 
 				function reqFinish ( user ) {
@@ -2890,7 +2890,7 @@ function requestInfo ( room, ids, cb ) {
 
 		data : {
 			ids : ids.join(),
-			roomId : room || bot.adapter.roomId
+			roomId : room || bot.adapter.roomid
 		},
 		complete : finish
 	});

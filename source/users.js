@@ -50,7 +50,7 @@ function requestInfo ( room, ids, cb ) {
 
 		data : {
 			ids : ids.join(),
-			roomId : room || bot.adapter.roomId
+			roomId : room || bot.adapter.roomid
 		},
 		complete : finish
 	});
