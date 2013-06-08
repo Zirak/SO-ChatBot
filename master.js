@@ -4631,8 +4631,6 @@ function makeCustomCommand ( command ) {
 		replyMethod = extractPattern();
 
 	bot.log( command, '/learn makeCustomCommand' );
-	console.log(replyMethod, '/learn replyMethod');
-
 
 	return function ( args ) {
 		bot.log( args, command.name + ' input' );
@@ -4641,7 +4639,7 @@ function makeCustomCommand ( command ) {
 			res = parse.exec( cmdArgs, command.input.exec(args) );
 
 		switch ( replyMethod ) {
-		case '':
+		case '<>':
 			args.send( res );
 			break;
 		case 'msg':
@@ -4654,7 +4652,6 @@ function makeCustomCommand ( command ) {
 
 	function extractPattern () {
 		var matches = ( replyPatterns.exec(command.output) || [,''] )[ 1 ];
-		console.log(matches, '/learn extractPattern');
 		return matches.slice(1, -1);
 	}
 }
@@ -4673,7 +4670,7 @@ function checkCommand ( cmd ) {
 	else if ( !/^[\w\-$]+$/.test(cmd.name) ) {
 		error = 'Invalid command name';
 	}
-	else if ( bot.commandExists(cmd.name.toLowerCase()) ) {
+	else if ( checkAlreadyExists(cmd.name) ) {
 		error = 'Command ' + cmd.name + ' already exists';
 	}
 	else if ( onlyReply.test(cmd.output) ) {
@@ -4681,6 +4678,17 @@ function checkCommand ( cmd ) {
 	}
 
 	return error;
+
+	function checkAlreadyExists ( name ) {
+		if ( !bot.commandExists(name) ) {
+			return false;
+		}
+
+		//if the command was learned up to 5 minutes ago, allow overwriting it
+		var alt = bot.getCommand( name );
+		return !alt.learned ||
+			( alt.date.getTime() + 1000 * 60 * 5 ) < Date.now();
+	}
 }
 
 function loadCommands () {
@@ -4691,7 +4699,6 @@ function loadCommands () {
 		cmd.input = turnToRegexp( cmd.input );
 		cmd.date = new Date( Date.parse(cmd.date) );
 
-		bot.log( cmd, '/learn loadCommands' );
 		addCustomCommand( cmd );
 	}
 
