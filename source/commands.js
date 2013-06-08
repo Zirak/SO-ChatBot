@@ -415,7 +415,7 @@ return function ( args, cb ) {
 
 	function formatTop ( top ) {
 		//replace [tag] in definition with links
-		var def = top.definition.replace( /\[(\w+)\]/g, formatTag );
+		var def = top.definition.replace( /\[([^\]]+)\]/g, formatTag );
 
 		return args.link( top.word, top.permalink ) + ' ' + def;
 	}
