@@ -6,7 +6,7 @@ var fahrenheitCountries = Object.TruthMap([
 	'US', 'United States of America', 'United States',
 	//other than the US, it's used in Belize, Bahamas and and Cayman Islands
 	'BZ', 'Belize', // http://www.hydromet.gov.bz/
-	'BS', 'Bahamas', // no official proof
+	'BS', 'Bahamas', // http://archive.is/RTD4
 	'KY', 'Cayam Islands' // http://www.weather.ky/forecast/index.htm
 ]);
 

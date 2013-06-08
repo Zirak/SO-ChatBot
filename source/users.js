@@ -3,22 +3,15 @@
 
 bot.users = {};
 
-var joined = {};
+var joined = []
 
 var join = function ( msgObj, cb ) {
-	var room = msgObj.room_id;
-
-	if ( !joined[room] ) {
-		joined[ room ] = [];
-	}
-
-	joined[ room ].push( msgObj.user_id );
-
+	joined.push( msgObj.user_id );
 	addInfos( cb );
 };
 
 IO.register( 'userjoin', function userjoin ( msgObj ) {
-	bot.log( msgObj, bot.users[msgObj.user_id], 'userjoin' );
+	bot.log( msgObj, 'userjoin' );
 
 	var user = bot.users[ msgObj.user_id ];
 	if ( !user ) {
@@ -33,19 +26,14 @@ IO.register( 'userjoin', function userjoin ( msgObj ) {
 	}
 });
 
-// 1839506
-
 //this function throttles to give the chat a chance to fetch the user info
 // itself, and to queue up several joins in a row
 var addInfos = (function ( cb ) {
 	bot.log( joined, 'user addInfos' );
+	requestInfo( null, joined, cb );
 
-	Object.iterate( joined, function ( room, ids ) {
-		requestInfo( room, ids, cb );
-	});
-
-	joined = {};
-}).throttle( 5000 );
+	joined = [];
+}).throttle( 1000 );
 
 function requestInfo ( room, ids, cb ) {
 	if ( !Array.isArray(ids) ) {
@@ -62,7 +50,7 @@ function requestInfo ( room, ids, cb ) {
 
 		data : {
 			ids : ids.join(),
-			roomId : room
+			roomId : room || bot.adapter.roomId
 		},
 		complete : finish
 	});
