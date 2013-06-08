@@ -7,6 +7,28 @@
 # was modified after master.js
 # my shell skills are not good enough yet
 
+#check whether there are untracked files in source/plugins. there usually
+# shouldn't be any, and if there are, it's usually because I forgot to add them
+# to git
+
+untrackedPlugins=$(git ls-files --other --exclude-standard |
+	grep source/plugins)
+if [ -n "$untrackedPlugins" ]
+then
+	echo "There are untracked files in source/plugins:"
+	echo $untrackedPlugins
+	echo "Are you sure you want to continue? (y to continue)"
+
+	read -n 1 resp
+	echo #to go down a line
+
+	if [ "$resp" != "y" ]
+	then
+		echo "Aborting"
+		exit 1
+	fi
+fi
+
 #execute the build script
 node build.js
 
