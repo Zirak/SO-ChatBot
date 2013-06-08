@@ -1,6 +1,15 @@
 (function () {
 "use strict";
 
+var fahrenheitCountries = Object.TruthMap([
+	//the API returns US in a variety of forms...
+	'US', 'United States of America', 'United States',
+	//other than the US, it's used in Belize, Bahamas and and Cayman Islands
+	'BZ', 'Belize', // http://www.hydromet.gov.bz/
+	'BS', 'Bahamas', // no official proof
+	'KY', 'Cayam Islands' // http://www.weather.ky/forecast/index.htm
+]);
+
 var weather = {
 	latlon : function ( lat, lon, cb ) {
 		var nlat = Number( lat ),
@@ -16,10 +25,11 @@ var weather = {
 
 		if ( errs.length ) {
 			cb( errs.join('; ') );
+			return;
 		}
 
 		IO.jsonp({
-			url : 'http://api.openweathermap.org/data/2.1/find/city',
+			url : 'http://api.openweathermap.org/data/2.5/weather',
 			jsonpName : 'callback',
 			data : {
 				lat : lat,
@@ -28,20 +38,22 @@ var weather = {
 				type : 'json'
 			},
 
-			fun : this.finishCb( cb )
+			fun : this.finishCb( cb ),
+			error : this.errorCb( cb )
 		});
 	},
 
 	city : function ( city, cb ) {
 		IO.jsonp({
-			url : 'http://api.openweathermap.org/data/2.1/find/name',
+			url : 'http://api.openweathermap.org/data/2.5/weather',
 			jsonpName : 'callback',
 			data : {
 				q : city,
 				type : 'json'
 			},
 
-			fun : this.finishCb( cb )
+			fun : this.finishCb( cb ),
+			error : this.errorCb( cb )
 		});
 	},
 
@@ -52,15 +64,19 @@ var weather = {
 			cb( self.format(resp) );
 		};
 	},
+	errorCb : function ( cb ) {
+		return cb;
+	},
 
 	format : function ( resp ) {
-		var list = resp.list;
+		var main = resp.main;
 
-		if ( !list ) {
+		if ( !main ) {
 			console.error( resp );
 			return 'Sorry, I couldn\'t get the data: ' + resp.message;
 		}
-		return list.map( this.formatter ).join( '; ' );
+
+		return this.formatter( resp );
 	},
 	formatter : function ( data ) {
 		var temps = data.main,
@@ -71,8 +87,17 @@ var weather = {
 		ret =
 			bot.adapter.link(
 				data.name, 'http://openweathermap.org/city/' + data.id
-			) +
-			': {celsius}C ({temp}K)'.supplant( temps );
+			) + ': ';
+
+		//to help our dear American friends, also include fahrenheit
+		if ( fahrenheitCountries[data.sys.country] ) {
+			temps.fahrenheit = ( temps.temp * 9/5 - 459.67 ).maxDecimal( 4 );
+			ret += '{fahrenheit}F ({celsius}C, {temp}K)'.supplant( temps );
+		}
+		//and to those of us with one less insanity
+		else {
+			ret += '{celsius}C ({temp}K)'.supplant( temps );
+		}
 
 		var descs = ( data.weather || [] ).map(function ( w ) {
 			return w.description;

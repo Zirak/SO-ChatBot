@@ -307,23 +307,13 @@ IO.jsonp = function ( opts ) {
 	//append the data to be sent, in string form, to the url
 	opts.url += '&' + this.urlstringify( opts.data );
 
+	script.onerror = opts.error;
+
 	script.src = opts.url;
 	document.head.appendChild( script );
 };
 
-//generic, pre-made calls to be used inside commands
-IO.jsonp.ddg = function ( query, cb ) {
-	IO.jsonp({
-		url : 'http://api.duckduckgo.com/',
-		jsonpName : 'callback',
-		data : {
-			format : 'json',
-			q : query
-		},
-		fun : cb
-	});
-};
-
+//generic, pre-made call to be used inside commands
 IO.jsonp.google = function ( query, cb ) {
 	IO.jsonp({
 		url : 'http://ajax.googleapis.com/ajax/services/search/web',
