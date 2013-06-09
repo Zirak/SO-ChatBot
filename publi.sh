@@ -19,8 +19,7 @@ then
 	echo $untrackedPlugins
 	echo "Are you sure you want to continue? (y to continue)"
 
-	read -n 1 resp
-	echo #to go down a line
+	read -s -n 1 resp
 
 	if [ "$resp" != "y" ]
 	then

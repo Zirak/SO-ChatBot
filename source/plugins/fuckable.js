@@ -37,15 +37,20 @@ function fuckable ( args ) {
 
 	var age = Number( args );
 
-	if ( !age ) {
+	if ( !age || age < 0 ) {
 		return 'This is srs bsns, please treat it as such' +
 			' (see `/help fuckable`).';
 	}
 
-	var fuckee = age / 2 + 7,
-		fucker = 2 * age - 7;
+	var ret = '';
+	if ( age < 14 ) {
+		ret += 'You\'re one sick puppy. ';
+	}
 
-	return template.supplant({
+	var fuckee = age / 2 + 7,
+		fucker = 2 * age - 14;
+
+	return ret + template.supplant({
 		lower  : fuckee,
 		higher : fucker
 	});

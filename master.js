@@ -3891,15 +3891,20 @@ function fuckable ( args ) {
 
 	var age = Number( args );
 
-	if ( !age ) {
+	if ( !age || age < 0 ) {
 		return 'This is srs bsns, please treat it as such' +
 			' (see `/help fuckable`).';
 	}
 
-	var fuckee = age / 2 + 7,
-		fucker = 2 * age - 7;
+	var ret = '';
+	if ( age < 14 ) {
+		ret += 'You\'re one sick puppy. ';
+	}
 
-	return template.supplant({
+	var fuckee = age / 2 + 7,
+		fucker = 2 * age - 14;
+
+	return ret + template.supplant({
 		lower  : fuckee,
 		higher : fucker
 	});
@@ -4052,9 +4057,26 @@ bot.addCommand({
 ;
 // issue #51 https://github.com/Zirak/SO-ChatBot/issues/51
 
-function github ( args ) {
-	var parts = /([\S]+)\/([\S]+)/.exec( args );
-}
+//valid args are one of the following:
+// /github reponame
+//which searches for a repository `reponame`
+// /github username/reponame
+//which searches for a repository `reponame` under `username`
+// /github username/reponame forkingUser
+//which searches for a fork of `username/reponame` created by `forkingUser
+var github = {
+	command : function ( args ) {
+		var parts = /([\S]+)(?:\/([\S]+))?/.exec( args );
+	},
+
+	searchRepo : function ( repoName, cb ) {
+		IO.jsonp({
+			url : 'https://api.github.com/'
+		});
+	}
+};
+
+;
 
 ;
 (function () {
