@@ -3893,7 +3893,7 @@ function fuckable ( args ) {
 
 	if ( !age ) {
 		return 'This is srs bsns, please treat it as such' +
-			'(see `/help fuckable`).';
+			' (see `/help fuckable`).';
 	}
 
 	var fuckee = age / 2 + 7,
@@ -4639,7 +4639,7 @@ function makeCustomCommand ( command ) {
 			res = parse.exec( cmdArgs, command.input.exec(args) );
 
 		switch ( replyMethod ) {
-		case '<>':
+		case '':
 			args.send( res );
 			break;
 		case 'msg':
@@ -4651,8 +4651,10 @@ function makeCustomCommand ( command ) {
 	};
 
 	function extractPattern () {
-		var matches = ( replyPatterns.exec(command.output) || [,''] )[ 1 ];
-		return matches.slice(1, -1);
+		var matches = replyPatterns.exec( command.output ) || [ , 'user' ],
+			pattern =  matches[ 1 ];
+
+		return pattern.slice(1, -1);
 	}
 }
 
