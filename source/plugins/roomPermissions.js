@@ -128,7 +128,7 @@ function infoFromName ( name, args ) {
 	};
 
 	if ( /\D/.test(name) ) {
-		ret.id = args.findUserId( name );
+		ret.id = args.findUserid( name );
 	}
 
 	if ( ret.id < 0 ) {

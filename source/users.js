@@ -3,7 +3,7 @@
 
 bot.users = {};
 
-var joined = []
+var joined = [];
 
 var join = function ( msgObj, cb ) {
 	joined.push( msgObj.user_id );

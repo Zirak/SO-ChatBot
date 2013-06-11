@@ -2843,7 +2843,7 @@ bot.adapter.init();
 
 bot.users = {};
 
-var joined = []
+var joined = [];
 
 var join = function ( msgObj, cb ) {
 	joined.push( msgObj.user_id );
@@ -5165,7 +5165,7 @@ function infoFromName ( name, args ) {
 	};
 
 	if ( /\D/.test(name) ) {
-		ret.id = args.findUserId( name );
+		ret.id = args.findUserid( name );
 	}
 
 	if ( ret.id < 0 ) {
