@@ -43,7 +43,7 @@ IO.register( 'userregister', function ( user, room ) {
 		var chatMessages = /transcript\/17(?:'|")>([\d\.]+)(k?)/.exec( resp );
 
 		if ( !chatMessages || (
-			!chatMessages[ 2 ] || parseFloat( chatMessages[1] ) < 2
+			chatMessages[ 2 ] || parseFloat( chatMessages[1] ) < 2
 		)) {
 			welcome( user.name, room );
 		}

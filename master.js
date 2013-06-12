@@ -3041,6 +3041,10 @@ var mk_awsm=function(sntnc){
     return sntnc.split(' ').map(function(wrd){
         return 1>=wrd.length?wrd:
             2==wrd.length?wrd[0]:
+			"you"==wrd?"u":
+			"your"==wrd?"ur":
+			"youre"==wrd?"ur":
+			"you're"==wrd?"ur":
             /:.*(.)/.test(wrd)?wrd.replace(/:.*(.)/, '$1'):
             wrd.split('').map(function(c,i){
                 return 0!=i&&('a'==c||'e'==c||'o'==c||'u'==c||'i'==c||(1!=i%2&&.15>Math.random()))
@@ -5159,18 +5163,19 @@ function stringMuteList () {
 	}).join( '; ' );
 }
 
-function infoFromName ( name, args ) {
+function userInfoFromParam ( param, args ) {
 	var ret = {
-		id : name
+		id : param
 	};
 
-	if ( /\D/.test(name) ) {
-		ret.id = args.findUserid( name );
+	if ( /\D/.test(param) ) {
+		ret.id = args.findUserid( param );
 	}
 
 	if ( ret.id < 0 ) {
-		ret.error = 'User ' + name + ' not found';
+		ret.error = 'User ' + param + ' not found';
 	}
+
 	return ret;
 }
 
@@ -5189,7 +5194,8 @@ function parseDuration ( str ) {
 bot.addCommand({
 	name : 'mute',
 	fun : function mute ( args ) {
-		var parts = args.parse(), userID, duration;
+		var parts = args.parse(),
+			userInfo, duration;
 
 		if ( !parts.length ) {
 			return stringMuteList();
@@ -5200,9 +5206,15 @@ bot.addCommand({
 
 		bot.log( parts, '/mute input' );
 
-		userID = infoFromName( parts[0], args );
-		if ( userID.error ) {
-			return userID.error;
+		userInfo = userInfoFromParam( parts[0], args );
+		if ( userInfo.error ) {
+			return userInfo.error;
+		}
+		else if ( userInfo.id === bot.adapter.user_id ) {
+			return 'Never try and mute a bot who can own your ass.';
+		}
+		else if ( bot.isOwner(userInfo.id) ) {
+			return 'You probably didn\'t want to mute a room owner.';
 		}
 
 		duration = parseDuration( parts[1] );
@@ -5211,13 +5223,14 @@ bot.addCommand({
 		}
 
 		takeVoice({
-			id : userID.id,
+			id : userInfo.id,
 			invokingId : args.get('message_id'),
 			duration : duration
 		}, finish );
 
 		function finish () {
-			args.reply( 'Muted user {0} for {1}'.supplant(userID.id, duration) );
+			args.reply(
+				'Muted user {0} for {1}'.supplant(userInfo.id, duration) );
 		}
 	},
 
@@ -6155,7 +6168,7 @@ IO.register( 'userregister', function ( user, room ) {
 		var chatMessages = /transcript\/17(?:'|")>([\d\.]+)(k?)/.exec( resp );
 
 		if ( !chatMessages || (
-			!chatMessages[ 2 ] || parseFloat( chatMessages[1] ) < 2
+			chatMessages[ 2 ] || parseFloat( chatMessages[1] ) < 2
 		)) {
 			welcome( user.name, room );
 		}
