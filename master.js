@@ -400,7 +400,7 @@ var bot = window.bot = {
 	// the input. if the input begins with a command name, it's assumed to be a
 	// command. otherwise, it tries matching against the listener.
 	invokeAction : function ( msg ) {
-		var possibleName = msg.trim().split( ' ' )[ 0 ].replace( /^\//, '' ),
+		var possibleName = msg.trim().replace( /^\/\s*/, '' ).split( ' ' )[ 0 ],
 			cmd = this.getCommand( possibleName ),
 
 			//this is the best name I could come up with
