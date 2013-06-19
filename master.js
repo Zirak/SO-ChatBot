@@ -5507,11 +5507,11 @@ var summon = function ( args ) {
 	bot.adapter.in.init( room );
 };
 var unsummon = function ( args, cb ) {
-	var room = Number( args );
+	var room = args.content ? Number( args ) : args.get( 'room_id' );
 
 	if ( !room ) {
 		return 'That aint no room I ever heard of! ' +
-			'`/help summon` for usage info';
+			'`/help unsummon` for usage info';
 	}
 
 	bot.adapter.in.leaveRoom( room, function ( err ) {
@@ -5549,7 +5549,7 @@ bot.addCommand( bot.CommunityCommand({
 		use : 'OWNER'
 	},
 	description : 'Chant zippidi dee and from the room I shall take my leave. ' +
-		'`/unsummon roomid`'
+		'`/unsummon [roomid=your_roomid]`'
 }));
 
 })();
