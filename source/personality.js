@@ -1,11 +1,11 @@
-//warning: if you have more than 8 points of super-sentitive feminist delicacy,
+//warning: if you have more than 7 points of super-sentitive feminist delicacy,
 // don't read this file. treat it as a nice black box.
 
 //bitch in English is a noun, verb and adjective. interesting.
 bot.personality = {
 	bitchiness : 0,
 	thanks  : {
-		0   : [ 'You kiss-ass' ],
+		0   : [ 'You kiss-ass', 'Most welcome' ],
 		0.5 : [ 'Thank you for noticing', 'teehee' ],
 		1   : [ 'Took you long enough', 'My pleasure', "Don't mention it" ],
 	},
@@ -29,7 +29,7 @@ bot.personality = {
 	//TODO: add special map for special times of the month
 	insanity : {},
 
-	okayCommands : { hangman : true, help : true },
+	okayCommands : { hangman : true, help : true, info : true },
 	check : function ( name ) {
 		return !this.okayCommands.hasOwnProperty( name );
 	},
@@ -78,6 +78,8 @@ bot.personality = {
 };
 
 //you see the loophole?
-bot.listen( /thank(s| you)/, bot.personality.thank, bot.personality );
-bot.listen( /sorry/, bot.personality.apologize, bot.personality );
-bot.listen( /bitch/, bot.personality.bitch, bot.personality );
+bot.listen( /thank(s| you)/i, bot.personality.thank, bot.personality );
+bot.listen(
+	/(I('m| am))?\s*sorry/i,
+	bot.personality.apologize, bot.personality );
+bot.listen( /^bitch/i, bot.personality.bitch, bot.personality );
