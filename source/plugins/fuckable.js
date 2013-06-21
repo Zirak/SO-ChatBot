@@ -1,3 +1,4 @@
+(function () {
 //they made me make it. I begged them not to.
 
 //obligatories
@@ -11,7 +12,7 @@ var special = {
 	'age' : ['For you? Never.']
 };
 var template = 'A person that age can shag down to {lower}, '+
-	'and is the lower limit of a person of {higher} years';
+	'and is the lower limit of a person of {higher} years.';
 
 function fuckable ( args ) {
 	var possibleName = args.toString().toLowerCase();
@@ -48,12 +49,18 @@ function fuckable ( args ) {
 	}
 
 	var fuckee = age / 2 + 7,
-		fucker = 2 * age - 14;
+	fucker = 2 * age - 14,
+	wrapper = {};
 
-	return ret + template.supplant({
-		lower  : fuckee,
-		higher : fucker
-	});
+	//the equation is:
+	// fuckee = fucker / 2 + 7
+	//now, we want fuckee <= fucker. this condition is not met when fucker < 14:
+	// fuckee = 13 / 2 + 7 = 13.5 > 13
+	//so, if age < 14, we flip the two to meet the condition.
+	wrapper.higher = ( age > 14 ? fucker : fuckee );
+	wrapper.lower  = ( age > 14 ? fuckee : fucker );
+
+	return ret + template.supplant( wrapper );
 }
 
 bot.addCommand({
@@ -63,6 +70,8 @@ bot.addCommand({
 		del : 'NONE'
 	},
 
-	description : 'Calculates the lower boundary according to age/2+7 rule. ' +
-		'`/fuckable age`'
+	description : 'Calculates the lower boundary according to age/2+7 rule.' +
+		' `/fuckable age`'
 });
+
+})();
