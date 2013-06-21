@@ -500,12 +500,15 @@ var bot = window.bot = {
 	//if a command named cmdName exists, it returns that command object
 	//otherwise, it returns an object with an error message property
 	getCommand : function ( cmdName ) {
-		if ( this.commandExists(cmdName) ) {
-			return this.commands[ cmdName ];
+		var lowerName = cmdName.toLowerCase();
+
+		if ( this.commandExists(lowerName) ) {
+			return this.commands[ lowerName ];
 		}
+
+		//not found, onto error reporting
 		//set the error margin according to the length
-		this.commandDictionary.maxCost = Math.floor(
-			cmdName.length / 5 + 1 );
+		this.commandDictionary.maxCost = Math.floor( cmdName.length / 5 + 1 );
 
 		var msg = 'Command ' + cmdName + ' does not exist.',
 		//find commands resembling the one the user entered
