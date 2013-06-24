@@ -2737,6 +2737,8 @@ var polling = bot.adapter.in = {
 //the output is expected to have only one method: add, which receives a message
 // and the room_id. everything else is up to the implementation.
 var output = bot.adapter.out = {
+	'409' : 0, //count the number of conflicts
+	total : 0, //number of messages sent
 	interval : polling.interval + 500,
 	messages : {},
 
@@ -2756,9 +2758,9 @@ var output = bot.adapter.out = {
 	//build the final output
 	build : function ( obj ) {
 		if ( !this.messages[obj.room] ) {
-			this.messages[ obj.room ] = '';
+			this.messages[ obj.room ] = [];
 		}
-		this.messages[ obj.room ] += obj.text;
+		this.messages[ obj.room ].push( obj.text );
 	},
 
 	//send output to all the good boys and girls
@@ -2771,11 +2773,14 @@ var output = bot.adapter.out = {
 		// was I intending to say?
 		if ( !bot.stopped ) {
 			Object.iterate(this.messages, function ( room, message ) {
-				if ( !message ) {
+				bot.log( 'output send iteration', room, message );
+				if ( !message.length ) {
 					return;
 				}
 
-				this.sendToRoom( message, room );
+				message.forEach(function (text) {
+					this.sendToRoom( text, room );
+				}, this);
 			}, this );
 		}
 
@@ -2800,6 +2805,7 @@ var output = bot.adapter.out = {
 
 			//conflict, wait for next round to send message
 			if ( xhr.status === 409 ) {
+				output['409'] += 1;
 				output.add( text, roomid );
 			}
 			//server error, usually caused by message being too long
@@ -2816,6 +2822,7 @@ var output = bot.adapter.out = {
 					' (@Zirak)' );
 			}
 			else {
+				output.total += 1;
 				IO.fire( 'sendoutput', xhr, text, roomid );
 			}
 		}
