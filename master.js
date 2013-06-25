@@ -334,7 +334,6 @@ IO.jsonp.google = function ( query, cb ) {
 var bot = window.bot = {
 	invocationPattern : '!!',
 
-	commandRegex : /^\/\s*([\w\-$]+)(?:\s(.+))?$/,
 	commands : {}, //will be filled as needed
 	commandDictionary : null, //it's null at this point, won't be for long
 	listeners : [],
@@ -4679,20 +4678,20 @@ function getEvents ( root, stopNode ) {
 
 	//we need to flatten out the resulting elements, and we're done!
 	return flatten(matches);
-}
 
-function flatten ( lis ) {
-	return [].reduce.call(lis, extract, []);
+	function flatten ( lis ) {
+		return [].reduce.call(lis, extract, []);
 
-	function extract ( ret, li ) {
+		function extract ( ret, li ) {
 
-		if ( li.children.length ) {
-			ret.push.apply( ret, flatten(li.getElementsByTagName('li')) );
+			if ( li.children.length ) {
+				ret.push.apply( ret, flatten(li.getElementsByTagName('li')) );
+			}
+			else {
+				ret.push( li.firstChild.data );
+			}
+			return ret;
 		}
-		else {
-			ret.push( li.firstChild.data );
-		}
-		return ret;
 	}
 }
 
@@ -4824,10 +4823,12 @@ function checkCommand ( cmd ) {
 	if ( somethingUndefined ) {
 		error = 'Illegal /learn object; see `/help learn`';
 	}
-	else if ( !/^[\w\-$]+$/.test(cmd.name) ) {
+	//not very possible, I know, but...uh...yes. definitely. I agree. spot on,
+	// Mr. Pips.
+	else if ( /\s/.test(cmd.name) ) {
 		error = 'Invalid command name';
 	}
-	else if ( checkAlreadyExists(cmd.name) ) {
+	else if ( !canWriteTo(cmd.name) ) {
 		error = 'Command ' + cmd.name + ' already exists';
 	}
 	else if ( onlyReply.test(cmd.output) ) {
@@ -4836,15 +4837,15 @@ function checkCommand ( cmd ) {
 
 	return error;
 
-	function checkAlreadyExists ( name ) {
+	function canWriteTo ( name ) {
 		if ( !bot.commandExists(name) ) {
-			return false;
+			return true;
 		}
 
 		//if the command was learned up to 5 minutes ago, allow overwriting it
 		var alt = bot.getCommand( name );
-		return !alt.learned ||
-			( alt.date.getTime() + 1000 * 60 * 5 ) < Date.now();
+		return alt.learned &&
+			( alt.date.getTime() + 1000 * 60 * 5 ) > Date.now();
 	}
 }
 

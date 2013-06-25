@@ -177,20 +177,20 @@ function getEvents ( root, stopNode ) {
 
 	//we need to flatten out the resulting elements, and we're done!
 	return flatten(matches);
-}
 
-function flatten ( lis ) {
-	return [].reduce.call(lis, extract, []);
+	function flatten ( lis ) {
+		return [].reduce.call(lis, extract, []);
 
-	function extract ( ret, li ) {
+		function extract ( ret, li ) {
 
-		if ( li.children.length ) {
-			ret.push.apply( ret, flatten(li.getElementsByTagName('li')) );
+			if ( li.children.length ) {
+				ret.push.apply( ret, flatten(li.getElementsByTagName('li')) );
+			}
+			else {
+				ret.push( li.firstChild.data );
+			}
+			return ret;
 		}
-		else {
-			ret.push( li.firstChild.data );
-		}
-		return ret;
 	}
 }
 
