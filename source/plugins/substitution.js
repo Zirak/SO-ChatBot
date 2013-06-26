@@ -34,12 +34,15 @@ function substitute ( msg ) {
 	if ( !msg.matches[2] ) {
 		return 'Empty regex is empty';
 	}
+
 	var message = get_matching_message( re, msg.get('message_id') );
+	bot.log( message, 'substitution found message' );
+
 	if ( !message ) {
 		return 'No matching message (are you sure we\'re in the right room?)';
 	}
 
-	var link = message.previousElementSibling.href;
+	var link = get_message_link( message );
 	return message.textContent.replace( re, replacement ) + ' ' +
 		msg.link( '(source)', link );
 }
@@ -53,5 +56,19 @@ function get_matching_message ( re, onlyBefore ) {
 		var id = Number( el.parentElement.id.match(/\d+/)[0] );
 		return id < onlyBefore && re.test( el.textContent );
 	}
+}
+
+// <a class="action-link" href="/transcript/message/msgid#msgid>...</a>
+// <div class="content">message</div>
+//if the message was a reply, there'd be another element between them:
+// <a class="reply-info" href="/transcript/message/repliedMsgId#repliedMsgId>
+function get_message_link ( message ) {
+	var node = message;
+
+	while ( !node.classList.contains('action-link') ) {
+		node = node.previousElementSibling;
+	}
+
+	return node.href;
 }
 }());
