@@ -5895,7 +5895,7 @@ IO.register( 'input', function ( msgObj ) {
 
 var chooseRe = /^\s*(choose|should)?.*\sor\s[^$]/i,
 	questionRe = new RegExp('\\b(' +[
-		"am", "are", "can", "could", "do", "does", "is", "may", "might",
+		"am", "are", "can", "could", "did", "do", "does", "is", "may", "might",
 		"shall", "should", "will", "would"
 	].map(RegExp.escape).join('|') + ')\\b', 'i');
 
