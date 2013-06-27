@@ -5274,7 +5274,7 @@ bot.addCommand({
 			return 'Who shall I unmute?';
 		}
 
-		var userID = infoFromName( parts[0], args );
+		var userID = userInfoFromParam( parts[0], args );
 		if ( userID.error ) {
 			return userID.error;
 		}
