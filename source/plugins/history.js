@@ -24,13 +24,11 @@ var history = {
 	},
 
 	handleResponse : function ( resp, params, cb ) {
-		var query = resp.query,
-			html = query.pages[ query.pageids[0] ].extract;
-		var root = document.createElement( 'body' );
+		var html = resp.parse.text,
+			root = document.createElement( 'body' );
 		root.innerHTML = html; //forgive me
 
-		var headers = root.getElementsByTagName( 'h2' ),
-			events = getEvents( root, headers[1] );
+		var events = getEventsAsText( root );
 
 		cb( this.filter(events, params) );
 	},
@@ -131,10 +129,10 @@ var history = {
 			jsonpName : 'callback',
 			data : {
 				format : 'json',
-				action : 'query',
-				prop : 'extracts',
-				indexpageids : true,
-				titles : titles.join( ' ' )
+				action : 'parse',
+				mobileformat : 'html',
+				prop : 'text',
+				page : titles.join( ' ' )
 			},
 			fun : function ( resp ) {
 				self.handleResponse( resp, params, cb );
@@ -151,44 +149,82 @@ var history = {
 	}
 };
 
-function getEvents ( root, stopNode ) {
-	var matches = [];
+// http://tinker.io/53895
+function getEventsAsText ( root ) {
+	var linkBase = 'http://en.wikipedia.org';
 
-	(function filterEvents (root) {
-		var node = root.firstElementChild;
+	/*
+	  the html looks like:
+	  <h2 class="section_heading" id="section_1"><span id="Events">Events</span></h2>
+	  <div class="content_block" id="content_1">
+	    ...
+	  </div>
+	*/
+	//fun fact: document-fragments don't have a getElementById, so we're left to
+	// use querySelector. which is totally the way to do it.
+	var lists = root.querySelectorAll('#content_1 > ul');
 
-		for (; node; node = node.nextElementSibling) {
-			if (node === stopNode) {
-				return;
+	/*
+	  <li>
+	    <a href="/wiki/January_5" title="January 5">January 5</a> –
+	    <a href="/wiki/Emperor_Go-Sai" title="Emperor Go-Sai">Emperor Go-Sai</a>ascends the throne of <a href="/wiki/Japan" title="Japan">Japan</a>.
+	  </li>
+	*/
+	//however, there are also multi-tiered results:
+	/*
+	  <li>
+	    <a href="/wiki/July_27" title="July 27">July 27</a>
+
+		<ul>
+		  <li>The Jews in <a href="/wiki/New_Amsterdam" title="New Amsterdam">New Amsterdam</a> petition for a separate Jewish cemetery.
+		  </li>
+
+		  <li>The <a href="/wiki/Netherlands" title="Netherlands">Netherlands</a> and <a href="/wiki/Brandenburg" title="Brandenburg">Brandenburg</a> sign a military treaty.
+		  </li>
+		</ul>
+	  </li>
+	*/
+
+	var ret = [];
+	for (var i = 0, len = lists.length; i < len; i += 1) {
+		ret.push.apply( ret, flattenList(lists[i]) );
+	}
+	return ret;
+
+	function flattenList ( list ) {
+		return [].map.call( list.children, extract );
+
+		function extract ( li ) {
+			var links = li.getElementsByTagName( 'a' ), a;
+			while ( links.length ) {
+				a = links[ 0 ];
+
+				a.parentNode.replaceChild(
+					document.createTextNode(
+						bot.adapter.link(
+							a.textContent,
+							linkBase + a.getAttribute('href'))),
+					a );
 			}
 
-			var tag = node.tagName;
-			if (tag === 'UL') {
-				filterEvents(node);
-				continue;
-			}
-			else if (tag !== 'LI' ) {
-				continue;
-			}
-
-			matches.push( node );
+			return [].reduce
+				.call( li.childNodes, extractFromLi, [] )
+				.join( '' ).trim();
 		}
-	})( root );
-
-	//we need to flatten out the resulting elements, and we're done!
-	return flatten(matches);
-
-	function flatten ( lis ) {
-		return [].reduce.call(lis, extract, []);
-
-		function extract ( ret, li ) {
-
-			if ( li.children.length ) {
-				ret.push.apply( ret, flatten(li.getElementsByTagName('li')) );
+		function extractFromLi ( ret, node ) {
+			if ( node.tagName === 'UL' ) {
+				ret.push.apply(
+					flattenList( node ).map(function ( t ) {
+						return node.firstChild.data + ' – ' + t;
+					}) );
+			}
+			else if ( node.nodeType === 1 ) {
+				ret.push( node.textContent );
 			}
 			else {
-				ret.push( li.firstChild.data );
+				ret.push( node.data );
 			}
+
 			return ret;
 		}
 	}
@@ -206,4 +242,5 @@ bot.addCommand({
 		'given in MM-DD format. `/inhistory [MM-DD]`',
 	async : true
 });
+
 })();
