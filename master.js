@@ -4574,6 +4574,7 @@ var history = {
 			};
 		}
 	},
+
 	paramsCheck : function ( params ) {
 		var year  = params[ year ],
 			month = params[ month ],
@@ -4691,28 +4692,22 @@ function getEventsAsText ( root ) {
 	return ret;
 
 	function flattenList ( list ) {
-		return [].map.call( list.children, extract );
+		return Array.map( list.children, extract );
 
 		function extract ( li ) {
-			var links = li.getElementsByTagName( 'a' ), a;
+			var links = li.getElementsByTagName( 'a' );
 			while ( links.length ) {
-				a = links[ 0 ];
-
-				a.parentNode.replaceChild(
-					document.createTextNode(
-						bot.adapter.link(
-							a.textContent,
-							linkBase + a.getAttribute('href'))),
-					a );
+				replaceLink( links[0] );
 			}
 
-			return [].reduce
-				.call( li.childNodes, extractFromLi, [] )
+			return Array.reduce( li.childNodes, extractFromLi, [] )
 				.join( '' ).trim();
 		}
+
 		function extractFromLi ( ret, node ) {
 			if ( node.tagName === 'UL' ) {
 				ret.push.apply(
+					ret,
 					flattenList( node ).map(function ( t ) {
 						return node.firstChild.data + ' – ' + t;
 					}) );
@@ -4725,6 +4720,15 @@ function getEventsAsText ( root ) {
 			}
 
 			return ret;
+		}
+
+		function replaceLink ( link ) {
+			var textLink = bot.adapter.link(
+				link.textContent, linkBase + link.getAttribute('href')
+			),
+				textNode = document.createTextNode( textLink );
+
+			link.parentNode.replaceChild( textNode, link );
 		}
 	}
 }

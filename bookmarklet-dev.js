@@ -1,0 +1,1 @@
+(function(){var a=document.createElement("script");a.src="https://raw.github.com/Zirak/SO-ChatBot/master/master.js";a.onload=function(){bot.invocationPattern="beer!";IO.events.userjoin.shift();bot.validateMessage=function(a){return a.content.trim().startsWith(this.invocationPattern)}};document.head.appendChild(a)})();
