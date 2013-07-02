@@ -328,583 +328,6 @@ IO.jsonp.google = function ( query, cb ) {
 };
 
 ;
-(function () {
-"use strict";
-
-var bot = window.bot = {
-	invocationPattern : '!!',
-
-	commands : {}, //will be filled as needed
-	commandDictionary : null, //it's null at this point, won't be for long
-	listeners : [],
-	info : {
-		invoked   : 0,
-		learned   : 0,
-		forgotten : 0,
-		start     : new Date
-	},
-	users : {}, //will be filled in build
-
-	parseMessage : function ( msgObj ) {
-		if ( !this.validateMessage(msgObj) ) {
-			bot.log( msgObj, 'parseMessage invalid' );
-			return;
-		}
-
-		var msg = this.prepareMessage( msgObj ),
-			id = msg.get( 'user_id' );
-		bot.log( msg, 'parseMessage valid' );
-
-		if ( this.banlist.contains(id) ) {
-			bot.log( msgObj, 'parseMessage banned' );
-
-			//tell the user he's banned only if he hasn't already been told
-			if ( !this.banlist[id].told ) {
-				msg.reply( 'You iz in mindjail' );
-				this.banlist[ id ].told = true;
-			}
-			return;
-		}
-
-		try {
-			//it wants to execute some code
-			if ( /^c?>/.test(msg) ) {
-				this.eval( msg );
-			}
-			else {
-				this.invokeAction( msg );
-			}
-		}
-		catch ( e ) {
-			var err = 'Could not process input. Error: ' + e.message;
-
-			if ( e.lineNumber ) {
-				err += ' on line ' + e.lineNumber;
-			}
-			//column isn't part of ordinary errors, it's set in custom ones
-			if ( e.column ) {
-				err += ' on column ' + e.column;
-			}
-
-			msg.directreply( err );
-			//make sure we have it somewhere
-			console.dir( e );
-		}
-		finally {
-			this.info.invoked += 1;
-		}
-	},
-
-	//this conditionally calls execCommand or callListeners, depending on what
-	// the input. if the input begins with a command name, it's assumed to be a
-	// command. otherwise, it tries matching against the listener.
-	invokeAction : function ( msg ) {
-		var possibleName = msg.trim().replace( /^\/\s*/, '' ).split( ' ' )[ 0 ],
-			cmd = this.getCommand( possibleName ),
-
-			//this is the best name I could come up with
-			//messages beginning with / want to specifically invoke a command
-			coolnessFlag = msg.startsWith('/') ? !cmd.error : true;
-
-		if ( !cmd.error ) {
-			this.execCommand( cmd, msg );
-		}
-		else if ( coolnessFlag ) {
-			coolnessFlag = this.callListeners( msg );
-		}
-
-		//nothing to see here, move along
-		if ( coolnessFlag ) {
-			return;
-		}
-
-		//man, I can't believe it worked...room full of nachos for me
-		var errMsg = 'That didn\'t make much sense.';
-		if ( cmd.guesses && cmd.guesses.length ) {
-			errMsg += ' Maybe you meant: ' + cmd.guesses.join( ', ' );
-		}
-		//mmmm....nachos
-		else {
-			errMsg += ' Use the help command to learn more.';
-		}
-		//wait a minute, these aren't nachos. these are bear cubs.
-		msg.reply( errMsg );
-		//good mama bear...nice mama bear...tasty mama be---
-	},
-
-	execCommand : function ( cmd, msg ) {
-		bot.log( cmd, msg, 'execCommand input' );
-
-		if ( !cmd.canUse(msg.get('user_id')) ) {
-			msg.reply([
-				'You do not have permission to use the command ' + cmd.name,
-				"I'm afraid I can't let you do that, " + msg.get('user_name')
-			].random());
-			return;
-		}
-
-		bot.log( cmd, 'execCommand calling' );
-
-		var args = this.Message(
-				msg.replace( /^\/\s*/, '' ).slice( cmd.name.length ).trim(),
-				msg.get()
-			),
-			//it always amazed me how, in dynamic systems, the trigger of the
-			// actions is always a small, nearly unidentifiable line
-			//this line right here activates a command
-			res = cmd.exec( args );
-
-		if ( res ) {
-			msg.reply( res );
-		}
-	},
-
-	prepareMessage : function ( msgObj ) {
-		msgObj = this.adapter.transform( msgObj );
-
-		var msg = IO.decodehtmlEntities( msgObj.content );
-		return this.Message(
-			msg.slice( this.invocationPattern.length ).trim(),
-			msgObj );
-	},
-
-	validateMessage : function ( msgObj ) {
-		var msg = msgObj.content.trim();
-
-		return (
-			//make sure we don't process our own messages,
-			msgObj.user_id !== bot.adapter.user_id &&
-			//and the message begins with the invocationPattern
-			msg.startsWith( this.invocationPattern ) );
-	},
-
-	addCommand : function ( cmd ) {
-		if ( !cmd.exec || !cmd.del ) {
-			cmd = this.Command( cmd );
-		}
-		if ( cmd.learned ) {
-			this.info.learned += 1;
-		}
-		cmd.invoked = 0;
-
-		this.commands[ cmd.name ] = cmd;
-		this.commandDictionary.trie.add( cmd.name );
-	},
-
-	//gee, I wonder what this will return?
-	commandExists : function ( cmdName ) {
-		return this.commands.hasOwnProperty( cmdName );
-	},
-
-	//if a command named cmdName exists, it returns that command object
-	//otherwise, it returns an object with an error message property
-	getCommand : function ( cmdName ) {
-		var lowerName = cmdName.toLowerCase();
-
-		if ( this.commandExists(lowerName) ) {
-			return this.commands[ lowerName ];
-		}
-
-		//not found, onto error reporting
-		//set the error margin according to the length
-		this.commandDictionary.maxCost = Math.floor( cmdName.length / 5 + 1 );
-
-		var msg = 'Command ' + cmdName + ' does not exist.',
-		//find commands resembling the one the user entered
-		guesses = this.commandDictionary.search( cmdName );
-
-		//resembling command(s) found, add them to the error message
-		if ( guesses.length ) {
-			msg += ' Did you mean: ' + guesses.join( ', ' );
-		}
-
-		return { error : msg, guesses : guesses };
-	},
-
-	//the function women think is lacking in men
-	listen : function ( regex, fun, thisArg ) {
-		if ( Array.isArray(regex) ) {
-			regex.forEach(function ( reg ) {
-				this.listen( reg, fun, thisArg );
-			}, this);
-		}
-		else {
-			this.listeners.push({
-				pattern : regex,
-				fun : fun,
-				thisArg: thisArg
-			});
-		}
-	},
-
-	callListeners : function ( msg ) {
-		return this.listeners.some(function callListener ( listener ) {
-			var match = msg.exec( listener.pattern ), resp;
-
-			if ( match ) {
-				resp = listener.fun.call( listener.thisArg, msg );
-
-				bot.log( match, resp );
-				if ( resp ) {
-					msg.reply( resp );
-				}
-				return resp !== false;
-			}
-		});
-	},
-
-	stoplog : false,
-	log : function () {
-		if ( !this.stoplog ) {
-			console.log.apply( console, arguments );
-		}
-	},
-
-	stop : function () {
-		this.stopped = true;
-	},
-	continue : function () {
-		this.stopped = false;
-	}
-};
-
-bot.banlist = JSON.parse( localStorage.bot_ban || '{}' );
-if ( Array.isArray(bot.banlist) ) {
-	bot.banlist = bot.banlist.reduce(function ( ret, id ) {
-		ret[ id ] = { told : false };
-		return ret;
-	}, {});
-}
-bot.banlist.contains = function ( id ) {
-	return this.hasOwnProperty( id );
-};
-bot.banlist.add = function ( id ) {
-	this[ id ] = { told : false };
-	this.save();
-};
-bot.banlist.remove = function ( id ) {
-	if ( this.contains(id) ) {
-		delete this[ id ];
-		this.save();
-	}
-};
-bot.banlist.save = function () {
-	//JSON.stringify ignores functions
-	localStorage.bot_ban = JSON.stringify( this );
-};
-
-//some sort of pseudo constructor
-bot.Command = function ( cmd ) {
-	cmd.name = cmd.name.toLowerCase();
-
-	cmd.permissions = cmd.permissions || {};
-	cmd.permissions.use = cmd.permissions.use || 'ALL';
-	cmd.permissions.del = cmd.permissions.del || 'NONE';
-
-	cmd.description = cmd.description || '';
-	cmd.creator = cmd.creator || 'God';
-	cmd.invoked = 0;
-
-	//make canUse and canDel
-	[ 'Use', 'Del' ].forEach(function ( perm ) {
-		var low = perm.toLowerCase();
-		cmd[ 'can' + perm ] = function ( usrid ) {
-			var canDo = this.permissions[ low ];
-
-			if ( canDo === 'ALL' ) {
-				return true;
-			}
-			else if ( canDo === 'NONE' ) {
-				return false;
-			}
-			else if ( canDo === 'OWNER' ) {
-				return bot.isOwner( usrid );
-			}
-			return canDo.indexOf( usrid ) > -1;
-		};
-	});
-
-	cmd.exec = function () {
-		this.invoked += 1;
-		return this.fun.apply( this.thisArg, arguments );
-	};
-
-	cmd.del = function () {
-		bot.info.forgotten += 1;
-		delete bot.commands[ cmd.name ];
-	};
-
-	return cmd;
-};
-//a normally priviliged command which can be executed if enough people use it
-bot.CommunityCommand = function ( command, req ) {
-	var cmd = this.Command( command ),
-		used = {},
-		old_execute = cmd.exec,
-		old_canUse  = cmd.canUse;
-	req = req || 2;
-
-	cmd.canUse = function () {
-		return true;
-	};
-	cmd.exec = function ( msg ) {
-		var err = register( msg.get('user_id') );
-		if ( err ) {
-			bot.log( err );
-			return err;
-		}
-		return old_execute.apply( cmd, arguments );
-	};
-	return cmd;
-
-	//once again, a switched return statement: truthy means a message, falsy
-	// means to go on ahead
-	function register ( usrid ) {
-		if ( old_canUse.call(cmd, usrid) ) {
-			return false;
-		}
-
-		clean();
-		var count = Object.keys( used ).length,
-			needed = req - count - 1; //0 based indexing vs. 1 based humans
-		bot.log( used, count, req );
-
-		if ( usrid in used ) {
-			return 'Already registered; still need {0} more'.supplant( needed );
-		}
-		else if ( needed > 0 ) {
-			used[ usrid ] = new Date;
-			return 'Registered; need {0} more to execute'.supplant( needed-1 );
-		}
-		bot.log( 'should execute' );
-		return false; //huzzah!
-	}
-
-	function clean () {
-		var tenMinsAgo = new Date;
-		tenMinsAgo.setMinutes( tenMinsAgo.getMinutes() - 10 );
-
-		Object.keys( used ).reduce( rm, used );
-		function rm ( ret, key ) {
-			if ( ret[key] < tenMinsAgo ) {
-				delete ret[ key ];
-			}
-			return ret;
-		}
-	}
-};
-
-bot.Message = function ( text, msgObj ) {
-	//"casting" to object so that it can be extended with cool stuff and
-	// still be treated like a string
-	var ret = Object( text );
-	ret.content = text;
-
-	var rawSend = function ( text ) {
-		bot.adapter.out.add( text, msgObj.room_id );
-	};
-	var deliciousObject = {
-		send : rawSend,
-
-		reply : function ( resp, user_name ) {
-			var prefix = bot.adapter.reply( user_name || msgObj.user_name );
-			rawSend( prefix + ' ' + resp );
-		},
-		directreply : function ( resp ) {
-			var prefix = bot.adapter.directreply( msgObj.message_id );
-			rawSend( prefix + ' ' + resp );
-		},
-
-		//parse() parses the original message
-		//parse( true ) also turns every match result to a Message
-		//parse( msgToParse ) parses msgToParse
-		//parse( msgToParse, true ) combination of the above
-		parse : function ( msg, map ) {
-			if ( !!msg === msg ) {
-				map = msg;
-				msg = text;
-			}
-			var parsed = bot.parseCommandArgs( msg || text );
-
-			if ( !map ) {
-				return parsed;
-			}
-
-			return parsed.map(function ( part ) {
-				return bot.Message( part, msgObj );
-			});
-		},
-
-		//execute a regexp against the text, saving it inside the object
-		exec : function ( regexp ) {
-			var match = regexp.exec( text );
-			this.matches = match ? match : [];
-
-			return match;
-		},
-
-		findUserid : function ( username ) {
-			username = username.toLowerCase().replace( /\s/g, '' );
-			var ids = Object.keys( bot.users );
-
-			return ids.first(function ( id ) {
-				var name = bot.users[ id ].name
-					.toLowerCase().replace( /\s/g, '' );
-
-				return name === username;
-			}) || -1;
-		}.memoize(),
-
-		findUsername : (function () {
-			var cache = {};
-
-			return function ( id, cb ) {
-				if ( cache[id] ) {
-					finish( cache[id] );
-				}
-				else if ( bot.users[id] ) {
-					finish( bot.users[id].name );
-				}
-				else {
-					bot.users.request( bot.adapter.roomid, id, reqFinish );
-				}
-
-				function reqFinish ( user ) {
-					finish( user.name );
-				}
-				function finish ( name ) {
-					cb( cache[id] = name );
-				}
-			};
-		})(),
-
-		codify : bot.adapter.codify.bind( bot.adapter ),
-		escape : bot.adapter.escape.bind( bot.adapter ),
-		link   : bot.adapter.link.bind( bot.adapter ),
-
-		//retrieve a value from the original message object, or if no argument
-		// provided, the msgObj itself
-		get : function ( what ) {
-			if ( !what ) {
-				return msgObj;
-			}
-			return msgObj[ what ];
-		},
-		set : function ( what, val ) {
-			return msgObj[ what ] = val;
-		}
-	};
-
-	Object.iterate( deliciousObject, function ( key, prop ) {
-		ret[ key ] = prop;
-	});
-
-	return ret;
-};
-
-bot.isOwner = function ( usrid ) {
-	var user = this.users[ usrid ];
-	return user && ( user.is_owner || user.is_moderator );
-};
-
-IO.register( 'input', bot.parseMessage, bot );
-
-bot.beatInterval = 5000; //once every 5 seconds is Good Enough ™
-(function beat () {
-	bot.beat = setTimeout(function () {
-		IO.fire( 'heartbeat' );
-		beat();
-	}, bot.beatInterval );
-}());
-
-//execute arbitrary js code in a relatively safe environment
-bot.eval = (function () {
-window.URL = window.URL || window.webkitURL || window.mozURL || null;
-
-//translation tool: https://tinker.io/b2ff5
-var worker_code = atob( 'dmFyIGdsb2JhbCA9IHRoaXM7CgovKm1vc3QgZXh0cmEgZnVuY3Rpb25zIGNvdWxkIGJlIHBvc3NpYmx5IHVuc2FmZSovCnZhciB3aGl0ZXkgPSB7CgknQXJyYXknICAgICAgICAgICAgICA6IDEsCgknQm9vbGVhbicgICAgICAgICAgICA6IDEsCgknRGF0ZScgICAgICAgICAgICAgICA6IDEsCgknRXJyb3InICAgICAgICAgICAgICA6IDEsCgknRXZhbEVycm9yJyAgICAgICAgICA6IDEsCgknRnVuY3Rpb24nICAgICAgICAgICA6IDEsCgknSW5maW5pdHknICAgICAgICAgICA6IDEsCgknSlNPTicgICAgICAgICAgICAgICA6IDEsCgknTWF0aCcgICAgICAgICAgICAgICA6IDEsCgknTmFOJyAgICAgICAgICAgICAgICA6IDEsCgknTnVtYmVyJyAgICAgICAgICAgICA6IDEsCgknT2JqZWN0JyAgICAgICAgICAgICA6IDEsCgknUmFuZ2VFcnJvcicgICAgICAgICA6IDEsCgknUmVmZXJlbmNlRXJyb3InICAgICA6IDEsCgknUmVnRXhwJyAgICAgICAgICAgICA6IDEsCgknU3RyaW5nJyAgICAgICAgICAgICA6IDEsCgknU3ludGF4RXJyb3InICAgICAgICA6IDEsCgknVHlwZUVycm9yJyAgICAgICAgICA6IDEsCgknVVJJRXJyb3InICAgICAgICAgICA6IDEsCgknYXRvYicgICAgICAgICAgICAgICA6IDEsCgknYnRvYScgICAgICAgICAgICAgICA6IDEsCgknZGVjb2RlVVJJJyAgICAgICAgICA6IDEsCgknZGVjb2RlVVJJQ29tcG9uZW50JyA6IDEsCgknZW5jb2RlVVJJJyAgICAgICAgICA6IDEsCgknZW5jb2RlVVJJQ29tcG9uZW50JyA6IDEsCgknZXZhbCcgICAgICAgICAgICAgICA6IDEsCgknZ2xvYmFsJyAgICAgICAgICAgICA6IDEsCgknaXNGaW5pdGUnICAgICAgICAgICA6IDEsCgknaXNOYU4nICAgICAgICAgICAgICA6IDEsCgknb25tZXNzYWdlJyAgICAgICAgICA6IDEsCgkncGFyc2VGbG9hdCcgICAgICAgICA6IDEsCgkncGFyc2VJbnQnICAgICAgICAgICA6IDEsCgkncG9zdE1lc3NhZ2UnICAgICAgICA6IDEsCgknc2VsZicgICAgICAgICAgICAgICA6IDEsCgkndW5kZWZpbmVkJyAgICAgICAgICA6IDEsCgknd2hpdGV5JyAgICAgICAgICAgICA6IDEsCgoJLyogdHlwZWQgYXJyYXlzIGFuZCBzaGl0ICovCgknQXJyYXlCdWZmZXInICAgICAgIDogMSwKCSdCbG9iJyAgICAgICAgICAgICAgOiAxLAoJJ0Zsb2F0MzJBcnJheScgICAgICA6IDEsCgknRmxvYXQ2NEFycmF5JyAgICAgIDogMSwKCSdJbnQ4QXJyYXknICAgICAgICAgOiAxLAoJJ0ludDE2QXJyYXknICAgICAgICA6IDEsCgknSW50MzJBcnJheScgICAgICAgIDogMSwKCSdVaW50OEFycmF5JyAgICAgICAgOiAxLAoJJ1VpbnQxNkFycmF5JyAgICAgICA6IDEsCgknVWludDMyQXJyYXknICAgICAgIDogMSwKCSdVaW50OENsYW1wZWRBcnJheScgOiAxLAoKCS8qCgl0aGVzZSBwcm9wZXJ0aWVzIGFsbG93IEZGIHRvIGZ1bmN0aW9uLiB3aXRob3V0IHRoZW0sIGEgZnVja2Zlc3Qgb2YKCWluZXhwbGljYWJsZSBlcnJvcnMgZW51c2VzLiB0b29rIG1lIGFib3V0IDQgaG91cnMgdG8gdHJhY2sgdGhlc2UgZnVja2VycwoJZG93bi4KCWZ1Y2sgaGVsbCBpdCBpc24ndCBmdXR1cmUtcHJvb2YsIGJ1dCB0aGUgZXJyb3JzIHRocm93biBhcmUgdW5jYXRjaGFibGUKCWFuZCB1bnRyYWNhYmxlLiBzbyBhIGhlYWRzLXVwLiBlbmpveSwgZnV0dXJlLW1lIQoJKi8KCSdET01FeGNlcHRpb24nIDogMSwKCSdFdmVudCcgICAgICAgIDogMSwKCSdNZXNzYWdlRXZlbnQnIDogMQp9OwoKWyBnbG9iYWwsIGdsb2JhbC5fX3Byb3RvX18gXS5mb3JFYWNoKGZ1bmN0aW9uICggb2JqICkgewoJT2JqZWN0LmdldE93blByb3BlcnR5TmFtZXMoIG9iaiApLmZvckVhY2goZnVuY3Rpb24oIHByb3AgKSB7CgkJaWYoICF3aGl0ZXkuaGFzT3duUHJvcGVydHkoIHByb3AgKSApIHsKCQkJZGVsZXRlIG9ialsgcHJvcCBdOwoJCX0KCX0pOwp9KTsKCk9iamVjdC5kZWZpbmVQcm9wZXJ0eSggQXJyYXkucHJvdG90eXBlLCAnam9pbicsIHsKCXdyaXRhYmxlOiBmYWxzZSwKCWNvbmZpZ3VyYWJsZTogZmFsc2UsCgllbnVtcmFibGU6IGZhbHNlLAoKCXZhbHVlOiAoZnVuY3Rpb24gKCBvbGQgKSB7CgkJcmV0dXJuIGZ1bmN0aW9uICggYXJnICkgewoJCQlpZiAoIHRoaXMubGVuZ3RoID4gNTAwIHx8IChhcmcgJiYgYXJnLmxlbmd0aCA+IDUwMCkgKSB7CgkJCQl0aHJvdyAnRXhjZXB0aW9uOiB0b28gbWFueSBpdGVtcyc7CgkJCX0KCgkJCXJldHVybiBvbGQuYXBwbHkoIHRoaXMsIGFyZ3VtZW50cyApOwoJCX07Cgl9KCBBcnJheS5wcm90b3R5cGUuam9pbiApKQp9KTsKCi8qIHdlIGRlZmluZSBpdCBvdXRzaWRlIHNvIGl0J2xsIG5vdCBiZSBpbiBzdHJpY3QgbW9kZSAqLwpmdW5jdGlvbiBleGVjICggY29kZSApIHsKCXJldHVybiBldmFsKCAndW5kZWZpbmVkO1xuJyArIGNvZGUgKTsKfQp2YXIgY29uc29sZSA9IHsKCV9pdGVtcyA6IFtdLAoJbG9nIDogZnVuY3Rpb24oKSB7CgkJY29uc29sZS5faXRlbXMucHVzaC5hcHBseSggY29uc29sZS5faXRlbXMsIGFyZ3VtZW50cyApOwoJfQp9Owpjb25zb2xlLmVycm9yID0gY29uc29sZS5pbmZvID0gY29uc29sZS5kZWJ1ZyA9IGNvbnNvbGUubG9nOwp2YXIgcCA9IGNvbnNvbGUubG9nLmJpbmQoIGNvbnNvbGUgKTsKCihmdW5jdGlvbigpewoJInVzZSBzdHJpY3QiOwoKCWdsb2JhbC5vbm1lc3NhZ2UgPSBmdW5jdGlvbiAoIGV2ZW50ICkgewoJCXBvc3RNZXNzYWdlKHsKCQkJZXZlbnQgOiAnc3RhcnQnCgkJfSk7CgoJCXZhciBqc29uU3RyaW5naWZ5ID0gSlNPTi5zdHJpbmdpZnksIC8qYmFja3VwKi8KCQkJcmVzdWx0OwoKCQl0cnkgewoJCQlyZXN1bHQgPSBleGVjKCBldmVudC5kYXRhICk7CgkJfQoJCWNhdGNoICggZSApIHsKCQkJcmVzdWx0ID0gZS50b1N0cmluZygpOwoJCX0KCgkJLypKU09OIGRvZXMgbm90IGxpa2UgYW55IG9mIHRoZSBmb2xsb3dpbmcqLwoJCXZhciBzdHJ1bmcgPSB7CgkJCUZ1bmN0aW9uICA6IHRydWUsIEVycm9yICA6IHRydWUsCgkJCVVuZGVmaW5lZCA6IHRydWUsIFJlZ0V4cCA6IHRydWUKCQl9OwoJCXZhciBzaG91bGRfc3RyaW5nID0gZnVuY3Rpb24gKCB2YWx1ZSApIHsKCQkJdmFyIHR5cGUgPSAoIHt9ICkudG9TdHJpbmcuY2FsbCggdmFsdWUgKS5zbGljZSggOCwgLTEgKTsKCgkJCWlmICggdHlwZSBpbiBzdHJ1bmcgKSB7CgkJCQlyZXR1cm4gdHJ1ZTsKCQkJfQoJCQkvKm5laXRoZXIgZG9lcyBpdCBmZWVsIGNvbXBhc3Npb25hdGUgYWJvdXQgTmFOIG9yIEluZmluaXR5Ki8KCQkJcmV0dXJuIHZhbHVlICE9PSB2YWx1ZSB8fCB2YWx1ZSA9PT0gSW5maW5pdHk7CgkJfTsKCgkJdmFyIHJldml2ZXIgPSBmdW5jdGlvbiAoIGtleSwgdmFsdWUgKSB7CgkJCXZhciBvdXRwdXQ7CgoJCQlpZiAoIHNob3VsZF9zdHJpbmcodmFsdWUpICkgewoJCQkJb3V0cHV0ID0gJycgKyB2YWx1ZTsKCQkJfQoJCQllbHNlIHsKCQkJCW91dHB1dCA9IHZhbHVlOwoJCQl9CgoJCQlyZXR1cm4gb3V0cHV0OwoJCX07CgoJCXBvc3RNZXNzYWdlKHsKCQkJYW5zd2VyIDoganNvblN0cmluZ2lmeSggcmVzdWx0LCByZXZpdmVyICksCgkJCWxvZyAgICA6IGpzb25TdHJpbmdpZnkoIGNvbnNvbGUuX2l0ZW1zLCByZXZpdmVyICkuc2xpY2UoIDEsIC0xICkKCQl9KTsKCX07Cn0pKCk7Cg==' );
-var blob = new Blob( [worker_code], { type : 'application/javascript' } ),
-	code_url = window.URL.createObjectURL( blob );
-
-IO.injectScript( 'https://raw.github.com/jashkenas/coffee-script/master/extras/coffee-script.js' );
-
-return function ( msg, cb ) {
-	var worker = new Worker( code_url ),
-		timeout;
-
-	var code = msg.toString();
-	if ( code[0] === 'c' ) {
-		code = CoffeeScript.compile( code.replace(/^c>/, ''), {bare:1} );
-	}
-	else {
-		code = code.replace( /^>/, '' );
-	}
-
-	worker.onmessage = function ( evt ) {
-		var type = evt.data.event;
-		if ( type === 'start' ) {
-			start();
-		}
-		else {
-			finish( dressUpAnswer(evt.data) );
-		}
-	};
-
-	worker.onerror = function ( error ) {
-		finish( error.toString() );
-	};
-
-	//and it all boils down to this...
-	worker.postMessage( code );
-
-	function start () {
-		timeout = window.setTimeout(function() {
-			finish( 'Maximum execution time exceeded' );
-		}, 500 );
-	}
-
-	function finish ( result ) {
-		clearTimeout( timeout );
-		worker.terminate();
-
-		if ( cb && cb.call ) {
-			cb( result );
-		}
-		else {
-			msg.directreply( result );
-		}
-	}
-};
-
-function dressUpAnswer ( answerObj ) {
-	bot.log( answerObj, 'eval answerObj' );
-	var answer = answerObj.answer,
-		log = answerObj.log,
-		result;
-
-	result = snipAndCodify( answer );
-
-	if ( log && log.length ) {
-		result += ' Logged: ' + snipAndCodify( log );
-	}
-
-	return result;
-}
-function snipAndCodify ( str ) {
-	var ret;
-
-	if ( str.length > 400 ) {
-		ret = '`' +  str.slice(0, 400) + '` (snip)';
-	}
-	else {
-		ret = '`' + str +'`';
-	}
-
-	return ret;
-}
-}());
-
-
 //345678901234567890123456789012345678901234567890123456789012345678901234567890
 //small utility functions
 Object.merge = function () {
@@ -1215,6 +638,628 @@ Date.timeSince = function ( d0, d1 ) {
 		return interval + ' ' + suffix;
 	}
 };
+
+;
+(function () {
+"use strict";
+
+var bot = window.bot = {
+	invocationPattern : '!!',
+
+	commands : {}, //will be filled as needed
+	commandDictionary : null, //it's null at this point, won't be for long
+	listeners : [],
+	info : {
+		invoked   : 0,
+		learned   : 0,
+		forgotten : 0,
+		start     : new Date
+	},
+	users : {}, //will be filled in build
+
+	parseMessage : function ( msgObj ) {
+		if ( !this.validateMessage(msgObj) ) {
+			bot.log( msgObj, 'parseMessage invalid' );
+			return;
+		}
+
+		var msg = this.prepareMessage( msgObj ),
+			id = msg.get( 'user_id' );
+		bot.log( msg, 'parseMessage valid' );
+
+		if ( this.banlist.contains(id) ) {
+			bot.log( msgObj, 'parseMessage banned' );
+
+			//tell the user he's banned only if he hasn't already been told
+			if ( !this.banlist[id].told ) {
+				msg.reply( 'You iz in mindjail' );
+				this.banlist[ id ].told = true;
+			}
+			return;
+		}
+
+		try {
+			//it wants to execute some code
+			if ( /^c?>/.test(msg) ) {
+				this.eval( msg );
+			}
+			else {
+				this.invokeAction( msg );
+			}
+		}
+		catch ( e ) {
+			var err = 'Could not process input. Error: ' + e.message;
+
+			if ( e.lineNumber ) {
+				err += ' on line ' + e.lineNumber;
+			}
+			//column isn't part of ordinary errors, it's set in custom ones
+			if ( e.column ) {
+				err += ' on column ' + e.column;
+			}
+
+			msg.directreply( err );
+			//make sure we have it somewhere
+			console.dir( e );
+		}
+		finally {
+			this.info.invoked += 1;
+		}
+	},
+
+	//this conditionally calls execCommand or callListeners, depending on what
+	// the input. if the input begins with a command name, it's assumed to be a
+	// command. otherwise, it tries matching against the listener.
+	invokeAction : function ( msg ) {
+		var possibleName = msg.trim().replace( /^\/\s*/, '' ).split( ' ' )[ 0 ],
+			cmd = this.getCommand( possibleName ),
+
+			//this is the best name I could come up with
+			//messages beginning with / want to specifically invoke a command
+			coolnessFlag = msg.startsWith('/') ? !cmd.error : true;
+
+		if ( !cmd.error ) {
+			this.execCommand( cmd, msg );
+		}
+		else if ( coolnessFlag ) {
+			coolnessFlag = this.callListeners( msg );
+		}
+
+		//nothing to see here, move along
+		if ( coolnessFlag ) {
+			return;
+		}
+
+		//man, I can't believe it worked...room full of nachos for me
+		var errMsg = 'That didn\'t make much sense.';
+		if ( cmd.guesses && cmd.guesses.length ) {
+			errMsg += ' Maybe you meant: ' + cmd.guesses.join( ', ' );
+		}
+		//mmmm....nachos
+		else {
+			errMsg += ' Use the help command to learn more.';
+		}
+		//wait a minute, these aren't nachos. these are bear cubs.
+		msg.reply( errMsg );
+		//good mama bear...nice mama bear...tasty mama be---
+	},
+
+	execCommand : function ( cmd, msg ) {
+		bot.log( cmd, msg, 'execCommand input' );
+
+		if ( !cmd.canUse(msg.get('user_id')) ) {
+			msg.reply([
+				'You do not have permission to use the command ' + cmd.name,
+				"I'm afraid I can't let you do that, " + msg.get('user_name')
+			].random());
+			return;
+		}
+
+		bot.log( cmd, 'execCommand calling' );
+
+		var args = this.Message(
+				msg.replace( /^\/\s*/, '' ).slice( cmd.name.length ).trim(),
+				msg.get()
+			),
+			//it always amazed me how, in dynamic systems, the trigger of the
+			// actions is always a small, nearly unidentifiable line
+			//this line right here activates a command
+			res = cmd.exec( args );
+
+		if ( res ) {
+			msg.reply( res );
+		}
+	},
+
+	prepareMessage : function ( msgObj ) {
+		msgObj = this.adapter.transform( msgObj );
+
+		var msg = IO.decodehtmlEntities( msgObj.content );
+		return this.Message(
+			msg.slice( this.invocationPattern.length ).trim(),
+			msgObj );
+	},
+
+	validateMessage : function ( msgObj ) {
+		var msg = msgObj.content.trim();
+
+		return (
+			//make sure we don't process our own messages,
+			msgObj.user_id !== bot.adapter.user_id &&
+			//and the message begins with the invocationPattern
+			msg.startsWith( this.invocationPattern ) );
+	},
+
+	addCommand : function ( cmd ) {
+		if ( !cmd.exec || !cmd.del ) {
+			cmd = this.Command( cmd );
+		}
+		if ( cmd.learned ) {
+			this.info.learned += 1;
+		}
+		cmd.invoked = 0;
+
+		this.commands[ cmd.name ] = cmd;
+		this.commandDictionary.trie.add( cmd.name );
+	},
+
+	//gee, I wonder what this will return?
+	commandExists : function ( cmdName ) {
+		return this.commands.hasOwnProperty( cmdName );
+	},
+
+	//if a command named cmdName exists, it returns that command object
+	//otherwise, it returns an object with an error message property
+	getCommand : function ( cmdName ) {
+		var lowerName = cmdName.toLowerCase();
+
+		if ( this.commandExists(lowerName) ) {
+			return this.commands[ lowerName ];
+		}
+
+		//not found, onto error reporting
+		//set the error margin according to the length
+		this.commandDictionary.maxCost = Math.floor( cmdName.length / 5 + 1 );
+
+		var msg = 'Command ' + cmdName + ' does not exist.',
+		//find commands resembling the one the user entered
+		guesses = this.commandDictionary.search( cmdName );
+
+		//resembling command(s) found, add them to the error message
+		if ( guesses.length ) {
+			msg += ' Did you mean: ' + guesses.join( ', ' );
+		}
+
+		return { error : msg, guesses : guesses };
+	},
+
+	//the function women think is lacking in men
+	listen : function ( regex, fun, thisArg ) {
+		if ( Array.isArray(regex) ) {
+			regex.forEach(function ( reg ) {
+				this.listen( reg, fun, thisArg );
+			}, this);
+		}
+		else {
+			this.listeners.push({
+				pattern : regex,
+				fun : fun,
+				thisArg: thisArg
+			});
+		}
+	},
+
+	callListeners : function ( msg ) {
+		return this.listeners.some(function callListener ( listener ) {
+			var match = msg.exec( listener.pattern ), resp;
+
+			if ( match ) {
+				resp = listener.fun.call( listener.thisArg, msg );
+
+				bot.log( match, resp );
+				if ( resp ) {
+					msg.reply( resp );
+				}
+				return resp !== false;
+			}
+		});
+	},
+
+	stoplog : false,
+	log : function () {
+		if ( !this.stoplog ) {
+			console.log.apply( console, arguments );
+		}
+	},
+
+	stop : function () {
+		this.stopped = true;
+	},
+	continue : function () {
+		this.stopped = false;
+	}
+};
+
+//a place to hang your coat and remember the past. provides an abstraction over
+// localStorage or whatever data-storage will be used in the future.
+bot.memory = {
+	saveInterval : 900000, //15(min) * 60(sec/min) * 1000(ms/sec) = 900000(ms)
+
+	data : {},
+
+	get : function ( name, defaultVal ) {
+		if ( !this.data[name] ) {
+			this.set( name, defaultVal || {} );
+		}
+
+		return this.data[ name ];
+	},
+
+	set : function ( name, val ) {
+		this.data[ name ] = val;
+	},
+
+	loadAll : function () {
+		var self = this;
+
+		Object.iterate( localStorage, function ( key, val ) {
+			if ( key.startsWith('bot_') ) {
+				console.log( key, val );
+				self.set( key.replace(/^bot_/, ''), JSON.parse(val) );
+			}
+		});
+	},
+
+	save : function ( name ) {
+		if ( name ) {
+			localStorage[ 'bot_' + name ] = JSON.stringify( this.data[name] );
+			return;
+		}
+
+		var self = this;
+		Object.keys( this.data ).forEach(function ( name ) {
+			self.save( name );
+		});
+
+		this.saveLoop();
+	},
+
+	saveLoop : function () {
+		clearTimeout( this.saveIntervalId );
+		setTimeout( this.saveLoop.bind(this), this.saveInterval );
+	}
+};
+
+bot.memory.loadAll();
+window.addEventListener( 'beforeunload', function () { bot.memory.save(); } );
+bot.memory.saveLoop();
+
+bot.banlist = bot.memory.get( 'ban' );
+bot.banlist.contains = function ( id ) {
+	return this.hasOwnProperty( id );
+};
+bot.banlist.add = function ( id ) {
+	this[ id ] = { told : false };
+	this.save();
+};
+bot.banlist.remove = function ( id ) {
+	if ( this.contains(id) ) {
+		delete this[ id ];
+	}
+};
+
+//some sort of pseudo constructor
+bot.Command = function ( cmd ) {
+	cmd.name = cmd.name.toLowerCase();
+
+	cmd.permissions = cmd.permissions || {};
+	cmd.permissions.use = cmd.permissions.use || 'ALL';
+	cmd.permissions.del = cmd.permissions.del || 'NONE';
+
+	cmd.description = cmd.description || '';
+	cmd.creator = cmd.creator || 'God';
+	cmd.invoked = 0;
+
+	//make canUse and canDel
+	[ 'Use', 'Del' ].forEach(function ( perm ) {
+		var low = perm.toLowerCase();
+		cmd[ 'can' + perm ] = function ( usrid ) {
+			var canDo = this.permissions[ low ];
+
+			if ( canDo === 'ALL' ) {
+				return true;
+			}
+			else if ( canDo === 'NONE' ) {
+				return false;
+			}
+			else if ( canDo === 'OWNER' ) {
+				return bot.isOwner( usrid );
+			}
+			return canDo.indexOf( usrid ) > -1;
+		};
+	});
+
+	cmd.exec = function () {
+		this.invoked += 1;
+		return this.fun.apply( this.thisArg, arguments );
+	};
+
+	cmd.del = function () {
+		bot.info.forgotten += 1;
+		delete bot.commands[ cmd.name ];
+	};
+
+	return cmd;
+};
+//a normally priviliged command which can be executed if enough people use it
+bot.CommunityCommand = function ( command, req ) {
+	var cmd = this.Command( command ),
+		used = {},
+		old_execute = cmd.exec,
+		old_canUse  = cmd.canUse;
+	req = req || 2;
+
+	cmd.canUse = function () {
+		return true;
+	};
+	cmd.exec = function ( msg ) {
+		var err = register( msg.get('user_id') );
+		if ( err ) {
+			bot.log( err );
+			return err;
+		}
+		return old_execute.apply( cmd, arguments );
+	};
+	return cmd;
+
+	//once again, a switched return statement: truthy means a message, falsy
+	// means to go on ahead
+	function register ( usrid ) {
+		if ( old_canUse.call(cmd, usrid) ) {
+			return false;
+		}
+
+		clean();
+		var count = Object.keys( used ).length,
+			needed = req - count - 1; //0 based indexing vs. 1 based humans
+		bot.log( used, count, req );
+
+		if ( usrid in used ) {
+			return 'Already registered; still need {0} more'.supplant( needed );
+		}
+		else if ( needed > 0 ) {
+			used[ usrid ] = new Date;
+			return 'Registered; need {0} more to execute'.supplant( needed-1 );
+		}
+		bot.log( 'should execute' );
+		return false; //huzzah!
+	}
+
+	function clean () {
+		var tenMinsAgo = new Date;
+		tenMinsAgo.setMinutes( tenMinsAgo.getMinutes() - 10 );
+
+		Object.keys( used ).reduce( rm, used );
+		function rm ( ret, key ) {
+			if ( ret[key] < tenMinsAgo ) {
+				delete ret[ key ];
+			}
+			return ret;
+		}
+	}
+};
+
+bot.Message = function ( text, msgObj ) {
+	//"casting" to object so that it can be extended with cool stuff and
+	// still be treated like a string
+	var ret = Object( text );
+	ret.content = text;
+
+	var rawSend = function ( text ) {
+		bot.adapter.out.add( text, msgObj.room_id );
+	};
+	var deliciousObject = {
+		send : rawSend,
+
+		reply : function ( resp, user_name ) {
+			var prefix = bot.adapter.reply( user_name || msgObj.user_name );
+			rawSend( prefix + ' ' + resp );
+		},
+		directreply : function ( resp ) {
+			var prefix = bot.adapter.directreply( msgObj.message_id );
+			rawSend( prefix + ' ' + resp );
+		},
+
+		//parse() parses the original message
+		//parse( true ) also turns every match result to a Message
+		//parse( msgToParse ) parses msgToParse
+		//parse( msgToParse, true ) combination of the above
+		parse : function ( msg, map ) {
+			if ( !!msg === msg ) {
+				map = msg;
+				msg = text;
+			}
+			var parsed = bot.parseCommandArgs( msg || text );
+
+			if ( !map ) {
+				return parsed;
+			}
+
+			return parsed.map(function ( part ) {
+				return bot.Message( part, msgObj );
+			});
+		},
+
+		//execute a regexp against the text, saving it inside the object
+		exec : function ( regexp ) {
+			var match = regexp.exec( text );
+			this.matches = match ? match : [];
+
+			return match;
+		},
+
+		findUserid : function ( username ) {
+			username = username.toLowerCase().replace( /\s/g, '' );
+			var ids = Object.keys( bot.users );
+
+			return ids.first(function ( id ) {
+				var name = bot.users[ id ].name
+					.toLowerCase().replace( /\s/g, '' );
+
+				return name === username;
+			}) || -1;
+		}.memoize(),
+
+		findUsername : (function () {
+			var cache = {};
+
+			return function ( id, cb ) {
+				if ( cache[id] ) {
+					finish( cache[id] );
+				}
+				else if ( bot.users[id] ) {
+					finish( bot.users[id].name );
+				}
+				else {
+					bot.users.request( bot.adapter.roomid, id, reqFinish );
+				}
+
+				function reqFinish ( user ) {
+					finish( user.name );
+				}
+				function finish ( name ) {
+					cb( cache[id] = name );
+				}
+			};
+		})(),
+
+		codify : bot.adapter.codify.bind( bot.adapter ),
+		escape : bot.adapter.escape.bind( bot.adapter ),
+		link   : bot.adapter.link.bind( bot.adapter ),
+
+		//retrieve a value from the original message object, or if no argument
+		// provided, the msgObj itself
+		get : function ( what ) {
+			if ( !what ) {
+				return msgObj;
+			}
+			return msgObj[ what ];
+		},
+		set : function ( what, val ) {
+			msgObj[ what ] = val;
+			return msgObj[ what ];
+		}
+	};
+
+	Object.iterate( deliciousObject, function ( key, prop ) {
+		ret[ key ] = prop;
+	});
+
+	return ret;
+};
+
+bot.isOwner = function ( usrid ) {
+	var user = this.users[ usrid ];
+	return user && ( user.is_owner || user.is_moderator );
+};
+
+IO.register( 'input', bot.parseMessage, bot );
+
+bot.beatInterval = 5000; //once every 5 seconds is Good Enough ™
+(function beat () {
+	bot.beat = setTimeout(function () {
+		IO.fire( 'heartbeat' );
+		beat();
+	}, bot.beatInterval );
+}());
+
+//execute arbitrary js code in a relatively safe environment
+bot.eval = (function () {
+window.URL = window.URL || window.webkitURL || window.mozURL || null;
+
+//translation tool: https://tinker.io/b2ff5
+var worker_code = atob( 'dmFyIGdsb2JhbCA9IHRoaXM7CgovKm1vc3QgZXh0cmEgZnVuY3Rpb25zIGNvdWxkIGJlIHBvc3NpYmx5IHVuc2FmZSovCnZhciB3aGl0ZXkgPSB7CgknQXJyYXknICAgICAgICAgICAgICA6IDEsCgknQm9vbGVhbicgICAgICAgICAgICA6IDEsCgknRGF0ZScgICAgICAgICAgICAgICA6IDEsCgknRXJyb3InICAgICAgICAgICAgICA6IDEsCgknRXZhbEVycm9yJyAgICAgICAgICA6IDEsCgknRnVuY3Rpb24nICAgICAgICAgICA6IDEsCgknSW5maW5pdHknICAgICAgICAgICA6IDEsCgknSlNPTicgICAgICAgICAgICAgICA6IDEsCgknTWF0aCcgICAgICAgICAgICAgICA6IDEsCgknTmFOJyAgICAgICAgICAgICAgICA6IDEsCgknTnVtYmVyJyAgICAgICAgICAgICA6IDEsCgknT2JqZWN0JyAgICAgICAgICAgICA6IDEsCgknUmFuZ2VFcnJvcicgICAgICAgICA6IDEsCgknUmVmZXJlbmNlRXJyb3InICAgICA6IDEsCgknUmVnRXhwJyAgICAgICAgICAgICA6IDEsCgknU3RyaW5nJyAgICAgICAgICAgICA6IDEsCgknU3ludGF4RXJyb3InICAgICAgICA6IDEsCgknVHlwZUVycm9yJyAgICAgICAgICA6IDEsCgknVVJJRXJyb3InICAgICAgICAgICA6IDEsCgknYXRvYicgICAgICAgICAgICAgICA6IDEsCgknYnRvYScgICAgICAgICAgICAgICA6IDEsCgknZGVjb2RlVVJJJyAgICAgICAgICA6IDEsCgknZGVjb2RlVVJJQ29tcG9uZW50JyA6IDEsCgknZW5jb2RlVVJJJyAgICAgICAgICA6IDEsCgknZW5jb2RlVVJJQ29tcG9uZW50JyA6IDEsCgknZXZhbCcgICAgICAgICAgICAgICA6IDEsCgknZ2xvYmFsJyAgICAgICAgICAgICA6IDEsCgknaXNGaW5pdGUnICAgICAgICAgICA6IDEsCgknaXNOYU4nICAgICAgICAgICAgICA6IDEsCgknb25tZXNzYWdlJyAgICAgICAgICA6IDEsCgkncGFyc2VGbG9hdCcgICAgICAgICA6IDEsCgkncGFyc2VJbnQnICAgICAgICAgICA6IDEsCgkncG9zdE1lc3NhZ2UnICAgICAgICA6IDEsCgknc2VsZicgICAgICAgICAgICAgICA6IDEsCgkndW5kZWZpbmVkJyAgICAgICAgICA6IDEsCgknd2hpdGV5JyAgICAgICAgICAgICA6IDEsCgoJLyogdHlwZWQgYXJyYXlzIGFuZCBzaGl0ICovCgknQXJyYXlCdWZmZXInICAgICAgIDogMSwKCSdCbG9iJyAgICAgICAgICAgICAgOiAxLAoJJ0Zsb2F0MzJBcnJheScgICAgICA6IDEsCgknRmxvYXQ2NEFycmF5JyAgICAgIDogMSwKCSdJbnQ4QXJyYXknICAgICAgICAgOiAxLAoJJ0ludDE2QXJyYXknICAgICAgICA6IDEsCgknSW50MzJBcnJheScgICAgICAgIDogMSwKCSdVaW50OEFycmF5JyAgICAgICAgOiAxLAoJJ1VpbnQxNkFycmF5JyAgICAgICA6IDEsCgknVWludDMyQXJyYXknICAgICAgIDogMSwKCSdVaW50OENsYW1wZWRBcnJheScgOiAxLAoKCS8qCgl0aGVzZSBwcm9wZXJ0aWVzIGFsbG93IEZGIHRvIGZ1bmN0aW9uLiB3aXRob3V0IHRoZW0sIGEgZnVja2Zlc3Qgb2YKCWluZXhwbGljYWJsZSBlcnJvcnMgZW51c2VzLiB0b29rIG1lIGFib3V0IDQgaG91cnMgdG8gdHJhY2sgdGhlc2UgZnVja2VycwoJZG93bi4KCWZ1Y2sgaGVsbCBpdCBpc24ndCBmdXR1cmUtcHJvb2YsIGJ1dCB0aGUgZXJyb3JzIHRocm93biBhcmUgdW5jYXRjaGFibGUKCWFuZCB1bnRyYWNhYmxlLiBzbyBhIGhlYWRzLXVwLiBlbmpveSwgZnV0dXJlLW1lIQoJKi8KCSdET01FeGNlcHRpb24nIDogMSwKCSdFdmVudCcgICAgICAgIDogMSwKCSdNZXNzYWdlRXZlbnQnIDogMQp9OwoKWyBnbG9iYWwsIGdsb2JhbC5fX3Byb3RvX18gXS5mb3JFYWNoKGZ1bmN0aW9uICggb2JqICkgewoJT2JqZWN0LmdldE93blByb3BlcnR5TmFtZXMoIG9iaiApLmZvckVhY2goZnVuY3Rpb24oIHByb3AgKSB7CgkJaWYoICF3aGl0ZXkuaGFzT3duUHJvcGVydHkoIHByb3AgKSApIHsKCQkJZGVsZXRlIG9ialsgcHJvcCBdOwoJCX0KCX0pOwp9KTsKCk9iamVjdC5kZWZpbmVQcm9wZXJ0eSggQXJyYXkucHJvdG90eXBlLCAnam9pbicsIHsKCXdyaXRhYmxlOiBmYWxzZSwKCWNvbmZpZ3VyYWJsZTogZmFsc2UsCgllbnVtcmFibGU6IGZhbHNlLAoKCXZhbHVlOiAoZnVuY3Rpb24gKCBvbGQgKSB7CgkJcmV0dXJuIGZ1bmN0aW9uICggYXJnICkgewoJCQlpZiAoIHRoaXMubGVuZ3RoID4gNTAwIHx8IChhcmcgJiYgYXJnLmxlbmd0aCA+IDUwMCkgKSB7CgkJCQl0aHJvdyAnRXhjZXB0aW9uOiB0b28gbWFueSBpdGVtcyc7CgkJCX0KCgkJCXJldHVybiBvbGQuYXBwbHkoIHRoaXMsIGFyZ3VtZW50cyApOwoJCX07Cgl9KCBBcnJheS5wcm90b3R5cGUuam9pbiApKQp9KTsKCi8qIHdlIGRlZmluZSBpdCBvdXRzaWRlIHNvIGl0J2xsIG5vdCBiZSBpbiBzdHJpY3QgbW9kZSAqLwpmdW5jdGlvbiBleGVjICggY29kZSApIHsKCXJldHVybiBldmFsKCAndW5kZWZpbmVkO1xuJyArIGNvZGUgKTsKfQp2YXIgY29uc29sZSA9IHsKCV9pdGVtcyA6IFtdLAoJbG9nIDogZnVuY3Rpb24oKSB7CgkJY29uc29sZS5faXRlbXMucHVzaC5hcHBseSggY29uc29sZS5faXRlbXMsIGFyZ3VtZW50cyApOwoJfQp9Owpjb25zb2xlLmVycm9yID0gY29uc29sZS5pbmZvID0gY29uc29sZS5kZWJ1ZyA9IGNvbnNvbGUubG9nOwp2YXIgcCA9IGNvbnNvbGUubG9nLmJpbmQoIGNvbnNvbGUgKTsKCihmdW5jdGlvbigpewoJInVzZSBzdHJpY3QiOwoKCWdsb2JhbC5vbm1lc3NhZ2UgPSBmdW5jdGlvbiAoIGV2ZW50ICkgewoJCXBvc3RNZXNzYWdlKHsKCQkJZXZlbnQgOiAnc3RhcnQnCgkJfSk7CgoJCXZhciBqc29uU3RyaW5naWZ5ID0gSlNPTi5zdHJpbmdpZnksIC8qYmFja3VwKi8KCQkJcmVzdWx0OwoKCQl0cnkgewoJCQlyZXN1bHQgPSBleGVjKCBldmVudC5kYXRhICk7CgkJfQoJCWNhdGNoICggZSApIHsKCQkJcmVzdWx0ID0gZS50b1N0cmluZygpOwoJCX0KCgkJLypKU09OIGRvZXMgbm90IGxpa2UgYW55IG9mIHRoZSBmb2xsb3dpbmcqLwoJCXZhciBzdHJ1bmcgPSB7CgkJCUZ1bmN0aW9uICA6IHRydWUsIEVycm9yICA6IHRydWUsCgkJCVVuZGVmaW5lZCA6IHRydWUsIFJlZ0V4cCA6IHRydWUKCQl9OwoJCXZhciBzaG91bGRfc3RyaW5nID0gZnVuY3Rpb24gKCB2YWx1ZSApIHsKCQkJdmFyIHR5cGUgPSAoIHt9ICkudG9TdHJpbmcuY2FsbCggdmFsdWUgKS5zbGljZSggOCwgLTEgKTsKCgkJCWlmICggdHlwZSBpbiBzdHJ1bmcgKSB7CgkJCQlyZXR1cm4gdHJ1ZTsKCQkJfQoJCQkvKm5laXRoZXIgZG9lcyBpdCBmZWVsIGNvbXBhc3Npb25hdGUgYWJvdXQgTmFOIG9yIEluZmluaXR5Ki8KCQkJcmV0dXJuIHZhbHVlICE9PSB2YWx1ZSB8fCB2YWx1ZSA9PT0gSW5maW5pdHk7CgkJfTsKCgkJdmFyIHJldml2ZXIgPSBmdW5jdGlvbiAoIGtleSwgdmFsdWUgKSB7CgkJCXZhciBvdXRwdXQ7CgoJCQlpZiAoIHNob3VsZF9zdHJpbmcodmFsdWUpICkgewoJCQkJb3V0cHV0ID0gJycgKyB2YWx1ZTsKCQkJfQoJCQllbHNlIHsKCQkJCW91dHB1dCA9IHZhbHVlOwoJCQl9CgoJCQlyZXR1cm4gb3V0cHV0OwoJCX07CgoJCXBvc3RNZXNzYWdlKHsKCQkJYW5zd2VyIDoganNvblN0cmluZ2lmeSggcmVzdWx0LCByZXZpdmVyICksCgkJCWxvZyAgICA6IGpzb25TdHJpbmdpZnkoIGNvbnNvbGUuX2l0ZW1zLCByZXZpdmVyICkuc2xpY2UoIDEsIC0xICkKCQl9KTsKCX07Cn0pKCk7Cg==' );
+var blob = new Blob( [worker_code], { type : 'application/javascript' } ),
+	code_url = window.URL.createObjectURL( blob );
+
+IO.injectScript( 'https://raw.github.com/jashkenas/coffee-script/master/extras/coffee-script.js' );
+
+return function ( msg, cb ) {
+	var worker = new Worker( code_url ),
+		timeout;
+
+	var code = msg.toString();
+	if ( code[0] === 'c' ) {
+		code = CoffeeScript.compile( code.replace(/^c>/, ''), {bare:1} );
+	}
+	else {
+		code = code.replace( /^>/, '' );
+	}
+
+	worker.onmessage = function ( evt ) {
+		var type = evt.data.event;
+		if ( type === 'start' ) {
+			start();
+		}
+		else {
+			finish( dressUpAnswer(evt.data) );
+		}
+	};
+
+	worker.onerror = function ( error ) {
+		finish( error.toString() );
+	};
+
+	//and it all boils down to this...
+	worker.postMessage( code );
+
+	function start () {
+		timeout = window.setTimeout(function() {
+			finish( 'Maximum execution time exceeded' );
+		}, 500 );
+	}
+
+	function finish ( result ) {
+		clearTimeout( timeout );
+		worker.terminate();
+
+		if ( cb && cb.call ) {
+			cb( result );
+		}
+		else {
+			msg.directreply( result );
+		}
+	}
+};
+
+function dressUpAnswer ( answerObj ) {
+	bot.log( answerObj, 'eval answerObj' );
+	var answer = answerObj.answer,
+		log = answerObj.log,
+		result;
+
+	result = snipAndCodify( answer );
+
+	if ( log && log.length ) {
+		result += ' Logged: ' + snipAndCodify( log );
+	}
+
+	return result;
+}
+function snipAndCodify ( str ) {
+	var ret;
+
+	if ( str.length > 400 ) {
+		ret = '`' +  str.slice(0, 400) + '` (snip)';
+	}
+	else {
+		ret = '`' + str +'`';
+	}
+
+	return ret;
+}
+}());
+
 
 (function () {
 "use strict";
@@ -3025,14 +3070,14 @@ var hammers = {
 // /(STOP|STAHP|...)[\.!\?]?$/
 var re = new RegExp(
 	'(' +
-		Object.keys(hammers).map(RegExp.escape).join('|')
-	+ ')[\.!\?]?$' );
+		Object.keys(hammers).map(RegExp.escape).join('|') +
+	')[\\.!?]?$' );
 
 IO.register( 'input', function STOP ( msgObj ) {
 	var sentence = msgObj.content.toUpperCase(),
-		res;
+		res = re.exec( sentence );
 
-	if ( res = re.exec(sentence) ) {
+	if ( res ) {
 		bot.adapter.out.add( hammers[res[1]]  , msgObj.room_id );
 	}
 });
@@ -4190,7 +4235,7 @@ var github = {
 			}
 
 			cb( data );
-		};
+		}
 	}
 };
 
@@ -4752,7 +4797,7 @@ bot.addCommand({
 (function () {
 "use strict";
 var parse = bot.getCommand( 'parse' );
-var storage = JSON.parse( localStorage.bot_learn || '{}' );
+var storage = bot.memory.get( 'learn' );
 
 var replyPatterns = /^(<>|<user>|<msg>)/i,
 	onlyReply = new RegExp( replyPatterns.source + '$', 'i' );
@@ -4919,11 +4964,11 @@ function saveCommand ( command ) {
 	//h4x in source/util.js defines RegExp.prototype.toJSON so we don't worry
 	// about the input regexp stringifying
 	storage[ command.name ] = JSON.stringify( command );
-	localStorage.bot_learn = JSON.stringify( storage );
+	bot.memory.save( 'learn' );
 }
 function deleteCommand ( name ) {
 	delete storage[ name ];
-	localStorage.bot_learn = JSON.stringify( storage );
+	bot.memory.save( 'learn' );
 }
 
 bot.addCommand({
@@ -5108,7 +5153,7 @@ if ( bot.adapter.roomid !== ownerRoom ) {
 	return;
 }
 
-var muted = JSON.parse( localStorage.bot_muted || '{}' );
+var muted = bot.memory.get( 'muted' );
 
 function checkMuted () {
 	var now = Date.now();
@@ -5145,7 +5190,7 @@ function giveVoice ( id, cb ) {
 		delete muted[ id ];
 
 		if ( cb ) {
-			localStorage.bot_muted = JSON.stringify( muted );
+			bot.memory.save( 'muted' );
 			cb && ( cb.apply(null, args) );
 		}
 	}
@@ -5172,7 +5217,7 @@ function takeVoice ( params, cb ) {
 			endDate : calcEndDate( params.duration ).getTime()
 		};
 
-		localStorage.bot_muted = JSON.stringify( muted );
+		bot.memory.save( 'muted' );
 		cb.apply( null, arguments );
 	}
 
@@ -5693,7 +5738,7 @@ bot.addCommand({
 
 ;
 (function () {
-var list = JSON.parse( localStorage.getItem('bot_todo') || '{}' );
+var list = bot.memory.get( 'todo' );
 
 var userlist = function ( usrid ) {
 	var usr = list[ usrid ],
@@ -5740,7 +5785,6 @@ var userlist = function ( usrid ) {
 			toRemove.length = 0;
 
 			list[ usrid ] = usr;
-			localStorage.bot_todo = JSON.stringify( list );
 		},
 
 		exists : function ( suspect ) {
@@ -6205,7 +6249,7 @@ bot.addCommand({
 "use strict";
 //welcomes new users with a link to the room rules
 
-var seen = JSON.parse( localStorage.bot_users || '{}' );
+var seen = bot.memory.get( 'users' );
 
 var message = "Welcome to the JavaScript chat! Please review the " +
 		bot.adapter.link(
@@ -6260,7 +6304,7 @@ IO.register( 'userregister', function ( user, room ) {
 		else {
 			seen[ user.id ] = true;
 		}
-		localStorage.bot_users = JSON.stringify( seen );
+		bot.memory.save( 'users' );
 	}
 });
 

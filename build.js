@@ -316,6 +316,7 @@ if ( process.argv.indexOf('no-min') > -1 ) {
 
 var files = [
 	'./source/IO.js',
+	'./source/util.js',
 	'./source/bot.js',
 	'./source/adapter.js',
 	'./source/users.js',

@@ -1,5 +1,5 @@
 (function () {
-var list = JSON.parse( localStorage.getItem('bot_todo') || '{}' );
+var list = bot.memory.get( 'todo' );
 
 var userlist = function ( usrid ) {
 	var usr = list[ usrid ],
@@ -46,7 +46,6 @@ var userlist = function ( usrid ) {
 			toRemove.length = 0;
 
 			list[ usrid ] = usr;
-			localStorage.bot_todo = JSON.stringify( list );
 		},
 
 		exists : function ( suspect ) {

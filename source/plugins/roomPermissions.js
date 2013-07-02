@@ -6,7 +6,7 @@ if ( bot.adapter.roomid !== ownerRoom ) {
 	return;
 }
 
-var muted = JSON.parse( localStorage.bot_muted || '{}' );
+var muted = bot.memory.get( 'muted' );
 
 function checkMuted () {
 	var now = Date.now();
@@ -43,7 +43,7 @@ function giveVoice ( id, cb ) {
 		delete muted[ id ];
 
 		if ( cb ) {
-			localStorage.bot_muted = JSON.stringify( muted );
+			bot.memory.save( 'muted' );
 			cb && ( cb.apply(null, args) );
 		}
 	}
@@ -70,7 +70,7 @@ function takeVoice ( params, cb ) {
 			endDate : calcEndDate( params.duration ).getTime()
 		};
 
-		localStorage.bot_muted = JSON.stringify( muted );
+		bot.memory.save( 'muted' );
 		cb.apply( null, arguments );
 	}
 

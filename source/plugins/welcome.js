@@ -2,7 +2,7 @@
 "use strict";
 //welcomes new users with a link to the room rules
 
-var seen = JSON.parse( localStorage.bot_users || '{}' );
+var seen = bot.memory.get( 'users' );
 
 var message = "Welcome to the JavaScript chat! Please review the " +
 		bot.adapter.link(
@@ -57,7 +57,7 @@ IO.register( 'userregister', function ( user, room ) {
 		else {
 			seen[ user.id ] = true;
 		}
-		localStorage.bot_users = JSON.stringify( seen );
+		bot.memory.save( 'users' );
 	}
 });
 

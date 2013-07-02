@@ -238,13 +238,61 @@ var bot = window.bot = {
 	}
 };
 
-bot.banlist = JSON.parse( localStorage.bot_ban || '{}' );
-if ( Array.isArray(bot.banlist) ) {
-	bot.banlist = bot.banlist.reduce(function ( ret, id ) {
-		ret[ id ] = { told : false };
-		return ret;
-	}, {});
-}
+//a place to hang your coat and remember the past. provides an abstraction over
+// localStorage or whatever data-storage will be used in the future.
+bot.memory = {
+	saveInterval : 900000, //15(min) * 60(sec/min) * 1000(ms/sec) = 900000(ms)
+
+	data : {},
+
+	get : function ( name, defaultVal ) {
+		if ( !this.data[name] ) {
+			this.set( name, defaultVal || {} );
+		}
+
+		return this.data[ name ];
+	},
+
+	set : function ( name, val ) {
+		this.data[ name ] = val;
+	},
+
+	loadAll : function () {
+		var self = this;
+
+		Object.iterate( localStorage, function ( key, val ) {
+			if ( key.startsWith('bot_') ) {
+				console.log( key, val );
+				self.set( key.replace(/^bot_/, ''), JSON.parse(val) );
+			}
+		});
+	},
+
+	save : function ( name ) {
+		if ( name ) {
+			localStorage[ 'bot_' + name ] = JSON.stringify( this.data[name] );
+			return;
+		}
+
+		var self = this;
+		Object.keys( this.data ).forEach(function ( name ) {
+			self.save( name );
+		});
+
+		this.saveLoop();
+	},
+
+	saveLoop : function () {
+		clearTimeout( this.saveIntervalId );
+		setTimeout( this.saveLoop.bind(this), this.saveInterval );
+	}
+};
+
+bot.memory.loadAll();
+window.addEventListener( 'beforeunload', function () { bot.memory.save(); } );
+bot.memory.saveLoop();
+
+bot.banlist = bot.memory.get( 'ban' );
 bot.banlist.contains = function ( id ) {
 	return this.hasOwnProperty( id );
 };
@@ -255,12 +303,7 @@ bot.banlist.add = function ( id ) {
 bot.banlist.remove = function ( id ) {
 	if ( this.contains(id) ) {
 		delete this[ id ];
-		this.save();
 	}
-};
-bot.banlist.save = function () {
-	//JSON.stringify ignores functions
-	localStorage.bot_ban = JSON.stringify( this );
 };
 
 //some sort of pseudo constructor
@@ -461,7 +504,8 @@ bot.Message = function ( text, msgObj ) {
 			return msgObj[ what ];
 		},
 		set : function ( what, val ) {
-			return msgObj[ what ] = val;
+			msgObj[ what ] = val;
+			return msgObj[ what ];
 		}
 	};
 
@@ -489,7 +533,6 @@ bot.beatInterval = 5000; //once every 5 seconds is Good Enough ™
 
 //#build eval.js
 
-//#build util.js
 //#build parseCommandArgs.js
 //#build suggestionDict.js
 

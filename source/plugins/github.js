@@ -111,7 +111,7 @@ var github = {
 			}
 
 			cb( data );
-		};
+		}
 	}
 };
 

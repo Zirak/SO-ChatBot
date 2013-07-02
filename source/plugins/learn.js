@@ -1,7 +1,7 @@
 (function () {
 "use strict";
 var parse = bot.getCommand( 'parse' );
-var storage = JSON.parse( localStorage.bot_learn || '{}' );
+var storage = bot.memory.get( 'learn' );
 
 var replyPatterns = /^(<>|<user>|<msg>)/i,
 	onlyReply = new RegExp( replyPatterns.source + '$', 'i' );
@@ -168,11 +168,11 @@ function saveCommand ( command ) {
 	//h4x in source/util.js defines RegExp.prototype.toJSON so we don't worry
 	// about the input regexp stringifying
 	storage[ command.name ] = JSON.stringify( command );
-	localStorage.bot_learn = JSON.stringify( storage );
+	bot.memory.save( 'learn' );
 }
 function deleteCommand ( name ) {
 	delete storage[ name ];
-	localStorage.bot_learn = JSON.stringify( storage );
+	bot.memory.save( 'learn' );
 }
 
 bot.addCommand({
