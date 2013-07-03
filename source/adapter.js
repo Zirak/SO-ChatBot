@@ -347,51 +347,30 @@ var output = bot.adapter.out = {
 	'409' : 0, //count the number of conflicts
 	total : 0, //number of messages sent
 	interval : polling.interval + 500,
-	messages : {},
 
-	init : function () {
-		this.loopage();
-	},
+	init : function () {},
 
 	//add a message to the output queue
 	add : function ( msg, roomid ) {
-		roomid = roomid || bot.adapter.roomid;
 		IO.out.receive({
 			text : msg + '\n',
-			room : roomid
+			room : roomid || bot.adapter.roomid
 		});
-	},
-
-	//build the final output
-	build : function ( obj ) {
-		if ( !this.messages[obj.room] ) {
-			this.messages[ obj.room ] = [];
-		}
-		this.messages[ obj.room ].push( obj.text );
+		IO.out.tick();
 	},
 
 	//send output to all the good boys and girls
 	//no messages for naughty kids
 	//...what's red and sits in the corner?
 	//a naughty strawberry
-	send : function () {
+	send : function ( obj ) {
 		//unless the bot's stopped. in which case, it should shut the fudge up
 		// the freezer and never let it out. not until it can talk again. what
 		// was I intending to say?
 		if ( !bot.stopped ) {
-			Object.iterate(this.messages, function ( room, message ) {
-				bot.log( 'output send iteration', room, message );
-				if ( !message.length ) {
-					return;
-				}
-
-				message.forEach(function (text) {
-					this.sendToRoom( text, room );
-				}, this);
-			}, this );
+			//ah fuck it
+			this.sendToRoom( obj.text, obj.room );
 		}
-
-		this.messages = {};
 	},
 
 	//what's brown and sticky?
@@ -413,7 +392,7 @@ var output = bot.adapter.out = {
 			//conflict, wait for next round to send message
 			if ( xhr.status === 409 ) {
 				output['409'] += 1;
-				output.add( text, roomid );
+				delayAdd( text, roomid );
 			}
 			//server error, usually caused by message being too long
 			else if ( xhr.status === 500 ) {
@@ -433,22 +412,17 @@ var output = bot.adapter.out = {
 				IO.fire( 'sendoutput', xhr, text, roomid );
 			}
 		}
-	},
 
-	//what do you call a boomerang which doesn't return?
-	//a stick
-	loopage : function () {
-		var that = this;
-		setTimeout(function () {
-			IO.out.flush();
-			that.loopage();
-		}, this.interval );
+		function delayAdd () {
+			setTimeout(function delayedAdd () {
+				output.add( text, roomid );
+			}, output.interval );
+		}
 	}
 };
 //what's orange and sounds like a parrot?
 //a carrot
-IO.register( 'output', output.build, output );
-IO.register( 'afteroutput', output.send, output );
+IO.register( 'output', output.send, output );
 
 //two guys walk into a bar. the bartender asks them "is this some kind of joke?"
 bot.adapter.init();
