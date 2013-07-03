@@ -4,8 +4,6 @@
 
 	function getXKCD( args, cb ) {
 		props = args.parse();
-		console.log(props);
-		console.log(cb);
 		// They want a random XKCD, or the latest
 		if ( !props[0] || props[0] === 'new' ) {
 
@@ -16,7 +14,6 @@
 			});
 
 			function finishXKCD ( resp ) {
-				console.log(resp);
 				var maxID = resp.num;
 				if ( !props[0] ) {
 					finish( 'http://xkcd.com/' + Math.rand( 1, maxID ));
@@ -34,7 +31,6 @@
 		function finish( res ) {
 			bot.log( res, '/xkcd final' );
 			if ( cb && cb.call ) {
-				console.log('hyar');
 				cb( res );
 			}
 			else {
@@ -42,8 +38,6 @@
 			}
 		}
 	}
-
-
 
 	bot.addCommand({
 		name: 'xkcd',
