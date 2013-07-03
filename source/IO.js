@@ -231,6 +231,15 @@ IO.CBuffer = function ( size ) {
 	return ret;
 };
 
+IO.relativeUrlToAbsolute = function ( url ) {
+	//the anchor's href *property* will always be absolute, unlike the href
+	// *attribute*
+	var a = document.createElement( 'a' );
+	a.setAttribute( 'href', url );
+
+	return a.href;
+};
+
 IO.injectScript = function ( url ) {
 	var script = document.createElement( 'script' );
 	script.src = url;

@@ -232,6 +232,15 @@ IO.CBuffer = function ( size ) {
 	return ret;
 };
 
+IO.relativeUrlToAbsolute = function ( url ) {
+	//the anchor's href *property* will always be absolute, unlike the href
+	// *attribute*
+	var a = document.createElement( 'a' );
+	a.setAttribute( 'href', url );
+
+	return a.href;
+};
+
 IO.injectScript = function ( url ) {
 	var script = document.createElement( 'script' );
 	script.src = url;
@@ -5039,8 +5048,8 @@ var def = {
 };
 
 var tracking = bot.memory.get( 'tracker', def );
-var message = '{0} (also known as {1}) changed his name to {2}',
-	messageNoAlias = '{0} changed his name to {2}';
+var message = '*→ {0} (also known as {1}) changed his name to {2}*',
+	messageNoAlias = '*→ {0} changed his name to {2}*';
 
 IO.register( 'userregister', function tracker ( user, room ) {
 	var names = tracking[ user.id ];
@@ -5054,9 +5063,13 @@ IO.register( 'userregister', function tracker ( user, room ) {
 
 	bot.log( user, names, 'tracking found suspect' );
 
+	var userLink = bot.adapter.link(
+		names[0],
+		IO.relativeUrlToAbsolute( '/users/' + user.id ) );
+
 	var outFormat = names.length > 1 ? message : messageNoAlias,
 		out = outFormat.supplant(
-			names[0], names.slice(1), user.name );
+			userLink, names.slice(1), user.name );
 
 	bot.adapter.out.add( out, room );
 	names.unshift( user.name );
