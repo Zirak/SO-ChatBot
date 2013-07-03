@@ -18,7 +18,7 @@ IO.register( 'input', function STOP ( msgObj ) {
 		res = re.exec( sentence );
 
 	if ( res ) {
-		bot.adapter.out.add( hammers[res[1]]  , msgObj.room_id );
+		bot.adapter.out.add( hammers[res[1]], msgObj.room_id );
 	}
 });
 
