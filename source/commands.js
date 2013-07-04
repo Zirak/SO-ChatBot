@@ -308,9 +308,7 @@ var commands = {
 		}
 
 		args.directreply( 'http://stackoverflow.com/users/' + id );
-	},
-
-	listcommands : function ( args )
+	}
 };
 
 commands.listcommands = (function () {
