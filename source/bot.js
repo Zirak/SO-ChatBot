@@ -88,9 +88,13 @@ var bot = window.bot = {
 			return;
 		}
 
+		msg.reply( this.giveUpMessage(cmd.guesses) );
+	},
+
+	giveUpMessage : function ( guesses ) {
 		//man, I can't believe it worked...room full of nachos for me
 		var errMsg = 'That didn\'t make much sense.';
-		if ( cmd.guesses && cmd.guesses.length ) {
+		if ( guesses && guesses.length ) {
 			errMsg += ' Maybe you meant: ' + cmd.guesses.join( ', ' );
 		}
 		//mmmm....nachos
@@ -98,12 +102,12 @@ var bot = window.bot = {
 			errMsg += ' Use the help command to learn more.';
 		}
 		//wait a minute, these aren't nachos. these are bear cubs.
-		msg.reply( errMsg );
+		return errMsg;
 		//good mama bear...nice mama bear...tasty mama be---
 	},
 
 	execCommand : function ( cmd, msg ) {
-		bot.log( cmd, msg, 'execCommand input' );
+		bot.log( cmd, 'execCommand calling' );
 
 		if ( !cmd.canUse(msg.get('user_id')) ) {
 			msg.reply([
@@ -112,8 +116,6 @@ var bot = window.bot = {
 			].random());
 			return;
 		}
-
-		bot.log( cmd, 'execCommand calling' );
 
 		var args = this.Message(
 				msg.replace( /^\/\s*/, '' ).slice( cmd.name.length ).trim(),

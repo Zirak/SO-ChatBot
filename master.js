@@ -739,9 +739,13 @@ var bot = window.bot = {
 			return;
 		}
 
+		msg.reply( this.giveUpMessage(cmd.guesses) );
+	},
+
+	giveUpMessage : function ( guesses ) {
 		//man, I can't believe it worked...room full of nachos for me
 		var errMsg = 'That didn\'t make much sense.';
-		if ( cmd.guesses && cmd.guesses.length ) {
+		if ( guesses && guesses.length ) {
 			errMsg += ' Maybe you meant: ' + cmd.guesses.join( ', ' );
 		}
 		//mmmm....nachos
@@ -749,12 +753,12 @@ var bot = window.bot = {
 			errMsg += ' Use the help command to learn more.';
 		}
 		//wait a minute, these aren't nachos. these are bear cubs.
-		msg.reply( errMsg );
+		return errMsg;
 		//good mama bear...nice mama bear...tasty mama be---
 	},
 
 	execCommand : function ( cmd, msg ) {
-		bot.log( cmd, msg, 'execCommand input' );
+		bot.log( cmd, 'execCommand calling' );
 
 		if ( !cmd.canUse(msg.get('user_id')) ) {
 			msg.reply([
@@ -763,8 +767,6 @@ var bot = window.bot = {
 			].random());
 			return;
 		}
-
-		bot.log( cmd, 'execCommand calling' );
 
 		var args = this.Message(
 				msg.replace( /^\/\s*/, '' ).slice( cmd.name.length ).trim(),
@@ -1659,7 +1661,10 @@ var commands = {
 	},
 
 	listen : function ( msg ) {
-		return bot.callListeners( msg ) || bot.giveUpMessage( msg );
+		var ret = bot.callListeners( msg );
+		if ( !ret ) {
+			return bot.giveUpMessage();
+		}
 	},
 
 	eval : function ( msg, cb ) {
@@ -3064,6 +3069,8 @@ bot.listen(
 	/(I('m| am))?\s*sorry/i,
 	bot.personality.apologize, bot.personality );
 bot.listen( /^bitch/i, bot.personality.bitch, bot.personality );
+
+;
 
 ;
 (function () {
@@ -6467,10 +6474,11 @@ function getXKCD( args, cb ) {
 
 	function finishXKCD ( resp ) {
 		var maxID = resp.num;
+
 		if ( !prop ) {
 			finish( linkBase + Math.rand(1, maxID) );
 		}
-		else {
+		else if ( prop === 'new' ) {
 			finish( linkBase + maxID );
 		}
 	}

@@ -20,7 +20,10 @@ var commands = {
 	},
 
 	listen : function ( msg ) {
-		return bot.callListeners( msg ) || bot.giveUpMessage( msg );
+		var ret = bot.callListeners( msg );
+		if ( !ret ) {
+			return bot.giveUpMessage();
+		}
 	},
 
 	eval : function ( msg, cb ) {

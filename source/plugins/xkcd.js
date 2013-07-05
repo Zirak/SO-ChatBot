@@ -27,10 +27,11 @@ function getXKCD( args, cb ) {
 
 	function finishXKCD ( resp ) {
 		var maxID = resp.num;
+
 		if ( !prop ) {
 			finish( linkBase + Math.rand(1, maxID) );
 		}
-		else {
+		else if ( prop === 'new' ) {
 			finish( linkBase + maxID );
 		}
 	}
