@@ -356,7 +356,7 @@ var output = bot.adapter.out = {
 			text : msg + '\n',
 			room : roomid || bot.adapter.roomid
 		});
-		IO.out.tick();
+		IO.out.flush();
 	},
 
 	//send output to all the good boys and girls

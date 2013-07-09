@@ -2832,7 +2832,7 @@ var output = bot.adapter.out = {
 			text : msg + '\n',
 			room : roomid || bot.adapter.roomid
 		});
-		IO.out.tick();
+		IO.out.flush();
 	},
 
 	//send output to all the good boys and girls
@@ -4388,7 +4388,6 @@ var game = {
 	guesses : [],
 	guessNum : 0,
 	maxGuess : 6,
-	guessMade : false,
 
 	end : true,
 	msg : null,
@@ -4417,10 +4416,8 @@ var game = {
 			self.guesses = [];
 			self.guessNum = 0;
 
-			//oh look, another dirty hack...this one is to make sure the
-			// hangman is codified
-			self.guessMade = true;
-			self.register();
+			self.guessMade();
+			self.end = false;
 
 			if ( msg.length && !Number(msg) ) {
 				self.receiveMessage( msg );
@@ -4450,7 +4447,7 @@ var game = {
 		}
 
 		this.guesses.push( guess );
-		this.guessMade = true;
+		this.guessMade();
 
 		bot.log( guess, 'handleGuess handled' );
 
@@ -4494,6 +4491,9 @@ var game = {
 	//attach the hangman drawing to the already guessed list and to the
 	// revealed portion of the secret word
 	preparePrint : function () {
+		if (this.end) {
+			return;
+		}
 		var self = this;
 
 		//replace the placeholders in the dude with body parts
@@ -4511,13 +4511,13 @@ var game = {
 
 	//win the game
 	win : function () {
-		this.unregister();
+		this.end = true;
 		return 'Correct! The word is ' + this.word + '.';
 	},
 
 	//lose the game. less bitter messages? maybe.
 	lose : function () {
-		this.unregister();
+		this.end = true;
 		return 'You people suck. The word is ' + this.word;
 	},
 
@@ -4529,26 +4529,12 @@ var game = {
 		return this.guessNum >= this.maxGuess;
 	},
 
-	register : function () {
-		this.unregister(); //to make sure it's not added multiple times
-		IO.register( 'beforeoutput', this.buildOutput, this );
-
-		this.end = false;
-	},
-	unregister : function () {
-		IO.unregister( 'beforeoutput', this.buildOutput );
-
-		this.end = true;
-	},
-
-	buildOutput : function () {
-		if ( this.guessMade ) {
-			this.preparePrint();
-
-			this.guessMade = false;
-		}
+	guessMade : function () {
+		clearTimeout( this.printTimeout );
+		this.printTimeout = setTimeout( this.preparePrint.bind(this), 2000 );
 	}
 };
+
 bot.addCommand({
 	name : 'hang',
 	fun : game.receiveMessage,
