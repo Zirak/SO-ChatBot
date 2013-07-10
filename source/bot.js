@@ -95,7 +95,7 @@ var bot = window.bot = {
 		//man, I can't believe it worked...room full of nachos for me
 		var errMsg = 'That didn\'t make much sense.';
 		if ( guesses && guesses.length ) {
-			errMsg += ' Maybe you meant: ' + cmd.guesses.join( ', ' );
+			errMsg += ' Maybe you meant: ' + guesses.join( ', ' );
 		}
 		//mmmm....nachos
 		else {

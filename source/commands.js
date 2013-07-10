@@ -459,8 +459,8 @@ commands.urban.async = true;
 
 var parse = commands.parse = (function () {
 var macros = {
-	who : function () {
-		return [].pop.call( arguments ).get( 'user_name' );
+	who : function ( msgObj ) {
+		return msgObj.get( 'user_name' );
 	},
 
 	someone : function () {
@@ -475,7 +475,7 @@ var macros = {
 		user = active[ Math.floor(Math.random() * (active.length-1)) ];
 
 		if ( !user ) {
-			return 'Nobody! I\'m all alone :(';
+			return 'Nobody';
 		}
 
 		return user.getElementsByTagName( 'img' )[ 0 ].title;
@@ -485,13 +485,13 @@ var macros = {
 		return Math.floor( Math.random() * 10 );
 	},
 
-	encode : function ( string ) {
+	encode : function ( msgObj, string ) {
 		return encodeURIComponent( string );
 	},
 
 	//random number, min <= n <= max
 	//treats non-numeric inputs like they don't exist
-	rand : function ( min, max ) {
+	rand : function ( msgObj, min, max ) {
 		min = Number( min );
 		max = Number( max );
 		return Math.rand( min, max );
@@ -547,15 +547,15 @@ return function parse ( args, extraVars ) {
 	function parseMacroArgs ( macroArgs ) {
 		bot.log( macroArgs, '/parse parseMacroArgs' );
 		if ( !macroArgs ) {
-			return [];
+			return [ args ];
 		}
 
 		//parse the arguments, split them into individual arguments,
 		// and trim'em (to cover the case of "arg,arg" and "arg, arg")
 		return (
-			parse( macroArgs, extraVars )
-				.split( ',' ).invoke( 'trim' ).concat( args )
-		);
+			[ args ].concat(
+				parse( macroArgs, extraVars )
+					.split( ',' ).invoke( 'trim' ) ) );
 		//this is not good code
 	}
 

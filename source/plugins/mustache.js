@@ -62,7 +62,8 @@ bot.addCommand({
 		del : 'NONE'
 	},
 
-	description : 'Mustachifies a user. `/mustache [link|usrid|user name]`'
+	description : 'Mustachifies a user. ' +
+		'`/mustache [link|usrid|username] [mustache=0]`'
 });
 
 }());
