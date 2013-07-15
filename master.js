@@ -951,7 +951,7 @@ bot.banlist.contains = function ( id ) {
 };
 bot.banlist.add = function ( id ) {
 	this[ id ] = { told : false };
-	this.save();
+	bot.memory.save( 'ban' );
 };
 bot.banlist.remove = function ( id ) {
 	if ( this.contains(id) ) {
