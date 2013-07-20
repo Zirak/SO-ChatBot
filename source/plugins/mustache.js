@@ -5,7 +5,9 @@ var unexisto = 'User {0} was not found (if the user is not in room {1}, pass ' +
 		'a user-id instead of a username).';
 
 function mustachify ( args ) {
-	var usrid = args.content;
+	var props = parseArgs( args ),
+		usrid = props.usrid;
+	bot.log( props, '/mustache input' );
 
 	//check for url passing
 	if ( linkCheck(usrid) ) {
@@ -28,7 +30,7 @@ function mustachify ( args ) {
 	else if ( Number(usrid) === bot.adapter.user_id ) {
 		return [
 			'Nobody puts a mustache on me. Again.',
-			'Mustache me once, shame on you. Mustache me ---twice--- 12 times...'
+			'Mustache me once, shame on you. Mustache me ---twice--- 9 times...'
 		].random();
 	}
 
@@ -47,7 +49,28 @@ function mustachify ( args ) {
 		bot.log( src, '/mustache finish' );
 
 		args.directreply(
-			'http://mustachify.me/?src=' + src );
+			'http://mustachify.me/' + props.mustache + '?src=' + src );
+	}
+
+	function parseArgs ( args ) {
+		var parts = args.parse(),
+			last = parts.pop(),
+			ret = {};
+
+		// /mustache usrid mustache
+		// /mustache user name mustache
+		//we've already `.pop`ed the mustache part, so we need to account for it
+		if ( parts.length > 0 && !(/\D/).test(last) ) {
+			ret.usrid = parts.join( ' ' );
+			ret.mustache = last;
+		}
+		// /mustache usrid
+		else {
+			ret.usrid = args.content;
+			ret.mustache = Math.rand(0, 5);
+		}
+
+		return ret;
 	}
 }
 
@@ -63,7 +86,7 @@ bot.addCommand({
 	},
 
 	description : 'Mustachifies a user. ' +
-		'`/mustache [link|usrid|username] [mustache=0]`'
+		'`/mustache [link|usrid|username] [mustache=rand(0,5)]`'
 });
 
 }());
