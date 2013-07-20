@@ -45,9 +45,9 @@ function mustachify ( args ) {
 
 	function finish ( src ) {
 		bot.log( src, '/mustache finish' );
-
+		var n = Math.floor(Math.random()*3);
 		args.directreply(
-			'http://mustachify.me/?src=' + src );
+			'http://mustachify.me/' + n + '?src=' + src );
 	}
 }
 
