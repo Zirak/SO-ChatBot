@@ -18,11 +18,6 @@ function learn ( args ) {
 		creator: args.get( 'user_name' ),
 		date   : new Date()
 	};
-	command.description = [
-		'User-taught command:',
-		commandParts[3] || '',
-		args.codify( command.output )
-	].join( ' ' );
 
 	//a truthy value, unintuitively, means it isn't valid, because it returns
 	// an error message
@@ -30,8 +25,14 @@ function learn ( args ) {
 	if ( errorMessage ) {
 		return errorMessage;
 	}
+
 	command.name = command.name.toLowerCase();
 	command.input = new RegExp( command.input );
+	command.description = [
+		'User-taught command:',
+		commandParts[3] || '',
+		args.codify( command.output )
+	].join( ' ' );
 
 	bot.log( command, '/learn parsed' );
 
@@ -109,7 +110,7 @@ function checkCommand ( cmd ) {
 		error;
 
 	if ( somethingUndefined ) {
-		error = 'Illegal /learn object; see `/help learn`';
+		error = 'Illegal `/learn` object; see `/help learn`';
 	}
 	//not very possible, I know, but...uh...yes. definitely. I agree. spot on,
 	// Mr. Pips.

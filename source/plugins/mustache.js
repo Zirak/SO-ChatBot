@@ -24,7 +24,7 @@ function mustachify ( args ) {
 
 	bot.log( usrid, '/mustache mapped' );
 
-	if ( usrid < 0 || !bot.users.hasOwnProperty(usrid) ) {
+	if ( !bot.users.hasOwnProperty(usrid) ) {
 		return unexisto.supplant( usrid, bot.adapter.roomid );
 	}
 	else if ( Number(usrid) === bot.adapter.user_id ) {
