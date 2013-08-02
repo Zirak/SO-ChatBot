@@ -237,7 +237,17 @@ var bot = window.bot = {
 	},
 	continue : function () {
 		this.stopped = false;
-	}
+	},
+
+    devMode : false,
+    activateDevMode : function (pattern) {
+        this.devMode = true;
+        this.invocationPattern = pattern || 'beer!';
+        IO.events.userjoin.length = 0;
+        this.validateMessage = function (msgObj) {
+            return msgObj.content.trim().startsWith(this.invocationPattern);
+        };
+    }
 };
 
 //a place to hang your coat and remember the past. provides an abstraction over

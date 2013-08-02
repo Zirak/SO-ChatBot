@@ -7,7 +7,12 @@ var worker_code = atob( 'dmFyIGdsb2JhbCA9IHRoaXM7CgovKm1vc3QgZXh0cmEgZnVuY3Rpb25
 var blob = new Blob( [worker_code], { type : 'application/javascript' } ),
 	code_url = window.URL.createObjectURL( blob );
 
-IO.injectScript( 'https://raw.github.com/jashkenas/coffee-script/master/extras/coffee-script.js' );
+setTimeout(function () {
+    if (bot.devMode) {
+        return;
+    }
+    IO.injectScript( 'https://raw.github.com/jashkenas/coffee-script/master/extras/coffee-script.js' );
+}, 1000);
 
 return function ( msg, cb ) {
 	var worker = new Worker( code_url ),

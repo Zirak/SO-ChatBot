@@ -888,7 +888,17 @@ var bot = window.bot = {
 	},
 	continue : function () {
 		this.stopped = false;
-	}
+	},
+
+    devMode : false,
+    activateDevMode : function (pattern) {
+        this.devMode = true;
+        this.invocationPattern = pattern || 'beer!';
+        IO.events.userjoin.length = 0;
+        this.validateMessage = function (msgObj) {
+            return msgObj.content.trim().startsWith(this.invocationPattern);
+        };
+    }
 };
 
 //a place to hang your coat and remember the past. provides an abstraction over
@@ -1193,7 +1203,12 @@ var worker_code = atob( 'dmFyIGdsb2JhbCA9IHRoaXM7CgovKm1vc3QgZXh0cmEgZnVuY3Rpb25
 var blob = new Blob( [worker_code], { type : 'application/javascript' } ),
 	code_url = window.URL.createObjectURL( blob );
 
-IO.injectScript( 'https://raw.github.com/jashkenas/coffee-script/master/extras/coffee-script.js' );
+setTimeout(function () {
+    if (bot.devMode) {
+        return;
+    }
+    IO.injectScript( 'https://raw.github.com/jashkenas/coffee-script/master/extras/coffee-script.js' );
+}, 1000);
 
 return function ( msg, cb ) {
 	var worker = new Worker( code_url ),
@@ -3071,8 +3086,6 @@ bot.listen(
 bot.listen( /^bitch/i, bot.personality.bitch, bot.personality );
 
 ;
-
-;
 (function () {
 var hammers = {
 	STOP  : 'HAMMERTIME!',
@@ -4267,8 +4280,6 @@ bot.addCommand({
 });
 
 ;
-
-;
 (function () {
 var nulls = [
 	'The Google contains no such knowledge',
@@ -5121,8 +5132,6 @@ IO.register( 'userregister', function tracker ( user, room ) {
 })();
 
 ;
-
-;
 (function () {
 
 //collection of nudges; msgObj, time left and the message itself
@@ -5955,27 +5964,23 @@ var undo = {
 	ids : [],
 
 	command : function ( args, cb ) {
-		var parts = args.parse();
-		bot.log( parts, '/undo input' );
+		bot.log( args, '/undo input' );
 
 		// /undo id0 id1 id2
-		if ( parts.length > 1 ) {
-			this.removeMultiple( parts, finish );
+		if ( args.indexOf(' ') > -1 ) {
+			this.removeMultiple( args.split(' '), finish );
 			return;
 		}
 
-
-		var lead = parts.shift() || '';
-
 		//yucky
-		if ( lead[0] === '~' ) {
-			this.byLookback( lead.slice(1), finish );
+		if ( args[0] === '~' ) {
+			this.byLookback( args.slice(1), finish );
 		}
-		else if ( lead[0] === '*' || lead[0] === 'x' ) {
-			this.byPrevious( lead.slice(1), finish );
+		else if ( args[0] === '*' || args[0] === 'x' ) {
+			this.byPrevious( args.slice(1), finish );
 		}
-		else if ( /^:?\d+$/.test(lead) ) {
-			this.remove( lead.replace(/^:/, ''), finish );
+		else if ( /^:?\d+$/.test(args) ) {
+			this.remove( args.replace(/^:/, ''), finish );
 		}
 		else if ( !args.content ) {
 			if ( this.ids.length ) {

@@ -3,27 +3,23 @@ var undo = {
 	ids : [],
 
 	command : function ( args, cb ) {
-		var parts = args.parse();
-		bot.log( parts, '/undo input' );
+		bot.log( args, '/undo input' );
 
 		// /undo id0 id1 id2
-		if ( parts.length > 1 ) {
-			this.removeMultiple( parts, finish );
+		if ( args.indexOf(' ') > -1 ) {
+			this.removeMultiple( args.split(' '), finish );
 			return;
 		}
 
-
-		var lead = parts.shift() || '';
-
 		//yucky
-		if ( lead[0] === '~' ) {
-			this.byLookback( lead.slice(1), finish );
+		if ( args[0] === '~' ) {
+			this.byLookback( args.slice(1), finish );
 		}
-		else if ( lead[0] === '*' || lead[0] === 'x' ) {
-			this.byPrevious( lead.slice(1), finish );
+		else if ( args[0] === '*' || args[0] === 'x' ) {
+			this.byPrevious( args.slice(1), finish );
 		}
-		else if ( /^:?\d+$/.test(lead) ) {
-			this.remove( lead.replace(/^:/, ''), finish );
+		else if ( /^:?\d+$/.test(args) ) {
+			this.remove( args.replace(/^:/, ''), finish );
 		}
 		else if ( !args.content ) {
 			if ( this.ids.length ) {
