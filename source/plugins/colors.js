@@ -1,6 +1,6 @@
 function color ( args ) {
   var address = 'http://southouse.tk/colors.php?color='
-	var ret = address + args.toString().toLowerCase().replace(/[# ]/g, '') + '#.png'; //Finally done with those '#'s and spaces.
+	var ret = address + args.toString().toLowerCase().match(/([a-z0-9]+)+/gi).join(",") + '#.png'; //Finally done with those '#'s and spaces.
 	
 
 	return args.directreply(ret); //That's all for now
