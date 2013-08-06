@@ -54,6 +54,6 @@ bot.addCommand({
         del : 'NONE'
     },
     description : 'Searches for a bot command matching part of a ' +
-        'name/description. `/findCommand `'
+        'name/description. `/findCommand partOfNameOrDescription`'
 });
 })();

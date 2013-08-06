@@ -3979,7 +3979,7 @@ bot.addCommand({
         del : 'NONE'
     },
     description : 'Searches for a bot command matching part of a ' +
-        'name/description. `/findCommand `'
+        'name/description. `/findCommand partOfNameOrDescription`'
 });
 })();
 
@@ -5563,21 +5563,18 @@ var template = '[{display_name}]({link}) '           +
 		'has {reputation} reputation, '              +
 		'earned {reputation_change_day} rep today, ' +
 		'asked {question_count} questions, '         +
-		'gave {answer_count} answers.';
-
-var extended_template = 'avg. rep/post: {avg_rep_post}. ' +
+		'gave {answer_count} answers. ' +
+        'avg. rep/post: {avg_rep_post}. ' +
 		'Badges: {gold}g {silver}s {bronze}b ';
 
 function stat ( msg, cb ) {
-	var args = msg.parse(),
-		id = args[ 0 ],
-		extended = ( args[1] === 'extended' );
+	var id = msg.toString();
 
 	if ( !id ) {
 		id = msg.get( 'user_id' );
 	}
 	else if ( !/^\d+$/.test(id) ) {
-		id = msg.findUserid( extended ? id : args.slice().join(' ') );
+		id = msg.findUserid( id );
 	}
 
 	if ( id < 0 ) {
@@ -5610,7 +5607,7 @@ function stat ( msg, cb ) {
 			res = 'User ' + id + ' not found';
 		}
 		else {
-			res = handle_user_object( user, extended );
+			res = handleUserObject( user );
 		}
 
 		finish( res );
@@ -5626,41 +5623,33 @@ function stat ( msg, cb ) {
 	}
 }
 
-function handle_user_object ( user, extended ) {
-	user = normalize_stats( user );
-	var res = template.supplant( user );
-
-	if ( extended ) {
-		res += extended_template.supplant( calc_extended_stats(user) );
-	}
+function handleUserObject ( user ) {
+	var res = template.supplant( normalizeStats(user) );
 
 	bot.log( res, '/stat templated' );
 	return res;
 }
 
-function normalize_stats ( stats ) {
+function normalizeStats ( stats ) {
 	stats = Object.merge({
-			question_count        : 0,
-			answer_count          : 0,
-			reputation_change_day : 0
-		}, stats );
+		question_count        : 0,
+		answer_count          : 0,
+		reputation_change_day : 0
+	}, stats );
 
-	return stats;
-}
+    stats = Object.merge( stats.badge_counts, stats );
 
-function calc_extended_stats ( stats ) {
-	stats = Object.merge( stats.badge_counts, stats );
-
-	stats.avg_rep_post = (
-			stats.reputation / ( stats.question_count + stats.answer_count )
-		).maxDecimal( 2 );
+    stats.avg_rep_post = (
+		stats.reputation / ( stats.question_count + stats.answer_count )
+	).maxDecimal( 2 );
 
 	//1 / 0 === Infinity
 	if ( stats.avg_rep_post === Infinity ) {
 		stats.avg_rep_post = 'T͎͍̘͙̖̤̉̌̇̅ͯ͋͢͜͝H̖͙̗̗̺͚̱͕̒́͟E̫̺̯͖͎̗̒͑̅̈ ̈ͮ̽ͯ̆̋́͏͙͓͓͇̹<̩̟̳̫̪̇ͩ̑̆͗̽̇͆́ͅC̬͎ͪͩ̓̑͊ͮͪ̄̚̕Ě̯̰̤̗̜̗͓͛͝N̶̴̞͇̟̲̪̅̓ͯͅT͍̯̰͓̬͚̅͆̄E̠͇͇̬̬͕͖ͨ̔̓͞R͚̠̻̲̗̹̀>̇̏ͣ҉̳̖̟̫͕ ̧̛͈͙͇͂̓̚͡C͈̞̻̩̯̠̻ͥ̆͐̄ͦ́̀͟A̛̪̫͙̺̱̥̞̙ͦͧ̽͛̈́ͯ̅̍N̦̭͕̹̤͓͙̲̑͋̾͊ͣŅ̜̝͌͟O̡̝͍͚̲̝ͣ̔́͝Ť͈͢ ̪̘̳͔̂̒̋ͭ͆̽͠H̢͈̤͚̬̪̭͗ͧͬ̈́̈̀͌͒͡Ơ̮͍͇̝̰͍͚͖̿ͮ̀̍́L͐̆ͨ̏̎͡҉̧̱̯̤̹͓̗̻̭ͅḐ̲̰͙͑̂̒̐́̊';
 	}
 
-	bot.log( stats, '/stat extended' );
+    //TODO: find out what people want out of Q/A ratio, and do it.
+
 	return stats;
 }
 
