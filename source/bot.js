@@ -58,7 +58,7 @@ var bot = window.bot = {
 
 			msg.directreply( err );
 			//make sure we have it somewhere
-			console.dir( e );
+			console.error( e.stack );
 		}
 		finally {
 			this.info.invoked += 1;

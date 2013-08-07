@@ -2,6 +2,7 @@
 
 //collection of nudges; msgObj, time left and the message itself
 var nudges = [],
+    id = 0,
 	interval = 100 * 60;
 
 function update () {
@@ -48,16 +49,45 @@ function addNudge ( delay, message, msgObj ) {
 
 	//let's put an arbitrary comment here
 
+    id += 1;
 	var nudge = {
 		msg     : msgObj,
 		message : '*nudge* ' + message,
 		register: Date.now(),
-		time    : inMS
+		time    : inMS,
+        id : id
 	};
 	nudges.push( nudge );
 	bot.log( nudge, nudges, '/nudge register' );
 
-	return 'Nudge registered.';
+	return 'Nudge #' + id + ' registered.';
+}
+function removeNudge ( id, msgObj ) {
+    var matching, index;
+
+    nudges.some(function ( nudge, idx ) {
+        if (nudge.id === id) {
+            matching = nudge;
+            index = idx;
+            return true;
+        }
+    });
+
+    if ( !matching ) {
+        return [
+            'Nudge not found. Maybe it was already triggered, or this is ' +
+                'a parallal universe.',
+            'I looked for nudge #' + id + ', but all I found was this goat.'
+        ].random();
+    }
+
+    if ( matching.msg.get('user_name') !== msgObj.get('user_name') ) {
+        return 'It\'s not nice to try and remove a nudge which ain\'t yours';
+    }
+
+    bot.log( nudges[index], '/nudge remove #' + id );
+    nudges.splice( index, 1 );
+    return 'Nudge annhiliated';
 }
 
 bot.addCommand({
@@ -68,7 +98,8 @@ bot.addCommand({
 	},
 
 	description : 'Register a nudge after an interval. ' +
-		'`/nudge intervalInMinutes message`, or the listener, ' +
+		'`/nudge intervalInMinutes message`, `/nudge remove id` to remove, ' +
+        'or the listener, ' +
 		'`nudge|remind|poke me? in? intervalInMinutes message`'
 });
 
@@ -77,8 +108,14 @@ bot.listen(/(?:nudge|remind|poke)\s(?:me\s)?(?:in\s)?(\d+m?)\s?(.*)$/,
 );
 
 function nudgeCommand ( args ) {
-	var props = args.parse();
-	return addNudge( props[0], props.slice(1).join(' '), args );
+	var props = args.parse(),
+        lead = props[ 0 ],
+        rest = props.slice( 1 ).join( ' ' );
+
+    if ( lead === 'remove' ) {
+        return removeNudge( Number(props[1]), args );
+    }
+	return addNudge( lead, rest, args );
 }
 function nudgeListener ( args ) {
 	return addNudge( args.matches[1], args.matches[2], args );
