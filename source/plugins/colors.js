@@ -1,17 +1,25 @@
-function color ( args ) {
-  var address = 'http://southouse.tk/colors.php?color='
-	var ret = address + args.toString().toLowerCase().match(/([a-z0-9]+)+/gi).join(",") + '#.png'; //Finally done with those '#'s and spaces.
-	
+(function () {
 
-	return args.directreply(ret); //That's all for now
+function color ( args ) {
+	var base = 'http://southouse.tk/colors.php?color='
+	var param = args.toString()
+		.toLowerCase()
+		.match( /([a-z0-9]+)+/g )
+		.join( ',' );
+
+
+	args.directreply( base + param + '#.png' );
 }
 
 bot.addCommand({
 	name : 'color',
+	fun	 : color,
 	permissions : {
 		del : 'NONE'
 	},
 
-	description : 'Returns colors/color assortments for preview.' +
-		' `/color`'
+	description : 'Displays the color(s) passed in. ' +
+		' `/color color0[ color1[ ...]]`'
 });
+
+})();
