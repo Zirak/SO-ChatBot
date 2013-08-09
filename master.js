@@ -2521,7 +2521,7 @@ bot.adapter = {
 
 	//a pretty crucial function. accepts the msgObj we know nothing about,
 	// and returns an object with these properties:
-	//  user_name, user_id, room_id, content
+	//   user_name, user_id, room_id, content
 	// and any other properties, as the abstraction sees fit
 	//since the bot was designed around the SO chat message object, in this
 	// case, we simply do nothing
@@ -2613,7 +2613,7 @@ var polling = bot.adapter.in = {
 	initialPoll : function () {
 		bot.log( 'adapter: initial poll' );
 		var roomid = bot.adapter.roomid,
-		that = this;
+			that = this;
 
 		IO.xhr({
 			url : '/chats/' + roomid + '/events/',
@@ -2632,8 +2632,6 @@ var polling = bot.adapter.in = {
 
 			that.times[ 'r' + roomid ] = resp.time;
 			that.firstPoll = false;
-
-			that.loopage();
 		}
 	},
 
@@ -2642,7 +2640,7 @@ var polling = bot.adapter.in = {
 		// since xhr parameter, but I didn't know what that was either so...
 		//putting in 0 got the last shitload of messages, so what does a high
 		// number do? (spoiler: it "works")
-		var socket = this.socket = new WebSocket( url + '?l=99999999999' );
+		var socket = new WebSocket( url + '?l=99999999999' );
 
 		if ( discard ) {
 			socket.onmessage = function () {
@@ -2650,6 +2648,7 @@ var polling = bot.adapter.in = {
 			};
 		}
 		else {
+			this.socket = socket;
 			socket.onmessage = this.ondata.bind( this );
 			socket.onclose = this.socketFail.bind( this );
 		}
@@ -2678,7 +2677,6 @@ var polling = bot.adapter.in = {
 
 	pollComplete : function ( resp ) {
 		if ( !resp ) {
-			this.loopage();
 			return;
 		}
 		resp = JSON.parse( resp );
@@ -2698,11 +2696,11 @@ var polling = bot.adapter.in = {
 
 		//handle all the input
 		IO.in.flush();
-		//and move on with our lives
-		this.loopage();
 	},
 
 	handleMessageObject : function ( msg ) {
+		IO.fire( 'rawinput', msg );
+
 		//msg.event_type:
 		// 1 => new message
 		// 2 => message edit
@@ -2730,6 +2728,13 @@ var polling = bot.adapter.in = {
 	},
 
 	handleMultilineMessage : function ( msg ) {
+		this.breakMultilineMessage( msg ).forEach(function ( line ) {
+			var msgObj = Object.merge( msg, { content : line.trim() });
+
+			IO.in.receive( msgObj );
+		});
+	},
+	breakMultilineMessage : function ( msg ) {
 		//remove the enclosing tag
 		var multiline = msg.content
 			//slice upto the beginning of the ending tag
@@ -2737,13 +2742,7 @@ var polling = bot.adapter.in = {
 			//and strip away the beginning tag
 			.replace( '<div class=\'full\'>', '' );
 
-		//iterate over each line
-		multiline.split( '<br>' ).forEach(function ( line ) {
-			//and treat it as if it were a separate message
-			this.handleMessageObject(
-				Object.merge( msg, { content : line.trim() })
-			);
-		}, this );
+		return multiline.split( '<br>' );
 	},
 
 	handleUserEvent : function ( msg ) {
@@ -2828,6 +2827,7 @@ var polling = bot.adapter.in = {
 		var that = this;
 		setTimeout(function () {
 			that.poll();
+			that.loopage();
 		}, this.interval );
 	}
 };
