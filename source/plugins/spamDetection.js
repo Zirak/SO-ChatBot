@@ -4,12 +4,13 @@ IO.register( 'rawinput', function spamDetection ( msgObj ) {
         return;
     }
 
-    var usrid = msgObj.user_id;
+    var usrid = msgObj.user_id,
+        message = IO.decodehtmlEntities( msgObj.content );
+
     //there is a heavy assumption that all users who post a message here have
     // been registered by the bot
     var user = bot.users[ usrid ];
-    //since it's still in testing, it's rigged to respond to me (Zirak, 617762)
-    if ( usrid !== 617762 && (bot.isOwner(usrid) || user.reputation > 1000) ) {
+    if ( legitMessage() ) {
         return;
     }
 
@@ -18,16 +19,12 @@ IO.register( 'rawinput', function spamDetection ( msgObj ) {
     var query = '#chat .monologue.user-{0} .content'.supplant( usrid ),
         userMessages = document.querySelectorAll( query );
 
-    var exactMatches = Array.filter( userMessages, function ( content ) {
-        var msgid = ( /\d+/ ).exec( content.parentNode.id )[ 0 ];
-        return msgid < msgObj.message_id &&
-            content.innerHTML === msgObj.content;
-    });
+    var exactMatches = Array.filter( userMessages, filterMessage );
 
     if ( !exactMatches.length ) {
         return;
     }
-    bot.log( exactMatches, msgObj.content, 'spam detection matches' );
+    bot.log( exactMatches, message, 'spam detection matches' );
 
     var reply = 'Please don\'t post the same thing more than once in a short ' +
         'period of time. If it\'s a question, try again in a few hours.';
@@ -35,4 +32,20 @@ IO.register( 'rawinput', function spamDetection ( msgObj ) {
     bot.adapter.out.add(
         bot.adapter.reply(msgObj.user_name) + " " + reply,
         msgObj.room_id );
+
+    function filterMessage ( content ) {
+        var msgid = ( /\d+/ ).exec( content.parentNode.id )[ 0 ];
+        return msgid < msgObj.message_id &&
+            content.innerHTML === message;
+    }
+    function legitMessage () {
+        //since it's still in testing, it should respond to me (Zirak, 617762)
+        if ( usrid === 617762 ) {
+            return false;
+        }
+        //these are the actual filters
+        return message.length < 50 &&
+            bot.isOwner(usrid) ||
+            user.reputation > 1000
+    }
 });
