@@ -3,7 +3,7 @@
 
 function command ( args, cb ) {
 	IO.jsonp({
-		url : 'http://en.wiktionary.org/w/api.php',
+		url : 'http://en.wikipedia.org/w/api.php',
 		jsonpName : 'callback',
 		data : {
 			action : 'opensearch',
