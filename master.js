@@ -891,12 +891,12 @@ var bot = window.bot = {
 	},
 
     devMode : false,
-    activateDevMode : function (pattern) {
+    activateDevMode : function ( pattern ) {
         this.devMode = true;
         this.invocationPattern = pattern || 'beer!';
         IO.events.userjoin.length = 0;
-        this.validateMessage = function (msgObj) {
-            return msgObj.content.trim().startsWith(this.invocationPattern);
+        this.validateMessage = function ( msgObj ) {
+            return msgObj.content.trim().startsWith( this.invocationPattern );
         };
     }
 };
@@ -1214,7 +1214,9 @@ return function ( msg, cb ) {
 	var worker = new Worker( code_url ),
 		timeout;
 
-	var code = msg.toString();
+    // issue #87, trim out zwsp and zwnj
+	var code = msg.toString().replace( /\u200b|\u200c/g, '' );
+
 	if ( code[0] === 'c' ) {
 		code = CoffeeScript.compile( code.replace(/^c>/, ''), {bare:1} );
 	}
@@ -3086,8 +3088,6 @@ bot.listen(
 bot.listen( /^bitch/i, bot.personality.bitch, bot.personality );
 
 ;
-
-;
 (function () {
 var hammers = {
 	STOP  : 'HAMMERTIME!',
@@ -4013,6 +4013,8 @@ bot.addCommand({
 })();
 
 ;
+
+;
 //listener to help decide which Firefly episode to watch
 
 bot.listen( /(which |what |give me a )?firefly( episode)?/i, function ( msg ) {
@@ -4368,8 +4370,6 @@ bot.addCommand({
 		'`/github repoName` or `/github username/reponame`',
 	async : true
 });
-
-;
 
 ;
 (function () {
@@ -5224,8 +5224,6 @@ IO.register( 'userregister', function tracker ( user, room ) {
 })();
 
 ;
-
-;
 (function () {
 
 //collection of nudges; msgObj, time left and the message itself
@@ -5587,6 +5585,8 @@ bot.addCommand({
 });
 
 })();
+
+;
 
 ;
 (function () {

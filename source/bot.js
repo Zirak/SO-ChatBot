@@ -240,12 +240,12 @@ var bot = window.bot = {
 	},
 
     devMode : false,
-    activateDevMode : function (pattern) {
+    activateDevMode : function ( pattern ) {
         this.devMode = true;
         this.invocationPattern = pattern || 'beer!';
         IO.events.userjoin.length = 0;
-        this.validateMessage = function (msgObj) {
-            return msgObj.content.trim().startsWith(this.invocationPattern);
+        this.validateMessage = function ( msgObj ) {
+            return msgObj.content.trim().startsWith( this.invocationPattern );
         };
     }
 };
