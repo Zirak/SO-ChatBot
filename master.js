@@ -1237,6 +1237,7 @@ return function ( msg, cb ) {
 	};
 
 	worker.onerror = function ( error ) {
+        bot.log( error, 'eval worker.onerror' );
 		finish( error.toString() );
 	};
 
@@ -1272,7 +1273,7 @@ function dressUpAnswer ( answerObj ) {
 		log = answerObj.log,
 		result;
 
-	if ( !answer || !log ) {
+	if ( answer === undefined ) {
 		return 'Malformed output from web-worker. If you weren\'t just ' +
 			'fooling around trying to break me, raise an issue or contact ' +
 			'Zirak';
