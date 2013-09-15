@@ -1274,7 +1274,7 @@ function dressUpAnswer ( answerObj ) {
 
 	if ( !answer || !log ) {
 		return 'Malformed output from web-worker. If you weren\'t just ' +
-			'fooling around trying to break me, raise an issue or contact' +
+			'fooling around trying to break me, raise an issue or contact ' +
 			'Zirak';
 	}
 
