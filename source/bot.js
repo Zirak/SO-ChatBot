@@ -135,6 +135,9 @@ var bot = window.bot = {
 		msgObj = this.adapter.transform( msgObj );
 
 		var msg = IO.decodehtmlEntities( msgObj.content );
+		//fixes issues #87 and #90 globally
+		msg = msg.replace( /\u200b|\u200c/g, '' );
+
 		return this.Message(
 			msg.slice( this.invocationPattern.length ).trim(),
 			msgObj );

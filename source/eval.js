@@ -18,8 +18,7 @@ return function ( msg, cb ) {
 	var worker = new Worker( code_url ),
 		timeout;
 
-    // issue #87, trim out zwsp and zwnj
-	var code = msg.toString().replace( /\u200b|\u200c/g, '' );
+	var code = msg.toString();
 
 	if ( code[0] === 'c' ) {
 		code = CoffeeScript.compile( code.replace(/^c>/, ''), {bare:1} );
