@@ -6744,7 +6744,7 @@ function searchXKCD( args, cb ) {
             finish( 'Search didn\'t yield a comic; yielded: ' +result.url);
             return;
         }
-        finish(getXKCD(bot.Message(matches[1], args.get())), cb);
+        getXKCD(bot.Message(matches[1], args.get()), finish);
     }
     
     function finish( res ) {
