@@ -58,4 +58,45 @@ bot.addCommand({
 		'`new` for latest, or a number for a specific one.',
 	async : true
 });
+
+
+function searchXKCD( args, cb ) {
+	IO.jsonp.google(
+		args.toString() + ' site:xkcd.com -forums.xkcd -m.xkcd', finishCall);
+        
+    function finishCall( resp ) {
+        if ( resp.responseStatus !== 200 ) {
+			finish( 'Something went on fire; status ' + resp.responseStatus );
+			return;
+		}
+		var result = resp.responseData.results[ 0 ];
+        var matches = /xkcd.com\/(\d+)/.exec(result.url);
+        if(!matches) {
+            finish( 'Search didn\'t yield a comic; yielded: ' +result.url);
+            return;
+        }
+        getXKCD(bot.Message(matches[1], args.get()), finish);
+    }
+    
+    function finish( res ) {
+		bot.log( res, '/xkcd finish' );
+
+		if ( cb && cb.call ) {
+			cb( res );
+		}
+		else {
+			args.directreply( res );
+		}
+	}
+}
+
+bot.addCommand({
+	name : 'xkcdSearch',
+	fun : searchXKCD,
+	permissions : {
+		del : 'NONE'
+	},
+	description : 'Returns an XKCD, based on query to google.',
+	async : true
+});
 })();
