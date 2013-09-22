@@ -163,11 +163,11 @@ function remainingDuration ( future ) {
 		seconds = duration.getUTCSeconds();
 		
 		if ( days > 1 ) {
-			return ( days - 1 ) + ( days == 1 ? 'day' : ' days ' ) + hours + ( hours == 1 ? ' hour' : ' hours' );
+			return ( days - 1 ) + ' d ' + hours + ' h';
 		} else if ( hours > 0 ) {
-			return hours + ( hours == 1 ? ' hour ' : ' hours ' ) + minutes + ( minutes == 1 ? ' minute' : ' minutes' );
+			return hours + ' h ' + minutes + ' m';
 		} else {
-			return minutes + ( minutes == 1 ? ' minute ' : ' minutes ' ) + seconds + ( seconds == 1 ? ' second' : ' seconds' );
+			return minutes + ' m ' + seconds + ' s';
 		}
 	} else {
 		return;
