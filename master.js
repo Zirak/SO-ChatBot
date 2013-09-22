@@ -5515,17 +5515,22 @@ function parseDuration ( str ) {
 }
 	
 function remainingDuration ( future ) {
-	var duration,
+	var duration, days, hours, minutes, seconds,
 		now = Date.now();
 	
 	if ( !(future < now) ) {
 		duration = new Date( future - now );
-		if ( duration.getUTCDate() > 1 ) {
-			return (duration.getUTCDate() - 1) + ' days ' + duration.getUTCHours() + ' hours';
-		} else if ( duration.getUTCHours() > 1 ) {
-			return duration.getUTCHours() + ' hours ' + duration.getUTCMinutes() + ' minutes';
+		days = duration.getUTCDate();
+		hours = duration.getUTCHours();
+		minutes = duration.getUTCMinutes();
+		seconds = duration.getUTCSeconds();
+		
+		if ( days > 1 ) {
+			return ( days - 1 ) + ( days == 1 ? 'day' : ' days ' ) + hours + ( hours == 1 ? ' hour' : ' hours' );
+		} else if ( hours > 0 ) {
+			return hours + ( hours == 1 ? ' hour ' : ' hours ' ) + minutes + ( minutes == 1 ? ' minute' : ' minutes' );
 		} else {
-			return duration.getUTCMinutes() + ' minutes ' + duration.getUTCSeconds() + ' seconds';
+			return minutes + ( minutes == 1 ? ' minute ' : ' minutes ' ) + seconds + ( seconds == 1 ? ' second' : ' seconds' );
 		}
 	} else {
 		return;
