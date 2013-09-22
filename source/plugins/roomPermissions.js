@@ -118,7 +118,8 @@ function stringMuteList () {
 	var base = 'http://chat.stackoverflow.com/transcript/message/';
 
 	return keys.map(function ( k ) {
-		return bot.adapter.link( k, base + muted[k].invokingId );
+		var rem = remainingDuration(muted[k].endDate);
+		return bot.adapter.link( k + (rem ? ' (' + rem + ')' : ''), base + muted[k].invokingId );
 	}).join( '; ' );
 }
 
@@ -148,6 +149,24 @@ function parseDuration ( str ) {
 		parts[ 0 ] += 'm';
 	}
 	return parts[ 0 ];
+}
+	
+function remainingDuration ( future ) {
+	var duration,
+		now = Date.now();
+	
+	if ( !(future < now) ) {
+		duration = new Date( future - now );
+		if ( duration.getUTCDate() > 1 ) {
+			return (duration.getUTCDate() - 1) + ' days ' + duration.getUTCHours() + ' hours';
+		} else if ( duration.getUTCHours() > 1 ) {
+			return duration.getUTCHours() + ' hours ' + duration.getUTCMinutes() + ' minutes';
+		} else {
+			return duration.getUTCMinutes() + ' minutes ' + duration.getUTCSeconds() + ' seconds';
+		}
+	} else {
+		return;
+	}
 }
 
 bot.addCommand({
