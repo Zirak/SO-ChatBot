@@ -4026,8 +4026,6 @@ bot.addCommand({
 })();
 
 ;
-
-;
 //listener to help decide which Firefly episode to watch
 
 bot.listen( /(which |what |give me a )?firefly( episode)?/i, function ( msg ) {
@@ -5483,7 +5481,8 @@ function stringMuteList () {
 	var base = 'http://chat.stackoverflow.com/transcript/message/';
 
 	return keys.map(function ( k ) {
-		return bot.adapter.link( k, base + muted[k].invokingId );
+		var rem = remainingDuration(muted[k].endDate);
+		return bot.adapter.link( k + (rem ? ' (' + rem + ')' : ''), base + muted[k].invokingId );
 	}).join( '; ' );
 }
 
@@ -5513,6 +5512,29 @@ function parseDuration ( str ) {
 		parts[ 0 ] += 'm';
 	}
 	return parts[ 0 ];
+}
+	
+function remainingDuration ( future ) {
+	var duration, days, hours, minutes, seconds,
+		now = Date.now();
+	
+	if ( !(future < now) ) {
+		duration = new Date( future - now );
+		days = duration.getUTCDate();
+		hours = duration.getUTCHours();
+		minutes = duration.getUTCMinutes();
+		seconds = duration.getUTCSeconds();
+		
+		if ( days > 1 ) {
+			return ( days - 1 ) + ' d ' + hours + ' h';
+		} else if ( hours > 0 ) {
+			return hours + ' h ' + minutes + ' m';
+		} else {
+			return minutes + ' m ' + seconds + ' s';
+		}
+	} else {
+		return;
+	}
 }
 
 bot.addCommand({
@@ -5598,8 +5620,6 @@ bot.addCommand({
 });
 
 })();
-
-;
 
 ;
 (function () {
