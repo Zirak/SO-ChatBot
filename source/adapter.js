@@ -1,3 +1,118 @@
+//follows is an explanation of how SO's chat does things. you may want to skip
+// this gigantuous comment.
+/*
+  Note: This may be outdated next year, tomorrow, never, or in 4 minutes. We
+are leeching off a disinterested 3rd party, and knowledge of how to poke
+around requests/websockets is required to correctly maintain everything.
+
+  Generally, the client gets input from a websocket connected to SO's server,
+grabbing events as they come in (new message, edits, room invites, whatever).
+However, output (sending a message, editing, basically creating these events) is
+not handled via this socket, but via separate http requests. One should note
+that if/when the socket fails for any reason, the chat resorts to long polling.
+
+  First, a note on authentication. Apparently, the chat uses two things to
+decide who you are. The first is, quite obviously, cookies. The second is an
+elusive thing called the "fkey". It's given to us by the server inside an input
+called (you guessed it) "fkey", and its value is a 32 character string. Maybe
+its the result of running a checksum of something, maybe it's the first 32 chars
+of a sha512, who knows. But it is used, since you can view chat while not being
+logged in, and you have to provide it in all your requests.
+
+  Now to the actual meat.
+
+  Connecting to the input websocket is done in two steps, of which the first
+is obtaining the link to the second. We make a request containing our room id
+to /ws-auth (e.g. http://chat.stackoverflow.com/ws-auth), and we receive a JSON
+object containing a url property (or something else if there was an error):
+
+Request:
+  POST http://chat.stackoverflow.com/ws-auth
+  Content-Length: 47
+  Content-Type: application/x-www-form-urlencoded
+  Content: roomid=17&fkey=01234567890123456789012345678901
+
+Response:
+  Content-Type: application/json; charset=utf-8
+  Content: {"url":"wss://chat.sockets.stackexchange.com/events/17/another32CharLongStringBlahBlaah"}
+
+We parse the response, and connect to the websocket at the specified URL. Note
+that the websocket URL accepts an `l` query parameter
+(...another32CharLongStringBlahBlaah?l=someNumber). It's a number, I'm not sure
+what it's supposed to represent exactly, but omitting it brings a lot of history
+messages in the first frame, and setting it to a really high value brings no
+messages, so we opt to the latter (?l=99999999 or something like that. also note
+that it doesn't appear to be a "since message id" parameter, but I may be wrong)
+
+  Okay, we've got a connection to the web socket. How does a frame look like?
+The simplest one, containing no events, looks like this:
+
+    {"r17" : {}}
+
+Just a simple object with the keys being the room's were connected to, each id
+prefixed with an "r". But sometimes, even if your room(s) has no traffic, you
+may get something like this:
+
+    {"r17" : {
+        "t" : 23531002,
+        "d" : 3
+    }}
+
+Again, I have no clue what these mean. I think `d` is short for `delta`, and
+maybe `t` is a form of internal timestamp or counter or...I don't know. However,
+remember this `t` value for when we discuss polling - it is used there. It does
+however seem to be related to how many messages were sent which are not in this
+room - so if you're listening to room 17, and someone posted a mesage on room 42
+then you'd get a `d` of 1, and the `t` value may be updated by 1. Or maybe not.
+The `t` values don't seem to be consistently increasing, or decreasing, or
+following any pattern I could recognise.
+
+Anyway! What does a message look like?
+
+  {"r1" : {
+      "e" : [{
+        "event_type" : 1,
+        "time_stamp" : 1379405022,
+        "content" : "test",
+        "id" : 23531402,
+        "user_id" : 617762,
+        "user_name" : "Zirak",
+        "room_id" : 1,
+        "room_name" : "Sandbox",
+        "message_id" : 11832153
+      }],
+      "t": 23531402,
+      "d": 1
+    }}
+
+We receive an array of events under the property `e` of the respective room.
+Each event, called inside the bot a `msgObj` (message object), contains several
+interesting properties, which may change according to what kind of event it is.
+You can determine the type of the event by checking...drum roll...the event_type
+field. 1 is new message, 2 is edit, 3 is user-join, 4 is user-leave, and there
+are many others. Also note that pinging a user may add some properties, replying
+to a message adds some more, and so forth.
+
+Once we have this array, we simply iterate over it, and decide what we want to
+do based on what event it is. But at the end, the adapter's job is to do one
+thing - call IO.fire, and pass the torch onwards.
+
+[insert magic about polling. I don't have the web console in front of me, so I
+can't stimulate requests]
+
+  Now, output! Sending a message is a simple http request, containing the text
+and the magical fkey. In the following example, we send a new message to room 1
+containing just the word "butts":
+
+Request:
+  POST http://chat.stackoverflow.com/chats/1/messages/new
+  text=butts&fkey=01234567890123456789012345678901
+Response:
+  {"id":11832651,"time":1379406464}
+
+And...that's it. Pretty simple. Most of the requests endpoints are like that.
+*/
+
 (function () {
 "use strict";
 
@@ -89,9 +204,6 @@ var polling = bot.adapter.in = {
 	// the latest id or something like that. could also be the time last
 	// sent, which is why I called it times at the beginning. or something.
 	times : {},
-	//currently, used for messages sent when the room's been silent for a
-	// while
-	lastTimes : {},
 
 	firstPoll : true,
 
@@ -224,7 +336,6 @@ var polling = bot.adapter.in = {
 		else if ( et !== 1 && et !== 2 ) {
 			return;
 		}
-		this.lastTimes[ msg.room_id ] = Date.now();
 
 		//check for a multiline message
 		if ( msg.content.startsWith('<div class=\'full\'>') ) {
