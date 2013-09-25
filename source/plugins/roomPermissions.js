@@ -109,17 +109,23 @@ IO.register( 'userregister', function permissionCb ( user, room ) {
 });
 
 function stringMuteList () {
-	var keys = Object.keys( muted );
+	var users = Object.keys( muted );
 
-	if ( !keys.length ) {
+	if ( !users.length ) {
 		return 'Nobody is muted';
 	}
 
 	var base = 'http://chat.stackoverflow.com/transcript/message/';
 
-	return keys.map(function ( k ) {
-		var rem = remainingDuration(muted[k].endDate);
-		return bot.adapter.link( k + (rem ? ' (' + rem + ')' : ''), base + muted[k].invokingId );
+	return users.map(function ( user ) {
+		var info = muted[ user ],
+
+			remaining = remainingDuration( info.endDate ),
+			strung = remaining ? '(' + remaining + ')' : '',
+
+			text = user + strung;
+
+		return bot.adapter.link( text, base + info.invokingId );
 	}).join( '; ' );
 }
 
@@ -150,28 +156,27 @@ function parseDuration ( str ) {
 	}
 	return parts[ 0 ];
 }
-	
+
 function remainingDuration ( future ) {
-	var duration, days, hours, minutes, seconds,
-		now = Date.now();
-	
-	if ( !(future < now) ) {
-		duration = new Date( future - now );
-		days = duration.getUTCDate();
-		hours = duration.getUTCHours();
-		minutes = duration.getUTCMinutes();
-		seconds = duration.getUTCSeconds();
-		
-		if ( days > 1 ) {
-			return ( days - 1 ) + ' d ' + hours + ' h';
-		} else if ( hours > 0 ) {
-			return hours + ' h ' + minutes + ' m';
-		} else {
-			return minutes + ' m ' + seconds + ' s';
-		}
-	} else {
+	var now = Date.now();
+
+	if ( future < now ) {
 		return;
 	}
+	var delta	= new Date( future - now ),
+		days	= delta.getUTCDate(),
+		hours	= delta.getUTCHours(),
+		minutes = delta.getUTCMinutes(),
+		seconds = delta.getUTCSeconds();
+
+	if ( days > 1 ) {
+		return ( days - 1 ) + 'd ' + hours + 'h';
+	}
+	else if ( hours > 0 ) {
+		return hours + 'h ' + minutes + 'm';
+	}
+
+	return minutes + 'm ' + seconds + 's';
 }
 
 bot.addCommand({
