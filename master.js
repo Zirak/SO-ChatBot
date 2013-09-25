@@ -3102,6 +3102,33 @@ bot.listen( /^bitch/i, bot.personality.bitch, bot.personality );
 
 ;
 (function () {
+var hammers = {
+	STOP  : 'HAMMERTIME!',
+	STAHP : 'HAMMAHTIME!',
+	HALT  : 'HAMMERZEIT!',
+	STOY  : 'ZABIVAT\' VREMYA!',
+	CAESUM: 'MALLEUS TEMPUS!'
+};
+
+// /(STOP|STAHP|...)[\.!\?]?$/
+var re = new RegExp(
+	'(' +
+		Object.keys(hammers).map(RegExp.escape).join('|') +
+	')[\\.!?]?$' );
+
+IO.register( 'input', function STOP ( msgObj ) {
+	var sentence = msgObj.content.toUpperCase(),
+		res = re.exec( sentence );
+
+	if ( res ) {
+		bot.adapter.out.add( hammers[res[1]], msgObj.room_id );
+	}
+});
+
+})();
+
+;
+(function () {
 "use strict";
 
 //ths fnctn tks sntnc nd trns t t awsm
@@ -5719,33 +5746,6 @@ bot.addCommand({
 
 ;
 (function () {
-var hammers = {
-	STOP  : 'HAMMERTIME!',
-	STAHP : 'HAMMAHTIME!',
-	HALT  : 'HAMMERZEIT!',
-	STOY  : 'ZABIVAT\' VREMYA!',
-	CAESUM: 'MALLEUS TEMPUS!'
-};
-
-// /(STOP|STAHP|...)[\.!\?]?$/
-var re = new RegExp(
-	'(' +
-		Object.keys(hammers).map(RegExp.escape).join('|') +
-	')[\\.!?]?$' );
-
-IO.register( 'input', function STOP ( msgObj ) {
-	var sentence = msgObj.content.toUpperCase(),
-		res = re.exec( sentence );
-
-	if ( res ) {
-		bot.adapter.out.add( hammers[res[1]], msgObj.room_id );
-	}
-});
-
-})();
-
-;
-(function () {
 /*
   ^\s*         #tolerate pre-whitespace
   s            #substitution prefix
@@ -6744,7 +6744,7 @@ function searchXKCD( args, cb ) {
             finish( 'Search didn\'t yield a comic; yielded: ' +result.url);
             return;
         }
-        getXKCD(bot.Message(matches[1], args.get()), finish);
+	finish(result.url);
     }
     
     function finish( res ) {
