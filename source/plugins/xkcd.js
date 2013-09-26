@@ -12,9 +12,10 @@ function getXKCD( args, cb ) {
 		finish( linkBase + prop );
 		return;
 	}
-	//we have no idea what they want. lazy arrogant bastards.
+	//Search google to find an xkcd comic based on their arguments
 	else if ( prop && prop !== 'new' ) {
-		finish( 'Clearly, you\'re not geeky enough for XKCD.' );
+		IO.jsonp.google(
+            args.toString() + ' site:xkcd.com -forums.xkcd -m.xkcd', finishQuery);
 		return;
 	}
 
@@ -25,6 +26,7 @@ function getXKCD( args, cb ) {
 		fun : finishXKCD
 	});
 
+    //Callback from xkcd jsonp
 	function finishXKCD ( resp ) {
 		var maxID = resp.num;
 
@@ -35,7 +37,22 @@ function getXKCD( args, cb ) {
 			finish( linkBase + maxID );
 		}
 	}
-
+    
+    //Callback from Google jsonp
+    function finishQuery( resp ) {
+        if ( resp.responseStatus !== 200 ) {
+			finish( 'Error: -41 (' + resp.responseStatus + ')' );
+			return;
+		}
+		var result = resp.responseData.results[ 0 ];
+        var matches = /xkcd.com\/(\d+)/.exec(result.url);
+        if(!matches) {
+            finish( 'Search didn\'t yield a comic; yielded: ' +result.url);
+            return;
+        }
+        finish( result.url );
+    }
+    
 	function finish( res ) {
 		bot.log( res, '/xkcd finish' );
 
@@ -55,48 +72,7 @@ bot.addCommand({
 		del : 'NONE'
 	},
 	description : 'Returns an XKCD. Call with no args for random, ' +
-		'`new` for latest, or a number for a specific one.',
-	async : true
-});
-
-
-function searchXKCD( args, cb ) {
-	IO.jsonp.google(
-		args.toString() + ' site:xkcd.com -forums.xkcd -m.xkcd', finishCall);
-        
-    function finishCall( resp ) {
-        if ( resp.responseStatus !== 200 ) {
-			finish( 'Something went on fire; status ' + resp.responseStatus );
-			return;
-		}
-		var result = resp.responseData.results[ 0 ];
-        var matches = /xkcd.com\/(\d+)/.exec(result.url);
-        if(!matches) {
-            finish( 'Search didn\'t yield a comic; yielded: ' +result.url);
-            return;
-        }
-        finish( result.url );
-    }
-    
-    function finish( res ) {
-		bot.log( res, '/xkcd finish' );
-
-		if ( cb && cb.call ) {
-			cb( res );
-		}
-		else {
-			args.directreply( res );
-		}
-	}
-}
-
-bot.addCommand({
-	name : 'xkcdSearch',
-	fun : searchXKCD,
-	permissions : {
-		del : 'NONE'
-	},
-	description : 'Returns an XKCD, based on query to google.',
+		'`new` for latest, or a number for a specific one, or other to query google.',
 	async : true
 });
 })();
