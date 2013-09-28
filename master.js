@@ -6830,7 +6830,7 @@ function getXKCD( args, cb ) {
 	else if ( prop && prop !== 'new' ) {
         bot.log( '/xkcd search', args.toString() );
 		IO.jsonp.google(
-            args.toString() + ' site:xkcd.com -forums.xkcd -m.xkcd',
+            args.toString() + ' site:xkcd.com -forums.xkcd -m.xkcd -fora.xkcd',
             finishGoogleQuery );
 		return;
 	}
@@ -6870,7 +6870,7 @@ function getXKCD( args, cb ) {
             matches = /xkcd.com\/(\d+)/.exec( answer );
 
         if ( !matches ) {
-            answer = 'Search didn\'t yield a comic; yielded: ' + result.url;
+            answer = 'Search didn\'t yield a comic; got ' + result.unescapedUrl;
         }
 
         finish( answer );
