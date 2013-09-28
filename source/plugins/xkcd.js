@@ -8,16 +8,21 @@ function getXKCD( args, cb ) {
 		linkBase = 'http://xkcd.com/';
 
 	//they want a specifix xkcd
-	if ( /\d{1,4}/.test(prop) ) {
+	if ( /^\d+$/.test(prop) ) {
+        bot.log( '/xkcd specific', prop );
 		finish( linkBase + prop );
 		return;
 	}
-	//we have no idea what they want. lazy arrogant bastards.
+	//they want to search for a certain comic
 	else if ( prop && prop !== 'new' ) {
-		finish( 'Clearly, you\'re not geeky enough for XKCD.' );
+        bot.log( '/xkcd search', args.toString() );
+		IO.jsonp.google(
+            args.toString() + ' site:xkcd.com -forums.xkcd -m.xkcd',
+            finishGoogleQuery );
 		return;
 	}
 
+    bot.log( '/xkcd random/latest', prop );
 	//they want a random XKCD, or the latest
 	IO.jsonp({
 		url : 'http://dynamic.xkcd.com/api-0/jsonp/comic',
@@ -35,6 +40,28 @@ function getXKCD( args, cb ) {
 			finish( linkBase + maxID );
 		}
 	}
+    function finishGoogleQuery ( resp ) {
+        if ( resp.responseStatus !== 200 ) {
+			finish( 'Something went on fire; status ' + resp.responseStatus );
+			return;
+		}
+
+        var results = resp.responseData.results;
+        if ( !results.length ) {
+            finish( 'Seems like you hallucinated this comic' );
+            return;
+        }
+
+		var result = results[ 0 ],
+            answer = result.url,
+            matches = /xkcd.com\/(\d+)/.exec( answer );
+
+        if ( !matches ) {
+            answer = 'Search didn\'t yield a comic; yielded: ' + result.url;
+        }
+
+        finish( answer );
+    }
 
 	function finish( res ) {
 		bot.log( res, '/xkcd finish' );
@@ -59,44 +86,4 @@ bot.addCommand({
 	async : true
 });
 
-
-function searchXKCD( args, cb ) {
-	IO.jsonp.google(
-		args.toString() + ' site:xkcd.com -forums.xkcd -m.xkcd', finishCall);
-        
-    function finishCall( resp ) {
-        if ( resp.responseStatus !== 200 ) {
-			finish( 'Something went on fire; status ' + resp.responseStatus );
-			return;
-		}
-		var result = resp.responseData.results[ 0 ];
-        var matches = /xkcd.com\/(\d+)/.exec(result.url);
-        if(!matches) {
-            finish( 'Search didn\'t yield a comic; yielded: ' +result.url);
-            return;
-        }
-        getXKCD(bot.Message(matches[1], args.get()), finish);
-    }
-    
-    function finish( res ) {
-		bot.log( res, '/xkcd finish' );
-
-		if ( cb && cb.call ) {
-			cb( res );
-		}
-		else {
-			args.directreply( res );
-		}
-	}
-}
-
-bot.addCommand({
-	name : 'xkcdSearch',
-	fun : searchXKCD,
-	permissions : {
-		del : 'NONE'
-	},
-	description : 'Returns an XKCD, based on query to google.',
-	async : true
-});
 })();
