@@ -2,27 +2,18 @@
 (function () {
 "use strict";
 
-// "user name" : {lastPing : Date.now(), msg : "afk message"}
+// "user name" : {lastPing : Date.now(), msg : "afk message", returnMsg: "bot sends this when you return"}
 var demAFKs = bot.memory.get( 'afk' );
 //5 minute limit between auto-responds.
 var rateLimit = 5 * 60 * 1000;
 
-var responses = {
-    coming : [
-        'Welcome back!',
-        'Oh, it\'s you again...',
-        'Nobody cares.',
-        'I thought you\'d never come back!',
-        'Where\'s the milk?'
-    ],
-    leaving : [
-        'Just go already!',
-        'Why are you leaving me?!',
-        'Nobody cares.',
-        'Hurry back, ok?',
-        'Can you pick up some milk on your way back?'
-    ]
-};
+var responses = [
+    { outgoing: "Why are you leaving me?!", incoming: "Welcome back!" },
+    { outgoing: "Just go already!", incoming: "Oh, it's you again..." },
+    { outgoing: "Nobody cares.", incoming: "I already told you, nobody cares." },
+    { outgoing: "Hurry back, ok?", incoming: "I thought you'd never come back" },
+    { outgoing: "Can you pick up some milk on your way back?", incoming: "Where's the milk?" }
+];
 
 var respond = function ( user, msg ) {
     var afkObj = demAFKs[ user ],
@@ -37,9 +28,10 @@ var respond = function ( user, msg ) {
     }
 };
 
-var goAFK = function ( user, msg ) {
+var goAFK = function ( user, msg, returnMsg ) {
     demAFKs[ user ] = {
         lastPing : 0,
+        returnMsg : returnMsg
         msg : msg.trim() || 'afk'
     };
 };
@@ -54,19 +46,19 @@ bot.addCommand({
         //parse the message and stuff.
         var user = msg.get( 'user_name' ),
             afkMsg = msg.content,
-            reply;
+            reply, botReply;
 
         bot.log( '/afk input', user, afkMsg );
 
         if ( demAFKs.hasOwnProperty(user) ) {
+            reply = demAFKs[ user ].returnMsg;
             clearAFK( user );
-
-            reply = responses.coming.random();
         }
         else {
-            goAFK( user, afkMsg );
-
-            reply = responses.leaving.random();
+            botReply = responses.random();
+            reply = botReply.outgoing;
+            
+            goAFK( user, afkMsg, botReply.incoming );
         }
 
         bot.memory.save( 'afk' );
