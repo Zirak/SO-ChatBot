@@ -17,20 +17,22 @@ var responses = [
 
 var respond = function ( user, msg ) {
     var afkObj = demAFKs[ user ],
+        room_id = msg.get("room_id"),
         now = Date.now(),
-        shouldReply = now - afkObj.lastPing >= rateLimit;
+        lstPing = afkObj.lastPing[room_id],
+        shouldReply = lstPing === undefined || now - lstPing >= rateLimit;
 
     if ( shouldReply ){
         //Send a response and such
         msg.directreply( [user, 'is afk:', afkObj.msg].join(' ') );
-        afkObj.lastPing = now;
+        afkObj.lastPing[room_id] = now;
         bot.memory.save( 'afk' );
     }
 };
 
 var goAFK = function ( user, msg, returnMsg ) {
     demAFKs[ user ] = {
-        lastPing : 0,
+        lastPing : {},
         returnMsg : returnMsg
         msg : msg.trim() || 'afk'
     };
