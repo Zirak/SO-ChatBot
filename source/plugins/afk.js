@@ -24,7 +24,7 @@ var respond = function ( user, msg ) {
 
     if ( shouldReply ){
         //Send a response and such
-        msg.directreply( [user, 'is afk:', afkObj.msg].join(' ') );
+        msg.directreply( [user, 'is afk'+(afkObj.msg?':':'.'), afkObj.msg].join(' ') );
         afkObj.lastPing[room_id] = now;
         bot.memory.save( 'afk' );
     }
@@ -33,8 +33,8 @@ var respond = function ( user, msg ) {
 var goAFK = function ( user, msg, returnMsg ) {
     demAFKs[ user ] = {
         lastPing : {},
-        returnMsg : returnMsg
-        msg : msg.trim() || 'afk'
+        returnMsg : returnMsg,
+        msg : msg.trim()
     };
 };
 
@@ -42,46 +42,55 @@ var clearAFK = function ( user ) {
     delete demAFKs[ user ];
 };
 
+var commandHandler = function ( msg ) {
+    //parse the message and stuff.
+    var user = msg.get( 'user_name' ).replace(/ /g,''),
+        afkMsg = msg.content,
+        reply, botReply;
+
+    bot.log( '/afk input', user, afkMsg );
+
+    if ( demAFKs.hasOwnProperty(user) ) {
+        reply = demAFKs[ user ].returnMsg;
+        clearAFK( user );
+    }
+    else {
+        botReply = responses.random();
+        reply = botReply.outgoing;
+        
+        goAFK( user, afkMsg, botReply.incoming );
+    }
+
+    bot.memory.save( 'afk' );
+    msg.directreply( reply );
+};
+
 bot.addCommand({
     name : 'afk',
-    fun : function ( msg ) {
-        //parse the message and stuff.
-        var user = msg.get( 'user_name' ),
-            afkMsg = msg.content,
-            reply, botReply;
-
-        bot.log( '/afk input', user, afkMsg );
-
-        if ( demAFKs.hasOwnProperty(user) ) {
-            reply = demAFKs[ user ].returnMsg;
-            clearAFK( user );
-        }
-        else {
-            botReply = responses.random();
-            reply = botReply.outgoing;
-            
-            goAFK( user, afkMsg, botReply.incoming );
-        }
-
-        bot.memory.save( 'afk' );
-        msg.directreply( reply );
-    },
-    permissions: {
+    fun : commandHandler,
+    permissions : {
         del: 'NONE'
     },
-    description: 'Set an AFK message: `!!afk <message>`. Invoke `!!afk` again' +
+    description : 'Set an AFK message: `!!afk <message>`. Invoke `!!afk` again' +
         ' to return.'
 });
 
 IO.register( 'input', function ( msgObj ) {
-    var body = msgObj.content.toUpperCase();
-
+    var body = msgObj.content.toUpperCase(),
+        msg = bot.prepareMessage( msgObj );  
+    
+    if ( demAFKs.hasOwnProperty(msgObj.user_name.replace(/ /g,'')) 
+         && body.indexOf(bot.invocationPattern+"AFK") !== 0 ) {
+        // the user posted, and not with $$afk as the first part of the message
+        commandHandler(msg);
+        
+        // We don't want to return here, as the returning user could be pinging someone. 
+    }
+    
     //we only care about messages not made by the bot, and containing pings
     if ( msgObj.user_id === bot.adapter.user_id || body.indexOf('@') < 0 ) {
         return;
     }
-
-    var msg = bot.prepareMessage( msgObj );
 
     Object.keys( demAFKs ).forEach(function ( name ) {
         if ( body.indexOf('@'+name.toUpperCase()) > -1 ) {
