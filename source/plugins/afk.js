@@ -8,11 +8,28 @@ var demAFKs = bot.memory.get( 'afk' );
 var rateLimit = 5 * 60 * 1000;
 
 var responses = [
-    { outgoing: "Why are you leaving me?!", incoming: "Welcome back!" },
-    { outgoing: "Just go already!", incoming: "Oh, it's you again..." },
-    { outgoing: "Nobody cares.", incoming: "I already told you, nobody cares." },
-    { outgoing: "Hurry back, ok?", incoming: "I thought you'd never come back" },
-    { outgoing: "Can you pick up some milk on your way back?", incoming: "Where's the milk?" }
+    { 
+        outgoing: "Why are you leaving me?!", 
+        incoming: ["Welcome back!", "Where were you?!", "You saw that whore again, didn't you?!"]
+    },{ 
+        outgoing: "Just go already!", 
+        incoming: ["Oh, it's you again...", "Look at what the cat dragged in...", "You've got some balls, coming back here after what you did."]
+    },{ 
+        outgoing: "Nobody cares.", 
+        incoming: ["I already told you, nobody cares.", "There goes the neighbourhood."]
+    },{ 
+        outgoing: "Hurry back, ok?", 
+        incoming: ["I thought you'd never come back!", "It's been 20 years. You can't just waltz back into my life like this."] 
+    },{ 
+        outgoing: "Stay safe.", 
+        incoming: ["Were you bitten?! Strip! Prove you weren't bitten."] 
+    },{ 
+        outgoing: "Can you pick up some milk on your way back?", 
+        incoming: ["Where's the milk?", "Turns out I already have milk. Oops."] 
+    },{
+        outgoing: "Apricots are people too!",
+        incoming: ["You taste just like raisin.", "I am a banana!", "My spoon is too big!", "BROOOOOOOOOOOO."]
+    }
 ];
 
 var respond = function ( user, msg ) {
@@ -58,7 +75,7 @@ var commandHandler = function ( msg ) {
         botReply = responses.random();
         reply = botReply.outgoing;
         
-        goAFK( user, afkMsg, botReply.incoming );
+        goAFK( user, afkMsg, botReply.incoming.random() );
     }
 
     bot.memory.save( 'afk' );
