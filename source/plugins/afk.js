@@ -158,7 +158,7 @@ IO.register( 'input', function afkInputListener ( msgObj ) {
     // to prevent activating it twice, we need to check whether they're calling
     // the bot's afk command already.
     var invokeRe = new RegExp(
-        '^' + RegExp.escape( bot.invocationPattern ) + '\\s*AFK' );
+        '^' + RegExp.escape( bot.invocationPattern ) + '\\s*\/?\\s*AFK' );
 
     console.log( userName, invokeRe.test(body) );
     if ( demAFKs.hasOwnProperty(userName) && !invokeRe.test(body) ) {
