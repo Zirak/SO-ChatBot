@@ -94,10 +94,11 @@ bot.addCommand({
 
 IO.register( 'input', function ( msgObj ) {
     var body = msgObj.content.toUpperCase(),
-        msg = bot.prepareMessage( msgObj );  
+        msg = bot.prepareMessage( msgObj ),
+        rgx = new RegExp( '^' + bot.invocationPattern + ' ?/? ?afk', 'i' );
     
     if ( demAFKs.hasOwnProperty(msgObj.user_name.replace(/ /g,'')) 
-         && body.indexOf(bot.invocationPattern+"AFK") !== 0 ) {
+         && rgx.test(body) === false ) {
         // the user posted, and not with $$afk as the first part of the message
         commandHandler(msg);
         
