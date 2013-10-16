@@ -99,7 +99,7 @@ var bot = window.bot = {
 		}
 		//mmmm....nachos
 		else {
-			errMsg += ' Use the help command to learn more.';
+			errMsg += ' Use the `!!/help` command to learn more.';
 		}
 		//wait a minute, these aren't nachos. these are bear cubs.
 		return errMsg;

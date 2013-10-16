@@ -8,16 +8,21 @@ function getXKCD( args, cb ) {
 		linkBase = 'http://xkcd.com/';
 
 	//they want a specifix xkcd
-	if ( /\d{1,4}/.test(prop) ) {
+	if ( /^\d+$/.test(prop) ) {
+        bot.log( '/xkcd specific', prop );
 		finish( linkBase + prop );
 		return;
 	}
-	//we have no idea what they want. lazy arrogant bastards.
+	//they want to search for a certain comic
 	else if ( prop && prop !== 'new' ) {
-		finish( 'Clearly, you\'re not geeky enough for XKCD.' );
+        bot.log( '/xkcd search', args.toString() );
+		IO.jsonp.google(
+            args.toString() + ' site:xkcd.com -forums.xkcd -m.xkcd -fora.xkcd',
+            finishGoogleQuery );
 		return;
 	}
 
+    bot.log( '/xkcd random/latest', prop );
 	//they want a random XKCD, or the latest
 	IO.jsonp({
 		url : 'http://dynamic.xkcd.com/api-0/jsonp/comic',
@@ -35,6 +40,28 @@ function getXKCD( args, cb ) {
 			finish( linkBase + maxID );
 		}
 	}
+    function finishGoogleQuery ( resp ) {
+        if ( resp.responseStatus !== 200 ) {
+			finish( 'Something went on fire; status ' + resp.responseStatus );
+			return;
+		}
+
+        var results = resp.responseData.results;
+        if ( !results.length ) {
+            finish( 'Seems like you hallucinated this comic' );
+            return;
+        }
+
+		var result = results[ 0 ],
+            answer = result.url,
+            matches = /xkcd.com\/(\d+)/.exec( answer );
+
+        if ( !matches ) {
+            answer = 'Search didn\'t yield a comic; got ' + result.unescapedUrl;
+        }
+
+        finish( answer );
+    }
 
 	function finish( res ) {
 		bot.log( res, '/xkcd finish' );
@@ -58,4 +85,5 @@ bot.addCommand({
 		'`new` for latest, or a number for a specific one.',
 	async : true
 });
+
 })();

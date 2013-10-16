@@ -750,7 +750,7 @@ var bot = window.bot = {
 		}
 		//mmmm....nachos
 		else {
-			errMsg += ' Use the help command to learn more.';
+			errMsg += ' Use the `!!/help` command to learn more.';
 		}
 		//wait a minute, these aren't nachos. these are bear cubs.
 		return errMsg;
@@ -2504,6 +2504,121 @@ what              #simply the word what
 }());
 
 ;
+//follows is an explanation of how SO's chat does things. you may want to skip
+// this gigantuous comment.
+/*
+  Note: This may be outdated next year, tomorrow, never, or in 4 minutes. We
+are leeching off a disinterested 3rd party, and knowledge of how to poke
+around requests/websockets is required to correctly maintain everything.
+
+  Generally, the client gets input from a websocket connected to SO's server,
+grabbing events as they come in (new message, edits, room invites, whatever).
+However, output (sending a message, editing, basically creating these events) is
+not handled via this socket, but via separate http requests. One should note
+that if/when the socket fails for any reason, the chat resorts to long polling.
+
+  First, a note on authentication. Apparently, the chat uses two things to
+decide who you are. The first is, quite obviously, cookies. The second is an
+elusive thing called the "fkey". It's given to us by the server inside an input
+called (you guessed it) "fkey", and its value is a 32 character string. Maybe
+its the result of running a checksum of something, maybe it's the first 32 chars
+of a sha512, who knows. But it is used, since you can view chat while not being
+logged in, and you have to provide it in all your requests.
+
+  Now to the actual meat.
+
+  Connecting to the input websocket is done in two steps, of which the first
+is obtaining the link to the second. We make a request containing our room id
+to /ws-auth (e.g. http://chat.stackoverflow.com/ws-auth), and we receive a JSON
+object containing a url property (or something else if there was an error):
+
+Request:
+  POST http://chat.stackoverflow.com/ws-auth
+  Content-Length: 47
+  Content-Type: application/x-www-form-urlencoded
+  Content: roomid=17&fkey=01234567890123456789012345678901
+
+Response:
+  Content-Type: application/json; charset=utf-8
+  Content: {"url":"wss://chat.sockets.stackexchange.com/events/17/another32CharLongStringBlahBlaah"}
+
+We parse the response, and connect to the websocket at the specified URL. Note
+that the websocket URL accepts an `l` query parameter
+(...another32CharLongStringBlahBlaah?l=someNumber). It's a number, I'm not sure
+what it's supposed to represent exactly, but omitting it brings a lot of history
+messages in the first frame, and setting it to a really high value brings no
+messages, so we opt to the latter (?l=99999999 or something like that. also note
+that it doesn't appear to be a "since message id" parameter, but I may be wrong)
+
+  Okay, we've got a connection to the web socket. How does a frame look like?
+The simplest one, containing no events, looks like this:
+
+    {"r17" : {}}
+
+Just a simple object with the keys being the room's were connected to, each id
+prefixed with an "r". But sometimes, even if your room(s) has no traffic, you
+may get something like this:
+
+    {"r17" : {
+        "t" : 23531002,
+        "d" : 3
+    }}
+
+Again, I have no clue what these mean. I think `d` is short for `delta`, and
+maybe `t` is a form of internal timestamp or counter or...I don't know. However,
+remember this `t` value for when we discuss polling - it is used there. It does
+however seem to be related to how many messages were sent which are not in this
+room - so if you're listening to room 17, and someone posted a mesage on room 42
+then you'd get a `d` of 1, and the `t` value may be updated by 1. Or maybe not.
+The `t` values don't seem to be consistently increasing, or decreasing, or
+following any pattern I could recognise.
+
+Anyway! What does a message look like?
+
+  {"r1" : {
+      "e" : [{
+        "event_type" : 1,
+        "time_stamp" : 1379405022,
+        "content" : "test",
+        "id" : 23531402,
+        "user_id" : 617762,
+        "user_name" : "Zirak",
+        "room_id" : 1,
+        "room_name" : "Sandbox",
+        "message_id" : 11832153
+      }],
+      "t": 23531402,
+      "d": 1
+    }}
+
+We receive an array of events under the property `e` of the respective room.
+Each event, called inside the bot a `msgObj` (message object), contains several
+interesting properties, which may change according to what kind of event it is.
+You can determine the type of the event by checking...drum roll...the event_type
+field. 1 is new message, 2 is edit, 3 is user-join, 4 is user-leave, and there
+are many others. Also note that pinging a user may add some properties, replying
+to a message adds some more, and so forth.
+
+Once we have this array, we simply iterate over it, and decide what we want to
+do based on what event it is. But at the end, the adapter's job is to do one
+thing - call IO.fire, and pass the torch onwards.
+
+[insert magic about polling. I don't have the web console in front of me, so I
+can't stimulate requests]
+
+  Now, output! Sending a message is a simple http request, containing the text
+and the magical fkey. In the following example, we send a new message to room 1
+containing just the word "butts":
+
+Request:
+  POST http://chat.stackoverflow.com/chats/1/messages/new
+  text=butts&fkey=01234567890123456789012345678901
+Response:
+  {"id":11832651,"time":1379406464}
+
+And...that's it. Pretty simple. Most of the requests endpoints are like that.
+*/
+
 (function () {
 "use strict";
 
@@ -2595,9 +2710,6 @@ var polling = bot.adapter.in = {
 	// the latest id or something like that. could also be the time last
 	// sent, which is why I called it times at the beginning. or something.
 	times : {},
-	//currently, used for messages sent when the room's been silent for a
-	// while
-	lastTimes : {},
 
 	firstPoll : true,
 
@@ -2730,7 +2842,6 @@ var polling = bot.adapter.in = {
 		else if ( et !== 1 && et !== 2 ) {
 			return;
 		}
-		this.lastTimes[ msg.room_id ] = Date.now();
 
 		//check for a multiline message
 		if ( msg.content.startsWith('<div class=\'full\'>') ) {
@@ -3123,6 +3234,192 @@ IO.register( 'input', function STOP ( msgObj ) {
 	if ( res ) {
 		bot.adapter.out.add( hammers[res[1]], msgObj.room_id );
 	}
+});
+
+})();
+
+;
+//solves #86, mostly written by @Shmiddty
+(function () {
+"use strict";
+
+// "user name" : {lastPing : Date.now(), msg : "afk message", returnMsg: "bot sends this when you return"}
+var demAFKs = bot.memory.get( 'afk' );
+//5 minute limit between auto-responds.
+var rateLimit = 5 * 60 * 1000;
+
+var responses = [
+    {
+        outgoing : 'Why are you leaving me!?',
+        incoming : [
+            'Welcome back!', 'Where were you!?',
+            'You saw that whore again, didn\'t you!?'
+        ]
+    },
+    {
+        outgoing : 'Just go already!',
+        incoming : [
+            'Oh, it\'s you again...', 'Look at what the cat dragged in...',
+            'You\'ve got some balls, coming back here after what you did.'
+        ]
+    },
+    {
+        outgoing : 'Nobody cares.',
+        incoming : [
+            'I already told you, nobody cares.',
+            'There goes the neighbourhood.'
+        ]
+    },
+    {
+        outgoing : 'Hurry back, ok?',
+        incoming : [
+            'I thought you\'d never come back!',
+            'It\'s been 20 years. You can\'t just waltz back into my life ' +
+                'like this.'
+        ]
+    },
+    {
+        outgoing : 'Stay safe.',
+        incoming : [ 'Were you bitten!? Strip! Prove you weren\'t bitten.' ]
+    },
+    {
+        outgoing : 'Can you pick up some milk on your way back?',
+        incoming : [
+            'Where\'s the milk?',
+            'Turns out I already have milk. Oops.'
+        ]
+    },
+    {
+        outgoing : 'Apricots are people too!',
+        incoming : [
+            'You taste just like raisin.', 'I am a banana!',
+            'My spoon is too big!', 'BROOOOOOOOOOOO.'
+        ]
+    }
+];
+
+var respondFor = function ( user, msg ) {
+    var afkObj = demAFKs[ user ],
+        room_id = msg.get( 'room_id' ),
+        now = Date.now();
+
+    if ( shouldReply() ) {
+        //Send a response and such
+        msg.directreply( formulateReponse() );
+        afkObj.lastPing[ room_id ] = now;
+        bot.memory.save( 'afk' );
+    }
+
+    function formulateReponse () {
+        var format = '{user} is afk{sep}{rest}';
+        var data = {
+            user : user,
+            sep : '.',
+            rest : ''
+        };
+
+        if ( afkObj.msg ) {
+            data.sep = ': ';
+            data.rest = afkObj.msg;
+        }
+
+        return format.supplant( data );
+    }
+
+    function shouldReply () {
+        var lastPing = afkObj.lastPing[ room_id ];
+
+        if ( !lastPing ) {
+            return true;
+        }
+        return ( now - lastPing >= rateLimit );
+    }
+};
+
+var goAFK = function ( name, msg, returnMsg ) {
+    bot.log( '/afk goAFK ', name );
+
+    demAFKs[ name ] = {
+        lastPing : {},
+        msg : msg.trim(),
+        returnMsg : returnMsg,
+    };
+};
+
+var clearAFK = function ( name ) {
+    bot.log( '/afk clearAFK', name );
+    delete demAFKs[ name ];
+};
+
+var commandHandler = function ( msg ) {
+    //parse the message and stuff.
+    var user = msg.get( 'user_name' ).replace( /\s/g, '' ),
+        afkMsg = msg.content,
+        reply, botReply;
+
+    bot.log( '/afk input', user, afkMsg );
+
+    if ( demAFKs.hasOwnProperty(user) ) {
+        reply = demAFKs[ user ].returnMsg;
+        clearAFK( user );
+    }
+    else {
+        botReply = responses.random();
+        reply = botReply.outgoing;
+
+        goAFK( user, afkMsg, botReply.incoming.random() );
+    }
+
+    bot.memory.save( 'afk' );
+    msg.directreply( reply );
+};
+
+bot.addCommand({
+    name : 'afk',
+    fun : commandHandler,
+    permissions : {
+        del: 'NONE'
+    },
+    description : 'Set an afk message: `/afk <message>`. Invoke `/afk` ' +
+        'again to return.'
+});
+
+IO.register( 'input', function afkInputListener ( msgObj ) {
+    var body = msgObj.content.toUpperCase(),
+        msg = bot.prepareMessage( msgObj ),
+        userName = msgObj.user_name.replace( /\s/g, '' ),
+        id = msgObj.user_id;
+
+    //we don't care about bos messages
+    if ( id === bot.adapter.user_id ) {
+        return;
+    }
+
+    //if the user posts, we want to release them from afk's iron grip. however
+    // to prevent activating it twice, we need to check whether they're calling
+    // the bot's afk command already.
+    var invokeRe = new RegExp(
+        '^' + RegExp.escape( bot.invocationPattern ) + '\\s*AFK' );
+
+    console.log( userName, invokeRe.test(body) );
+    if ( demAFKs.hasOwnProperty(userName) && !invokeRe.test(body) ) {
+        bot.log( '/afk he returned!', msgObj );
+        commandHandler( msg );
+        //We don't want to return here, as the returning user could be pinging
+        // someone.
+    }
+
+    //and we don't care if the message doesn't have any pings
+    if ( body.indexOf('@') < 0 ) {
+        return;
+    }
+
+    Object.keys( demAFKs ).forEach(function afkCheckAndRespond ( name ) {
+        if ( body.indexOf('@'+name.toUpperCase()) > -1 ) {
+            bot.log( '/afk responding for ' + name );
+            respondFor( name, msg );
+        }
+    });
 });
 
 })();
@@ -4024,8 +4321,6 @@ bot.addCommand({
         'name/description. `/findCommand partOfNameOrDescription`'
 });
 })();
-
-;
 
 ;
 //listener to help decide which Firefly episode to watch
@@ -5474,16 +5769,23 @@ IO.register( 'userregister', function permissionCb ( user, room ) {
 });
 
 function stringMuteList () {
-	var keys = Object.keys( muted );
+	var users = Object.keys( muted );
 
-	if ( !keys.length ) {
+	if ( !users.length ) {
 		return 'Nobody is muted';
 	}
 
 	var base = 'http://chat.stackoverflow.com/transcript/message/';
 
-	return keys.map(function ( k ) {
-		return bot.adapter.link( k, base + muted[k].invokingId );
+	return users.map(function ( user ) {
+		var info = muted[ user ],
+
+			remaining = remainingDuration( info.endDate ),
+			strung = remaining ? '(' + remaining + ')' : '',
+
+			text = user + strung;
+
+		return bot.adapter.link( text, base + info.invokingId );
 	}).join( '; ' );
 }
 
@@ -5513,6 +5815,28 @@ function parseDuration ( str ) {
 		parts[ 0 ] += 'm';
 	}
 	return parts[ 0 ];
+}
+
+function remainingDuration ( future ) {
+	var now = Date.now();
+
+	if ( future < now ) {
+		return;
+	}
+	var delta	= new Date( future - now ),
+		days	= delta.getUTCDate(),
+		hours	= delta.getUTCHours(),
+		minutes = delta.getUTCMinutes(),
+		seconds = delta.getUTCSeconds();
+
+	if ( days > 1 ) {
+		return ( days - 1 ) + 'd ' + hours + 'h';
+	}
+	else if ( hours > 0 ) {
+		return hours + 'h ' + minutes + 'm';
+	}
+
+	return minutes + 'm ' + seconds + 's';
 }
 
 bot.addCommand({
@@ -5598,8 +5922,6 @@ bot.addCommand({
 });
 
 })();
-
-;
 
 ;
 (function () {
@@ -6286,7 +6608,7 @@ undecided=["SSdtIG5vdCBzdXJl", "RVJST1IgQ0FMQ1VMQVRJTkcgUkVTVUxU","SSBrbm93IGp1c
 sameness=["VGhhdCdzIG5vdCByZWFsbHkgYSBjaG9pY2UsIG5vdyBpcyBpdD8=","U291bmRzIGxpa2UgeW91IGhhdmUgYWxyZWFkeSBkZWNpZGVk","Q2hlYXRlciBjaGVhdGVyIHlvdXIgaG91c2UgaXMgYSBoZWF0ZXI="].map(atob);
 
 //now for the juicy part
-answers=["QWJzb2x1dGVseSBub3Q=","QWJzb2x1dGVseSBub3Q=","QWJzb2x1dGVseSBub3Q=","QWxsIHNpZ25zIHBvaW50IHRvIG5v","QWxsIHNpZ25zIHBvaW50IHRvIG5v","QWxsIHNpZ25zIHBvaW50IHRvIG5v","QWxsIHNpZ25zIHBvaW50IHRvIHllcw==","QWxsIHNpZ25zIHBvaW50IHRvIHllcw==","QWxsIHNpZ25zIHBvaW50IHRvIHllcw==","QnV0IG9mIGNvdXJzZQ==","QnV0IG9mIGNvdXJzZQ==","QnV0IG9mIGNvdXJzZQ==","QnkgYWxsIG1lYW5z","QnkgYWxsIG1lYW5z","QnkgYWxsIG1lYW5z","Q2VydGFpbmx5IG5vdA==","Q2VydGFpbmx5IG5vdA==","Q2VydGFpbmx5IG5vdA==","Q2VydGFpbmx5","Q2VydGFpbmx5","Q2VydGFpbmx5","RGVmaW5pdGVseQ==","RGVmaW5pdGVseQ==","RGVmaW5pdGVseQ==","RG91YnRmdWxseQ==","RG91YnRmdWxseQ==","RG91YnRmdWxseQ==","RnJhbmtseSBtZWFyIGRlYXIsIEkgZG9uJ3QgZ2l2ZSBhIGRlYW4=","RnJhbmtseSBtZWFyIGRlYXIsIEkgZG9uJ3QgZ2l2ZSBhIGRlYW4=","SSBjYW4gbmVpdGhlciBjb25maXJtIG5vciBkZW55","SSBleHBlY3Qgc28=","SSBleHBlY3Qgc28=","SSBleHBlY3Qgc28=","SSdtIG5vdCBzbyBzdXJlIGFueW1vcmUuIEl0IGNhbiBnbyBlaXRoZXIgd2F5","SW1wb3NzaWJsZQ==","SW1wb3NzaWJsZQ==","SW1wb3NzaWJsZQ==","SW5kZWVk","SW5kZWVk","SW5kZWVk","SW5kdWJpdGFibHk=","SW5kdWJpdGFibHk=","SW5kdWJpdGFibHk=","Tm8gd2F5","Tm8gd2F5","Tm8gd2F5","Tm8=","Tm8=","Tm8=","Tm8=","Tm9wZQ==","Tm9wZQ==","Tm9wZQ==","Tm90IGEgY2hhbmNl","Tm90IGEgY2hhbmNl","Tm90IGEgY2hhbmNl","Tm90IGF0IGFsbA==","Tm90IGF0IGFsbA==","Tm90IGF0IGFsbA==","TnVoLXVo","TnVoLXVo","TnVoLXVo","T2YgY291cnNlIG5vdA==","T2YgY291cnNlIG5vdA==","T2YgY291cnNlIG5vdA==","T2YgY291cnNlIQ==","T2YgY291cnNlIQ==","T2YgY291cnNlIQ==","UHJvYmFibHk=","UHJvYmFibHk=","UHJvYmFibHk=","WWVzIQ==","WWVzIQ==","WWVzIQ==","WWVzIQ==","WWVzLCBhYnNvbHV0ZWx5","WWVzLCBhYnNvbHV0ZWx5","WWVzLCBhYnNvbHV0ZWx5"].map(atob)
+answers=["QWJzb2x1dGVseSBub3Q=","QWJzb2x1dGVseSBub3Q=","QWJzb2x1dGVseSBub3Q=","QWxsIHNpZ25zIHBvaW50IHRvIG5v","QWxsIHNpZ25zIHBvaW50IHRvIG5v","QWxsIHNpZ25zIHBvaW50IHRvIG5v","QWxsIHNpZ25zIHBvaW50IHRvIHllcw==","QWxsIHNpZ25zIHBvaW50IHRvIHllcw==","QWxsIHNpZ25zIHBvaW50IHRvIHllcw==","QnV0IG9mIGNvdXJzZQ==","QnV0IG9mIGNvdXJzZQ==","QnV0IG9mIGNvdXJzZQ==","QnkgYWxsIG1lYW5z","QnkgYWxsIG1lYW5z","QnkgYWxsIG1lYW5z","Q2VydGFpbmx5IG5vdA==","Q2VydGFpbmx5IG5vdA==","Q2VydGFpbmx5IG5vdA==","Q2VydGFpbmx5","Q2VydGFpbmx5","Q2VydGFpbmx5","RGVmaW5pdGVseQ==","RGVmaW5pdGVseQ==","RGVmaW5pdGVseQ==","RG91YnRmdWxseQ==","RG91YnRmdWxseQ==","RG91YnRmdWxseQ==","RnJhbmtseSBteSBkZWFyLCBJIGRvbid0IGdpdmUgYSBkZWFu", "RnJhbmtseSBteSBkZWFyLCBJIGRvbid0IGdpdmUgYSBkZWFu", "SSBjYW4gbmVpdGhlciBjb25maXJtIG5vciBkZW55","SSBleHBlY3Qgc28=","SSBleHBlY3Qgc28=","SSBleHBlY3Qgc28=","SSdtIG5vdCBzbyBzdXJlIGFueW1vcmUuIEl0IGNhbiBnbyBlaXRoZXIgd2F5","SW1wb3NzaWJsZQ==","SW1wb3NzaWJsZQ==","SW1wb3NzaWJsZQ==","SW5kZWVk","SW5kZWVk","SW5kZWVk","SW5kdWJpdGFibHk=","SW5kdWJpdGFibHk=","SW5kdWJpdGFibHk=","Tm8gd2F5","Tm8gd2F5","Tm8gd2F5","Tm8=","Tm8=","Tm8=","Tm8=","Tm9wZQ==","Tm9wZQ==","Tm9wZQ==","Tm90IGEgY2hhbmNl","Tm90IGEgY2hhbmNl","Tm90IGEgY2hhbmNl","Tm90IGF0IGFsbA==","Tm90IGF0IGFsbA==","Tm90IGF0IGFsbA==","TnVoLXVo","TnVoLXVo","TnVoLXVo","T2YgY291cnNlIG5vdA==","T2YgY291cnNlIG5vdA==","T2YgY291cnNlIG5vdA==","T2YgY291cnNlIQ==","T2YgY291cnNlIQ==","T2YgY291cnNlIQ==","UHJvYmFibHk=","UHJvYmFibHk=","UHJvYmFibHk=","WWVzIQ==","WWVzIQ==","WWVzIQ==","WWVzIQ==","WWVzLCBhYnNvbHV0ZWx5","WWVzLCBhYnNvbHV0ZWx5","WWVzLCBhYnNvbHV0ZWx5"].map(atob)
 //can you feel the nectar?
 
 
@@ -6681,16 +7003,21 @@ function getXKCD( args, cb ) {
 		linkBase = 'http://xkcd.com/';
 
 	//they want a specifix xkcd
-	if ( /\d{1,4}/.test(prop) ) {
+	if ( /^\d+$/.test(prop) ) {
+        bot.log( '/xkcd specific', prop );
 		finish( linkBase + prop );
 		return;
 	}
-	//we have no idea what they want. lazy arrogant bastards.
+	//they want to search for a certain comic
 	else if ( prop && prop !== 'new' ) {
-		finish( 'Clearly, you\'re not geeky enough for XKCD.' );
+        bot.log( '/xkcd search', args.toString() );
+		IO.jsonp.google(
+            args.toString() + ' site:xkcd.com -forums.xkcd -m.xkcd -fora.xkcd',
+            finishGoogleQuery );
 		return;
 	}
 
+    bot.log( '/xkcd random/latest', prop );
 	//they want a random XKCD, or the latest
 	IO.jsonp({
 		url : 'http://dynamic.xkcd.com/api-0/jsonp/comic',
@@ -6708,6 +7035,28 @@ function getXKCD( args, cb ) {
 			finish( linkBase + maxID );
 		}
 	}
+    function finishGoogleQuery ( resp ) {
+        if ( resp.responseStatus !== 200 ) {
+			finish( 'Something went on fire; status ' + resp.responseStatus );
+			return;
+		}
+
+        var results = resp.responseData.results;
+        if ( !results.length ) {
+            finish( 'Seems like you hallucinated this comic' );
+            return;
+        }
+
+		var result = results[ 0 ],
+            answer = result.url,
+            matches = /xkcd.com\/(\d+)/.exec( answer );
+
+        if ( !matches ) {
+            answer = 'Search didn\'t yield a comic; got ' + result.unescapedUrl;
+        }
+
+        finish( answer );
+    }
 
 	function finish( res ) {
 		bot.log( res, '/xkcd finish' );
@@ -6731,6 +7080,7 @@ bot.addCommand({
 		'`new` for latest, or a number for a specific one.',
 	async : true
 });
+
 })();
 
 ;
