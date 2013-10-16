@@ -99,7 +99,11 @@ IO.register( 'input', function ( msgObj ) {
     
     if ( demAFKs.hasOwnProperty(msgObj.user_name.replace(/ /g,'')) 
          && rgx.test(body) === false ) {
-        // the user posted, and not with $$afk as the first part of the message
+        // the user posted, and did not invoke the afk command
+        // TODO: It might be a good idea to extract this into something like
+        // bot.getCommandNameFromMessage(msgObj) 
+        // which would return the string name for a valid command message,
+        // or undefined for an message that contains an invalid command or no command.
         commandHandler(msg);
         
         // We don't want to return here, as the returning user could be pinging someone. 
