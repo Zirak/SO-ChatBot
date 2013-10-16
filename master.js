@@ -744,13 +744,13 @@ var bot = window.bot = {
 
 	giveUpMessage : function ( guesses ) {
 		//man, I can't believe it worked...room full of nachos for me
-		var errMsg = 'That didn\'t make much sense.';
+		var errMsg = 'Are you excited?';
 		if ( guesses && guesses.length ) {
 			errMsg += ' Maybe you meant: ' + guesses.join( ', ' );
 		}
 		//mmmm....nachos
 		else {
-			errMsg += ' Use the help command to learn more.';
+			errMsg += ' Or did you need help with my workings?';
 		}
 		//wait a minute, these aren't nachos. these are bear cubs.
 		return errMsg;
