@@ -314,15 +314,24 @@ if ( process.argv.indexOf('no-min') > -1 ) {
 	build.doMinify = false;
 }
 
+
+if ( process.argv.indexOf('no-min') > -1 ) {
+	build.doMinify = false;
+}
+
 var files = [
 	'./source/IO.js',
 	'./source/util.js',
 	'./source/bot.js',
 	'./source/adapter.js',
 	'./source/users.js',
-	'./source/personality.js',
-	'./source/plugins/'
+	'./source/personality.js'
 ];
+
+if ( process.argv.indexOf('no-plugins') < 0 ) {
+	files.push('./source/plugins/');
+}
+
 function filter ( fileName ) {
 	return (
 		//only .js files
