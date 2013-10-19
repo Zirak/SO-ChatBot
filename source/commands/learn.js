@@ -187,5 +187,5 @@ bot.addCommand({
 		'`/learn cmdName outputPattern [inputRegex [description]]`'
 });
 
-loadCommands();
+IO.register( 'finishload', loadCommands, this );
 }());
