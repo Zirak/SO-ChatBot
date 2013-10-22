@@ -2006,11 +2006,12 @@ var commands = {
 				profileUrl: profileUrl
 			}),
 			complete : finish
-		});
+		}); 
 		
 		function finish () {
-			args.directreply( profileUrl );
-		}
+			args.directreply( 'I am still working on this part' );
+			}
+		
 	}
 };
 
