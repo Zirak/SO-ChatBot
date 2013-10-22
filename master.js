@@ -1999,19 +1999,17 @@ var commands = {
 		}
 
 		var thumblink = 'http://chat.stackexchange.com/users/thumbs/'+id;
-		/*IO.xhr({
+		IO.xhr({
 			method : 'GET',
 			url: thumblink
-			data: ({
-				profileUrl: profileUrl
-			}),
-			complete : finish
+			data: ( ),
+			complete : args.directreply( 'I am still working on this part' );
 		}); 
 		
-		function finish () {
+		/*function finish () {
 			args.directreply( 'I am still working on this part' );
-			}*/
-		args.directreply( thumblink );
+			}
+		args.directreply( thumblink );*/
 	}
 };
 
