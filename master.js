@@ -2000,17 +2000,18 @@ var commands = {
 
 		var thumblink = 'http://chat.stackexchange.com/users/thumbs/'+id;
 		IO.xhr({
+			method : 'GET',
 			url: thumblink
 			data: {
 				profileUrl: profileUrl
 			},
-			method : 'POST',
 			complete : finish
 		});
 		
 		function finish () {
 			args.directreply( profileUrl );
 		}
+	}
 };
 
 commands.listcommands = (function () {
