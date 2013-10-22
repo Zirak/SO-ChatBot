@@ -1982,34 +1982,7 @@ var commands = {
 		}
 
 		args.directreply( 'http://stackoverflow.com/users/' + id );
-	},
-		
-	chatuser : function ( args ) {
-		var props = args.parse(),
-			usrid = props[ 0 ] || args.get( 'user_id' ),
-			id = usrid;
-
-		//check for searching by username
-		if ( !(/^\d+$/.test(usrid)) ) {
-			id = args.findUserid( usrid );
-
-			if ( id < 0 ) {
-				return 'Can\'t find user ' + usrid + ' in this chatroom.';
-			}
-		}
-
-		var thumblink = 'http://chat.stackexchange.com/users/thumbs/'+id;
-		IO.xhr({
-			method : 'GET',
-			url: thumblink
-			data: ( ),
-			complete : args.directreply( 'I am still working on this part' );
-		}); 
-		
-		/*function finish () {
-			args.directreply( 'I am still working on this part' );
-			}
-		args.directreply( thumblink );*/
+	
 	}
 };
 
@@ -2094,6 +2067,24 @@ commands.norris = function ( args, cb ) {
 };
 commands.norris.async = true;
 
+commands.parentuser = function ( args, cb ) {
+		var props = args.parse(),
+			usrid = props[ 0 ] || args.get( 'user_id' ),
+			id = usrid;
+
+		//check for searching by username
+		if ( !(/^\d+$/.test(usrid)) ) {
+			id = args.findUserid( usrid );
+
+			if ( id < 0 ) {
+				return 'Can\'t find user ' + usrid + ' in this chatroom.';
+			}
+		}
+
+		var thumblink = 'http://chat.stackexchange.com/users/thumbs/'+id;
+		
+		args.directreply( thumblink );
+};
 //cb is for internal blah blah blah
 commands.urban = (function () {
 var cache = Object.create( null );
