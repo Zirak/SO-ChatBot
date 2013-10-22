@@ -2091,7 +2091,8 @@ commands.parentuser = function ( args, cb ) {
 
                 function finish ( resp ) {
                         resp = JSON.parse( resp );
-                        args.directreply( resp.profileUrl );
+                        var parentprofile = resp.name;
+                        args.directreply( parentprofile );
                 }
 		
 };
