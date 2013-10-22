@@ -1998,8 +1998,19 @@ var commands = {
 			}
 		}
 
-		args.directreply( 'http://chat.stackexchange.com/users/' + id );
-	}
+		var thumblink = 'http://chat.stackexchange.com/users/thumbs/'+id;
+		IO.xhr({
+			url: thumblink
+			data: {
+				profileUrl: profileUrl
+			},
+			method : 'POST',
+			complete : finish
+		});
+		
+		function finish () {
+			args.directreply( profileUrl );
+		}
 };
 
 commands.listcommands = (function () {
