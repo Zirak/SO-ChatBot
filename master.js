@@ -2002,9 +2002,9 @@ var commands = {
 		IO.xhr({
 			method : 'GET',
 			url: thumblink
-			data: {
+			data: ({
 				profileUrl: profileUrl
-			},
+			}),
 			complete : finish
 		});
 		
