@@ -1999,7 +1999,7 @@ var commands = {
 		}
 
 		var thumblink = 'http://chat.stackexchange.com/users/thumbs/'+id;
-		IO.xhr({
+		/*IO.xhr({
 			method : 'GET',
 			url: thumblink
 			data: ({
@@ -2010,8 +2010,8 @@ var commands = {
 		
 		function finish () {
 			args.directreply( 'I am still working on this part' );
-			}
-		
+			}*/
+		args.directreply( thumblink );
 	}
 };
 
