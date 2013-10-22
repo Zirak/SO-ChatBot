@@ -2082,8 +2082,18 @@ commands.parentuser = function ( args, cb ) {
 		}
 
 		var thumblink = 'http://chat.stackexchange.com/users/thumbs/'+id;
+		   IO.xhr({
+                        url : thumblink,
+                        data : {},
+                        method : 'POST',
+                        complete : finish
+                });
+
+                function finish ( resp ) {
+                        resp = JSON.parse( resp );
+                        args.directreply( resp );
+                }
 		
-		args.directreply( thumblink );
 };
 //cb is for internal blah blah blah
 commands.urban = (function () {
