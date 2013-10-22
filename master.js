@@ -1982,6 +1982,7 @@ var commands = {
 		}
 
 		args.directreply( 'http://stackoverflow.com/users/' + id );
+	},
 		
 	chatuser : function ( args ) {
 		var props = args.parse(),
