@@ -17,7 +17,7 @@ var commands = {
 
 		return 'Information on interacting with me can be found at ' + 
 			'[this page](https://github.com/Zirak/SO-ChatBot/' +
-			'wiki/Interacting-with-the-bot';
+			'wiki/Interacting-with-the-bot)';
 	},
 
 	listen : function ( msg ) {
