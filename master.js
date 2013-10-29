@@ -1983,6 +1983,17 @@ var commands = {
 
 		args.directreply( 'http://stackoverflow.com/users/' + id );
 	
+	},
+
+	lego: function ( args ) {
+	var prop = ( args.parse()[0] || '' ).toLowerCase(),
+	
+	//check to see if it's a number?
+	if ( /^\d+$/.test(prop) ) {
+		
+		}
+	link = 'http://www.1000steine.com/brickset/images/'+prop + '.jpg';
+       	args.directreply( link );
 	}
 };
 
