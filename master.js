@@ -1986,13 +1986,8 @@ var commands = {
 	},
 
 	lego: function ( args ) {
-	var prop = ( args.parse()[0] || '' ).toLowerCase(),
 	
-	//check to see if it's a number?
-	if ( /^\d+$/.test(prop) ) {
-		
-		}
-	link = 'http://www.1000steine.com/brickset/images/'+prop + '.jpg';
+	link = 'http://www.1000steine.com/brickset/images/40056-1.jpg';
        	args.directreply( link );
 	}
 };
