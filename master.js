@@ -1,4 +1,4 @@
-var IO = window.IO = {
+﻿var IO = window.IO = {
 	//event handling
 	events : {},
 	preventDefault : false,
@@ -1276,7 +1276,7 @@ function dressUpAnswer ( answerObj ) {
 	if ( answer === undefined ) {
 		return 'Malformed output from web-worker. If you weren\'t just ' +
 			'fooling around trying to break me, raise an issue or contact ' +
-			'Zirak';
+			'KitFox';
 	}
 
 	result = snipAndCodify( answer );
@@ -1686,7 +1686,7 @@ var commands = {
 			return args + ': ' + desc;
 		}
 
-		return 'https://github.com/Zirak/SO-ChatBot/wiki/' +
+		return 'https://github.com/KitFox/SO-ChatBot/wiki/' +
 			'Interacting-with-the-bot';
 	},
 
@@ -2466,6 +2466,8 @@ bot.listen( /^tell (me (your|the) )?(rule|law)s/, function ( msg ) {
 
 var greetingResponses = [
 	'Hi.',
+	'Hiya.',
+	'Hey.',
 	'Yo.',
 	'What up?',
 	'What\'s shaking?',
@@ -2474,7 +2476,7 @@ var greetingResponses = [
 	'Good [insert appropriate time of day here].'
 	];
 
-bot.listen( /^hi/, function ( msg ) {
+bot.listen(/^(hi|h(e|a|u)llo|greetings|good (morning|afternoon|evening|day)).*/, function ( msg ) {
 	return greetingResponses.random();
 });
 
@@ -3066,7 +3068,7 @@ var output = bot.adapter.out = {
 				console.error( xhr );
 				output.add(
 					'Error ' + xhr.status + ' occured, I will call the maid ' +
-					' (@Zirak)' );
+					' (@KitFox)' );
 			}
 			else {
 				output.total += 1;
