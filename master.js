@@ -2464,8 +2464,18 @@ bot.listen( /^tell (me (your|the) )?(rule|law)s/, function ( msg ) {
 	return laws;
 });
 
+var greetingResponses = [
+	'Hi.',
+	'Yo.',
+	'What up?',
+	'What\'s shaking?',
+	'How *you* doin\'?',
+	'Hello.',
+	'Good [insert appropriate time of day here].'
+	];
+
 bot.listen( /^hi/, function ( msg ) {
-	return 'Hi';
+	return greetingResponses.random();
 });
 
 bot.listen( /^give (.+?) a lick/, function ( msg ) {
