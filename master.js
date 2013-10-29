@@ -1987,7 +1987,7 @@ var commands = {
 
 	lego: function ( args ) {
 	
-	link = 'http://www.1000steine.com/brickset/images/40056-1.jpg';
+	var link = 'http://www.1000steine.com/brickset/images/40056-1.jpg';
        	args.directreply( link );
 	}
 };
