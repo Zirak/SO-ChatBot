@@ -2464,6 +2464,10 @@ bot.listen( /^tell (me (your|the) )?(rule|law)s/, function ( msg ) {
 	return laws;
 });
 
+bot.listen( /^hi/, function ( msg ) {
+	return 'Hi';
+});
+
 bot.listen( /^give (.+?) a lick/, function ( msg ) {
 	var target = msg.matches[ 1 ], conjugation;
 
