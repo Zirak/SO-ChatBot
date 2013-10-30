@@ -2117,7 +2117,7 @@ commands.lego = function ( args, cb ) {
 	args.send( 'http://brickset.com/detail/?Set='+setNumber+'-1' );
 	*/	
 	
-	var thumblink = 'http://www.brickset.com/webservices/brickset.asmx/search?apiKey=&userHash=&query=&theme=&subtheme=&setNumber='+setNumber+'-1&year=&Owned=&Wanted=
+	var thumblink = 'http://www.brickset.com/webservices/brickset.asmx/search?apiKey=&userHash=&query=&theme=&subtheme=&setNumber='+setNumber+'-1&year=&Owned=&Wanted='
 
 	IO.xhr({
                         url : thumblink,
@@ -2127,8 +2127,9 @@ commands.lego = function ( args, cb ) {
                 });
 
                 function finish ( resp ) {
-	var setName = resp.getElementsByTagName( "setName");
-                        args.directreply( thumblink );
+	var xDoc = resp.responseXML;
+	var setName = xDoc.getElementsByTagName( "setName");
+                        args.directreply( setName );
                 }
 		
 };
