@@ -1992,7 +1992,7 @@ var commands = {
 		var setNumber =args.parse();
 		var link = 'http://www.1000steine.com/brickset/images/'+setNumber+'.jpg';
        		args.directreply( link );
-		args.send 'http://brickset.com/detail/?Set='+setNumber
+		args.send( 'http://brickset.com/detail/?Set='+setNumber );
 	}
 };
 
