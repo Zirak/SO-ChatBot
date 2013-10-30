@@ -1983,7 +1983,7 @@ var commands = {
 
 		args.directreply( 'http://stackoverflow.com/users/' + id );
 	
-	}/*, 
+	}, 
 	
 	lego: function ( args ) {
 		if ( !args.length ) {
@@ -1993,7 +1993,7 @@ var commands = {
 		var link = 'http://www.1000steine.com/brickset/images/'+setNumber+'-1.jpg';
        		args.directreply( link );
 		args.send( 'http://brickset.com/detail/?Set='+setNumber+'-1' );
-	}*/
+	}
 };
 
 commands.listcommands = (function () {
@@ -2104,35 +2104,6 @@ commands.parentuser = function ( args, cb ) {
                         args.directreply( parentprofile );
                 }
 		
-};
-
-commands.lego = function ( args, cb ) {
-	if ( !args.length ) {
-		return 'I need a set number to look up.';
-	}
-
-	var setNumber =args.parse();
-	var link = 'http://www.1000steine.com/brickset/images/'+setNumber+'-1.jpg';
-       	/* args.directreply( link );
-	args.send( 'http://brickset.com/detail/?Set='+setNumber+'-1' );
-	*/	
-	
-	var thumblink = 'http://www.brickset.com/webservices/brickset.asmx/search?apiKey=&userHash=&query=&theme=&subtheme=&setNumber='+setNumber+'-1&year=&Owned=&Wanted=';
-
-	var xmlhttp = new XMLHttpRequest(); 
- 	xmlhttp.open('GET',thumblink); 
-	args.send('You are trying to send ' + thumblink);
-   	xmlhttp.send(null); 
-    	
-	if (xmlhttp.status == 200) {
-		var xmlDoc = xmlhttp.responseXML; 
-		var setName = xmlDoc.getElementsByTagName( "setName");
-		args.directreply( setName );
-	}
-                       else {
-		args.send('I couldn\'t find it. Code was ' + xmlhttp.status + ', and also you used ' + thumblink );
-	};
-	
 };
 
 //cb is for internal blah blah blah
