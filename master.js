@@ -1993,7 +1993,21 @@ var commands = {
 		var link = 'http://www.1000steine.com/brickset/images/'+setNumber+'-1.jpg';
        		args.directreply( link );
 		args.send( 'http://brickset.com/detail/?Set='+setNumber+'-1' );
+	},
+
+	legopart: function ( args ) {
+		if ( !args.length ) {
+			return 'I need a part number to look up.';
+		}
+		var spec =args.parse();
+		var partNumber = spec[0];
+		var partColour = spec[1];
+		var linkBase = 'http://img.lugnet.com/ld/';
+		var linkColor = linkBase + partColour + '/';
+		var linkPart = linkColor + partNumber+'.gif';
+       		args.directreply( link );
 	}
+	
 };
 
 commands.listcommands = (function () {
