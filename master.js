@@ -2127,9 +2127,14 @@ commands.lego = function ( args, cb ) {
                 });
 
                 function finish ( resp ) {
-	var xDoc = resp.responseXML;
-	var setName = xDoc.getElementsByTagName( "setName");
-                        args.directreply( setName );
+	if (resp.status == 200) {
+		resp = resp.responseXML;
+		var setName = resp.getElementsByTagName( "setName");
+		args.directreply( setName );
+	}
+                       else {
+		args.send('I couldn\'t find it');
+	}
                 }
 		
 };
