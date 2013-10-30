@@ -2005,7 +2005,7 @@ var commands = {
 		var linkBase = 'http://img.lugnet.com/ld/';
 		var linkColor = linkBase + partColour + '/';
 		var linkPart = linkColor + partNumber+'.gif';
-       		args.directreply( link );
+       		args.directreply( linkPart );
 	}
 	
 };
