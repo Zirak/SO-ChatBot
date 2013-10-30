@@ -2125,14 +2125,14 @@ commands.lego = function ( args, cb ) {
 	IO.xhr({
                         url : thumblink,
                         data : {
-		apiKey:''
-		userHash:''
-		query:''
-		theme:''
-		subtheme:''
-		setNumber:setNumber
-		year:''
-		Owned:''
+		apiKey:'',
+		userHash:'',
+		query:'',
+		theme:'',
+		subtheme:'',
+		setNumber:setNumber,
+		year:'',
+		Owned:'',
 		Wanted:''
 		},
                         method : 'POST',
