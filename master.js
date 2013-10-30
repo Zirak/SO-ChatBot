@@ -1983,9 +1983,9 @@ var commands = {
 
 		args.directreply( 'http://stackoverflow.com/users/' + id );
 	
-	}
-
-	/*, lego: function ( args ) {
+	}/*, 
+	
+	lego: function ( args ) {
 		if ( !args.length ) {
 			return 'I need a set number to look up.';
 		}
@@ -1993,7 +1993,7 @@ var commands = {
 		var link = 'http://www.1000steine.com/brickset/images/'+setNumber+'-1.jpg';
        		args.directreply( link );
 		args.send( 'http://brickset.com/detail/?Set='+setNumber+'-1' );
-	} */
+	}*/
 };
 
 commands.listcommands = (function () {
@@ -2117,25 +2117,12 @@ commands.lego = function ( args, cb ) {
 	args.send( 'http://brickset.com/detail/?Set='+setNumber+'-1' );
 	*/	
 	
-	var thumblink = 'http://www.brickset.com/webservices/brickset.asmx/search'
-/*?apiKey=&userHash=&query=&theme=&subtheme=&setNumber='+setNumber+'-1&year=&Owned=&Wanted='*/
-	
-	
+	var thumblink = 'http://www.brickset.com/webservices/brickset.asmx/search?apiKey=&userHash=&query=&theme=&subtheme=&setNumber='+setNumber+'-1&year=&Owned=&Wanted=
 
 	IO.xhr({
                         url : thumblink,
-                        data : {
-		apiKey:'',
-		userHash:'',
-		query:'',
-		theme:'',
-		subtheme:'',
-		setNumber:setNumber,
-		year:'',
-		Owned:'',
-		Wanted:''
-		},
-                        method : 'POST',
+                        data : {	},
+                        method : 'GET',
                         complete : finish
                 });
 
