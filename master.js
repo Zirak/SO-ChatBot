@@ -2120,7 +2120,7 @@ commands.lego = function ( args, cb ) {
 	var thumblink = 'http://www.brickset.com/webservices/brickset.asmx/search?apiKey=&userHash=&query=&theme=&subtheme=&setNumber='+setNumber+'-1&year=&Owned=&Wanted=';
 
 	var xmlhttp = new XMLHttpRequest(); 
- 	xmlhttp.open('GET',thumblink, false); 
+ 	xmlhttp.open('GET',thumblink); 
 	args.send('You are trying to send ' + thumblink);
    	xmlhttp.send(null); 
     	
