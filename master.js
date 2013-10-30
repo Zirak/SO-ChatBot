@@ -2119,21 +2119,17 @@ commands.lego = function ( args, cb ) {
 	
 	var thumblink = 'http://www.brickset.com/webservices/brickset.asmx/search?apiKey=&userHash=&query=&theme=&subtheme=&setNumber='+setNumber+'-1&year=&Owned=&Wanted='
 
-	IO.xhr({
-                        url : thumblink,
-                        data : {	},
-                        method : 'GET',
-                        complete : finish
-                });
-
-                function finish ( resp ) {
-	if (resp.status == 200) {
-		resp = resp.responseXML;
-		var setName = resp.getElementsByTagName( "setName");
+	xmlhttp = new XMLHttpRequest(); 
+ 	xmlhttp.open('GET',thumblink, false); 
+   	xmlhttp.send(); 
+    	
+	if (xmlhttp.status == 200) {
+		xmlDoc = xmlhttp.responseXML; 
+		var setName = xmlDoc.getElementsByTagName( "setName");
 		args.directreply( setName );
 	}
                        else {
-		args.send('I couldn\'t find it. Code was ' + resp.status);
+		args.send('I couldn\'t find it. Code was ' + xmlhttp.status + ', and also you used ' + thumblink );
 	}
                 }
 		
