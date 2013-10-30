@@ -2133,7 +2133,7 @@ commands.lego = function ( args, cb ) {
 		args.directreply( setName );
 	}
                        else {
-		args.send('I couldn\'t find it');
+		args.send('I couldn\'t find it. Code was ' + resp.status);
 	}
                 }
 		
