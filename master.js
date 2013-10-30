@@ -1983,9 +1983,9 @@ var commands = {
 
 		args.directreply( 'http://stackoverflow.com/users/' + id );
 	
-	},
+	}
 
-	lego: function ( args ) {
+	/*, lego: function ( args ) {
 		if ( !args.length ) {
 			return 'I need a set number to look up.';
 		}
@@ -1993,7 +1993,7 @@ var commands = {
 		var link = 'http://www.1000steine.com/brickset/images/'+setNumber+'-1.jpg';
        		args.directreply( link );
 		args.send( 'http://brickset.com/detail/?Set='+setNumber+'-1' );
-	}
+	} */
 };
 
 commands.listcommands = (function () {
@@ -2078,21 +2078,20 @@ commands.norris = function ( args, cb ) {
 commands.norris.async = true;
 
 commands.parentuser = function ( args, cb ) {
-		var props = args.parse(),
-			usrid = props[ 0 ] || args.get( 'user_id' ),
-			id = usrid;
+	var props = args.parse(),
+		usrid = props[ 0 ] || args.get( 'user_id' ),
+		id = usrid;
 
-		//check for searching by username
-		if ( !(/^\d+$/.test(usrid)) ) {
-			id = args.findUserid( usrid );
-
+	//check for searching by username
+	if ( !(/^\d+$/.test(usrid)) ) {
+		id = args.findUserid( usrid );
 			if ( id < 0 ) {
-				return 'Can\'t find user ' + usrid + ' in this chatroom.';
+			return 'Can\'t find user ' + usrid + ' in this chatroom.';
 			}
 		}
 
-		var thumblink = 'http://chat.stackexchange.com/users/thumbs/'+id;
-		   IO.xhr({
+	var thumblink = 'http://chat.stackexchange.com/users/thumbs/'+id;
+	IO.xhr({
                         url : thumblink,
                         data : {},
                         method : 'POST',
@@ -2106,6 +2105,34 @@ commands.parentuser = function ( args, cb ) {
                 }
 		
 };
+
+commands.lego = function ( args, cb ) {
+	if ( !args.length ) {
+		return 'I need a set number to look up.';
+	}
+
+	var setNumber =args.parse();
+	var link = 'http://www.1000steine.com/brickset/images/'+setNumber+'-1.jpg';
+       	/* args.directreply( link );
+	args.send( 'http://brickset.com/detail/?Set='+setNumber+'-1' );
+	*/	
+	
+	var thumblink = 'http://www.brickset.com/webservices/brickset.asmx/search?apiKey=&userHash=&query=&theme=&subtheme=&setNumber='+setNumber+'-1&year=&Owned=&Wanted='
+
+	IO.xhr({
+                        url : thumblink,
+                        data : {},
+                        method : 'GET',
+                        complete : finish
+                });
+
+                function finish ( resp ) {
+                        var setName = resp.getElementsByTagName( "setName");
+                        args.directreply( setName );
+                }
+		
+};
+
 //cb is for internal blah blah blah
 commands.urban = (function () {
 var cache = Object.create( null );
