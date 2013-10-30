@@ -2121,7 +2121,8 @@ commands.lego = function ( args, cb ) {
 
 	var xmlhttp = new XMLHttpRequest(); 
  	xmlhttp.open('GET',thumblink, false); 
-   	xmlhttp.send(); 
+	args.send('You are trying to send ' + thumblink);
+   	xmlhttp.send(null); 
     	
 	if (xmlhttp.status == 200) {
 		var xmlDoc = xmlhttp.responseXML; 
