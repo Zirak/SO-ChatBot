@@ -1986,9 +1986,13 @@ var commands = {
 	},
 
 	lego: function ( args ) {
-		var setNumber = '40056-1';
+		if ( !args.length ) {
+			return 'I need a set number to look up.';
+		}
+		var setNumber =args.parse();
 		var link = 'http://www.1000steine.com/brickset/images/'+setNumber+'.jpg';
        		args.directreply( link );
+		return 'http://brickset.com/detail/?Set='+setNumber
 	}
 };
 
