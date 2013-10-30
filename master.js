@@ -2119,12 +2119,12 @@ commands.lego = function ( args, cb ) {
 	
 	var thumblink = 'http://www.brickset.com/webservices/brickset.asmx/search?apiKey=&userHash=&query=&theme=&subtheme=&setNumber='+setNumber+'-1&year=&Owned=&Wanted=';
 
-	xmlhttp = new XMLHttpRequest(); 
+	var xmlhttp = new XMLHttpRequest(); 
  	xmlhttp.open('GET',thumblink, false); 
    	xmlhttp.send(); 
     	
 	if (xmlhttp.status == 200) {
-		xmlDoc = xmlhttp.responseXML; 
+		var xmlDoc = xmlhttp.responseXML; 
 		var setName = xmlDoc.getElementsByTagName( "setName");
 		args.directreply( setName );
 	}
