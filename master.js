@@ -2003,7 +2003,7 @@ var commands = {
 		var partNumber = spec[0];
 		var partColour = spec[1];
 		var linkBase = 'http://img.lugnet.com/ld/';
-		if ( !(/^\d+$/.test(usrid)) ) {
+		if ( !(/^\d+$/.test(partColour)) ) {
 			linkBase = linkBase + partColour + '/';
 		};
 		var linkPart = linkBase + partNumber+'.gif';
