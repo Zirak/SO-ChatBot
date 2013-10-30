@@ -1990,9 +1990,9 @@ var commands = {
 			return 'I need a set number to look up.';
 		}
 		var setNumber =args.parse();
-		var link = 'http://www.1000steine.com/brickset/images/'+setNumber+'.jpg';
+		var link = 'http://www.1000steine.com/brickset/images/'+setNumber+'-1.jpg';
        		args.directreply( link );
-		args.send( 'http://brickset.com/detail/?Set='+setNumber );
+		args.send( 'http://brickset.com/detail/?Set='+setNumber+'-1' );
 	}
 };
 
