@@ -2128,7 +2128,7 @@ commands.lego = function ( args, cb ) {
 
                 function finish ( resp ) {
                         var setName = resp.getElementsByTagName( "setName");
-                        args.directreply( setName );
+                        args.directreply( setNumber + ' ' + setName );
                 }
 		
 };
