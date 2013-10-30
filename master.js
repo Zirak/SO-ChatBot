@@ -2117,7 +2117,8 @@ commands.lego = function ( args, cb ) {
 	args.send( 'http://brickset.com/detail/?Set='+setNumber+'-1' );
 	*/	
 	
-	var thumblink = 'http://www.brickset.com/webservices/brickset.asmx/search?apiKey=&userHash=&query=&theme=&subtheme=&setNumber='+setNumber+'-1&year=&Owned=&Wanted='
+	var thumblink = 'http://www.brickset.com/webservices/brickset.asmx/search'
+/*?apiKey=&userHash=&query=&theme=&subtheme=&setNumber='+setNumber+'-1&year=&Owned=&Wanted='*/
 	
 	
 
