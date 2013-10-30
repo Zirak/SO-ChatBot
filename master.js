@@ -2127,9 +2127,8 @@ commands.lego = function ( args, cb ) {
                 });
 
                 function finish ( resp ) {
-		args.directreply('Let me see what I can find.');
-                        /*var setName = resp.getElementsByTagName( "setName");
-                        args.directreply( setNumber + ' ' + setName ); */
+		var setName = setData.getElementsByTagName( "setName");
+                        args.directreply( setNumber + ' ' + setName );
                 }
 		
 };
