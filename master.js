@@ -1986,9 +1986,9 @@ var commands = {
 	},
 
 	lego: function ( args ) {
-	
-	var link = 'http://www.1000steine.com/brickset/images/40056-1.jpg';
-       	args.directreply( link );
+		var setNumber = '40056-1';
+		var link = 'http://www.1000steine.com/brickset/images/'+setNumber+'.jpg';
+       		args.directreply( link );
 	}
 };
 
