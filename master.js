@@ -1,4 +1,4 @@
-﻿var IO = window.IO = {
+var IO = window.IO = {
 	//event handling
 	events : {},
 	preventDefault : false,
@@ -744,13 +744,13 @@ var bot = window.bot = {
 
 	giveUpMessage : function ( guesses ) {
 		//man, I can't believe it worked...room full of nachos for me
-		var errMsg = 'Are you excited?';
+		var errMsg = 'That didn\'t make much sense.';
 		if ( guesses && guesses.length ) {
 			errMsg += ' Maybe you meant: ' + guesses.join( ', ' );
 		}
 		//mmmm....nachos
 		else {
-			errMsg += ' Or did you need help with my workings?';
+			errMsg += ' Use the help command to learn more.';
 		}
 		//wait a minute, these aren't nachos. these are bear cubs.
 		return errMsg;
@@ -1276,7 +1276,7 @@ function dressUpAnswer ( answerObj ) {
 	if ( answer === undefined ) {
 		return 'Malformed output from web-worker. If you weren\'t just ' +
 			'fooling around trying to break me, raise an issue or contact ' +
-			'KitFox';
+			'Zirak';
 	}
 
 	result = snipAndCodify( answer );
@@ -1686,7 +1686,7 @@ var commands = {
 			return args + ': ' + desc;
 		}
 
-		return 'https://github.com/KitFox/SO-ChatBot/wiki/' +
+		return 'https://github.com/Zirak/SO-ChatBot/wiki/' +
 			'Interacting-with-the-bot';
 	},
 
@@ -1982,34 +1982,7 @@ var commands = {
 		}
 
 		args.directreply( 'http://stackoverflow.com/users/' + id );
-	
-	}, 
-	
-	lego: function ( args ) {
-		if ( !args.length ) {
-			return 'I need a set number to look up.';
-		}
-		var setNumber =args.parse();
-		var link = 'http://www.1000steine.com/brickset/images/'+setNumber+'-1.jpg';
-       		args.directreply( link );
-		args.send( 'http://brickset.com/detail/?Set='+setNumber+'-1' );
-	},
-
-	legopart: function ( args ) {
-		if ( !args.length ) {
-			return 'I need a part number to look up.';
-		}
-		var spec =args.parse();
-		var partNumber = spec[0];
-		var partColour = spec[1];
-		var linkBase = 'http://img.lugnet.com/ld/';
-		if ( (/^\d+$/.test(partColour)) ) {
-			linkBase = linkBase + partColour + '/';
-		};
-		var linkPart = linkBase + partNumber+'.gif';
-       		args.directreply( linkPart );
 	}
-	
 };
 
 commands.listcommands = (function () {
@@ -2092,35 +2065,6 @@ commands.norris = function ( args, cb ) {
 	}
 };
 commands.norris.async = true;
-
-commands.parentuser = function ( args, cb ) {
-	var props = args.parse(),
-		usrid = props[ 0 ] || args.get( 'user_id' ),
-		id = usrid;
-
-	//check for searching by username
-	if ( !(/^\d+$/.test(usrid)) ) {
-		id = args.findUserid( usrid );
-			if ( id < 0 ) {
-			return 'Can\'t find user ' + usrid + ' in this chatroom.';
-			}
-		}
-
-	var thumblink = 'http://chat.stackexchange.com/users/thumbs/'+id;
-	IO.xhr({
-                        url : thumblink,
-                        data : {},
-                        method : 'POST',
-                        complete : finish
-                });
-
-                function finish ( resp ) {
-                        resp = JSON.parse( resp );
-                        var parentprofile = resp.profileUrl;
-                        args.directreply( parentprofile );
-                }
-		
-};
 
 //cb is for internal blah blah blah
 commands.urban = (function () {
@@ -2488,22 +2432,6 @@ var laws = [
 
 bot.listen( /^tell (me (your|the) )?(rule|law)s/, function ( msg ) {
 	return laws;
-});
-
-var greetingResponses = [
-	'Hi.',
-	'Hiya.',
-	'Hey.',
-	'Yo.',
-	'What up?',
-	'What\'s shaking?',
-	'How *you* doin\'?',
-	'Hello.',
-	'Good [insert appropriate time of day here].'
-	];
-
-bot.listen(/^(hi|h(e|a|u)llo|greetings|good (morning|afternoon|evening|day)).*/, function ( msg ) {
-	return greetingResponses.random();
 });
 
 bot.listen( /^give (.+?) a lick/, function ( msg ) {
@@ -3094,7 +3022,7 @@ var output = bot.adapter.out = {
 				console.error( xhr );
 				output.add(
 					'Error ' + xhr.status + ' occured, I will call the maid ' +
-					' (@KitFox)' );
+					' (@Zirak)' );
 			}
 			else {
 				output.total += 1;
@@ -3497,8 +3425,6 @@ IO.register( 'input', function afkInputListener ( msgObj ) {
 })();
 
 ;
-
-;
 (function () {
 "use strict";
 
@@ -3537,14 +3463,28 @@ bot.addCommand({
 (function () {
 
 function color ( args ) {
-	var base = 'http://southouse.tk/colors.php?color='
-	var param = args.toString()
+    // Url format: http://dummyimage.com/{dimensions}/{fg}/{bg}.png
+
+	var clean = args.toString()
 		.toLowerCase()
-		.match( /([a-z0-9]+)+/g )
-		.join( ',' );
+		.match( /([a-z0-9]+)+/g );
 
+    // Hard-code a 300x300 square
+	var url = 'http://dummyimage.com/300/';
 
-	args.directreply( base + param + '#.png' );
+    // Background color
+    url += clean[0] + "/";
+
+    // Foreground color
+    if (clean[1]) {
+        url += clean[1]:
+    } else {
+        url += "000";
+    }
+
+    url += ".png";
+
+	args.directreply(url);
 }
 
 bot.addCommand({
@@ -3554,8 +3494,8 @@ bot.addCommand({
 		del : 'NONE'
 	},
 
-	description : 'Displays the color(s) passed in. ' +
-		' `/color color0[ color1[ ...]]`'
+	description : 'Displays a color square for the hex color(s) passed in, with optional text. ' +
+		' `/color backgroundColor [foregroundColor]
 });
 
 })();
@@ -4395,8 +4335,6 @@ bot.addCommand({
         'name/description. `/findCommand partOfNameOrDescription`'
 });
 })();
-
-;
 
 ;
 //listener to help decide which Firefly episode to watch
@@ -5998,8 +5936,6 @@ bot.addCommand({
 });
 
 })();
-
-;
 
 ;
 (function () {
