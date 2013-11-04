@@ -1,14 +1,28 @@
 (function () {
 
 function color ( args ) {
-	var base = 'http://southouse.tk/colors.php?color='
-	var param = args.toString()
+    // Url format: http://dummyimage.com/{dimensions}/{fg}/{bg}.png
+
+	var clean = args.toString()
 		.toLowerCase()
-		.match( /([a-z0-9]+)+/g )
-		.join( ',' );
+		.match( /([a-z0-9]+)+/g );
 
+    // Hard-code a 300x300 square
+	var url = 'http://dummyimage.com/300/';
 
-	args.directreply( base + param + '#.png' );
+    // Background color
+    url += clean[0] + "/";
+
+    // Foreground color
+    if (clean[1]) {
+        url += clean[1]:
+    } else {
+        url += "000";
+    }
+
+    url += ".png";
+
+	args.directreply(url);
 }
 
 bot.addCommand({
@@ -18,8 +32,8 @@ bot.addCommand({
 		del : 'NONE'
 	},
 
-	description : 'Displays the color(s) passed in. ' +
-		' `/color color0[ color1[ ...]]`'
+	description : 'Displays a color square for the hex color(s) passed in, with optional text. ' +
+		' `/color backgroundColor [foregroundColor]
 });
 
 })();
