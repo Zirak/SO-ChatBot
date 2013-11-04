@@ -3477,7 +3477,7 @@ function color ( args ) {
 
     // Foreground color
     if (clean[1]) {
-        url += clean[1]:
+        url += clean[1];
     } else {
         url += "000";
     }
