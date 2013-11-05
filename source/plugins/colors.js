@@ -37,7 +37,7 @@ bot.addCommand({
 	},
 
 	description : 'Displays a color square for the hex color(s) passed in, with optional text. ' +
-		' `/color backgroundColor [foregroundColor] [text]`
+		' `/color backgroundColor [foregroundColor] [text]`'
 });
 
 })();

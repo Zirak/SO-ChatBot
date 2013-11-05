@@ -311,7 +311,33 @@ var commands = {
 		}
 
 		args.directreply( 'http://stackoverflow.com/users/' + id );
+	},
+	
+	lego: function ( args ) {
+		if ( !args.length ) {
+			return 'I need a set number to look up.';
+		}
+		var setNumber =args.parse();
+		var link = 'http://www.1000steine.com/brickset/images/'+setNumber+'-1.jpg';
+       		args.directreply( link );
+		args.send( 'http://brickset.com/detail/?Set='+setNumber+'-1' );
+	},
+
+	legopart: function ( args ) {
+		if ( !args.length ) {
+			return 'I need a part number to look up.';
+		}
+		var spec =args.parse();
+		var partNumber = spec[0];
+		var partColour = spec[1];
+		var linkBase = 'http://img.lugnet.com/ld/';
+		if ( (/^\d+$/.test(partColour)) ) {
+			linkBase = linkBase + partColour + '/';
+		};
+		var linkPart = linkBase + partNumber+'.gif';
+       		args.directreply( linkPart );
 	}
+	
 };
 
 commands.listcommands = (function () {
@@ -364,6 +390,35 @@ return function ( args ) {
 })();
 
 commands.eval.async = commands.coffee.async = true;
+
+commands.parentuser = function ( args, cb ) {
+	var props = args.parse(),
+		usrid = props[ 0 ] || args.get( 'user_id' ),
+		id = usrid;
+
+	//check for searching by username
+	if ( !(/^\d+$/.test(usrid)) ) {
+		id = args.findUserid( usrid );
+			if ( id < 0 ) {
+			return 'Can\'t find user ' + usrid + ' in this chatroom.';
+			}
+		}
+
+	var thumblink = 'http://chat.stackexchange.com/users/thumbs/'+id;
+	IO.xhr({
+                        url : thumblink,
+                        data : {},
+                        method : 'POST',
+                        complete : finish
+                });
+
+                function finish ( resp ) {
+                        resp = JSON.parse( resp );
+                        var parentprofile = resp.profileUrl;
+                        args.directreply( parentprofile );
+                }
+		
+};
 
 //cb is for internal usage by other commands/listeners
 commands.norris = function ( args, cb ) {

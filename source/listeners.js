@@ -20,6 +20,22 @@ bot.listen( /^tell (me (your|the) )?(rule|law)s/, function ( msg ) {
 	return laws;
 });
 
+var greetingResponses = [
+	'Hi.',
+	'Hiya.',
+	'Hey.',
+	'Yo.',
+	'What up?',
+	'What\'s shaking?',
+	'How *you* doin\'?',
+	'Hello.',
+	'Good [insert appropriate time of day here].'
+	];
+
+bot.listen(/^(hi|h(e|a|u)llo|greetings|good (morning|afternoon|evening|day)).*/, function ( msg ) {
+	return greetingResponses.random();
+});
+
 bot.listen( /^give (.+?) a lick/, function ( msg ) {
 	var target = msg.matches[ 1 ], conjugation;
 
