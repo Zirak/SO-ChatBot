@@ -1724,6 +1724,7 @@ var commands = {
 
 	refresh : function() {
 		window.location.reload();
+		return '*yawns*';
 		    },
 
 	forget : function ( args ) {
@@ -2439,8 +2440,7 @@ var descriptions = {
 //only allow owners to use certain commands
 var privilegedCommands = {
 	die : true, live  : true,
-	ban : true, unban : true,
-	refresh : true
+	ban : true, unban : true
 };
 //voting-based commands for unpriviledged users
 var communal = {
@@ -2805,7 +2805,6 @@ var polling = bot.adapter.in = {
 			bot.log( resp );
 
 			that.openSocket( resp.url, providedRoomid );
-			return 'Hullo';
 		}
 	},
 

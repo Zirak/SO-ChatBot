@@ -228,7 +228,6 @@ var polling = bot.adapter.in = {
 			bot.log( resp );
 
 			that.openSocket( resp.url, providedRoomid );
-			return 'Hullo';
 		}
 	},
 
