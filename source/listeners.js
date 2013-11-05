@@ -54,7 +54,7 @@ bot.listen( /^give (.+?) a lick/, function ( msg ) {
 	}
 	//otherwise, use what the user gave us, plus a plural `s`
 
-	return 'Mmmm! ' + target + ' taste' + conjugation + ' just like raisin';
+	msg.send( 'Mmmm! ' + target + ' taste' + conjugation + ' [just like raisin](https://www.youtube.com/watch?v=gDU7kTdLfF0)');
 });
 
 
