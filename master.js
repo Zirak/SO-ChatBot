@@ -3469,8 +3469,8 @@ function color ( args ) {
 		.toLowerCase()
 		.match( /([a-z0-9]+)+/g );
 
-    // Hard-code a 300x300 square
-	var url = 'http://dummyimage.com/300/';
+    // Hard-code a 150x150 square
+	var url = 'http://dummyimage.com/150/';
 
     // Background color
     url += clean[0] + "/";
@@ -3484,6 +3484,10 @@ function color ( args ) {
 
     url += ".png";
 
+    if (clean[2]) {
+        url += "&text=" + clean[2];
+    }
+
 	args.directreply(url);
 }
 
@@ -3495,7 +3499,7 @@ bot.addCommand({
 	},
 
 	description : 'Displays a color square for the hex color(s) passed in, with optional text. ' +
-		' `/color backgroundColor [foregroundColor]`'
+		' `/color backgroundColor [foregroundColor] [text]`
 });
 
 })();
