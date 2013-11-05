@@ -2482,7 +2482,7 @@ var laws = [
 	'A robot must protect its own existence as long as such ' +
 		'protection does not conflict with the First or Second Laws.'
 ].map(function ( law, idx ) {
-	return idx + '. ' + law;
+	return idx+1 + '. ' + law;
 }).join( '\n' );
 
 bot.listen( /^what are (your|the) (rule|law)s.*/, function ( msg ) {
