@@ -1724,8 +1724,7 @@ var commands = {
 
 	refresh : function() {
 		window.location.reload();
-		return '*yawns*';
-    },
+		    },
 
 	forget : function ( args ) {
 		var name = args.toLowerCase(),
@@ -2806,6 +2805,7 @@ var polling = bot.adapter.in = {
 			bot.log( resp );
 
 			that.openSocket( resp.url, providedRoomid );
+			return 'Hullo';
 		}
 	},
 

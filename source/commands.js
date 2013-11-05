@@ -53,8 +53,7 @@ var commands = {
 
 	refresh : function() {
 		window.location.reload();
-		return '*yawns*';
-    },
+		    },
 
 	forget : function ( args ) {
 		var name = args.toLowerCase(),
