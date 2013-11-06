@@ -2011,7 +2011,7 @@ var commands = {
 	},
 
 	nuke: function ( args ) {
-		return 'http://image.blingee.com/images18/content/output' + 		'/000/000/000/6eb/648964517_1008439.gif';
+		msg.send( 'http://image.blingee.com/images18/content/output' + 		'/000/000/000/6eb/648964517_1008439.gif');
 	}
 	
 };
