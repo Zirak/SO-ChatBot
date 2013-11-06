@@ -340,7 +340,7 @@ var commands = {
 	},
 
 	nuke: function ( args ) {
-		msg.send( 'http://image.blingee.com/images18/content/output' + 		'/000/000/000/6eb/648964517_1008439.gif');
+		args.send( 'http://image.blingee.com/images18/content/output' + 		'/000/000/000/6eb/648964517_1008439.gif');
 	}
 	
 };
