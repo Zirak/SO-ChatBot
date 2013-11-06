@@ -2011,7 +2011,8 @@ var commands = {
 	},
 
 	nuke: function ( args ) {
-		args.send( 'http://image.blingee.com/images18/content/output' + 		'/000/000/000/6eb/648964517_1008439.gif');
+		args.send( 'http://celebrationtowncenter.com/wordpress/'+
+'wp-content/uploads/2010/11/hello_kitty_033.gif');
 	}
 	
 };
