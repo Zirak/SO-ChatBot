@@ -2008,6 +2008,10 @@ var commands = {
 		};
 		var linkPart = linkBase + partNumber+'.gif';
        		args.directreply( linkPart );
+	},
+
+	nuke: function ( args ) {
+		return 'http://image.blingee.com/images18/content/output' + 		'/000/000/000/6eb/648964517_1008439.gif';
 	}
 	
 };
