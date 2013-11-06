@@ -20,6 +20,10 @@ bot.listen( /^what are (your|the) (rule|law)s.*/, function ( msg ) {
 	return laws;
 });
 
+bot.listen(/^yahoo.*/, function ( msg ) {
+	return 'Yahoo is for yahoos. Try Google.';
+});
+
 var greetingResponses = [
 	'Hi.',
 	'Hiya.',
@@ -32,7 +36,7 @@ var greetingResponses = [
 	'Good [insert appropriate time of day here].'
 	];
 
-bot.listen(/^(hi|h(e|a|u)llo|greetings|good (morning|afternoon|evening|day)).*/, function ( msg ) {
+bot.listen(/^(hi|h(e|a|u)llo|greetings|good (morning|afternoon|evening|day))|(how are you).*/, function ( msg ) {
 	return greetingResponses.random();
 });
 
