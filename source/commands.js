@@ -29,7 +29,7 @@ var commands = {
 	eval : function ( msg, cb ) {
 		return bot.eval( msg, cb );
 	},
-	coffee : function ( args ) {
+	coffee : function ( msg, args ) {
 		if ( !args.length ) {
 			return 'How do you like it?';
 		}
