@@ -1,4 +1,4 @@
-For usage info, on how to use the bot, see [here](https://github.com/Zirak/SO-ChatBot/wiki/Interacting-with-the-bot).
+For usage info, on how to use the bot, see [here](https://github.com/KitFox/SO-ChatBot/wiki/Interacting-with-the-bot).
 
 ###Running the bot###
 The bot is currently a big dangle-on script running in your browser. **Run `bookmarklet.js`** in your browser to get it up an' running.
@@ -8,7 +8,7 @@ The bot is currently a big dangle-on script running in your browser. **Run `book
 
 ```sh
 #one must first get the repo
-$ git clone git://github.com/Zirak/SO-ChatBot.git
+$ git clone git://github.com/KitFox/SO-ChatBot.git
 $ cd SO-ChatBot
 ```
 
