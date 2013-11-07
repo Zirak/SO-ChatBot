@@ -1705,8 +1705,8 @@ var commands = {
 			return 'How do you like it?';
 		}
 		else if (/^(grande|large)/.test(args)) {
-			return 'http://www.precisionnutrition.com/wordpress/'+
-		'wp-content/uploads/2010/01/w-Giant-Coffee-Cup75917.jpg'
+			msg.directreply( 'http://www.precisionnutrition.com/wordpress/'+
+		'wp-content/uploads/2010/01/w-Giant-Coffee-Cup75917.jpg' )
 		}	
 		else {
 			return 'I\'m not that skilled a barrista.'
