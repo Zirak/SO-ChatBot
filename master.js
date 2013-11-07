@@ -2024,11 +2024,22 @@ var commands = {
 			return 'I need a handle to look up.';
 		}
 		var author =args.parse();
-		var linkBase = 'http://www.nanowrimo.org/widget/LiveSupporter/'
-		var url = linkBase + author + '.png'
-		args.send( url )
-	}
-	
+		var linkBase = 'http://www.nanowrimo.org/widget/LiveSupporter/';
+		var url = linkBase + author + '.png';
+		args.send( url );
+	},
+
+	wordwar: function ( args ){
+		if ( !args.length ) {
+			return 'I need two handles to look up.';
+		}
+		var authors =args.parse();
+		var author1 = authors[0];
+		var author2 = authors[1];
+
+		var linkBase = 'http://nanowrimo.org/widget/WordWar/';
+		var url = linkBase + author1 + ',' + author2 +'.png';
+		args.send( url );
 
 };
 
