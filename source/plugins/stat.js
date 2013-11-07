@@ -93,8 +93,7 @@ function normalizeStats ( stats ) {
 
 	return stats;
 }
-
-bot.addCommand({
+var cmd = {
 	name : 'stat',
 	fun : stat,
 	permissions : {
@@ -102,8 +101,11 @@ bot.addCommand({
 	},
 
 	description : 'Gives useless stats on a user. ' +
-		'`/stat usrid|usrname [extended]`',
+		'`/stat(s) usrid|usrname`',
 	async : true
-});
+};
+bot.addCommand(cmd);
+cmd.name = 'stats'; // alias for stupid rlemon
+bot.addCommand(cmd);
 
 }());
