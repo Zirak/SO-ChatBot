@@ -1700,16 +1700,16 @@ var commands = {
 	eval : function ( msg, cb ) {
 		return bot.eval( msg, cb );
 	},
-	coffee : function ( msg, args ) {
+	coffee : function ( args ) {
 		if ( !args.length ) {
 			return 'How do you like it?';
 		}
 		else if (/^(grande|large)/.test(args)) {
-			msg.directreply( 'http://www.precisionnutrition.com/wordpress/'+
-		'wp-content/uploads/2010/01/w-Giant-Coffee-Cup75917.jpg' )
+			args.directreply( 'http://www.precisionnutrition.com/wordpress/'+
+		'wp-content/uploads/2010/01/w-Giant-Coffee-Cup75917.jpg' );
 		}	
 		else {
-			return 'I\'m not that skilled a barrista.'
+			return 'I\'m not that skilled a barrista.';
 		}
 	},
 
