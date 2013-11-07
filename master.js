@@ -2013,6 +2013,10 @@ var commands = {
 	nuke: function ( args ) {
 		args.send( 'http://celebrationtowncenter.com/wordpress/'+
 'wp-content/uploads/2010/11/hello_kitty_033.gif');
+	},
+
+	nsa: function ( args ) {
+		args.send('DEADHS FAATSA FAMS gas ICE. It's Danish for \'fat dead families on ice.\' Denmark\'s rough.');
 	}
 	
 };
