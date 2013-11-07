@@ -345,7 +345,7 @@ var commands = {
 	},
 
 	nsa: function ( args ) {
-		args.send('DEADHS FAATSA FAMS gas ICE. It's Danish for \'fat dead families on ice.\' Denmark\'s rough.');
+		args.send('DEADHS FAATSA FAMS gas ICE. It\'s Danish for \'fat dead families on ice.\' Denmark\'s rough.');
 	}
 	
 };
