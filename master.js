@@ -2017,8 +2017,19 @@ var commands = {
 
 	nsa: function ( args ) {
 		args.send('DEADHS FAATSA FAMS gas ICE. It\'s Danish for \'fat dead families on ice.\' Denmark\'s rough.');
+	},
+
+	nano: function ( args ){
+		if ( !args.length ) {
+			return 'I need a handle to look up.';
+		}
+		var author =args.parse();
+		var linkBase = 'http://www.nanowrimo.org/widget/LiveSupporter/'
+		var url = linkBase + author + '.png'
+		args.send( url )
 	}
 	
+
 };
 
 commands.listcommands = (function () {
