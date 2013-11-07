@@ -15,8 +15,8 @@ var commands = {
 			return args + ': ' + desc;
 		}
 
-		return 'https://github.com/Zirak/SO-ChatBot/wiki/' +
-			'Interacting-with-the-bot';
+		return '[General help](https://github.com/KitFox/SO-ChatBot/wiki/' +
+			'Interacting-with-the-bot)';
 	},
 
 	listen : function ( msg ) {
@@ -29,10 +29,17 @@ var commands = {
 	eval : function ( msg, cb ) {
 		return bot.eval( msg, cb );
 	},
-	coffee : function ( msg, cb ) {
-		//yes, this is a bit yucky
-		var arg = bot.Message( 'c> ' + msg, msg.get() );
-		return commands.eval( arg, cb );
+	coffee : function ( args ) {
+		if ( !args.length ) {
+			return 'How do you like it?';
+		}
+		else if (/^(grande|large)/.test(args)) {
+			return 'http://www.precisionnutrition.com/wordpress/'+
+		'wp-content/uploads/2010/01/w-Giant-Coffee-Cup75917.jpg'
+		}	
+		else {
+			return 'I\'m not that skilled a barrista.'
+		}
 	},
 
 	live : function () {
