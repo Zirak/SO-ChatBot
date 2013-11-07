@@ -30,7 +30,7 @@ The result will be in `master.js` and `master.min.js`
 ###The Bot API###
 (, a very short explanation of a limited subset of)
 
-For a real cover, check the source code or [this wiki page](https://github.com/Zirak/SO-ChatBot/wiki/Plugin-writing) or `console.log(bot)`. Should be straightforward.
+For a real cover, check the source code or [this wiki page](https://github.com/KitFox/SO-ChatBot/wiki/Plugin-writing) or `console.log(bot)`. Should be straightforward.
 
 ```javascript
 //add a bot command
