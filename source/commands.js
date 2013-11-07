@@ -369,7 +369,7 @@ var commands = {
 		var linkBase = 'http://nanowrimo.org/widget/WordWar/';
 		var url = linkBase + author1 + ',' + author2 +'.png';
 		args.send( url );
-
+	}
 };
 
 commands.listcommands = (function () {
