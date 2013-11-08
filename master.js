@@ -4244,7 +4244,7 @@ bot.listen(
 
 var notFoundMsgs = [
 	'No definition found.',
-	'It means I aint got time to learn your $5 words',
+	'It means I ain\'t got time to learn your $5 words',
 	'My pocket dictionary just isn\'t good enough for you.'
 ];
 
