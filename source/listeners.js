@@ -24,6 +24,10 @@ bot.listen(/^yahoo.*/, function ( msg ) {
 	return 'Yahoo is for yahoos. Try Google.';
 });
 
+bot.listen(/^rimshot/,function( msg ) {
+	return '[Hey, diggy diggy](http://instantrimshot.com/)';
+});
+
 var greetingResponses = [
 	'Hi.',
 	'Hiya.',
