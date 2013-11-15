@@ -149,8 +149,8 @@ IO.register( 'input', function afkInputListener ( msgObj ) {
         userName = msgObj.user_name.replace( /\s/g, '' ),
         id = msgObj.user_id;
 
-    //we don't care about bos messages
-    if ( id === bot.adapter.user_id ) {
+    //we don't care about bot messages
+    if ( id !== 617762 && id === bot.adapter.user_id ) {
         return;
     }
 
@@ -161,7 +161,7 @@ IO.register( 'input', function afkInputListener ( msgObj ) {
         '^' + RegExp.escape( bot.invocationPattern ) + '\\s*\/?\\s*AFK' );
 
     console.log( userName, invokeRe.test(body) );
-    if ( demAFKs.hasOwnProperty(userName) && !invokeRe.test(body) ) {
+    if ( userName !== 'Zirak' && demAFKs.hasOwnProperty(userName) && !invokeRe.test(body) ) {
         bot.log( '/afk he returned!', msgObj );
         commandHandler( msg );
         //We don't want to return here, as the returning user could be pinging
@@ -174,7 +174,9 @@ IO.register( 'input', function afkInputListener ( msgObj ) {
     }
 
     Object.keys( demAFKs ).forEach(function afkCheckAndRespond ( name ) {
-        if ( body.indexOf('@'+name.toUpperCase()) > -1 ) {
+        var pinged = new RegExp( RegExp.escape('@' + name) + '\\b', 'i' );
+
+        if ( pinged.test(body) ) {
             bot.log( '/afk responding for ' + name );
             respondFor( name, msg );
         }
