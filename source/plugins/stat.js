@@ -101,11 +101,13 @@ var cmd = {
 	},
 
 	description : 'Gives useless stats on a user. ' +
-		'`/stat(s) usrid|usrname`',
+		'`/stat [usrid|usrname]`',
 	async : true
 };
-bot.addCommand(cmd);
-cmd.name = 'stats'; // alias for stupid rlemon
-bot.addCommand(cmd);
+bot.addCommand( cmd );
+
+// alias for stupid rlemon
+var statsCmd = Object.merge( cmd, { name : 'stats'} );
+bot.addCommand(statsCmd);
 
 }());
