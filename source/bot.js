@@ -551,6 +551,5 @@ bot.beatInterval = 5000; //once every 5 seconds is Good Enough ™
 //#build parseCommandArgs.js
 //#build suggestionDict.js
 
-//#build commands.js
 //#build listeners.js
 }());
