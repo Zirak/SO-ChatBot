@@ -61,7 +61,10 @@ var whitey = {
 	*/
 	'DOMException' : 1,
 	'Event'        : 1,
-	'MessageEvent' : 1
+	'MessageEvent' : 1,
+
+	/*Firefox > 25 patch*/
+	'WorkerMessageEvent': 1
 };
 
 [ global, global.__proto__ ].forEach(function ( obj ) {
