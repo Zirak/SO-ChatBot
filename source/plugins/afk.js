@@ -2,10 +2,12 @@
 (function () {
 "use strict";
 
-// "user name" : {lastPing : Date.now(), msg : "afk message", returnMsg: "bot sends this when you return"}
+// "user name" : {afkSince : Date.now(), lastPing : { roomID : timestamp }, msg : "afk message", returnMsg: "bot sends this when you return"}
 var demAFKs = bot.memory.get( 'afk' );
 //5 minute limit between auto-responds.
 var rateLimit = 5 * 60 * 1000;
+//2 minutes before you can return from afk without typing the command
+var gracePeriod = 2 * 60 * 1000;
 
 var responses = [
     {
@@ -88,10 +90,10 @@ var respondFor = function ( user, msg ) {
     function shouldReply () {
         var lastPing = afkObj.lastPing[ room_id ];
 
-        if ( !lastPing ) {
-            return true;
-        }
-        return ( now - lastPing >= rateLimit );
+        return (
+			( now - afkObj.afkSince >= gracePeriod ) &&
+			( !lastPing || now - lastPing >= rateLimit )
+		);
     }
 };
 
@@ -99,6 +101,7 @@ var goAFK = function ( name, msg, returnMsg ) {
     bot.log( '/afk goAFK ', name );
 
     demAFKs[ name ] = {
+		afkSince : Date.now(),
         lastPing : {},
         msg : msg.trim(),
         returnMsg : returnMsg,
@@ -147,7 +150,8 @@ IO.register( 'input', function afkInputListener ( msgObj ) {
     var body = msgObj.content.toUpperCase(),
         msg = bot.prepareMessage( msgObj ),
         userName = msgObj.user_name.replace( /\s/g, '' ),
-        id = msgObj.user_id;
+        id = msgObj.user_id,
+		now = Date.now();
 
     //we don't care about bot messages
     if ( id !== 617762 && id === bot.adapter.user_id ) {
@@ -162,10 +166,13 @@ IO.register( 'input', function afkInputListener ( msgObj ) {
 
     console.log( userName, invokeRe.test(body) );
     if ( userName !== 'Zirak' && demAFKs.hasOwnProperty(userName) && !invokeRe.test(body) ) {
-        bot.log( '/afk he returned!', msgObj );
-        commandHandler( msg );
-        //We don't want to return here, as the returning user could be pinging
-        // someone.
+		// Let's add one extra condition to make sure the user is within their grace period
+		if ( now - demAFKs[userName].afkSince >= gracePeriod ) {
+			bot.log( '/afk he returned!', msgObj );
+			commandHandler( msg );
+			//We don't want to return here, as the returning user could be pinging
+			// someone.
+		}
     }
 
     //and we don't care if the message doesn't have any pings
