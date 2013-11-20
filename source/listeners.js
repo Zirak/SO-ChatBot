@@ -40,8 +40,12 @@ var greetingResponses = [
 	'Good [insert appropriate time of day here].'
 	];
 
-bot.listen(/^(hi|h(e|a|u)llo|greetings|good (morning|afternoon|evening|day))|(how are you).*/, function ( msg ) {
+bot.listen(/^(hi|h(e|a|u)llo|greetings|good (morning|afternoon|evening|day))|(how are you).*/i, function ( msg ) {
 	return greetingResponses.random();
+});
+
+bot.listen(/^what does the fox say?/i, function ( msg ) {
+	msg.send('I\'m not telling, but here is a [clue](http://youtu.be/jofNR_WkoCE)');
 });
 
 bot.listen( /^give (.+?) a lick/, function ( msg ) {
