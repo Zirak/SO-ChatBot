@@ -67,7 +67,7 @@ var whitey = {
 	'WorkerMessageEvent': 1
 };
 
-[ global, global.__proto__ ].forEach(function ( obj ) {
+[ global, Object.getPrototypeOf(global) ].forEach(function ( obj ) {
 	Object.getOwnPropertyNames( obj ).forEach(function( prop ) {
 		if( !whitey.hasOwnProperty( prop ) ) {
 			delete obj[ prop ];
