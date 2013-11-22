@@ -15,7 +15,7 @@ var commands = {
 			return args + ': ' + desc;
 		}
 
-		return 'Information on interacting with me can be found at ' + 
+		return 'Information on interacting with me can be found at ' +
 			'[this page](https://github.com/Zirak/SO-ChatBot/' +
 			'wiki/Interacting-with-the-bot)';
 	},
@@ -708,7 +708,7 @@ var descriptions = {
 		' /tell `msg_id|usr_name cmdName [cmdArgs]`',
 	unban : 'Removes a user from my mindjail. `/unban usr_id|usr_name`',
 	urban : 'Fetches UrbanDictionary definition. `/urban something`',
-	user : 'Fetches user-link for specified user. `/user usr_id|usr_name`'
+	user : 'Fetches user-link for specified user. `/user usr_id|usr_name`',
 };
 
 //only allow owners to use certain commands
