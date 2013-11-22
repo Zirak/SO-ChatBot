@@ -708,7 +708,7 @@ var descriptions = {
 		' /tell `msg_id|usr_name cmdName [cmdArgs]`',
 	unban : 'Removes a user from my mindjail. `/unban usr_id|usr_name`',
 	urban : 'Fetches UrbanDictionary definition. `/urban something`',
-	user : 'Fetches user-link for specified user. `/user usr_id|usr_name`',
+	user : 'Fetches user-link for specified user. `/user usr_id|usr_name`'
 };
 
 //only allow owners to use certain commands
