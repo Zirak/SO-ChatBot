@@ -137,7 +137,7 @@ var pinkyResponses =[
 'I think so, Brain, but scratching just makes it worse.',
 'I think so, Brain, but shouldn\'t the bat boy be wearing a cape?',
 'I think so, Brain, but why would anyone want a depressed tongue?',
-'Umm, I think so, Brainie, but why would anyone want to Pierce Brosnan?'
+'Umm, I think so, Brainie, but why would anyone want to Pierce Brosnan?',
 'Me thinks so, Brain, verily, but dost thou think Pete Rose by any other name would still smell as sweaty?',
 'I think so, Brain, but wouldn\'t his movies be more suitable for children if he was named Jean-Claude van Darn?',
 'Wuh, I think so, Brain, but will they let the Cranberry Dutchess stay in the Lincoln Bedroom?',
