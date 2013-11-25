@@ -87,7 +87,7 @@ var pinkyResponses =[
 'Well, I think so, Brain, but I can\'t memorize a whole opera in Yiddish.',
 'I think so, Brain, but there\'s still a bug stuck in here from last time.',
 'Uh, I think so, Brain, but I get all clammy inside the tent.',
-'I think so, Brain, but I don't think Kay Ballard\'s in the union.',
+'I think so, Brain, but I don\'t think Kay Ballard\'s in the union.',
 'Yes, I am.',
 'I think so, Brain, but, the Rockettes? I mean, it\'s girls, isn\'t it?',
 'I think so, Brain, but pants with horizontal stripes make me look chubby.',
