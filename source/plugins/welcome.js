@@ -9,8 +9,8 @@ var message = "Welcome to the JavaScript chat! Please review the " +
 	"your question, and if anyone's free and interested they'll help.";
 
 function welcome ( name, room ) {
-	bot.adapter.out.add(
-		bot.adapter.reply( name ) + " " + message, room );
+	/*bot.adapter.out.add(*/
+	return bot.adapter.reply( name ) + " " + message;/*, room );*/
 }
 
 bot.addCommand({
@@ -20,7 +20,7 @@ bot.addCommand({
 			return message;
 		}
 
-		welcome( args, args.get('roomid') );
+		return welcome( args, args.get('roomid') );
 	},
 	permission : {
 		del : 'NONE'
