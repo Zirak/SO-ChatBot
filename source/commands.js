@@ -15,8 +15,9 @@ var commands = {
 			return args + ': ' + desc;
 		}
 
-		return 'https://github.com/Zirak/SO-ChatBot/wiki/' +
-			'Interacting-with-the-bot';
+		return 'Information on interacting with me can be found at ' +
+			'[this page](https://github.com/Zirak/SO-ChatBot/' +
+			'wiki/Interacting-with-the-bot)';
 	},
 
 	listen : function ( msg ) {
@@ -342,8 +343,12 @@ var partition = function ( list, maxSize ) {
 
 return function ( args ) {
 	var commands = Object.keys( bot.commands ),
+		pages = ' (page {0}/{1})',
+		sweetData = args.get(),
+		// 500 minus 2 for @ and space, minus pagination length, minus the user's name length
+		maxSize = 498 - pages.length - sweetData.user_name.length,
 		//TODO: only call this when commands were learned/forgotten since last
-		partitioned = partition( commands ),
+		partitioned = partition( commands, maxSize ),
 
 		valid = /^(\d+|$)/.test( args.content ),
 		page = Number( args.content ) || 0;
@@ -359,7 +364,7 @@ return function ( args ) {
 
 	var ret = partitioned[ page ].join( ', ' );
 
-	return ret + ' (page {0}/{1})'.supplant( page, partitioned.length-1 );
+	return ret + pages.supplant( page, partitioned.length-1 );
 };
 })();
 
