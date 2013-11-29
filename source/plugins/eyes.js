@@ -6,7 +6,7 @@ var regexp = /eye(?=s|\b)/;
 IO.register( 'input', function eyesThighs ( msgObj ) {
 	var hasEyes = regexp.test( msgObj.content );
 
-	if ( !hasEyes || msgObj.user_id !== bot.adapter.user_id ) {
+	if ( !hasEyes || msgObj.user_id === bot.adapter.user_id ) {
 		return;
 	}
 
