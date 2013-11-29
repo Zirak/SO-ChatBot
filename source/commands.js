@@ -231,7 +231,6 @@ var commands = {
 commands.listcommands = (function () {
 var partition = function ( list, maxSize ) {
 	var size = 0, last = [];
-	maxSize = maxSize || 480; //buffer zone, actual max is 500
 
 	var ret = list.reduce(function partition ( ret, item ) {
 		var len = item.length + 2; //+1 for comma, +1 for space
@@ -258,7 +257,7 @@ return function ( args ) {
 	var commands = Object.keys( bot.commands ),
 		pagination = ' (page {0}/{1})',
 		user_name = args.get( 'user_name' ),
-		// 500 minus 2 for @ and space, minus pagination length, minus the user's name length
+		// 500 is the max, -2 for @ and space.
 		maxSize = 498 - pagination.length - user_name.length,
 		//TODO: only call this when commands were learned/forgotten since last
 		partitioned = partition( commands, maxSize ),
