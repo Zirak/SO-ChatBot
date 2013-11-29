@@ -1,63 +1,85 @@
 (function () {
-    // This is a proxy to add padding to a JSON API
-    // See: https://github.com/shea-sollars/sap
-    var requestURI = 'http://www.lobby.ws/api/sap.js';
+// This is a proxy to add padding to a JSON API
+// See: https://github.com/shea-sollars/sap
+var requestURI = 'http://www.lobby.ws/api/sap.js';
 
-    bot.addCommand({
-        async : true,
-        description : 'Check domain availability',
-        fun : checkDomain,
-        name : 'domain',
-        permissions : {
-            del : 'NONE'
-        }
-    });
+function checkDomain ( msgObj, cb ) {
+	IO.jsonp({
+		data : {
+			domain : msgObj.content
+		},
+		url : requestURI,
+		fun : reportResult,
+		jsonpName : 'cb'
+	});
 
-    function checkDomain ( msgObj, cb ) {
-        IO.jsonp({
-            data : {
-                domain : msgObj.content
-            },
-            url : requestURI,
-            fun : reportResult,
-            jsonpName : 'cb'
-        });
+	/*
+	expect respObj to be:
+	{
+		status : 'error' || 'success',
+		status_desc : 'Error message' (if status == error),
+		domain : 'Domain in question' || null (possibly if error),
+		available : true || false || null (possibly if error)
+	}
+	*/
+	function reportResult ( respObj ) {
+		var error = getError( respObj );
 
-        /* expect respObj to be:
-            {
-                status : "error" || "success"
-            ,    status_desc : "Error message" (if status == error)
-            ,    domain : "Domain in question" || null (possibly if error)
-            ,    available : true || false || null (possibly if error)
-            }
-        */
-        function reportResult ( respObj ) {
-            var respMsg;
+		if ( error ) {
+			finish( error );
+			return;
+		}
 
-            if ( !respObj.hasOwnProperty('status') || respObj.status !== 'success' ) {
-                respMsg = 'An error occured';
+		var respFormat = 'The domain {0} {1} available.',
+			available = respObj.available ? '*IS*' : 'is *NOT*';
 
-                if ( respObj.hasOwnProperty('status_desc') ) {
-                    respMsg += '; ' + respObj.status_desc;
-                };
-            }
-            else {
-                if ( !respObj.hasOwnProperty('domain') || !respObj.hasOwnProperty('available') ) {
-                    respMsg = 'Something went wrong with that request. Try again.';
-                }
-                else {
-                    respMsg = 'The domain ' + respObj.domain + ' ' +
-                            ( respObj.available===true ? 'IS ' : 'is NOT ' ) +
-                            'available';
-                };
-            };
+		finish( respFormat.supplant(respObj.domain, available) );
+	}
 
-            if ( cb && cb.call ) {
-                cb( respMsg );
-            }
-            else {
-                msgObj.reply( respMsg );
-            };
-        };
-    };
+	function getError ( respObj ) {
+		var statusError = 'An error occured';
+
+		var errored =
+			!respObj.hasOwnProperty('status') ||
+			respObj.status !== 'success';
+
+		if ( errored ) {
+			if ( respObj.status_desc ) {
+				statusError += ': ' + respObj.status_desc;
+			}
+
+			return statusError;
+		}
+
+		errored = !( respObj.hasOwnProperty( 'domain' ) &&
+					respObj.hasOwnProperty( 'available' ) );
+
+		if ( errored ) {
+			return 'Something went wrong with that request. Try again';
+		}
+
+		return false;
+	}
+
+	function finish ( resp ) {
+		if ( cb && cb.call ) {
+			cb( resp );
+		}
+		else {
+			msgObj.reply( resp );
+		}
+	}
+}
+
+bot.addCommand({
+	name : 'domain',
+	fun : checkDomain,
+
+	permissions : {
+		del : 'NONE'
+	},
+	description : 'Check domain availability',
+	async : true
+});
+
 }());
