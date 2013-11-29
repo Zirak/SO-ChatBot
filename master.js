@@ -6912,9 +6912,8 @@ var message = "Welcome to the JavaScript chat! Please review the " +
 	"Please don't ask if you can ask or if anyone's around; just ask " +
 	"your question, and if anyone's free and interested they'll help.";
 
-function welcome ( name, room ) {
-	/*bot.adapter.out.add(*/
-	return bot.adapter.reply( name ) + " " + message;/*, room );*/
+function welcome ( name ) {
+	return bot.adapter.reply( name ) + " " + message; ;
 }
 
 bot.addCommand({
@@ -6924,7 +6923,7 @@ bot.addCommand({
 			return message;
 		}
 
-		return welcome( args, args.get('roomid') );
+		return args.send( welcome(args) );
 	},
 	permission : {
 		del : 'NONE'
