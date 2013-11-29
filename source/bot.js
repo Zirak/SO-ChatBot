@@ -146,6 +146,12 @@ var bot = window.bot = {
 	validateMessage : function ( msgObj ) {
 		var msg = msgObj.content.trim();
 
+		//a bit js bot specific...make sure it isn't just !!! all round. #139
+		if ( this.invocationPattern === '!!' && (/^!!!+$/).test(msg) ) {
+			console.log('special skip');
+			return false;
+		}
+
 		return (
 			//make sure we don't process our own messages,
 			msgObj.user_id !== bot.adapter.user_id &&
