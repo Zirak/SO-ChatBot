@@ -1,14 +1,19 @@
 (function () {
 
+var regexp = /eye(?=s|\b)/;
+
 // #108
 IO.register( 'input', function eyesThighs ( msgObj ) {
-	var hasEyes = msgObj.content.indexOf( 'eyes' ) > -1;
+	var hasEyes = regexp.test( msgObj.content );
 
-	if ( hasEyes ) {
-		bot.adapter.out.add(
-			msgObj.content.replace( 'eyes', 'thighs' ),
-			msgObj.room_id );
+	if ( !hasEyes || msgObj.user_id !== bot.adapter.user_id ) {
+		return;
 	}
+
+	var message =
+		IO.decodehtmlEntities( msgObj.content.replace(/eye/g, 'thigh') );
+
+	bot.adapter.out.add( message, msgObj.room_id );
 });
 
 })();
