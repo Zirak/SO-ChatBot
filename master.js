@@ -1877,95 +1877,8 @@ var commands = {
 		}
 	},
 
-	jquery : function jquery ( args ) {
-		//check to see if more than one thing is requested
-		var parsed = args.parse( true );
-		if ( parsed.length > 1 ) {
-			return parsed.map( jquery ).join( ' ' );
-		}
-
-		var props = args.trim().replace( /^\$/, 'jQuery' ),
-
-			parts = props.split( '.' ), exists = false,
-			url = props, msg;
-		//parts will contain two likely components, depending on the input
-		// jQuery.fn.prop -  parts[0] = jQuery, parts[1] = prop
-		// jQuery.prop    -  parts[0] = jQuery, parts[1] = prop
-		// prop           -  parts[0] = prop
-		//
-		//jQuery API urls works like this:
-		// if it's on the jQuery object, then the url is /jQuery.property
-		// if it's on the proto, then the url is /property
-		//
-		//so, the mapping goes like this:
-		// jQuery.fn.prop => prop
-		// jQuery.prop    => jQuery.prop if it's on jQuery
-		// prop           => prop if it's on jQuery.prototype,
-		//                     jQuery.prop if it's on jQuery
-
-		bot.log( props, parts, '/jquery input' );
-
-		//user gave something like jQuery.fn.prop, turn that to just prop
-		// jQuery.fn.prop => prop
-		if ( parts.length === 3 ) {
-			parts = [ parts[2] ];
-		}
-
-		//check to see if it's a property on the jQuery object itself
-		// jQuery.prop => jQuery.prop
-		if ( parts[0] === 'jQuery' && jQuery[parts[1]] ) {
-			exists = true;
-		}
-
-		//user wants something on the prototype?
-		// prop => prop
-		else if ( parts.length === 1 && jQuery.prototype[parts[0]] ) {
-			url = parts[ 0 ];
-			exists = true;
-		}
-
-		//user just wanted a property? maybe.
-		// prop => jQuery.prop
-		else if ( jQuery[parts[0]] ) {
-			url = 'jQuery.' + parts[0];
-			exists = true;
-		}
-
-		if ( exists ) {
-			msg = 'http://api.jquery.com/' + url;
-		}
-		else {
-			msg = 'http://api.jquery.com/?s=' + encodeURIComponent( args );
-		}
-		bot.log( msg, '/jquery link' );
-
-		return msg;
-	},
-
 	choose : function ( args ) {
-		var opts = args.parse().filter( conjunctions ),
-			len = opts.length;
-
-		bot.log( opts, '/choose input' );
-
-		//5% chance to get a "none-of-the-above"
-		if ( Math.random() < 0.05 ) {
-			return len === 2 ? 'Neither' : 'None of the above';
-		}
-		//5% chance to get "all-of-the-above"
-		else if ( Math.random() < 0.05 ) {
-			return len === 2 ? 'Both!' : 'All of the above';
-		}
-
-		return opts[ Math.floor(Math.random() * len) ];
-
-		//TODO: add support for words like "and", e.g.
-		// skip and jump or cry and die
-		//  =>
-		// "skip and jump", "cry and die"
-		function conjunctions ( word ) {
-			return word !== 'or';
-		}
+		return 'Deprecated command - use the weasel (should I ... or ...)';
 	},
 
 	user : function ( args ) {
@@ -2036,98 +1949,6 @@ return function ( args ) {
 })();
 
 commands.eval.async = commands.coffee.async = true;
-
-//cb is for internal usage by other commands/listeners
-commands.norris = function ( args, cb ) {
-	var chucky = 'http://api.icndb.com/jokes/random';
-
-	IO.jsonp({
-		url : chucky,
-		fun : finishCall,
-		jsonpName : 'callback'
-	});
-
-	function finishCall ( resp ) {
-		var msg;
-
-		if ( resp.type !== 'success' ) {
-			msg = 'Chuck Norris is too awesome for this API. Try again.';
-		}
-		else {
-			msg = IO.decodehtmlEntities( resp.value.joke );
-		}
-
-		if ( cb && cb.call ) {
-			cb( msg );
-		}
-		else {
-			args.reply( msg );
-		}
-	}
-};
-commands.norris.async = true;
-
-//cb is for internal blah blah blah
-commands.urban = (function () {
-var cache = Object.create( null );
-
-return function ( args, cb ) {
-	if ( !args.length ) {
-		return 'Y U NO PROVIDE ARGUMENTS!?';
-	}
-
-	if ( cache[args] ) {
-		return finish( cache[args] );
-	}
-
-	IO.jsonp({
-		url : 'http://api.urbandictionary.com/v0/define',
-		data : {
-			term : args.content
-		},
-		jsonpName : 'callback',
-		fun : complete
-	});
-
-	function complete ( resp ) {
-		var msg;
-
-		if ( resp.result_type === 'no_results' ) {
-			msg = 'No definition found for ' + args;
-		}
-		else {
-			msg = formatTop( resp.list[0] );
-		}
-		cache[ args ] = msg;
-
-		finish( msg );
-	}
-
-	function finish ( def ) {
-		if ( cb && cb.call ) {
-			cb( def );
-		}
-		else {
-			args.reply( def );
-		}
-	}
-
-	function formatTop ( top ) {
-		//replace [tag] in definition with links
-		var def = top.definition.replace( /\[([^\]]+)\]/g, formatTag );
-
-		return args.link( top.word, top.permalink ) + ' ' + def;
-	}
-	function formatTag ( $0, $1 ) {
-		var href =
-			'http://urbandictionary.com/define.php?term=' +
-			encodeURIComponent( $1 );
-
-		return args.link( $0, href );
-	}
-};
-}());
-commands.urban.async = true;
 
 var parse = commands.parse = (function () {
 var macros = {
@@ -2326,59 +2147,27 @@ return function ( args ) {
 };
 }());
 
-commands.mdn = function ( args, cb ) {
-	IO.jsonp.google(
-		args.toString() + ' site:developer.mozilla.org', finishCall );
-
-	function finishCall ( resp ) {
-		if ( resp.responseStatus !== 200 ) {
-			finish( 'Something went on fire; status ' + resp.responseStatus );
-			return;
-		}
-
-		var result = resp.responseData.results[ 0 ];
-		bot.log( result, '/mdn result' );
-		finish( result.url );
-	}
-
-	function finish ( res ) {
-		if ( cb && cb.call ) {
-			cb( res );
-		}
-		else {
-			args.reply( res );
-		}
-	}
-};
-commands.mdn.async = true;
-
 var descriptions = {
 	ban : 'Bans user(s) from using me. Lacking arguments, prints the banlist.' +
-		' `/ban [usr_id|usr_name, [...]`',
-	choose : '"Randomly" choose an option given. `/choose option0 option1 ...`',
+		' `/ban [usr_id|usr_name, [...]]`',
+	choose : '(Deprecated)',
 	die  : 'Kills me :(',
 	eval : 'Forwards message to javascript code-eval',
 	coffee : 'Forwards message to coffeescript code-eval',
 	forget : 'Forgets a given command. `/forget cmdName`',
-	get : 'Grabs a question/answer link (see online for thorough explanation)',
 	help : 'Fetches documentation for given command, or general help article.' +
 		' `/help [cmdName]`',
 	info : 'Grabs some stats on my current instance or a command.' +
 		' `/info [cmdName]`',
-	jquery : 'Fetches documentation link from jQuery API. `/jquery what`',
 	listcommands : 'Lists commands. `/listcommands [page=0]`',
 	listen : 'Forwards the message to my ears (as if called without the /)',
-	live : 'Resurrects me (:D) if I\'m down',
-	mdn : 'Fetches mdn documentation. `/mdn what`',
-	norris : 'Random chuck norris joke!',
+	live : 'Resurrects me (:D) if I\'m down (D:)',
 	parse : 'Returns result of "parsing" message according to the my mini' +
 		'-macro capabilities (see online docs)',
 	refresh : 'Reloads the browser window I live in',
-	regex : 'Executes a regex against text input. `/regex text regex [flags]`',
 	tell : 'Redirect command result to user/message.' +
 		' /tell `msg_id|usr_name cmdName [cmdArgs]`',
 	unban : 'Removes a user from my mindjail. `/unban usr_id|usr_name`',
-	urban : 'Fetches UrbanDictionary definition. `/urban something`',
 	user : 'Fetches user-link for specified user. `/user usr_id|usr_name`',
 };
 
@@ -4464,139 +4253,6 @@ bot.listen( /(which |what |give me a )?firefly( episode)?/i, function ( msg ) {
 });
 
 ;
-(function () {
-var types = {
-	answer   : true,
-	question : true };
-var ranges = {
-	//the result array is in descending order, so it's "reversed"
-	first : function ( arr ) {
-		return arr[ arr.length - 1 ];
-	},
-
-	last : function ( arr ) {
-		return arr[ 0 ];
-	},
-
-	between : function ( arr ) {
-		//SO api takes care of this for us
-		return arr;
-	}
-};
-
-function get ( args, cb ) {
-	//default:
-	// /get type range usrid
-	var parts = args.parse(),
-		type = parts[ 0 ] || 'answer',
-		plural = type + 's',
-
-		range = parts[ 1 ] || 'last',
-
-		usrid = parts[ 2 ];
-
-	//if "between" is given, fetch the correct usrid
-	// /get type between start end usrid
-	if ( range === 'between' ) {
-		usrid = parts[ 4 ];
-	}
-
-	//range is a number and no usrid, assume the range is the usrid, and
-	// default range to last
-	// /get type usrid
-	if ( !usrid && !isNaN(range) ) {
-		usrid = range;
-		range = 'last';
-	}
-
-	//if after all this usrid is falsy, assume the user's id
-	if ( !usrid ) {
-		usrid = args.get( 'user_id' );
-	}
-
-	bot.log( parts, 'get input' );
-
-	if ( !types.hasOwnProperty(type) ) {
-		return 'Invalid "getter" name ' + type;
-	}
-	if ( !ranges.hasOwnProperty(range) ) {
-		return 'Invalid range specifier ' + range;
-	}
-
-	var url = 'http://api.stackexchange.com/2.1/users/' + usrid + '/' + plural;
-	var params = {
-		site : bot.adapter.site,
-		sort : 'creation',
-		//basically, only show answer/question id and their link
-		filter : '!BGS1(RNaKd_71l)9SkX3zg.ifSRSSy'
-	};
-
-	bot.log( url, params, '/get building url' );
-
-	if ( range === 'between' ) {
-		params.fromdate = Date.parse( parts[2] );
-		params.todate = Date.parse( parts[3] );
-
-		bot.log( url, params, '/get building url between' );
-	}
-
-	IO.jsonp({
-		url  : url,
-		data : params,
-		fun  : parseResponse
-	});
-
-	function parseResponse ( respObj ) {
-		//Une erreru! L'horreur!
-		if ( respObj.error_message ) {
-			args.reply( respObj.error_message );
-			return;
-		}
-
-		//get only the part we care about in the result, based on which one
-		// the user asked for (first, last, between)
-		//respObj will have an answers or questions property, based on what we
-		// queried for, in array form
-		var posts = [].concat( ranges[range](respObj.items) ),
-			res;
-
-		bot.log( posts.slice(), '/get parseResponse parsing' );
-
-		if ( posts.length ) {
-			res = makeUserResponse( posts );
-		}
-		else {
-			res = 'User did not submit any ' + plural;
-		}
-		bot.log( res, '/get parseResponse parsed');
-
-		if ( cb && cb.call ) {
-			cb( res );
-		}
-		else {
-			args.directreply( res );
-		}
-	}
-
-	function makeUserResponse( posts ) {
-		return posts.map(function ( post ) {
-			return post.link;
-		}).join ( ' ; ');
-	}
-}
-
-bot.addCommand({
-	name : 'get',
-	fun  : get,
-	permissions : {
-		del : 'NONE'
-	},
-	async : true
-});
-
-}());
-
-;
 // issue #51 https://github.com/Zirak/SO-ChatBot/issues/51
 
 //valid args are one of the following:
@@ -5254,6 +4910,91 @@ bot.addCommand({
 
 ;
 (function () {
+var baseURL = 'http://api.jquery.com';
+
+function jquery ( args ) {
+	if ( !args.content ) {
+		return baseURL;
+	}
+
+	//check to see if more than one thing is requested
+	var parsed = args.parse( true );
+	if ( parsed.length > 1 ) {
+		return parsed.map( jquery ).join( ' ' );
+	}
+
+	var props = args.trim().replace( /^\$/, 'jQuery' ),
+
+	parts = props.split( '.' ), exists = false,
+	url = props, msg;
+	//parts will contain two likely components, depending on the input
+	// jQuery.fn.prop -  parts[0] = jQuery, parts[1] = prop
+	// jQuery.prop    -  parts[0] = jQuery, parts[1] = prop
+	// prop           -  parts[0] = prop
+	//
+	//jQuery API urls works like this:
+	// if it's on the jQuery object, then the url is /jQuery.property
+	// if it's on the proto, then the url is /property
+	//
+	//so, the mapping goes like this:
+	// jQuery.fn.prop => prop
+	// jQuery.prop    => jQuery.prop if it's on jQuery
+	// prop           => prop if it's on jQuery.prototype,
+	//                     jQuery.prop if it's on jQuery
+
+	bot.log( props, parts, '/jquery input' );
+
+	//user gave something like jQuery.fn.prop, turn that to just prop
+	// jQuery.fn.prop => prop
+	if ( parts.length === 3 ) {
+		parts = [ parts[2] ];
+	}
+
+	//check to see if it's a property on the jQuery object itself
+	// jQuery.prop => jQuery.prop
+	if ( parts[0] === 'jQuery' && jQuery[parts[1]] ) {
+		exists = true;
+	}
+
+	//user wants something on the prototype?
+	// prop => prop
+	else if ( parts.length === 1 && jQuery.prototype[parts[0]] ) {
+		url = parts[ 0 ];
+		exists = true;
+	}
+
+	//user just wanted a property? maybe.
+	// prop => jQuery.prop
+	else if ( jQuery[parts[0]] ) {
+		url = 'jQuery.' + parts[0];
+		exists = true;
+	}
+
+	if ( exists ) {
+		msg = baseURL + url;
+	}
+	else {
+		msg = baseURL + '/?s=' + encodeURIComponent( args );
+	}
+	bot.log( msg, '/jquery link' );
+
+	return msg;
+}
+
+bot.addCommand({
+	name : 'jquery',
+	fun : jquery,
+
+	permissions : { del : 'NONE', use : 'ALL' },
+	description : 'Fetches documentation link from jQuery API. `/jquery what`',
+});
+
+})();
+
+;
+
+;
+(function () {
 "use strict";
 var parse = bot.getCommand( 'parse' );
 var storage = bot.memory.get( 'learn' );
@@ -5447,6 +5188,47 @@ loadCommands();
 
 ;
 (function () {
+
+function mdn ( args, cb ) {
+	IO.jsonp.google(
+		args.toString() + ' site:developer.mozilla.org', finishCall );
+
+	function finishCall ( resp ) {
+		if ( resp.responseStatus !== 200 ) {
+			finish( 'Something went on fire; status ' + resp.responseStatus );
+			return;
+		}
+
+		var result = resp.responseData.results[ 0 ];
+		bot.log( result, '/mdn result' );
+		finish( result.url );
+	}
+
+	function finish ( res ) {
+		if ( cb && cb.call ) {
+			cb( res );
+		}
+		else {
+			args.reply( res );
+		}
+	}
+};
+
+bot.addCommand({
+	name : 'mdn',
+	fun : mdn,
+
+	permissions : { del : 'NONE', use : 'ALL' },
+	description : 'Fetches mdn documentation. `/mdn what`',
+	async : true
+});
+
+})();
+
+;
+
+;
+(function () {
 "use strict";
 
 var unexisto = 'User {0} was not found (if the user is not in room {1}, pass ' +
@@ -5577,6 +5359,50 @@ IO.register( 'userregister', function tracker ( user, room ) {
 });
 
 })();
+
+;
+(function () {
+
+function norris ( args, cb ) {
+	var chucky = 'http://api.icndb.com/jokes/random';
+
+	IO.jsonp({
+		url : chucky,
+		fun : finishCall,
+		jsonpName : 'callback'
+	});
+
+	function finishCall ( resp ) {
+		var msg;
+
+		if ( resp.type !== 'success' ) {
+			msg = 'Chuck Norris is too awesome for this API. Try again.';
+		}
+		else {
+			msg = IO.decodehtmlEntities( resp.value.joke );
+		}
+
+		if ( cb && cb.call ) {
+			cb( msg );
+		}
+		else {
+			args.reply( msg );
+		}
+	}
+}
+
+bot.addCommand({
+	name : 'norris',
+	fun : norris,
+
+	permissions : { del : 'NONE', use : 'ALL' },
+	description : 'Random chuck norris joke!',
+	async : true
+});
+
+})();
+
+;
 
 ;
 (function () {
@@ -6617,6 +6443,81 @@ bot.addCommand({
 });
 
 }());
+
+;
+(function () {
+
+var cache = {};
+
+function urban ( args, cb ) {
+	if ( !args.length ) {
+		return 'Y U NO PROVIDE ARGUMENTS!?';
+	}
+
+	if ( cache[args] ) {
+		return finish( cache[args] );
+	}
+
+	IO.jsonp({
+		url : 'http://api.urbandictionary.com/v0/define',
+		data : {
+			term : args.content
+		},
+		jsonpName : 'callback',
+		fun : complete
+	});
+
+	function complete ( resp ) {
+		var msg;
+
+		if ( resp.result_type === 'no_results' ) {
+			msg = 'No definition found for ' + args;
+		}
+		else {
+			msg = formatTop( resp.list[0] );
+		}
+		cache[ args ] = msg;
+
+		finish( msg );
+	}
+
+	function finish ( def ) {
+		if ( cb && cb.call ) {
+			cb( def );
+		}
+		else {
+			args.reply( def );
+		}
+	}
+
+	function formatTop ( top ) {
+		//replace [tag] in definition with links
+		var def = top.definition.replace( /\[([^\]]+)\]/g, formatTag );
+
+		return args.link( top.word, top.permalink ) + ' ' + def;
+	}
+	function formatTag ( $0, $1 ) {
+		var href =
+			'http://urbandictionary.com/define.php?term=' +
+			encodeURIComponent( $1 );
+
+		return args.link( $0, href );
+	}
+}
+
+bot.addCommand({
+	name : 'urban',
+	fun : urban,
+
+	permissions : { del : 'NONE', use : 'ALL' },
+
+	description : 'Fetches UrbanDictionary definition. `/urban something`',
+	async : true
+});
+
+})();
+
+;
 
 ;
 IO.register( 'input', function ( msgObj ) {
