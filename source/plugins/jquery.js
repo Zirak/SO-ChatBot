@@ -1,5 +1,5 @@
 (function () {
-var baseURL = 'http://api.jquery.com';
+var baseURL = 'http://api.jquery.com/';
 
 function jquery ( args ) {
 	if ( !args.content ) {
