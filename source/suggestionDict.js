@@ -22,6 +22,24 @@ TrieNode.prototype.add = function( word ) {
 	node.word = word;
 };
 
+TrieNode.prototype.del = function(word, i) {
+	i = i || 0;
+	var node = this;
+	var char = word[i++];
+
+	// recursively delete all trie nodes that are left empty after removing the command from the leaf
+	if (node.children[char]) {
+		node.children[char].del(word, i);
+		if (Object.keys(node.children[char].children).length === 0 && node.children[char].word === null) {
+			delete node.children[char];
+		}
+	}
+	
+	if (node.word === word) {
+		node.word = null;
+	}
+}
+
 //Having a small maxCost will increase performance greatly, experiment with
 //values of 1-3
 function SuggestionDictionary ( maxCost ) {
