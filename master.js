@@ -651,7 +651,13 @@ Date.timeSince = function ( d0, d1 ) {
 ;
 ﻿(function () {
 "use strict";
-
+var confusionResponses = [
+	'That didn\'t make much sense.',
+	'I\'m sorry. I don\'t know what you mean.',
+	'I didn\'t understand that.',
+	'Were you trying to invoke me?',
+	'I don\'t understand.'
+];
 var bot = window.bot = {
 	invocationPattern : '!!',
 
@@ -745,15 +751,8 @@ var bot = window.bot = {
 	
 	giveUpMessage : function ( guesses ) {
 		//man, I can't believe it worked...room full of nachos for me
-var confusionResponses = [
-	'That didn\'t make much sense.',
-	'I\'m sorry. I don\'t know what you mean.',
-	'I didn\'t understand that.',
-	'Were you trying to invoke me?',
-	'I don\'t understand.'
-];
 
-		var errMsg = confusionResponse.random();
+		var errMsg = confusionResponses.random();
 		if ( guesses && guesses.length ) {
 			errMsg += ' Maybe you meant: ' + guesses.join( ', ' );
 		}
