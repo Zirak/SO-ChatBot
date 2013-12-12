@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
 "use strict";
 
 var randomWord = function ( length, cb ) {
@@ -172,7 +172,7 @@ var game = {
 	//lose the game. less bitter messages? maybe.
 	lose : function () {
 		this.end = true;
-		return 'You people suck. The word is ' + this.word;
+		return 'Nope! The word is ' + this.word + '. I still like you though and you made a good effort!';
 	},
 
 	winCheck : function () {
