@@ -366,6 +366,7 @@ bot.Command = function ( cmd ) {
 	cmd.del = function () {
 		bot.info.forgotten += 1;
 		delete bot.commands[ cmd.name ];
+		bot.commandDictionary.trie.del(cmd.name);
 	};
 
 	return cmd;
