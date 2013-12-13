@@ -48,7 +48,7 @@ function substitute ( msg ) {
 }
 
 function get_matching_message ( re, onlyBefore ) {
-	var messages = [].slice.call(
+	var messages = Array.from(
 		document.getElementsByClassName('content') ).reverse();
 	return messages.first( matches );
 

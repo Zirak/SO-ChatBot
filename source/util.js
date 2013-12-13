@@ -26,11 +26,16 @@ Object.TruthMap = function ( props ) {
 	}
 };
 
+//turns a pseudo-array (like arguments) into a real array
+Array.from = function ( arrayLike, start ) {
+	return [].slice.call( arrayLike, start );
+};
+
 //SO chat uses an unfiltered for...in to iterate over an array somewhere, so
 // that I have to use Object.defineProperty to make these non-enumerable
 Object.defineProperty( Array.prototype, 'invoke', {
 	value : function ( funName ) {
-		var args = [].slice.call( arguments, 1 );
+		var args = Array.from( arguments, 1 );
 
 		return this.map( invoke );
 
@@ -151,7 +156,7 @@ Function.prototype.memoizeAsync = function ( hasher ) {
 	hasher = hasher || function (x) { return x; };
 
 	return function memoized () {
-		var args = [].slice.call( arguments ),
+		var args = Array.from( arguments ),
 			cb = args.pop(), //HEAVY assumption that cb is always passed last
 			hash = hasher.apply( null, arguments );
 
