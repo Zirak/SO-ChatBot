@@ -1,5 +1,5 @@
 (function () {
-var baseURL = 'http://api.jquery.com';
+var baseURL = 'http://api.jquery.com/';
 
 function jquery ( args ) {
 	if ( !args.content ) {
@@ -63,7 +63,7 @@ function jquery ( args ) {
 		msg = baseURL + url;
 	}
 	else {
-		msg = baseURL + '/?s=' + encodeURIComponent( args );
+		msg = baseURL + '?s=' + encodeURIComponent( args );
 	}
 	bot.log( msg, '/jquery link' );
 
