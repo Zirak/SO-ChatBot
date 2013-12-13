@@ -1,6 +1,5 @@
 (function () {
 "use strict";
-var parse = bot.getCommand( 'parse' );
 var storage = bot.memory.get( 'learn' );
 
 var replyPatterns = /^(<>|<user>|<msg>)/i,
@@ -87,7 +86,7 @@ function makeCustomCommand ( command ) {
 			return mismatchErrMessage.supplant( command );
 		}
 
-		var res = parse.exec( cmdArgs, parts );
+		var res = bot.parseMacro( cmdArgs, parts );
 
 		switch ( replyMethod ) {
 		case '':
