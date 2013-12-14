@@ -39,8 +39,9 @@ var bot = window.bot = {
 		try {
 			//it wants to execute some code
 			if ( /^c?>/.test(msg) ) {
-				this.eval( msg );
+				this.eval( msg.toString(), msg.directreply.bind(msg) );
 			}
+			//or maybe some other action.
 			else {
 				this.invokeAction( msg );
 			}

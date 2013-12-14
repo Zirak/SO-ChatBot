@@ -28,6 +28,8 @@ var commands = {
 	},
 
 	eval : function ( msg, cb ) {
+		cb = cb || msg.directreply.bind( msg );
+
 		return bot.eval( msg, cb );
 	},
 	coffee : function ( msg, cb ) {

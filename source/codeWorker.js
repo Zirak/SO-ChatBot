@@ -4,9 +4,11 @@ var global = this;
 var whitey = {
 	'Array'              : 1,
 	'Boolean'            : 1,
+	'console'            : 1,
 	'Date'               : 1,
 	'Error'              : 1,
 	'EvalError'          : 1,
+	'exec'               : 1,
 	'Function'           : 1,
 	'Infinity'           : 1,
 	'JSON'               : 1,
@@ -118,7 +120,6 @@ var console = {
 	}
 };
 console.error = console.info = console.debug = console.log;
-var p = console.log.bind( console );
 
 (function(){
 	"use strict";

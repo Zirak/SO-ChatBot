@@ -365,11 +365,16 @@ Object.TruthMap = function ( props ) {
 	}
 };
 
+//turns a pseudo-array (like arguments) into a real array
+Array.from = function ( arrayLike, start ) {
+	return [].slice.call( arrayLike, start );
+};
+
 //SO chat uses an unfiltered for...in to iterate over an array somewhere, so
 // that I have to use Object.defineProperty to make these non-enumerable
 Object.defineProperty( Array.prototype, 'invoke', {
 	value : function ( funName ) {
-		var args = [].slice.call( arguments, 1 );
+		var args = Array.from( arguments, 1 );
 
 		return this.map( invoke );
 
@@ -490,7 +495,7 @@ Function.prototype.memoizeAsync = function ( hasher ) {
 	hasher = hasher || function (x) { return x; };
 
 	return function memoized () {
-		var args = [].slice.call( arguments ),
+		var args = Array.from( arguments ),
 			cb = args.pop(), //HEAVY assumption that cb is always passed last
 			hash = hasher.apply( null, arguments );
 
@@ -690,8 +695,9 @@ var bot = window.bot = {
 		try {
 			//it wants to execute some code
 			if ( /^c?>/.test(msg) ) {
-				this.eval( msg );
+				this.eval( msg.toString(), msg.directreply.bind(msg) );
 			}
+			//or maybe some other action.
 			else {
 				this.invokeAction( msg );
 			}
@@ -1209,7 +1215,7 @@ bot.eval = (function () {
 window.URL = window.URL || window.webkitURL || window.mozURL || null;
 
 //translation tool: http://tinkerbin.heroku.com/84dPpGFr
-var worker_code = atob( "dmFyIGdsb2JhbCA9IHRoaXM7CgovKm1vc3QgZXh0cmEgZnVuY3Rpb25zIGNvdWxkIGJlIHBvc3NpYmx5IHVuc2FmZSovCnZhciB3aGl0ZXkgPSB7CgknQXJyYXknICAgICAgICAgICAgICA6IDEsCgknQm9vbGVhbicgICAgICAgICAgICA6IDEsCgknRGF0ZScgICAgICAgICAgICAgICA6IDEsCgknRXJyb3InICAgICAgICAgICAgICA6IDEsCgknRXZhbEVycm9yJyAgICAgICAgICA6IDEsCgknRnVuY3Rpb24nICAgICAgICAgICA6IDEsCgknSW5maW5pdHknICAgICAgICAgICA6IDEsCgknSlNPTicgICAgICAgICAgICAgICA6IDEsCgknTWF0aCcgICAgICAgICAgICAgICA6IDEsCgknTmFOJyAgICAgICAgICAgICAgICA6IDEsCgknTnVtYmVyJyAgICAgICAgICAgICA6IDEsCgknT2JqZWN0JyAgICAgICAgICAgICA6IDEsCgknUmFuZ2VFcnJvcicgICAgICAgICA6IDEsCgknUmVmZXJlbmNlRXJyb3InICAgICA6IDEsCgknUmVnRXhwJyAgICAgICAgICAgICA6IDEsCgknU3RyaW5nJyAgICAgICAgICAgICA6IDEsCgknU3ludGF4RXJyb3InICAgICAgICA6IDEsCgknVHlwZUVycm9yJyAgICAgICAgICA6IDEsCgknVVJJRXJyb3InICAgICAgICAgICA6IDEsCgknYXRvYicgICAgICAgICAgICAgICA6IDEsCgknYnRvYScgICAgICAgICAgICAgICA6IDEsCgknZGVjb2RlVVJJJyAgICAgICAgICA6IDEsCgknZGVjb2RlVVJJQ29tcG9uZW50JyA6IDEsCgknZW5jb2RlVVJJJyAgICAgICAgICA6IDEsCgknZW5jb2RlVVJJQ29tcG9uZW50JyA6IDEsCgknZXZhbCcgICAgICAgICAgICAgICA6IDEsCgknZ2xvYmFsJyAgICAgICAgICAgICA6IDEsCgknaXNGaW5pdGUnICAgICAgICAgICA6IDEsCgknaXNOYU4nICAgICAgICAgICAgICA6IDEsCgknb25tZXNzYWdlJyAgICAgICAgICA6IDEsCgkncGFyc2VGbG9hdCcgICAgICAgICA6IDEsCgkncGFyc2VJbnQnICAgICAgICAgICA6IDEsCgkncG9zdE1lc3NhZ2UnICAgICAgICA6IDEsCgknc2VsZicgICAgICAgICAgICAgICA6IDEsCgkndW5kZWZpbmVkJyAgICAgICAgICA6IDEsCgknd2hpdGV5JyAgICAgICAgICAgICA6IDEsCgoJLyogdHlwZWQgYXJyYXlzIGFuZCBzaGl0ICovCgknQXJyYXlCdWZmZXInICAgICAgIDogMSwKCSdCbG9iJyAgICAgICAgICAgICAgOiAxLAoJJ0Zsb2F0MzJBcnJheScgICAgICA6IDEsCgknRmxvYXQ2NEFycmF5JyAgICAgIDogMSwKCSdJbnQ4QXJyYXknICAgICAgICAgOiAxLAoJJ0ludDE2QXJyYXknICAgICAgICA6IDEsCgknSW50MzJBcnJheScgICAgICAgIDogMSwKCSdVaW50OEFycmF5JyAgICAgICAgOiAxLAoJJ1VpbnQxNkFycmF5JyAgICAgICA6IDEsCgknVWludDMyQXJyYXknICAgICAgIDogMSwKCSdVaW50OENsYW1wZWRBcnJheScgOiAxLAoKCS8qCgl0aGVzZSBwcm9wZXJ0aWVzIGFsbG93IEZGIHRvIGZ1bmN0aW9uLiB3aXRob3V0IHRoZW0sIGEgZnVja2Zlc3Qgb2YKCWluZXhwbGljYWJsZSBlcnJvcnMgZW51c2VzLiB0b29rIG1lIGFib3V0IDQgaG91cnMgdG8gdHJhY2sgdGhlc2UgZnVja2VycwoJZG93bi4KCWZ1Y2sgaGVsbCBpdCBpc24ndCBmdXR1cmUtcHJvb2YsIGJ1dCB0aGUgZXJyb3JzIHRocm93biBhcmUgdW5jYXRjaGFibGUKCWFuZCB1bnRyYWNhYmxlLiBzbyBhIGhlYWRzLXVwLiBlbmpveSwgZnV0dXJlLW1lIQoJKi8KCSdET01FeGNlcHRpb24nIDogMSwKCSdFdmVudCcgICAgICAgIDogMSwKCSdNZXNzYWdlRXZlbnQnIDogMSwKCSdXb3JrZXJNZXNzYWdlRXZlbnQnOiAxCn07CgpbIGdsb2JhbCwgT2JqZWN0LmdldFByb3RvdHlwZU9mKGdsb2JhbCkgXS5mb3JFYWNoKGZ1bmN0aW9uICggb2JqICkgewoJT2JqZWN0LmdldE93blByb3BlcnR5TmFtZXMoIG9iaiApLmZvckVhY2goZnVuY3Rpb24oIHByb3AgKSB7CgkJaWYoIHdoaXRleS5oYXNPd25Qcm9wZXJ0eShwcm9wKSApIHsKICAgICAgICAgICAgcmV0dXJuOwoJCX0KCiAgICAgICAgdHJ5IHsKICAgICAgICAgICAgT2JqZWN0LmRlZmluZVByb3BlcnR5KCBvYmosIHByb3AsIHsKICAgICAgICAgICAgICAgIGdldCA6IGZ1bmN0aW9uICgpIHsKICAgICAgICAgICAgICAgICAgICAvKiBURUUgSEVFICovCiAgICAgICAgICAgICAgICAgICAgdGhyb3cgbmV3IFJlZmVyZW5jZUVycm9yKCBwcm9wICsgJyBpcyBub3QgZGVmaW5lZCcgKTsKICAgICAgICAgICAgICAgIH0sCiAgICAgICAgICAgICAgICBjb25maWd1cmFibGUgOiBmYWxzZSwKICAgICAgICAgICAgICAgIGVudW1lcmFibGUgOiBmYWxzZQogICAgICAgICAgICB9KTsKICAgICAgICB9CiAgICAgICAgY2F0Y2ggKCBlICkgewogICAgICAgICAgICBkZWxldGUgb2JqWyBwcm9wIF07CgogICAgICAgICAgICBpZiAoIG9ialsgcHJvcCBdICE9PSB1bmRlZmluZWQgKSB7CiAgICAgICAgICAgICAgICBvYmpbIHByb3AgXSA9IG51bGw7CiAgICAgICAgICAgIH0KICAgICAgICB9Cgl9KTsKfSk7CgpPYmplY3QuZGVmaW5lUHJvcGVydHkoIEFycmF5LnByb3RvdHlwZSwgJ2pvaW4nLCB7Cgl3cml0YWJsZTogZmFsc2UsCgljb25maWd1cmFibGU6IGZhbHNlLAoJZW51bXJhYmxlOiBmYWxzZSwKCgl2YWx1ZTogKGZ1bmN0aW9uICggb2xkICkgewoJCXJldHVybiBmdW5jdGlvbiAoIGFyZyApIHsKCQkJaWYgKCB0aGlzLmxlbmd0aCA+IDUwMCB8fCAoYXJnICYmIGFyZy5sZW5ndGggPiA1MDApICkgewoJCQkJdGhyb3cgJ0V4Y2VwdGlvbjogdG9vIG1hbnkgaXRlbXMnOwoJCQl9CgoJCQlyZXR1cm4gb2xkLmFwcGx5KCB0aGlzLCBhcmd1bWVudHMgKTsKCQl9OwoJfSggQXJyYXkucHJvdG90eXBlLmpvaW4gKSkKfSk7CgovKiB3ZSBkZWZpbmUgaXQgb3V0c2lkZSBzbyBpdCdsbCBub3QgYmUgaW4gc3RyaWN0IG1vZGUgKi8KdmFyIGV4ZWMgPSBmdW5jdGlvbiAoIGNvZGUgKSB7CglyZXR1cm4gZXZhbCggJ3VuZGVmaW5lZDtcbicgKyBjb2RlICk7Cn0KdmFyIGNvbnNvbGUgPSB7CglfaXRlbXMgOiBbXSwKCWxvZyA6IGZ1bmN0aW9uKCkgewoJCWNvbnNvbGUuX2l0ZW1zLnB1c2guYXBwbHkoIGNvbnNvbGUuX2l0ZW1zLCBhcmd1bWVudHMgKTsKCX0KfTsKY29uc29sZS5lcnJvciA9IGNvbnNvbGUuaW5mbyA9IGNvbnNvbGUuZGVidWcgPSBjb25zb2xlLmxvZzsKdmFyIHAgPSBjb25zb2xlLmxvZy5iaW5kKCBjb25zb2xlICk7CgooZnVuY3Rpb24oKXsKCSJ1c2Ugc3RyaWN0IjsKCglnbG9iYWwub25tZXNzYWdlID0gZnVuY3Rpb24gKCBldmVudCApIHsKCQlwb3N0TWVzc2FnZSh7CgkJCWV2ZW50IDogJ3N0YXJ0JwoJCX0pOwoKCQl2YXIganNvblN0cmluZ2lmeSA9IEpTT04uc3RyaW5naWZ5LCAvKmJhY2t1cCovCgkJCXJlc3VsdDsKCgkJdHJ5IHsKCQkJcmVzdWx0ID0gZXhlYyggZXZlbnQuZGF0YSApOwoJCX0KCQljYXRjaCAoIGUgKSB7CgkJCXJlc3VsdCA9IGUudG9TdHJpbmcoKTsKCQl9CgoJCS8qSlNPTiBkb2VzIG5vdCBsaWtlIGFueSBvZiB0aGUgZm9sbG93aW5nKi8KCQl2YXIgc3RydW5nID0gewoJCQlGdW5jdGlvbiAgOiB0cnVlLCBFcnJvciAgOiB0cnVlLAoJCQlVbmRlZmluZWQgOiB0cnVlLCBSZWdFeHAgOiB0cnVlCgkJfTsKCQl2YXIgc2hvdWxkX3N0cmluZyA9IGZ1bmN0aW9uICggdmFsdWUgKSB7CgkJCXZhciB0eXBlID0gKCB7fSApLnRvU3RyaW5nLmNhbGwoIHZhbHVlICkuc2xpY2UoIDgsIC0xICk7CgoJCQlpZiAoIHR5cGUgaW4gc3RydW5nICkgewoJCQkJcmV0dXJuIHRydWU7CgkJCX0KCQkJLypuZWl0aGVyIGRvZXMgaXQgZmVlbCBjb21wYXNzaW9uYXRlIGFib3V0IE5hTiBvciBJbmZpbml0eSovCgkJCXJldHVybiB2YWx1ZSAhPT0gdmFsdWUgfHwgdmFsdWUgPT09IEluZmluaXR5OwoJCX07CgoJCXZhciByZXZpdmVyID0gZnVuY3Rpb24gKCBrZXksIHZhbHVlICkgewoJCQl2YXIgb3V0cHV0OwoKCQkJaWYgKCBzaG91bGRfc3RyaW5nKHZhbHVlKSApIHsKCQkJCW91dHB1dCA9ICcnICsgdmFsdWU7CgkJCX0KCQkJZWxzZSB7CgkJCQlvdXRwdXQgPSB2YWx1ZTsKCQkJfQoKCQkJcmV0dXJuIG91dHB1dDsKCQl9OwoKCQlwb3N0TWVzc2FnZSh7CgkJCWFuc3dlciA6IGpzb25TdHJpbmdpZnkoIHJlc3VsdCwgcmV2aXZlciApLAoJCQlsb2cgICAgOiBqc29uU3RyaW5naWZ5KCBjb25zb2xlLl9pdGVtcywgcmV2aXZlciApLnNsaWNlKCAxLCAtMSApCgkJfSk7Cgl9Owp9KSgpOwo=" );
+var worker_code = atob( 'dmFyIGdsb2JhbCA9IHRoaXM7CgovKm1vc3QgZXh0cmEgZnVuY3Rpb25zIGNvdWxkIGJlIHBvc3NpYmx5IHVuc2FmZSovCnZhciB3aGl0ZXkgPSB7CgknQXJyYXknICAgICAgICAgICAgICA6IDEsCgknQm9vbGVhbicgICAgICAgICAgICA6IDEsCgknY29uc29sZScgICAgICAgICAgICA6IDEsCgknRGF0ZScgICAgICAgICAgICAgICA6IDEsCgknRXJyb3InICAgICAgICAgICAgICA6IDEsCgknRXZhbEVycm9yJyAgICAgICAgICA6IDEsCgknZXhlYycgICAgICAgICAgICAgICA6IDEsCgknRnVuY3Rpb24nICAgICAgICAgICA6IDEsCgknSW5maW5pdHknICAgICAgICAgICA6IDEsCgknSlNPTicgICAgICAgICAgICAgICA6IDEsCgknTWF0aCcgICAgICAgICAgICAgICA6IDEsCgknTmFOJyAgICAgICAgICAgICAgICA6IDEsCgknTnVtYmVyJyAgICAgICAgICAgICA6IDEsCgknT2JqZWN0JyAgICAgICAgICAgICA6IDEsCgknUmFuZ2VFcnJvcicgICAgICAgICA6IDEsCgknUmVmZXJlbmNlRXJyb3InICAgICA6IDEsCgknUmVnRXhwJyAgICAgICAgICAgICA6IDEsCgknU3RyaW5nJyAgICAgICAgICAgICA6IDEsCgknU3ludGF4RXJyb3InICAgICAgICA6IDEsCgknVHlwZUVycm9yJyAgICAgICAgICA6IDEsCgknVVJJRXJyb3InICAgICAgICAgICA6IDEsCgknYXRvYicgICAgICAgICAgICAgICA6IDEsCgknYnRvYScgICAgICAgICAgICAgICA6IDEsCgknZGVjb2RlVVJJJyAgICAgICAgICA6IDEsCgknZGVjb2RlVVJJQ29tcG9uZW50JyA6IDEsCgknZW5jb2RlVVJJJyAgICAgICAgICA6IDEsCgknZW5jb2RlVVJJQ29tcG9uZW50JyA6IDEsCgknZXZhbCcgICAgICAgICAgICAgICA6IDEsCgknZ2xvYmFsJyAgICAgICAgICAgICA6IDEsCgknaXNGaW5pdGUnICAgICAgICAgICA6IDEsCgknaXNOYU4nICAgICAgICAgICAgICA6IDEsCgknb25tZXNzYWdlJyAgICAgICAgICA6IDEsCgkncGFyc2VGbG9hdCcgICAgICAgICA6IDEsCgkncGFyc2VJbnQnICAgICAgICAgICA6IDEsCgkncG9zdE1lc3NhZ2UnICAgICAgICA6IDEsCgknc2VsZicgICAgICAgICAgICAgICA6IDEsCgkndW5kZWZpbmVkJyAgICAgICAgICA6IDEsCgknd2hpdGV5JyAgICAgICAgICAgICA6IDEsCgoJLyogdHlwZWQgYXJyYXlzIGFuZCBzaGl0ICovCgknQXJyYXlCdWZmZXInICAgICAgIDogMSwKCSdCbG9iJyAgICAgICAgICAgICAgOiAxLAoJJ0Zsb2F0MzJBcnJheScgICAgICA6IDEsCgknRmxvYXQ2NEFycmF5JyAgICAgIDogMSwKCSdJbnQ4QXJyYXknICAgICAgICAgOiAxLAoJJ0ludDE2QXJyYXknICAgICAgICA6IDEsCgknSW50MzJBcnJheScgICAgICAgIDogMSwKCSdVaW50OEFycmF5JyAgICAgICAgOiAxLAoJJ1VpbnQxNkFycmF5JyAgICAgICA6IDEsCgknVWludDMyQXJyYXknICAgICAgIDogMSwKCSdVaW50OENsYW1wZWRBcnJheScgOiAxLAoKCS8qCgl0aGVzZSBwcm9wZXJ0aWVzIGFsbG93IEZGIHRvIGZ1bmN0aW9uLiB3aXRob3V0IHRoZW0sIGEgZnVja2Zlc3Qgb2YKCWluZXhwbGljYWJsZSBlcnJvcnMgZW51c2VzLiB0b29rIG1lIGFib3V0IDQgaG91cnMgdG8gdHJhY2sgdGhlc2UgZnVja2VycwoJZG93bi4KCWZ1Y2sgaGVsbCBpdCBpc24ndCBmdXR1cmUtcHJvb2YsIGJ1dCB0aGUgZXJyb3JzIHRocm93biBhcmUgdW5jYXRjaGFibGUKCWFuZCB1bnRyYWNhYmxlLiBzbyBhIGhlYWRzLXVwLiBlbmpveSwgZnV0dXJlLW1lIQoJKi8KCSdET01FeGNlcHRpb24nIDogMSwKCSdFdmVudCcgICAgICAgIDogMSwKCSdNZXNzYWdlRXZlbnQnIDogMSwKCSdXb3JrZXJNZXNzYWdlRXZlbnQnOiAxCn07CgpbIGdsb2JhbCwgT2JqZWN0LmdldFByb3RvdHlwZU9mKGdsb2JhbCkgXS5mb3JFYWNoKGZ1bmN0aW9uICggb2JqICkgewoJT2JqZWN0LmdldE93blByb3BlcnR5TmFtZXMoIG9iaiApLmZvckVhY2goZnVuY3Rpb24oIHByb3AgKSB7CgkJaWYoIHdoaXRleS5oYXNPd25Qcm9wZXJ0eShwcm9wKSApIHsKICAgICAgICAgICAgcmV0dXJuOwoJCX0KCiAgICAgICAgdHJ5IHsKICAgICAgICAgICAgT2JqZWN0LmRlZmluZVByb3BlcnR5KCBvYmosIHByb3AsIHsKICAgICAgICAgICAgICAgIGdldCA6IGZ1bmN0aW9uICgpIHsKICAgICAgICAgICAgICAgICAgICAvKiBURUUgSEVFICovCiAgICAgICAgICAgICAgICAgICAgdGhyb3cgbmV3IFJlZmVyZW5jZUVycm9yKCBwcm9wICsgJyBpcyBub3QgZGVmaW5lZCcgKTsKICAgICAgICAgICAgICAgIH0sCiAgICAgICAgICAgICAgICBjb25maWd1cmFibGUgOiBmYWxzZSwKICAgICAgICAgICAgICAgIGVudW1lcmFibGUgOiBmYWxzZQogICAgICAgICAgICB9KTsKICAgICAgICB9CiAgICAgICAgY2F0Y2ggKCBlICkgewogICAgICAgICAgICBkZWxldGUgb2JqWyBwcm9wIF07CgogICAgICAgICAgICBpZiAoIG9ialsgcHJvcCBdICE9PSB1bmRlZmluZWQgKSB7CiAgICAgICAgICAgICAgICBvYmpbIHByb3AgXSA9IG51bGw7CiAgICAgICAgICAgIH0KICAgICAgICB9Cgl9KTsKfSk7CgpPYmplY3QuZGVmaW5lUHJvcGVydHkoIEFycmF5LnByb3RvdHlwZSwgJ2pvaW4nLCB7Cgl3cml0YWJsZTogZmFsc2UsCgljb25maWd1cmFibGU6IGZhbHNlLAoJZW51bXJhYmxlOiBmYWxzZSwKCgl2YWx1ZTogKGZ1bmN0aW9uICggb2xkICkgewoJCXJldHVybiBmdW5jdGlvbiAoIGFyZyApIHsKCQkJaWYgKCB0aGlzLmxlbmd0aCA+IDUwMCB8fCAoYXJnICYmIGFyZy5sZW5ndGggPiA1MDApICkgewoJCQkJdGhyb3cgJ0V4Y2VwdGlvbjogdG9vIG1hbnkgaXRlbXMnOwoJCQl9CgoJCQlyZXR1cm4gb2xkLmFwcGx5KCB0aGlzLCBhcmd1bWVudHMgKTsKCQl9OwoJfSggQXJyYXkucHJvdG90eXBlLmpvaW4gKSkKfSk7CgovKiB3ZSBkZWZpbmUgaXQgb3V0c2lkZSBzbyBpdCdsbCBub3QgYmUgaW4gc3RyaWN0IG1vZGUgKi8KdmFyIGV4ZWMgPSBmdW5jdGlvbiAoIGNvZGUgKSB7CglyZXR1cm4gZXZhbCggJ3VuZGVmaW5lZDtcbicgKyBjb2RlICk7Cn0KdmFyIGNvbnNvbGUgPSB7CglfaXRlbXMgOiBbXSwKCWxvZyA6IGZ1bmN0aW9uKCkgewoJCWNvbnNvbGUuX2l0ZW1zLnB1c2guYXBwbHkoIGNvbnNvbGUuX2l0ZW1zLCBhcmd1bWVudHMgKTsKCX0KfTsKY29uc29sZS5lcnJvciA9IGNvbnNvbGUuaW5mbyA9IGNvbnNvbGUuZGVidWcgPSBjb25zb2xlLmxvZzsKCihmdW5jdGlvbigpewoJInVzZSBzdHJpY3QiOwoKCWdsb2JhbC5vbm1lc3NhZ2UgPSBmdW5jdGlvbiAoIGV2ZW50ICkgewoJCXBvc3RNZXNzYWdlKHsKCQkJZXZlbnQgOiAnc3RhcnQnCgkJfSk7CgoJCXZhciBqc29uU3RyaW5naWZ5ID0gSlNPTi5zdHJpbmdpZnksIC8qYmFja3VwKi8KCQkJcmVzdWx0OwoKCQl0cnkgewoJCQlyZXN1bHQgPSBleGVjKCBldmVudC5kYXRhICk7CgkJfQoJCWNhdGNoICggZSApIHsKCQkJcmVzdWx0ID0gZS50b1N0cmluZygpOwoJCX0KCgkJLypKU09OIGRvZXMgbm90IGxpa2UgYW55IG9mIHRoZSBmb2xsb3dpbmcqLwoJCXZhciBzdHJ1bmcgPSB7CgkJCUZ1bmN0aW9uICA6IHRydWUsIEVycm9yICA6IHRydWUsCgkJCVVuZGVmaW5lZCA6IHRydWUsIFJlZ0V4cCA6IHRydWUKCQl9OwoJCXZhciBzaG91bGRfc3RyaW5nID0gZnVuY3Rpb24gKCB2YWx1ZSApIHsKCQkJdmFyIHR5cGUgPSAoIHt9ICkudG9TdHJpbmcuY2FsbCggdmFsdWUgKS5zbGljZSggOCwgLTEgKTsKCgkJCWlmICggdHlwZSBpbiBzdHJ1bmcgKSB7CgkJCQlyZXR1cm4gdHJ1ZTsKCQkJfQoJCQkvKm5laXRoZXIgZG9lcyBpdCBmZWVsIGNvbXBhc3Npb25hdGUgYWJvdXQgTmFOIG9yIEluZmluaXR5Ki8KCQkJcmV0dXJuIHZhbHVlICE9PSB2YWx1ZSB8fCB2YWx1ZSA9PT0gSW5maW5pdHk7CgkJfTsKCgkJdmFyIHJldml2ZXIgPSBmdW5jdGlvbiAoIGtleSwgdmFsdWUgKSB7CgkJCXZhciBvdXRwdXQ7CgoJCQlpZiAoIHNob3VsZF9zdHJpbmcodmFsdWUpICkgewoJCQkJb3V0cHV0ID0gJycgKyB2YWx1ZTsKCQkJfQoJCQllbHNlIHsKCQkJCW91dHB1dCA9IHZhbHVlOwoJCQl9CgoJCQlyZXR1cm4gb3V0cHV0OwoJCX07CgoJCXBvc3RNZXNzYWdlKHsKCQkJYW5zd2VyIDoganNvblN0cmluZ2lmeSggcmVzdWx0LCByZXZpdmVyICksCgkJCWxvZyAgICA6IGpzb25TdHJpbmdpZnkoIGNvbnNvbGUuX2l0ZW1zLCByZXZpdmVyICkuc2xpY2UoIDEsIC0xICkKCQl9KTsKCX07Cn0pKCk7Cg==' );
 var blob = new Blob( [worker_code], { type : 'application/javascript' } ),
 	code_url = window.URL.createObjectURL( blob );
 
@@ -1220,11 +1226,9 @@ setTimeout(function () {
     IO.injectScript( 'https://raw.github.com/jashkenas/coffee-script/master/extras/coffee-script.js' );
 }, 1000);
 
-return function ( msg, cb ) {
+return function ( code, cb ) {
 	var worker = new Worker( code_url ),
 		timeout;
-
-	var code = msg.toString();
 
 	if ( code[0] === 'c' ) {
 		code = CoffeeScript.compile( code.replace(/^c>/, ''), {bare:1} );
@@ -1250,13 +1254,14 @@ return function ( msg, cb ) {
 
 	//and it all boils down to this...
 	worker.postMessage( code );
+	//so fucking cool.
 
 	function start () {
 		if ( timeout ) {
 			return;
 		}
 
-		timeout = window.setTimeout(function() {
+		timeout = window.setTimeout(function () {
 			finish( 'Maximum execution time exceeded' );
 		}, 500 );
 	}
@@ -1269,7 +1274,7 @@ return function ( msg, cb ) {
 			cb( result );
 		}
 		else {
-			msg.directreply( result );
+			console.warn( 'eval did not get callback' );
 		}
 	}
 };
@@ -1516,6 +1521,114 @@ return function () {
 
 }());
 
+//(function () {
+"use strict";
+
+var macros = {
+	who : function ( msgObj ) {
+		return msgObj.get( 'user_name' );
+	},
+
+	someone : function () {
+		var presentUsers = document.getElementById( 'sidebar' )
+			.getElementsByClassName( 'present-user' );
+
+		//the chat keeps a low opacity for users who remained silent for long,
+		// and high opacity for those who recently talked
+		var active = [].filter.call( presentUsers, function ( user ) {
+			return Number( user.style.opacity ) >= 0.5;
+		}),
+		user = active[ Math.floor(Math.random() * (active.length-1)) ];
+
+		if ( !user ) {
+			return 'Nobody';
+		}
+
+		return user.getElementsByTagName( 'img' )[ 0 ].title;
+	},
+
+	digit : function () {
+		return Math.floor( Math.random() * 10 );
+	},
+
+	encode : function ( msgObj, string ) {
+		return encodeURIComponent( string );
+	},
+
+	//random number, min <= n <= max
+	//treats non-numeric inputs like they don't exist
+	rand : function ( msgObj, min, max ) {
+		min = Number( min );
+		max = Number( max );
+		return Math.rand( min, max );
+	}
+};
+var macroRegex = /(?:.|^)\$(\w+)(?:\((.*?)\))?/g;
+
+bot.parseMacro = function parse ( source, extraVars ) {
+	return source.replace( macroRegex, replaceMacro );
+
+	function replaceMacro ( $0, filler, fillerArgs ) {
+		//$$ makes a literal $
+		if ( $0.startsWith('$$') ) {
+			return $0.slice( 1 );
+		}
+
+		//include the character that was matched in the $$ check, unless
+		// it's a $
+		var ret = '';
+		if ( $0[0] !== '$' ) {
+			ret = $0[ 0 ];
+		}
+
+		var macro = findMacro( filler );
+
+		//not found? bummer.
+		if ( !macro ) {
+			return filler;
+		}
+
+		bot.log( macro, filler, fillerArgs, '/parse replaceMacro' );
+		//when the macro is a function
+		if ( macro.apply ) {
+			ret += macro.apply( null, parseMacroArgs(fillerArgs) );
+		}
+		//when the macro is simply a substitution
+		else {
+			ret += macro;
+		}
+		return ret;
+	}
+
+	function parseMacroArgs ( macroArgs ) {
+		bot.log( macroArgs, '/parse parseMacroArgs' );
+		if ( !macroArgs ) {
+			return [ source ];
+		}
+
+		//parse the arguments, split them into individual arguments,
+		// and trim'em (to cover the case of "arg,arg" and "arg, arg")
+		return (
+			[ source ].concat(
+				parse( macroArgs, extraVars )
+					.split( ',' ).invoke( 'trim' ) ) );
+		//this is not good code
+	}
+
+	function findMacro ( macro ) {
+		var container = [ macros, extraVars ].first( hasMacro );
+
+		return ( container || {} )[ macro ];
+
+		function hasMacro ( obj ) {
+			return obj && obj.hasOwnProperty( macro );
+		}
+	}
+};
+
+
+//})();
+
 //a Trie suggestion dictionary, made by Esailija (small fixes by God)
 // http://stackoverflow.com/users/995876/esailija
 //used in the "command not found" message to show you closest commands
@@ -1724,6 +1837,8 @@ var commands = {
 	},
 
 	eval : function ( msg, cb ) {
+		cb = cb || msg.directreply.bind( msg );
+
 		return bot.eval( msg, cb );
 	},
 	coffee : function ( msg, cb ) {
@@ -1978,119 +2093,15 @@ return function ( args ) {
 
 commands.eval.async = commands.coffee.async = true;
 
-var parse = commands.parse = (function () {
-var macros = {
-	who : function ( msgObj ) {
-		return msgObj.get( 'user_name' );
-	},
+commands.parse = function ( args ) {
+	var msgObj = args.get(),
+		user = bot.users[ args.get('user_id') ],
 
-	someone : function () {
-		var presentUsers = document.getElementById( 'sidebar' )
-			.getElementsByClassName( 'present-user' );
-
-		//the chat keeps a low opacity for users who remained silent for long,
-		// and high opacity for those who recently talked
-		var active = [].filter.call( presentUsers, function ( user ) {
-			return Number( user.style.opacity ) >= 0.5;
-		}),
-		user = active[ Math.floor(Math.random() * (active.length-1)) ];
-
-		if ( !user ) {
-			return 'Nobody';
-		}
-
-		return user.getElementsByTagName( 'img' )[ 0 ].title;
-	},
-
-	digit : function () {
-		return Math.floor( Math.random() * 10 );
-	},
-
-	encode : function ( msgObj, string ) {
-		return encodeURIComponent( string );
-	},
-
-	//random number, min <= n <= max
-	//treats non-numeric inputs like they don't exist
-	rand : function ( msgObj, min, max ) {
-		min = Number( min );
-		max = Number( max );
-		return Math.rand( min, max );
-	}
-};
-var macroRegex = /(?:.|^)\$(\w+)(?:\((.*?)\))?/g;
-
-//extraVars is for internal usage via other commands
-return function parse ( args, extraVars ) {
-	var isMsg = !!args.get,
-		//filler objects, solves
-		// https://github.com/Zirak/SO-ChatBot/issues/66
-		msgObj = isMsg ? args.get() : {},
-		user = isMsg ? bot.users[ args.get('user_id') ] : {};
-
-	extraVars = extraVars || {};
+	    extraVars = Object.merge( msgObj, user );
 	bot.log( args, extraVars, '/parse input' );
 
-	return args.replace( macroRegex, replaceMacro );
-
-	function replaceMacro ( $0, filler, fillerArgs ) {
-		//$$ makes a literal $
-		if ( $0.startsWith('$$') ) {
-			return $0.slice( 1 );
-		}
-
-		//include the character that was matched in the $$ check, unless
-		// it's a $
-		var ret = '';
-		if ( $0[0] !== '$' ) {
-			ret = $0[ 0 ];
-		}
-
-		var macro = findMacro( filler );
-
-		//not found? bummer.
-		if ( !macro ) {
-			return filler;
-		}
-
-		bot.log( macro, filler, fillerArgs, '/parse replaceMacro' );
-		//when the macro is a function
-		if ( macro.apply ) {
-			ret += macro.apply( null, parseMacroArgs(fillerArgs) );
-		}
-		//when the macro is simply a substitution
-		else {
-			ret += macro;
-		}
-		return ret;
-	}
-
-	function parseMacroArgs ( macroArgs ) {
-		bot.log( macroArgs, '/parse parseMacroArgs' );
-		if ( !macroArgs ) {
-			return [ args ];
-		}
-
-		//parse the arguments, split them into individual arguments,
-		// and trim'em (to cover the case of "arg,arg" and "arg, arg")
-		return (
-			[ args ].concat(
-				parse( macroArgs, extraVars )
-					.split( ',' ).invoke( 'trim' ) ) );
-		//this is not good code
-	}
-
-	function findMacro ( macro ) {
-		var container = [ macros, msgObj, user, extraVars ].first( hasMacro );
-
-		return ( container || {} )[ macro ];
-
-		function hasMacro ( obj ) {
-			return obj && obj.hasOwnProperty( macro );
-		}
-	}
+	return bot.parseMacro( args.toString(), extraVars );
 };
-}());
 
 commands.tell = (function () {
 var invalidCommands = { tell : true, forget : true };
@@ -5026,7 +5037,6 @@ bot.addCommand({
 ;
 (function () {
 "use strict";
-var parse = bot.getCommand( 'parse' );
 var storage = bot.memory.get( 'learn' );
 
 var replyPatterns = /^(<>|<user>|<msg>)/i,
@@ -5113,7 +5123,7 @@ function makeCustomCommand ( command ) {
 			return mismatchErrMessage.supplant( command );
 		}
 
-		var res = parse.exec( cmdArgs, parts );
+		var res = bot.parseMacro( cmdArgs, parts );
 
 		switch ( replyMethod ) {
 		case '':
@@ -5608,7 +5618,7 @@ function giveVoice ( id, cb ) {
 	});
 
 	function finish () {
-		var args = [].slice.call( arguments );
+		var args = Array.from( arguments );
 		args.unshift( id );
 
 		delete muted[ id ];
@@ -6038,7 +6048,7 @@ function substitute ( msg ) {
 }
 
 function get_matching_message ( re, onlyBefore ) {
-	var messages = [].slice.call(
+	var messages = Array.from(
 		document.getElementsByClassName('content') ).reverse();
 	return messages.first( matches );
 
