@@ -229,13 +229,13 @@ Math.gcd = function ( a, b ) {
 
 Math.rand = function ( min, max ) {
 	//rand() === rand( 0, 9 )
-	if ( !min ) {
+	if ( typeof min === 'undefined' ) {
 		min = 0;
 		max = 9;
 	}
 
 	//rand( max ) === rand( 0, max )
-	else if ( !max ) {
+	else if ( typeof max === 'undefined' ) {
 		max = min;
 		min = 0;
 	}
