@@ -39,12 +39,14 @@ IO.register( 'input', function meme ( msgObj ) {
 bot.addCommand({
 	name : 'meme',
 	fun : function ( args ) {
-		if ( !memes[args] ) {
+		var name = args.replace( /\.\w+$/, '' );
+
+		if ( !memes[name] ) {
 			return 'Sorry, I don\'t know that one.';
 		}
 		//TODO: list possible memes (reply with Object.keys(meme))
 
-		args.directreply( getMemeLink(args) );
+		args.directreply( getMemeLink(name) );
 	},
 	permissions : { del : 'NONE' },
 	description : 'Return a simple meme link. `/meme memeName`'
