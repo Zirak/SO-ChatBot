@@ -3,18 +3,36 @@
 var cache = {};
 
 function urban ( args, cb ) {
-	if ( !args.length ) {
-		return 'Y U NO PROVIDE ARGUMENTS!?';
-	}
-
 	if ( cache[args] ) {
 		return finish( cache[args] );
 	}
 
+	var parts = args.parse(),
+		query, resultIndex;
+
+	if ( !parts.length ) {
+		return 'Y U NO PROVIDE ARGUMENTS!?';
+	}
+
+	// /urban query in several words
+	if ( isNaN(parts[1]) ) {
+		bot.log( '/urban input isNaN' );
+		query = args.toString();
+		resultIndex = 0;
+	}
+	// /urban query index
+	else {
+		bot.log( '/urban input isn\'t NaN' );
+		query = parts[ 0 ];
+		resultIndex = Number( parts[1] );
+	}
+
+	bot.log( query, resultIndex, '/urban input' );
+
 	IO.jsonp({
 		url : 'http://api.urbandictionary.com/v0/define',
 		data : {
-			term : args.content
+			term : query
 		},
 		jsonpName : 'callback',
 		fun : complete
@@ -24,10 +42,14 @@ function urban ( args, cb ) {
 		var msg;
 
 		if ( resp.result_type === 'no_results' ) {
-			msg = 'No definition found for ' + args;
+			msg = 'No definition found for ' + query;
+		}
+		else if ( resultIndex > resp.list.length ) {
+			msg = 'Nothing in that index. The last one is:\n' +
+				formatTop( resp.list.pop() );
 		}
 		else {
-			msg = formatTop( resp.list[0] );
+			msg = formatTop( resp.list[resultIndex] );
 		}
 		cache[ args ] = msg;
 
@@ -64,7 +86,8 @@ bot.addCommand({
 
 	permissions : { del : 'NONE', use : 'ALL' },
 
-	description : 'Fetches UrbanDictionary definition. `/urban something`',
+	description : 'Fetches UrbanDictionary definition. ' +
+		'`/urban query [index=0]`',
 	async : true
 });
 
