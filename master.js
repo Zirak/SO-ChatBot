@@ -568,13 +568,13 @@ Math.gcd = function ( a, b ) {
 
 Math.rand = function ( min, max ) {
 	//rand() === rand( 0, 9 )
-	if ( !min ) {
+	if ( typeof min === 'undefined' ) {
 		min = 0;
 		max = 9;
 	}
 
 	//rand( max ) === rand( 0, max )
-	else if ( !max ) {
+	else if ( typeof max === 'undefined' ) {
 		max = min;
 		min = 0;
 	}
@@ -3041,6 +3041,8 @@ bot.listen(
 bot.listen( /^bitch/i, bot.personality.bitch, bot.personality );
 
 ;
+
+;
 (function () {
 var hammers = {
 	STOP  : 'HAMMERTIME!',
@@ -3286,8 +3288,6 @@ IO.register( 'input', function afkInputListener ( msgObj ) {
 });
 
 })();
-
-;
 
 ;
 (function () {
@@ -4214,8 +4214,6 @@ bot.addCommand({
 }());
 
 ;
-
-;
 (function () {
 var findCommand = function ( args ) {
     var input = args.toString().toLowerCase(),
@@ -4275,8 +4273,6 @@ bot.addCommand({
         'name/description. `/findCommand partOfNameOrDescription`'
 });
 })();
-
-;
 
 ;
 //listener to help decide which Firefly episode to watch
@@ -4422,6 +4418,8 @@ bot.addCommand({
 		'`/github repoName` or `/github username/reponame`',
 	async : true
 });
+
+;
 
 ;
 (function () {
@@ -5033,8 +5031,6 @@ bot.addCommand({
 })();
 
 ;
-
-;
 (function () {
 "use strict";
 var storage = bot.memory.get( 'learn' );
@@ -5274,8 +5270,6 @@ bot.addCommand({
 })();
 
 ;
-
-;
 (function () {
 "use strict";
 
@@ -5409,6 +5403,8 @@ IO.register( 'userregister', function tracker ( user, room ) {
 })();
 
 ;
+
+;
 (function () {
 
 function norris ( args, cb ) {
@@ -5449,8 +5445,6 @@ bot.addCommand({
 });
 
 })();
-
-;
 
 ;
 (function () {
@@ -5843,8 +5837,6 @@ bot.addCommand({
 });
 
 })();
-
-;
 
 ;
 (function () {
@@ -6564,8 +6556,6 @@ bot.addCommand({
 });
 
 })();
-
-;
 
 ;
 IO.register( 'input', function ( msgObj ) {
