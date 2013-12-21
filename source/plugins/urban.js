@@ -87,7 +87,7 @@ bot.addCommand({
 	permissions : { del : 'NONE', use : 'ALL' },
 
 	description : 'Fetches UrbanDictionary definition. ' +
-		'`/urban query [index=0]`',
+		'`/urban query [resultIndex=0]`',
 	async : true
 });
 
