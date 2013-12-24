@@ -257,28 +257,19 @@ var partition = function ( list, maxSize ) {
 
 return function ( args ) {
 	var commands = Object.keys( bot.commands ),
-		pagination = ' (page {0}/{1})',
 		user_name = args.get( 'user_name' ),
 		// 500 is the max, -2 for @ and space.
-		maxSize = 498 - pagination.length - user_name.length,
+		maxSize = 498 - user_name.length,
 		//TODO: only call this when commands were learned/forgotten since last
-		partitioned = partition( commands, maxSize ),
+		partitioned = partition( commands, maxSize );
+    
+    var lines = [];
+    for (var i = 0; i < partitioned.length; i++) {
+        lines.push(partitioned[i].join(', '));
+    }
+    var ret = lines.join('\n');
 
-		valid = /^(\d+|$)/.test( args.content ),
-		page = Number( args.content ) || 0;
-
-	if ( page >= partitioned.length || !valid ) {
-		return args.codify( [
-			'StackOverflow: Could not access page.',
-			'IndexError: index out of range',
-			'java.lang.IndexOutOfBoundsException',
-			'IndexOutOfRangeException'
-		].random() );
-	}
-
-	var ret = partitioned[ page ].join( ', ' );
-
-	return ret + pagination.supplant( page, partitioned.length-1 );
+	return ret;
 };
 })();
 
@@ -389,7 +380,7 @@ var descriptions = {
 		' `/help [cmdName]`',
 	info : 'Grabs some stats on my current instance or a command.' +
 		' `/info [cmdName]`',
-	listcommands : 'Lists commands. `/listcommands [page=0]`',
+	listcommands : 'Lists commands. `/listcommands`',
 	listen : 'Forwards the message to my ears (as if called without the /)',
 	live : 'Resurrects me (:D) if I\'m down (D:)',
 	parse : 'Returns result of "parsing" message according to the my mini' +
