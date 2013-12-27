@@ -468,6 +468,7 @@ var output = bot.adapter.out = {
 			text : msg + '\n',
 			room : roomid || bot.adapter.roomid
 		});
+		IO.out.flush();
 	},
 
 	//send output to all the good boys and girls
@@ -485,7 +486,7 @@ var output = bot.adapter.out = {
 
 		// #152, wait a bit before sending output.
 		setTimeout(function () {
-			this.sendToRoom( obj.text, obj.room );
+			output.sendToRoom( obj.text, obj.room );
 		}, this.flushWait );
 	},
 
