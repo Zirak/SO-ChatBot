@@ -1892,22 +1892,6 @@ var commands = {
 		return commands.eval( arg, cb );
 	},
 
-	live : function () {
-		if ( !bot.stopped ) {
-			return 'I\'m not dead! Honest!';
-		}
-		bot.continue();
-		return 'And on this day, you shall paint eggs for a giant bunny.';
-	},
-
-	die : function () {
-		if ( bot.stopped ) {
-			return 'Kill me once, shame on you, kill me twice...';
-		}
-		bot.stop();
-		return 'You killed me!';
-	},
-
 	refresh : function() {
 		window.location.reload();
     },
@@ -1926,77 +1910,6 @@ var commands = {
 
 		cmd.del();
 		return 'Command ' + name + ' forgotten.';
-	},
-
-	ban : function ( args ) {
-		var ret = [];
-		if ( args.content ) {
-			args.parse().forEach( ban );
-		}
-		else {
-			ret = Object.keys( bot.banlist ).filter( Number ).map( format );
-		}
-
-		return ret.join( ' ' ) || 'Nothing to show/do.';
-
-		function ban ( usrid ) {
-			var id = Number( usrid ),
-				msg;
-			if ( isNaN(id) ) {
-				id = args.findUserid( usrid.replace(/^@/, '') );
-			}
-
-			if ( id < 0 ) {
-				msg = 'Cannot find user {0}.';
-			}
-			else if ( bot.isOwner(id) ) {
-				msg = 'Cannot mindjail owner {0}.';
-			}
-			else if ( bot.banlist.contains(id) ) {
-				msg = 'User {0} already in mindjail.';
-			}
-			else {
-				bot.banlist.add( id );
-				msg = 'User {0} added to mindjail.';
-			}
-
-			ret.push( msg.supplant(usrid) );
-		}
-
-		function format ( id ) {
-			var user = bot.users[ id ],
-				name = user ? user.name : '?';
-
-			return '{0} ({1})'.supplant( id, name );
-		}
-	},
-
-	unban : function ( args ) {
-		var ret = [];
-		args.parse().forEach( unban );
-
-		return ret.join( ' ' );
-
-		function unban ( usrid ) {
-			var id = Number( usrid ),
-				msg;
-			if ( isNaN(id) ) {
-				id = args.findUserid( usrid.replace(/^@/, '') );
-			}
-
-			if ( id < 0 ) {
-				msg = 'Cannot find user {0}.';
-			}
-			else if ( !bot.banlist.contains(id) ) {
-				msg = 'User {0} isn\'t in mindjail.';
-			}
-			else {
-				bot.banlist.remove( id );
-				msg = 'User {0} freed from mindjail!';
-			}
-
-			ret.push( msg.supplant(usrid) );
-		}
 	},
 
 	//a lesson on semi-bad practices and laziness
@@ -2060,27 +1973,6 @@ var commands = {
 
 			return ret.join( ', ' ) || 'haven\'t done anything yet!';
 		}
-	},
-
-	choose : function ( args ) {
-		return 'Deprecated command - use the weasel (should I ... or ...)';
-	},
-
-	user : function ( args ) {
-		var props = args.parse(),
-			usrid = props[ 0 ] || args.get( 'user_id' ),
-			id = usrid;
-
-		//check for searching by username
-		if ( !(/^\d+$/.test(usrid)) ) {
-			id = args.findUserid( usrid );
-
-			if ( id < 0 ) {
-				return 'Can\'t find user ' + usrid + ' in this chatroom.';
-			}
-		}
-
-		args.directreply( 'http://stackoverflow.com/users/' + id );
 	}
 };
 
@@ -2137,16 +2029,6 @@ return function ( args ) {
 })();
 
 commands.eval.async = commands.coffee.async = true;
-
-commands.parse = function ( args ) {
-	var msgObj = args.get(),
-		user = bot.users[ args.get('user_id') ],
-
-	    extraVars = Object.merge( msgObj, user );
-	bot.log( args, extraVars, '/parse input' );
-
-	return bot.parseMacro( args.toString(), extraVars );
-};
 
 commands.tell = (function () {
 var invalidCommands = { tell : true, forget : true };
@@ -2232,10 +2114,6 @@ return function ( args ) {
 }());
 
 var descriptions = {
-	ban : 'Bans user(s) from using me. Lacking arguments, prints the banlist.' +
-		' `/ban [usr_id|usr_name, [...]]`',
-	choose : '(Deprecated)',
-	die  : 'Kills me :(',
 	eval : 'Forwards message to javascript code-eval',
 	coffee : 'Forwards message to coffeescript code-eval',
 	forget : 'Forgets a given command. `/forget cmdName`',
@@ -2245,14 +2123,9 @@ var descriptions = {
 		' `/info [cmdName]`',
 	listcommands : 'Lists commands. `/listcommands [page=0]`',
 	listen : 'Forwards the message to my ears (as if called without the /)',
-	live : 'Resurrects me (:D) if I\'m down (D:)',
-	parse : 'Returns result of "parsing" message according to the my mini' +
-		'-macro capabilities (see online docs)',
 	refresh : 'Reloads the browser window I live in',
 	tell : 'Redirect command result to user/message.' +
-		' /tell `msg_id|usr_name cmdName [cmdArgs]`',
-	unban : 'Removes a user from my mindjail. `/unban usr_id|usr_name`',
-	user : 'Fetches user-link for specified user. `/user usr_id|usr_name`',
+		' /tell `msg_id|usr_name cmdName [cmdArgs]`'
 };
 
 //only allow owners to use certain commands
@@ -3368,6 +3241,99 @@ bot.addCommand({
 });
 
 }());
+
+;
+(function () {
+
+function ban ( args ) {
+	var ret = [];
+	if ( args.content ) {
+		args.parse().forEach( ban );
+	}
+	else {
+		ret = Object.keys( bot.banlist ).filter( Number ).map( format );
+	}
+
+	return ret.join( ' ' ) || 'Nothing to show/do.';
+
+	function ban ( usrid ) {
+		var id = Number( usrid ),
+		    msg;
+		if ( isNaN(id) ) {
+			id = args.findUserid( usrid.replace(/^@/, '') );
+		}
+
+		if ( id < 0 ) {
+			msg = 'Cannot find user {0}.';
+		}
+		else if ( bot.isOwner(id) ) {
+			msg = 'Cannot mindjail owner {0}.';
+		}
+		else if ( bot.banlist.contains(id) ) {
+			msg = 'User {0} already in mindjail.';
+		}
+		else {
+			bot.banlist.add( id );
+			msg = 'User {0} added to mindjail.';
+		}
+
+		ret.push( msg.supplant(usrid) );
+	}
+
+	function format ( id ) {
+		var user = bot.users[ id ],
+		name = user ? user.name : '?';
+
+		return '{0} ({1})'.supplant( id, name );
+	}
+}
+
+function unban ( args ) {
+	var ret = [];
+	args.parse().forEach( unban );
+
+	return ret.join( ' ' );
+
+	function unban ( usrid ) {
+		var id = Number( usrid ),
+		    msg;
+
+		if ( isNaN(id) ) {
+			id = args.findUserid( usrid.replace(/^@/, '') );
+		}
+
+		if ( id < 0 ) {
+			msg = 'Cannot find user {0}.';
+		}
+		else if ( !bot.banlist.contains(id) ) {
+			msg = 'User {0} isn\'t in mindjail.';
+		}
+		else {
+			bot.banlist.remove( id );
+			msg = 'User {0} freed from mindjail!';
+		}
+
+		ret.push( msg.supplant(usrid) );
+	}
+}
+bot.addCommand(bot.CommunityCommand({
+	name : 'ban',
+	fun : ban,
+	permissions : { del : 'NONE', use : 'OWNER' },
+	description : 'Bans user(s) from using me. Lacking arguments, prints the ' +
+		'banlist. `/ban [usr_id|usr_name, [...]]`'
+}));
+
+bot.addCommand({
+	name : 'unban',
+	fun : unban,
+	permissions : { del : 'NONE', use : 'OWNER' },
+	description : 'Removes a user from my mindjail. `/unban usr_id|usr_name`'
+});
+
+})();
+
+;
 
 ;
 (function () {
@@ -5276,6 +5242,37 @@ loadCommands();
 }());
 
 ;
+bot.addCommand({
+	name : 'live',
+	fun : function () {
+		if ( !bot.stopped ) {
+			return 'I\'m not dead! Honest!';
+		}
+		bot.continue();
+		return 'And on this day, you shall paint eggs for a giant bunny.';
+	},
+	permissions : { del : 'NONE', use : 'OWNER' },
+	description : 'Resurrects me (:D) if I\'m down (D:)',
+});
+
+bot.addCommand(bot.CommunityCommand({
+	name : 'die',
+	fun : function () {
+		if ( bot.stopped ) {
+			return 'Kill me once, shame on you, kill me twice...';
+		}
+
+		bot.stop();
+
+		return 'You killed me!';
+	},
+	permissions : { del : 'NONE', use : 'OWNER' },
+	description : 'Kills me :(',
+}));
+
+;
+
+;
 (function () {
 
 function mdn ( args, cb ) {
@@ -5679,6 +5676,26 @@ function nudgeListener ( args ) {
 }
 
 }());
+
+;
+bot.addCommand({
+	name : 'parse',
+	fun : function ( args ) {
+		var msgObj = args.get(),
+			user = bot.users[ args.get('user_id') ],
+
+	    extraVars = Object.merge( msgObj, user );
+		bot.log( args, extraVars, '/parse input' );
+
+		return bot.parseMacro( args.toString(), extraVars );
+	},
+	permissions : { del : 'NONE', use : 'ALL' },
+
+	description : 'Returns result of "parsing" message according to the my ' +
+		'mini-macro capabilities (see online docs)',
+});
+
+;
 
 ;
 (function () {
@@ -6687,6 +6704,30 @@ bot.addCommand({
 });
 
 })();
+
+;
+bot.addCommand({
+	name : 'user',
+	fun : function ( args ) {
+		var props = args.parse(),
+			usrid = props[ 0 ] || args.get( 'user_id' ),
+			id = usrid;
+
+		//check for searching by username
+		if ( !(/^\d+$/.test(usrid)) ) {
+			id = args.findUserid( usrid );
+
+			if ( id < 0 ) {
+				return 'Can\'t find user ' + usrid + ' in this chatroom.';
+			}
+		}
+
+		args.directreply( 'http://stackoverflow.com/users/' + id );
+	},
+	permissions : { del : 'NONE', use : 'ALL' },
+	description : 'Fetches user-link for specified user. ' +
+		'`/user usr_id|usr_name`',
+});
 
 ;
 IO.register( 'input', function ( msgObj ) {
