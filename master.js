@@ -2965,35 +2965,6 @@ bot.listen(
 bot.listen( /^bitch/i, bot.personality.bitch, bot.personality );
 
 ;
-
-;
-(function () {
-var hammers = {
-	STOP  : 'HAMMERTIME!',
-	STAHP : 'HAMMAHTIME!',
-	HALT  : 'HAMMERZEIT!',
-	STOY  : 'ZABIVAT\' VREMYA!',
-	CAESUM: 'MALLEUS TEMPUS!'
-};
-
-// /(STOP|STAHP|...)[\.!\?]?$/
-var re = new RegExp(
-	'(' +
-		Object.keys(hammers).map(RegExp.escape).join('|') +
-	')[\\.!?]?$' );
-
-IO.register( 'input', function STOP ( msgObj ) {
-	var sentence = msgObj.content.toUpperCase(),
-		res = re.exec( sentence );
-
-	if ( res ) {
-		bot.adapter.out.add( hammers[res[1]], msgObj.room_id );
-	}
-});
-
-})();
-
-;
 //solves #86, mostly written by @Shmiddty
 (function () {
 "use strict";
@@ -3338,8 +3309,6 @@ bot.addCommand({
 });
 
 })();
-
-;
 
 ;
 (function () {
@@ -4145,6 +4114,71 @@ bot.addCommand({
 
 ;
 (function () {
+"use strict";
+
+var defaults = {
+	message: 'fail,user,pro',
+	spaces: [25,14,1],
+	jitter: 4,
+	words: ['so','very','such','much','many']
+};
+
+function padd(str, n) {
+	n += Math.random() * (defaults.jitter * 2 ) - defaults.jitter;
+	
+	for( var i = 0; i < n; i++ ) {
+		str = ' ' + str;
+	}
+	return str;
+}
+
+function out(line) {
+	return '    ' + line + '\r';
+}
+
+function shuffle(arr) {
+	return arr.sort(function() {
+		return Math.random() - 0.5;
+	});
+}
+
+function doge(msg) {
+	
+	var input = (msg.length > 0 ? msg.toString() : defaults.message).split(',');
+	
+	var pre = shuffle(defaults.words.slice(0)),
+	output = out(padd('wow', 4 + Math.random() * 4 | 0));
+	
+	if( input.length > defaults.words.length ) {
+		input.splice(0, defaults.words.length);
+	}
+	
+	while(input.length) {
+		var line = '';
+		if( pre.length ) {
+			line += pre.shift() + ' ';
+		}
+		line += input.shift();	
+		output += out(padd(line, defaults.spaces[(input.length%3) - 1]));
+	}
+
+	bot.adapter.out.add(output + '\r    ');
+}
+
+bot.addCommand({
+        fun : doge,
+        name : 'doge',
+        permissions : {
+                del : 'NONE'
+        },
+
+        description : 'so shibe, much doge, wow [5 word max]'
+});
+
+}());
+
+;
+(function () {
 // This is a proxy to add padding to a JSON API
 // See: https://github.com/shea-sollars/sap
 var requestURI = 'http://www.lobby.ws/api/sap.js';
@@ -4435,8 +4469,6 @@ bot.addCommand({
 		'`/github repoName` or `/github username/reponame`',
 	async : true
 });
-
-;
 
 ;
 (function () {
@@ -5277,8 +5309,6 @@ bot.addCommand(bot.CommunityCommand({
 }));
 
 ;
-
-;
 (function () {
 
 function mdn ( args, cb ) {
@@ -5377,8 +5407,6 @@ function getMemeLink ( meme ) {
 }
 
 })();
-
-;
 
 ;
 (function () {
@@ -5512,8 +5540,6 @@ IO.register( 'userregister', function tracker ( user, room ) {
 });
 
 })();
-
-;
 
 ;
 (function () {
@@ -5700,8 +5726,6 @@ bot.addCommand({
 	description : 'Returns result of "parsing" message according to the my ' +
 		'mini-macro capabilities (see online docs)',
 });
-
-;
 
 ;
 (function () {
@@ -6119,6 +6143,33 @@ var statsCmd = Object.merge( cmd, { name : 'stats'} );
 bot.addCommand(statsCmd);
 
 }());
+
+;
+(function () {
+var hammers = {
+	STOP  : 'HAMMERTIME!',
+	STAHP : 'HAMMAHTIME!',
+	HALT  : 'HAMMERZEIT!',
+	STOY  : 'ZABIVAT\' VREMYA!',
+	CAESUM: 'MALLEUS TEMPUS!'
+};
+
+// /(STOP|STAHP|...)[\.!\?]?$/
+var re = new RegExp(
+	'(' +
+		Object.keys(hammers).map(RegExp.escape).join('|') +
+	')[\\.!?]?$' );
+
+IO.register( 'input', function STOP ( msgObj ) {
+	var sentence = msgObj.content.toUpperCase(),
+		res = re.exec( sentence );
+
+	if ( res ) {
+		bot.adapter.out.add( hammers[res[1]], msgObj.room_id );
+	}
+});
+
+})();
 
 ;
 (function () {
