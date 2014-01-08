@@ -47,7 +47,7 @@ function doge(msg) {
 		output += out(padd(line, defaults.spaces[(input.length%3) - 1]));
 	}
 
-	bot.adapter.out.add(output + '\r    ');
+	msg.send(output + '\r    ');
 }
 
 bot.addCommand({
