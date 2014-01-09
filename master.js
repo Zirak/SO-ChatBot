@@ -1026,6 +1026,7 @@ bot.banlist.add = function ( id ) {
 bot.banlist.remove = function ( id ) {
 	if ( this.contains(id) ) {
 		delete this[ id ];
+		bot.memory.save( 'ban' );
 	}
 };
 
@@ -4148,9 +4149,9 @@ function doge(msg) {
 	
 	var pre = shuffle(defaults.words.slice(0)),
 	output = out(padd('wow', 4 + Math.random() * 4 | 0));
-	
-	if( input.length > defaults.words.length ) {
-		input.splice(0, defaults.words.length);
+
+	while( input.length > pre.length ) {
+		pre = pre.concat(shuffle(defaults.words.slice(0))); // Don't hurt me Zirak... I'm sorry.
 	}
 	
 	while(input.length) {
