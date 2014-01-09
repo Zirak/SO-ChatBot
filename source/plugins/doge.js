@@ -57,7 +57,7 @@ bot.addCommand({
                 del : 'NONE'
         },
 
-        description : 'so shibe, much doge, wow [5 word max]' + 
+        description : 'so shibe, much doge, wow' + 
 		'`/doge one,two,three[,nth]'
 });
 
