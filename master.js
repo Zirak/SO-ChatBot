@@ -1895,7 +1895,7 @@ var commands = {
 
 	refresh : function() {
 		window.location.reload();
-    },
+	},
 
 	forget : function ( args ) {
 		var name = args.toLowerCase(),
@@ -2004,28 +2004,13 @@ var partition = function ( list, maxSize ) {
 
 return function ( args ) {
 	var commands = Object.keys( bot.commands ),
-		pagination = ' (page {0}/{1})',
 		user_name = args.get( 'user_name' ),
 		// 500 is the max, -2 for @ and space.
-		maxSize = 498 - pagination.length - user_name.length,
+		maxSize = 498 - user_name.length,
 		//TODO: only call this when commands were learned/forgotten since last
-		partitioned = partition( commands, maxSize ),
+		partitioned = partition( commands, maxSize );
 
-		valid = /^(\d+|$)/.test( args.content ),
-		page = Number( args.content ) || 0;
-
-	if ( page >= partitioned.length || !valid ) {
-		return args.codify( [
-			'StackOverflow: Could not access page.',
-			'IndexError: index out of range',
-			'java.lang.IndexOutOfBoundsException',
-			'IndexOutOfRangeException'
-		].random() );
-	}
-
-	var ret = partitioned[ page ].join( ', ' );
-
-	return ret + pagination.supplant( page, partitioned.length-1 );
+	return partitioned.invoke( 'join', ', ' ).join( '\n' );
 };
 })();
 
@@ -2122,7 +2107,7 @@ var descriptions = {
 		' `/help [cmdName]`',
 	info : 'Grabs some stats on my current instance or a command.' +
 		' `/info [cmdName]`',
-	listcommands : 'Lists commands. `/listcommands [page=0]`',
+	listcommands : 'Lists commands. `/listcommands`',
 	listen : 'Forwards the message to my ears (as if called without the /)',
 	refresh : 'Reloads the browser window I live in',
 	tell : 'Redirect command result to user/message.' +
@@ -2143,7 +2128,7 @@ var communal = {
 Object.iterate( commands, function ( cmdName, fun ) {
 	var cmd = {
 		name : cmdName,
-		fun  : fun,
+		fun	 : fun,
 		permissions : {
 			del : 'NONE',
 			use : privilegedCommands[ cmdName ] ? 'OWNER' : 'ALL'
@@ -2966,6 +2951,35 @@ bot.listen(
 bot.listen( /^bitch/i, bot.personality.bitch, bot.personality );
 
 ;
+
+;
+(function () {
+var hammers = {
+	STOP  : 'HAMMERTIME!',
+	STAHP : 'HAMMAHTIME!',
+	HALT  : 'HAMMERZEIT!',
+	STOY  : 'ZABIVAT\' VREMYA!',
+	CAESUM: 'MALLEUS TEMPUS!'
+};
+
+// /(STOP|STAHP|...)[\.!\?]?$/
+var re = new RegExp(
+	'(' +
+		Object.keys(hammers).map(RegExp.escape).join('|') +
+	')[\\.!?]?$' );
+
+IO.register( 'input', function STOP ( msgObj ) {
+	var sentence = msgObj.content.toUpperCase(),
+		res = re.exec( sentence );
+
+	if ( res ) {
+		bot.adapter.out.add( hammers[res[1]], msgObj.room_id );
+	}
+});
+
+})();
+
+;
 //solves #86, mostly written by @Shmiddty
 (function () {
 "use strict";
@@ -3310,6 +3324,8 @@ bot.addCommand({
 });
 
 })();
+
+;
 
 ;
 (function () {
@@ -4473,6 +4489,8 @@ bot.addCommand({
 });
 
 ;
+
+;
 (function () {
 var nulls = [
 	'The Google contains no such knowledge',
@@ -5311,6 +5329,8 @@ bot.addCommand(bot.CommunityCommand({
 }));
 
 ;
+
+;
 (function () {
 
 function mdn ( args, cb ) {
@@ -5409,6 +5429,8 @@ function getMemeLink ( meme ) {
 }
 
 })();
+
+;
 
 ;
 (function () {
@@ -5542,6 +5564,8 @@ IO.register( 'userregister', function tracker ( user, room ) {
 });
 
 })();
+
+;
 
 ;
 (function () {
@@ -5728,6 +5752,8 @@ bot.addCommand({
 	description : 'Returns result of "parsing" message according to the my ' +
 		'mini-macro capabilities (see online docs)',
 });
+
+;
 
 ;
 (function () {
@@ -6145,33 +6171,6 @@ var statsCmd = Object.merge( cmd, { name : 'stats'} );
 bot.addCommand(statsCmd);
 
 }());
-
-;
-(function () {
-var hammers = {
-	STOP  : 'HAMMERTIME!',
-	STAHP : 'HAMMAHTIME!',
-	HALT  : 'HAMMERZEIT!',
-	STOY  : 'ZABIVAT\' VREMYA!',
-	CAESUM: 'MALLEUS TEMPUS!'
-};
-
-// /(STOP|STAHP|...)[\.!\?]?$/
-var re = new RegExp(
-	'(' +
-		Object.keys(hammers).map(RegExp.escape).join('|') +
-	')[\\.!?]?$' );
-
-IO.register( 'input', function STOP ( msgObj ) {
-	var sentence = msgObj.content.toUpperCase(),
-		res = re.exec( sentence );
-
-	if ( res ) {
-		bot.adapter.out.add( hammers[res[1]], msgObj.room_id );
-	}
-});
-
-})();
 
 ;
 (function () {
