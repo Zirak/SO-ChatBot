@@ -153,7 +153,8 @@ var commandHandler = function ( msg ) {
 	}
 
 	bot.memory.save( 'afk' );
-	msg.directreply( reply );
+	//msg.directreply( reply ); // disable direct replying on returning from AFK since it's annoying.
+	                            // keep the functionality in the background in the meantime.
 };
 
 bot.addCommand({
