@@ -2951,35 +2951,6 @@ bot.listen(
 bot.listen( /^bitch/i, bot.personality.bitch, bot.personality );
 
 ;
-
-;
-(function () {
-var hammers = {
-	STOP  : 'HAMMERTIME!',
-	STAHP : 'HAMMAHTIME!',
-	HALT  : 'HAMMERZEIT!',
-	STOY  : 'ZABIVAT\' VREMYA!',
-	CAESUM: 'MALLEUS TEMPUS!'
-};
-
-// /(STOP|STAHP|...)[\.!\?]?$/
-var re = new RegExp(
-	'(' +
-		Object.keys(hammers).map(RegExp.escape).join('|') +
-	')[\\.!?]?$' );
-
-IO.register( 'input', function STOP ( msgObj ) {
-	var sentence = msgObj.content.toUpperCase(),
-		res = re.exec( sentence );
-
-	if ( res ) {
-		bot.adapter.out.add( hammers[res[1]], msgObj.room_id );
-	}
-});
-
-})();
-
-;
 //solves #86, mostly written by @Shmiddty
 (function () {
 "use strict";
@@ -3135,7 +3106,8 @@ var commandHandler = function ( msg ) {
 	}
 
 	bot.memory.save( 'afk' );
-	msg.directreply( reply );
+	//msg.directreply( reply ); // disable direct replying on returning from AFK since it's annoying.
+	                            // keep the functionality in the background in the meantime.
 };
 
 bot.addCommand({
@@ -3324,8 +3296,6 @@ bot.addCommand({
 });
 
 })();
-
-;
 
 ;
 (function () {
@@ -4489,8 +4459,6 @@ bot.addCommand({
 });
 
 ;
-
-;
 (function () {
 var nulls = [
 	'The Google contains no such knowledge',
@@ -5329,8 +5297,6 @@ bot.addCommand(bot.CommunityCommand({
 }));
 
 ;
-
-;
 (function () {
 
 function mdn ( args, cb ) {
@@ -5429,8 +5395,6 @@ function getMemeLink ( meme ) {
 }
 
 })();
-
-;
 
 ;
 (function () {
@@ -5564,8 +5528,6 @@ IO.register( 'userregister', function tracker ( user, room ) {
 });
 
 })();
-
-;
 
 ;
 (function () {
@@ -5752,8 +5714,6 @@ bot.addCommand({
 	description : 'Returns result of "parsing" message according to the my ' +
 		'mini-macro capabilities (see online docs)',
 });
-
-;
 
 ;
 (function () {
@@ -6171,6 +6131,33 @@ var statsCmd = Object.merge( cmd, { name : 'stats'} );
 bot.addCommand(statsCmd);
 
 }());
+
+;
+(function () {
+var hammers = {
+	STOP  : 'HAMMERTIME!',
+	STAHP : 'HAMMAHTIME!',
+	HALT  : 'HAMMERZEIT!',
+	STOY  : 'ZABIVAT\' VREMYA!',
+	CAESUM: 'MALLEUS TEMPUS!'
+};
+
+// /(STOP|STAHP|...)[\.!\?]?$/
+var re = new RegExp(
+	'(' +
+		Object.keys(hammers).map(RegExp.escape).join('|') +
+	')[\\.!?]?$' );
+
+IO.register( 'input', function STOP ( msgObj ) {
+	var sentence = msgObj.content.toUpperCase(),
+		res = re.exec( sentence );
+
+	if ( res ) {
+		bot.adapter.out.add( hammers[res[1]], msgObj.room_id );
+	}
+});
+
+})();
 
 ;
 (function () {
