@@ -4,7 +4,7 @@ var hammers = {
 	STAHP : 'HAMMAHTIME!',
 	HALT  : 'HAMMERZEIT!',
 	STOY  : 'ZABIVAT\' VREMYA!',
-	CAESUM: 'MALLEUS TEMPUS!'
+	SISTITE: 'MALLEUS TEMPUS!'
 };
 
 // /(STOP|STAHP|...)[\.!\?]?$/
