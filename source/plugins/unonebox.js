@@ -2,7 +2,7 @@
 "use strict";
 
 var memoryKey = 'unonebox-state',
-	unboxInterval = 1000; //1.5 minutes
+	unboxInterval = 90 * 1000; //1.5 minutes
 
 var unonebox = {
 	// because people are bad at reading instructions, accept a wide range of
