@@ -36,15 +36,28 @@ function substitute ( msg ) {
 	}
 
 	var message = get_matching_message( re, msg.get('message_id') );
-	bot.log( message, 'substitution found message' );
 
 	if ( !message ) {
 		return 'No matching message (are you sure we\'re in the right room?)';
 	}
+	bot.log( message, 'substitution found message' );
 
 	var link = get_message_link( message );
-	return message.textContent.replace( re, replacement ) + ' ' +
-		msg.link( '(source)', link );
+
+	// #159, check if the message is a partial, has a "(see full text)" link.
+	if ( message.firstElementChild.classList.contains('partial') ) {
+		retrieve_full_text( message, finish );
+	}
+	else {
+		return finish( message.textContent );
+	}
+
+	function finish ( text ) {
+		var reply = text.replace( re, replacement ) + ' ' +
+			msg.link( '(source)', link );
+
+		msg.reply( reply );
+	}
 }
 
 function get_matching_message ( re, onlyBefore ) {
@@ -71,4 +84,21 @@ function get_message_link ( message ) {
 
 	return node.href;
 }
+
+// <div class="content">
+//  <div class="partial"> ... </div>
+//  <a class="more-data" href="what we want">(see full text)</a>
+// </div>
+function retrieve_full_text ( message, cb ) {
+	var href = message.children[ 1 ].href;
+	bot.log( href, 'substitution expanding message' );
+
+	IO.xhr({
+		method : 'GET',
+		url : href,
+		data : { plain : true },
+		complete : cb
+	});
+}
+
 }());
