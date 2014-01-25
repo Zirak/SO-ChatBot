@@ -1091,6 +1091,9 @@ bot.CommunityCommand = function ( command, req ) {
 			bot.log( err );
 			return err;
 		}
+
+		used = {};
+
 		return old_execute.apply( cmd, arguments );
 	};
 	return cmd;
@@ -1104,16 +1107,20 @@ bot.CommunityCommand = function ( command, req ) {
 
 		clean();
 		var count = Object.keys( used ).length,
-			needed = req - count - 1; //0 based indexing vs. 1 based humans
+			needed = req - count;
 		bot.log( used, count, req );
 
 		if ( usrid in used ) {
 			return 'Already registered; still need {0} more'.supplant( needed );
 		}
-		else if ( needed > 0 ) {
-			used[ usrid ] = new Date;
-			return 'Registered; need {0} more to execute'.supplant( needed-1 );
+
+		used[ usrid ] = new Date;
+		needed -= 1;
+
+		if ( needed > 0 ) {
+			return 'Registered; need {0} more to execute'.supplant( needed );
 		}
+
 		bot.log( 'should execute' );
 		return false; //huzzah!
 	}
