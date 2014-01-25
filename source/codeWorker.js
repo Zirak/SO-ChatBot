@@ -4,9 +4,11 @@ var global = this;
 var whitey = {
 	'Array'              : 1,
 	'Boolean'            : 1,
+	'console'            : 1,
 	'Date'               : 1,
 	'Error'              : 1,
 	'EvalError'          : 1,
+	'exec'               : 1,
 	'Function'           : 1,
 	'Infinity'           : 1,
 	'JSON'               : 1,
@@ -61,14 +63,33 @@ var whitey = {
 	*/
 	'DOMException' : 1,
 	'Event'        : 1,
-	'MessageEvent' : 1
+	'MessageEvent' : 1,
+	'WorkerMessageEvent': 1
 };
 
-[ global, global.__proto__ ].forEach(function ( obj ) {
+[ global, Object.getPrototypeOf(global) ].forEach(function ( obj ) {
 	Object.getOwnPropertyNames( obj ).forEach(function( prop ) {
-		if( !whitey.hasOwnProperty( prop ) ) {
-			delete obj[ prop ];
+		if( whitey.hasOwnProperty(prop) ) {
+            return;
 		}
+
+        try {
+            Object.defineProperty( obj, prop, {
+                get : function () {
+                    /* TEE HEE */
+                    throw new ReferenceError( prop + ' is not defined' );
+                },
+                configurable : false,
+                enumerable : false
+            });
+        }
+        catch ( e ) {
+            delete obj[ prop ];
+
+            if ( obj[ prop ] !== undefined ) {
+                obj[ prop ] = null;
+            }
+        }
 	});
 });
 
@@ -89,7 +110,7 @@ Object.defineProperty( Array.prototype, 'join', {
 });
 
 /* we define it outside so it'll not be in strict mode */
-function exec ( code ) {
+var exec = function ( code ) {
 	return eval( 'undefined;\n' + code );
 }
 var console = {
@@ -99,7 +120,6 @@ var console = {
 	}
 };
 console.error = console.info = console.debug = console.log;
-var p = console.log.bind( console );
 
 (function(){
 	"use strict";

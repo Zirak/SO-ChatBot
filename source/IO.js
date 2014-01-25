@@ -102,7 +102,49 @@ var IO = window.IO = {
 	}
 };
 
-IO.decodehtmlEntities = (function (){
+//turns some html tags into markdown. a major assumption is that the input is
+// properly sanitised - that is, all <, &, etc entered by the user got turned
+// into html entities.
+IO.htmlToMarkdown = (function () {
+
+// A string value is the delimiter (what replaces the tag)
+var markdown = {
+	i : '*',
+	b : '**',
+	strike : '---',
+	code : '`',
+
+	a : function ( $0, $1, text ) {
+		var href = /href="([^"]+?)"/.exec( $0 );
+
+		if ( !href ) {
+			return $0;
+		}
+		return '[' + text + '](' + href[1] + ')';
+	},
+};
+var htmlRe = /<(\S+)[^\>]*>([^<]+)<\/\1>/g;
+
+return function ( html ) {
+	var delim;
+
+	return html.replace( htmlRe, decodeHtml );
+
+	function decodeHtml ( $0, tag, text ) {
+		if ( !markdown.hasOwnProperty(tag) ) {
+			return $0;
+		}
+
+		delim = markdown[ tag ];
+
+		return delim.apply ?
+			markdown[ tag ].apply( markdown, arguments ) :
+			delim + text + delim;
+	}
+};
+}());
+
+IO.decodehtmlEntities = (function () {
 var entities; //will be filled in the following line
 //#build static/htmlEntities.js
 

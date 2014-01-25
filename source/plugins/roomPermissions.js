@@ -37,7 +37,7 @@ function giveVoice ( id, cb ) {
 	});
 
 	function finish () {
-		var args = [].slice.call( arguments );
+		var args = Array.from( arguments );
 		args.unshift( id );
 
 		delete muted[ id ];

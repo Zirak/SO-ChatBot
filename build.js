@@ -1,8 +1,5 @@
 var fs = require( 'fs' ),
-	path = require( 'path' ),
-	http = require( 'http' ),
-	querystring = require( 'querystring' );
-
+	path = require( 'path' );
 
 //some file IO done synchronously because I'm a fat lazy bastard
 var build = {
@@ -304,6 +301,7 @@ return function () {
 	return processor.exec.apply( processor, arguments );
 };
 }());
+
 build.print = function ( out, overrideVerbose ) {
 	if ( !this.verbose || overrideVerbose ) {
 		console.log( out );

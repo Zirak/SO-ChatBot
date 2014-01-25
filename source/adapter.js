@@ -458,6 +458,7 @@ var output = bot.adapter.out = {
 	'409' : 0, //count the number of conflicts
 	total : 0, //number of messages sent
 	interval : polling.interval + 500,
+	flushWait : 500,
 
 	init : function () {},
 
@@ -478,10 +479,15 @@ var output = bot.adapter.out = {
 		//unless the bot's stopped. in which case, it should shut the fudge up
 		// the freezer and never let it out. not until it can talk again. what
 		// was I intending to say?
-		if ( !bot.stopped ) {
+		if ( bot.stopped ) {
 			//ah fuck it
-			this.sendToRoom( obj.text, obj.room );
+			return;
 		}
+
+		// #152, wait a bit before sending output.
+		setTimeout(function () {
+			output.sendToRoom( obj.text, obj.room );
+		}, this.flushWait );
 	},
 
 	//what's brown and sticky?
