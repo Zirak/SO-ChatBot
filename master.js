@@ -2038,7 +2038,7 @@ return function ( args ) {
 	}
 
 	if ( invalidCommands.hasOwnProperty(cmdName) ) {
-		return 'Command ' + cmdName + ' cannot be used in /tell.';
+		return 'Command ' + cmdName + ' cannot be used in `/tell`.';
 	}
 
 	if ( !cmd.canUse(args.get('user_id')) ) {
@@ -2951,6 +2951,35 @@ bot.listen(
 bot.listen( /^bitch/i, bot.personality.bitch, bot.personality );
 
 ;
+
+;
+(function () {
+var hammers = {
+	STOP  : 'HAMMERTIME!',
+	STAHP : 'HAMMAHTIME!',
+	HALT  : 'HAMMERZEIT!',
+	STOY  : 'ZABIVAT\' VREMYA!',
+	CAESUM: 'MALLEUS TEMPUS!'
+};
+
+// /(STOP|STAHP|...)[\.!\?]?$/
+var re = new RegExp(
+	'(' +
+		Object.keys(hammers).map(RegExp.escape).join('|') +
+	')[\\.!?]?$' );
+
+IO.register( 'input', function STOP ( msgObj ) {
+	var sentence = msgObj.content.toUpperCase(),
+		res = re.exec( sentence );
+
+	if ( res ) {
+		bot.adapter.out.add( hammers[res[1]], msgObj.room_id );
+	}
+});
+
+})();
+
+;
 //solves #86, mostly written by @Shmiddty
 (function () {
 "use strict";
@@ -3296,6 +3325,8 @@ bot.addCommand({
 });
 
 })();
+
+;
 
 ;
 (function () {
@@ -4459,6 +4490,8 @@ bot.addCommand({
 });
 
 ;
+
+;
 (function () {
 var nulls = [
 	'The Google contains no such knowledge',
@@ -5297,6 +5330,8 @@ bot.addCommand(bot.CommunityCommand({
 }));
 
 ;
+
+;
 (function () {
 
 function mdn ( args, cb ) {
@@ -5395,6 +5430,8 @@ function getMemeLink ( meme ) {
 }
 
 })();
+
+;
 
 ;
 (function () {
@@ -5528,6 +5565,8 @@ IO.register( 'userregister', function tracker ( user, room ) {
 });
 
 })();
+
+;
 
 ;
 (function () {
@@ -5714,6 +5753,8 @@ bot.addCommand({
 	description : 'Returns result of "parsing" message according to the my ' +
 		'mini-macro capabilities (see online docs)',
 });
+
+;
 
 ;
 (function () {
@@ -6131,33 +6172,6 @@ var statsCmd = Object.merge( cmd, { name : 'stats'} );
 bot.addCommand(statsCmd);
 
 }());
-
-;
-(function () {
-var hammers = {
-	STOP  : 'HAMMERTIME!',
-	STAHP : 'HAMMAHTIME!',
-	HALT  : 'HAMMERZEIT!',
-	STOY  : 'ZABIVAT\' VREMYA!',
-	CAESUM: 'MALLEUS TEMPUS!'
-};
-
-// /(STOP|STAHP|...)[\.!\?]?$/
-var re = new RegExp(
-	'(' +
-		Object.keys(hammers).map(RegExp.escape).join('|') +
-	')[\\.!?]?$' );
-
-IO.register( 'input', function STOP ( msgObj ) {
-	var sentence = msgObj.content.toUpperCase(),
-		res = re.exec( sentence );
-
-	if ( res ) {
-		bot.adapter.out.add( hammers[res[1]], msgObj.room_id );
-	}
-});
-
-})();
 
 ;
 (function () {
@@ -6656,67 +6670,120 @@ bot.addCommand({
 
 ;
 (function () {
-	"use strict";
-	var unonebox = {
-		enablers: ['yes','on','true','start','1','enable'], // because people are bad at reading instructions
-		disablers: ['no','off','false','stop','0','disable'],// accept a wide range of values for the command
-		command: function (args) {
-			var state = args.toLowerCase();
-			if (this.enablers.indexOf(state) !== -1) {
-				this.enable();
-				args.reply(' un onebox enabled ');
-			} else if (this.disablers.indexOf(state) !== -1) {
-				this.disable();
-				args.reply(' un onebox disabled ');
-			} else {
-				args.reply(' That didn\'t make much sense. Please use `on` or `off` to toggle the command ');
-			}
-		},
-		enable: function () {
-			IO.register('input', this.unbox);
-			bot.memory.set('unonebox-state', 'enabled');
-		},
-		disable: function () {
-			IO.unregister('input', this.unbox);
-			bot.memory.set('unonebox-state', 'disabled');
-		},
-		unbox: function (msgObj) {
-			if (msgObj.user_id === bot.adapter.user_id) {
-				var frag = document.createElement('div');
-				frag.innerHTML = msgObj.content;
-				var link = frag.querySelector('.onebox a');
-				if (link) {
-					setTimeout(function () {
-						IO.xhr({
-							url: '/messages/' + msgObj.message_id,
-							data: fkey({
-								text: link.href + ' ... '
-							}),
-							method: 'POST',
-							complete: function (resp, xhr) {
-								// TODO 
-								// error checking
-							}
-						});
-					}, 90 * 1000);
-				}
-			}
+"use strict";
+
+var memoryKey = 'unonebox-state',
+	unboxInterval = 1000; //1.5 minutes
+
+var unonebox = {
+	// because people are bad at reading instructions, accept a wide range of
+	// values for the command
+	enablers  : Object.TruthMap( ['yes','on','true','start','1','enable'] ),
+	disablers : Object.TruthMap( ['no','off','false','stop','0','disable'] ),
+
+	command : function unoneboxCommand ( args ) {
+		var state = args.toLowerCase(),
+			save = false,
+			reply;
+
+		if ( !state ) {
+			bot.log( '/unonebox getting state' );
+			reply = 'Functionality is ' +
+				bot.memory.get( memoryKey, 'disabled' );
 		}
-	};
-	var state = bot.memory.get('unbox-state');
-	if (state && state === 'enabled') {
-		unonebox.enable();
+		else if ( this.enablers[state] ) {
+			bot.log( '/unonebox enabling' );
+			this.enable();
+			reply = 'un-onebox enabled';
+			save = true;
+		}
+		else if ( this.disablers[state] ) {
+			bot.log( '/unonebox disabling' );
+			this.disable();
+			reply = 'un-onebox disabled';
+			save = true;
+		}
+		else {
+			bot.log( '/unonebox invalid input' );
+			reply = 'That didn\'t make much sense. Please use `on` or `off` ' +
+				'to toggle the command';
+		}
+
+		if ( save ) {
+			bot.memory.save( memoryKey );
+		}
+
+		args.reply( reply );
+	},
+
+	enable : function () {
+		IO.register( 'input', this.unbox );
+		bot.memory.set( memoryKey, 'enabled' );
+	},
+
+	disable : function () {
+		IO.unregister( 'input', this.unbox );
+		bot.memory.set( memoryKey, 'disabled' );
+	},
+
+	unbox : function ( msgObj ) {
+		// We only operate on our own messages.
+		if ( msgObj.user_id !== bot.adapter.user_id ) {
+			return;
+		}
+
+		var frag = document.createElement( 'div' );
+		frag.innerHTML = msgObj.content;
+		var link = frag.querySelector( '.onebox a' );
+
+		// No onebox, no un-oneboxing.
+		if ( !link ) {
+			return;
+		}
+
+		bot.log( msgObj, '/unonebox found matching message' );
+
+		setTimeout(function () {
+			unonebox.actuallyUnbox( msgObj.message_id, link.href );
+		}, unboxInterval );
+	},
+
+	actuallyUnbox : function ( msgId, href ) {
+		IO.xhr({
+			url: '/messages/' + msgId,
+			data: fkey({
+				text: href + ' ... '
+			}),
+			method: 'POST',
+
+			complete : function (resp, xhr) {
+				bot.log( xhr, '/unonebox done unboxing' );
+				// TODO
+				// error checking
+			}
+		});
 	}
-	bot.addCommand({
-		fun: unonebox.command.bind(unonebox),
-		name: 'unonebox',
-		permissions: {
-			del: 'NONE'
-		},
-		description: 'Enable or Disable the unonebox listener' +
-			' `/unonebox on|off`'
-	});
+};
+
+if ( bot.memory.get(memoryKey, 'disabled') === 'enabled' ) {
+	bot.log( 'enabling unonebox' );
+	unonebox.enable();
+}
+
+bot.addCommand({
+	name: 'unonebox',
+	fun: unonebox.command,
+	thisArg : unonebox,
+
+	permissions: {
+		del: 'NONE'
+	},
+	description: 'Get/toggle the unonebox listener. ' +
+		'`/unonebox [on|off]x`'
+});
+
 }());
+
 ;
 (function () {
 
