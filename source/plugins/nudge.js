@@ -100,7 +100,8 @@ bot.addCommand({
 	description : 'Register a nudge after an interval. ' +
 		'`/nudge intervalInMinutes message`, `/nudge remove id` to remove, ' +
         'or the listener, ' +
-		'`nudge|remind|poke me? in? intervalInMinutes message`'
+		'`nudge|remind|poke me? in? intervalInMinutes message`',
+	unTellable : true
 });
 
 bot.listen(/(?:nudge|remind|poke)\s(?:me\s)?(?:in\s)?(\d+m?)\s?(.*)$/,

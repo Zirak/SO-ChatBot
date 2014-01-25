@@ -161,11 +161,8 @@ return function ( args ) {
 
 commands.eval.async = commands.coffee.async = true;
 
-commands.tell = (function () {
-var invalidCommands = { tell : true, forget : true };
-
-return function ( args ) {
-	var parts = args.split( ' ');
+commands.tell = function ( args ) {
+	var parts = args.split( ' ' );
 	bot.log( args.valueOf(), parts, '/tell input' );
 
 	var replyTo = parts[ 0 ],
@@ -182,7 +179,7 @@ return function ( args ) {
 		return cmd.error;
 	}
 
-	if ( invalidCommands.hasOwnProperty(cmdName) ) {
+	if ( cmd.unTellable ) {
 		return 'Command ' + cmdName + ' cannot be used in `/tell`.';
 	}
 
@@ -206,14 +203,12 @@ return function ( args ) {
 		extended.user_name = replyTo;
 	}
 
-	var msgObj = Object.merge( args.get(), extended );
-	var cmdArgs = bot.Message(
-		parts.slice( 2 ).join( ' ' ),
-		msgObj );
+	var msgObj = Object.merge( args.get(), extended ),
+		cmdArgs = bot.Message( parts.slice(2).join(' '), msgObj );
 
-	//this is an ugly, but functional thing, much like your high-school prom date
-	//to make sure a command's output goes through us, we simply override the
-	// standard ways to do output
+	//this is an ugly, but functional thing, much like your high-school prom
+	// date to make sure a command's output goes through us, we simply override
+	// the standard ways to do output
 	var reply = cmdArgs.reply.bind( cmdArgs ),
 		directreply = cmdArgs.directreply.bind( cmdArgs );
 
@@ -242,7 +237,6 @@ return function ( args ) {
 		}
 	}
 };
-}());
 
 var descriptions = {
 	eval : 'Forwards message to javascript code-eval',
@@ -269,6 +263,10 @@ var privilegedCommands = {
 var communal = {
 	die : true, ban : true
 };
+//commands which can't be used with /tell
+var unTellable = {
+	tell : true, forget : true
+};
 
 Object.iterate( commands, function ( cmdName, fun ) {
 	var cmd = {
@@ -279,6 +277,7 @@ Object.iterate( commands, function ( cmdName, fun ) {
 			use : privilegedCommands[ cmdName ] ? 'OWNER' : 'ALL'
 		},
 		description : descriptions[ cmdName ],
+		unTellable : unTellable[ cmdName ],
 		async : commands[ cmdName ].async
 	};
 

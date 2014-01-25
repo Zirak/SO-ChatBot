@@ -921,7 +921,7 @@ var bot = window.bot = {
 	},
 
 	callListeners : function ( msg ) {
-		return this.listeners.some(function callListener ( listener ) {
+		function callListener ( listener ) {
 			var match = msg.exec( listener.pattern ), resp;
 
 			if ( match ) {
@@ -933,7 +933,9 @@ var bot = window.bot = {
 				}
 				return resp !== false;
 			}
-		});
+		}
+
+		return this.listeners.some( callListener );
 	},
 
 	stoplog : false,
@@ -1045,6 +1047,7 @@ bot.Command = function ( cmd ) {
 	//make canUse and canDel
 	[ 'Use', 'Del' ].forEach(function ( perm ) {
 		var low = perm.toLowerCase();
+
 		cmd[ 'can' + perm ] = function ( usrid ) {
 			var canDo = this.permissions[ low ];
 
@@ -1074,12 +1077,14 @@ bot.Command = function ( cmd ) {
 
 	return cmd;
 };
+
 //a normally priviliged command which can be executed if enough people use it
 bot.CommunityCommand = function ( command, req ) {
 	var cmd = this.Command( command ),
 		used = {},
 		old_execute = cmd.exec,
 		old_canUse  = cmd.canUse;
+
 	req = req || 2;
 
 	cmd.canUse = function () {
@@ -1096,6 +1101,7 @@ bot.CommunityCommand = function ( command, req ) {
 
 		return old_execute.apply( cmd, arguments );
 	};
+
 	return cmd;
 
 	//once again, a switched return statement: truthy means a message, falsy
@@ -2023,11 +2029,8 @@ return function ( args ) {
 
 commands.eval.async = commands.coffee.async = true;
 
-commands.tell = (function () {
-var invalidCommands = { tell : true, forget : true };
-
-return function ( args ) {
-	var parts = args.split( ' ');
+commands.tell = function ( args ) {
+	var parts = args.split( ' ' );
 	bot.log( args.valueOf(), parts, '/tell input' );
 
 	var replyTo = parts[ 0 ],
@@ -2044,7 +2047,7 @@ return function ( args ) {
 		return cmd.error;
 	}
 
-	if ( invalidCommands.hasOwnProperty(cmdName) ) {
+	if ( cmd.unTellable ) {
 		return 'Command ' + cmdName + ' cannot be used in `/tell`.';
 	}
 
@@ -2068,14 +2071,12 @@ return function ( args ) {
 		extended.user_name = replyTo;
 	}
 
-	var msgObj = Object.merge( args.get(), extended );
-	var cmdArgs = bot.Message(
-		parts.slice( 2 ).join( ' ' ),
-		msgObj );
+	var msgObj = Object.merge( args.get(), extended ),
+		cmdArgs = bot.Message( parts.slice(2).join(' '), msgObj );
 
-	//this is an ugly, but functional thing, much like your high-school prom date
-	//to make sure a command's output goes through us, we simply override the
-	// standard ways to do output
+	//this is an ugly, but functional thing, much like your high-school prom
+	// date to make sure a command's output goes through us, we simply override
+	// the standard ways to do output
 	var reply = cmdArgs.reply.bind( cmdArgs ),
 		directreply = cmdArgs.directreply.bind( cmdArgs );
 
@@ -2104,7 +2105,6 @@ return function ( args ) {
 		}
 	}
 };
-}());
 
 var descriptions = {
 	eval : 'Forwards message to javascript code-eval',
@@ -2131,6 +2131,10 @@ var privilegedCommands = {
 var communal = {
 	die : true, ban : true
 };
+//commands which can't be used with /tell
+var unTellable = {
+	tell : true, forget : true
+};
 
 Object.iterate( commands, function ( cmdName, fun ) {
 	var cmd = {
@@ -2141,6 +2145,7 @@ Object.iterate( commands, function ( cmdName, fun ) {
 			use : privilegedCommands[ cmdName ] ? 'OWNER' : 'ALL'
 		},
 		description : descriptions[ cmdName ],
+		unTellable : unTellable[ cmdName ],
 		async : commands[ cmdName ].async
 	};
 
@@ -3153,7 +3158,8 @@ bot.addCommand({
 		del: 'NONE'
 	},
 	description : 'Set an afk message: `/afk <message>`. Invoke `/afk` ' +
-		'again to return.'
+		'again to return.',
+	unTellable : true
 });
 
 IO.register( 'input', function afkInputListener ( msgObj ) {
@@ -4150,7 +4156,7 @@ var defaults = {
 
 function padd(str, n) {
 	n += Math.random() * (defaults.jitter * 2 ) - defaults.jitter;
-	
+
 	for( var i = 0; i < n; i++ ) {
 		str = ' ' + str;
 	}
@@ -4168,22 +4174,22 @@ function shuffle(arr) {
 }
 
 function doge(msg) {
-	
+
 	var input = (msg.length > 0 ? msg.toString() : defaults.message).split(',');
-	
+
 	var pre = shuffle(defaults.words.slice(0)),
 	output = out(padd('wow', 4 + Math.random() * 4 | 0));
 
 	while( input.length > pre.length ) {
 		pre = pre.concat(shuffle(defaults.words.slice(0))); // Don't hurt me Zirak... I'm sorry.
 	}
-	
+
 	while(input.length) {
 		var line = '';
 		if( pre.length ) {
 			line += pre.shift() + ' ';
 		}
-		line += input.shift();	
+		line += input.shift();
 		output += out(padd(line, defaults.spaces[(input.length%3) - 1]));
 	}
 
@@ -4191,14 +4197,15 @@ function doge(msg) {
 }
 
 bot.addCommand({
-        fun : doge,
-        name : 'doge',
-        permissions : {
-                del : 'NONE'
-        },
+    fun : doge,
+    name : 'doge',
+    permissions : {
+        del : 'NONE'
+    },
 
-        description : 'so shibe, much doge, wow' + 
-		'`/doge one,two,three[,nth]'
+    description : 'so shibe, much doge, wow' +
+		' `/doge one,two,three[,nth]',
+	unTellable : true
 });
 
 }());
@@ -5720,7 +5727,8 @@ bot.addCommand({
 	description : 'Register a nudge after an interval. ' +
 		'`/nudge intervalInMinutes message`, `/nudge remove id` to remove, ' +
         'or the listener, ' +
-		'`nudge|remind|poke me? in? intervalInMinutes message`'
+		'`nudge|remind|poke me? in? intervalInMinutes message`',
+	unTellable : true
 });
 
 bot.listen(/(?:nudge|remind|poke)\s(?:me\s)?(?:in\s)?(\d+m?)\s?(.*)$/,

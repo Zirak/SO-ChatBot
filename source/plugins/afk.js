@@ -164,7 +164,8 @@ bot.addCommand({
 		del: 'NONE'
 	},
 	description : 'Set an afk message: `/afk <message>`. Invoke `/afk` ' +
-		'again to return.'
+		'again to return.',
+	unTellable : true
 });
 
 IO.register( 'input', function afkInputListener ( msgObj ) {
