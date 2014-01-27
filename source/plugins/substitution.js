@@ -45,7 +45,7 @@ function substitute ( msg ) {
 	var link = get_message_link( message );
 
 	// #159, check if the message is a partial, has a "(see full text)" link.
-	if ( message.firstElementChild.classList.contains('partial') ) {
+	if ( message.getElementsByClassName('partial').length ) {
 		retrieve_full_text( message, finish );
 	}
 	else {
