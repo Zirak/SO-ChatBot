@@ -134,13 +134,29 @@ bot.adapter = {
 			console.error( 'bot.adapter could not find fkey; aborting' );
 			return;
 		}
+
 		this.fkey = fkey.value;
 		this.roomid = Number( /\d+/.exec(location)[0] );
-		this.site = /chat\.(\w+)/.exec( location )[ 1 ];
+		this.site = this.getCurrentSite();
 		this.user_id = CHAT.user.current().id;
 
 		this.in.init();
 		this.out.init();
+	},
+
+	getCurrentSite : function () {
+		var site = /chat\.(\w+)/.exec( location )[ 1 ];
+
+		if ( site !== 'stackexchange' ) {
+			return site;
+		}
+
+		var siteRoomsLink = document.getElementById( 'siterooms' ).href;
+
+		// #170. thanks to @patricknc4pk for the original fix.
+		site = /host=(.+?)\./.exec( siteRoomsLink )[ 1 ];
+
+		return site;
 	},
 
 	//a pretty crucial function. accepts the msgObj we know nothing about,

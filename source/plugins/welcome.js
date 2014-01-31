@@ -9,7 +9,7 @@ var message = "Welcome to the JavaScript chat! Please review the " +
 	"your question, and if anyone's free and interested they'll help.";
 
 function welcome ( name ) {
-	return bot.adapter.reply( name ) + " " + message; ;
+	return bot.adapter.reply( name ) + " " + message;
 }
 
 bot.addCommand({
