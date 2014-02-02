@@ -1,4 +1,4 @@
-//(function () {
+(function () {
 "use strict";
 
 var macros = {
@@ -104,4 +104,4 @@ bot.parseMacro = function parse ( source, extraVars ) {
 };
 
 
-//})();
+})();

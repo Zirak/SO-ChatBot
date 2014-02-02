@@ -1580,7 +1580,7 @@ return function () {
 
 }());
 
-//(function () {
+(function () {
 "use strict";
 
 var macros = {
@@ -1686,7 +1686,7 @@ bot.parseMacro = function parse ( source, extraVars ) {
 };
 
 
-//})();
+})();
 
 //a Trie suggestion dictionary, made by Esailija (small fixes by God)
 // http://stackoverflow.com/users/995876/esailija
@@ -7542,7 +7542,6 @@ bot.addCommand({
 		}
 		*/if(ZALGO_LEVEL==1) {ZALGO_UP=ZALGO(16)/2+1;ZALGO_DOWN=ZALGO(16)/2+1;ZALGO_MID=ZALGO(6)/2};
 var TONY;
-TONY;
 /*-*/
 TONY	=	  'T̷̂͒̃̽H̸͒̿̒̚̕͜E͋ͥ̋̈̉̏̏̔̔͞ ̏ͥ̊͠P̷̑̌̀O̵̔̑̇̐͌̓̀̚Ǹ͌̍̾̈҉Y͛̈́̉҉͘'
 		for(
@@ -7563,7 +7562,7 @@ $('body').append(dialog);
 $('#dialog').prop('title' , title);
 $('#dialog').dialog();
 }*//**/ZALGO_DOWN=ZALGO(64)/4+3;/**/ZALGO_MID=ZALGO(16)/4+1};
-ZALGO;ZALGO;ZALGO;ZALGO;ZALGO;ZALGO;ZALGO;ZALGO;ZALGO;ZALGO;ZALGO;ZALGO;ZALGO;ZALGO;ZALGO;ZALGO;ZALGO;ZALGO;ZALGO;
+//ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO
 						for(var j=0; j<ZALGO_UP; j++)
 							ZALGO_RESPONSE /*<([a-z]+) *[^/]*?>*/+= zalgo_up.random();
 								for(var j=0; j<ZALGO_MID; j++)

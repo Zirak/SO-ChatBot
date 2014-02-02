@@ -128,7 +128,7 @@ var build = {
 			this.write( code );
 
 			if ( this.doMinify ) {
-				minify( code, this.minEndCallback );
+				minify( this.outputName, this.outputMin, this.minEndCallback );
 			}
 			code = null;
 		}
@@ -153,29 +153,105 @@ var build = {
 	}
 };
 
-var minify = function ( code, callback, outName ) {
-	outName = outName || 'master.min.js';
+var minify = (function () {
+
+var exec = require('child_process').exec;
+
+var minifiers = [
+	{
+		name : 'closure-compiler',
+		test : function ( success, fail ) {
+			exec( 'java -version &> /dev/null; echo $?', finish );
+
+			function finish ( err, stdout, stderr ) {
+				if (err || Number(stdout)) {
+					fail();
+				}
+				else {
+					success();
+				}
+			}
+		},
+		minify : function ( sourceFile, outFile, cb ) {
+			var cmd = [
+				'java -jar closure-compiler.jar',
+				'--language_in ECMASCRIPT5_STRICT',
+				'--compilation_level ADVANCED_OPTIMIZATIONS',
+				'--js master.js --js_output_file master.cc.js',
+			].join( ' ' );
+
+			exec( cmd, cb );
+		}
+	},
+	{
+		name : 'uglify2',
+		test : function ( success, fail ) {
+			try {
+				require.resolve( 'uglify-js2' );
+				success();
+			}
+			catch ( e ) {
+				fail();
+			}
+		},
+		minify : function ( sourceFile, outFile, cb ) {
+			var code;
+			try {
+				code = require( 'uglify-js2' ).minify( sourceFile ).code;
+			}
+			catch ( e ) {
+				cb( e );
+				//I find it extremely pleasing how the above lines line up.
+				return;
+			}
+
+			fs.writeFile( outFile, code, cb );
+		}
+	},
+	{
+		name : 'default',
+		test : function ( success ) {
+			success();
+		},
+		minify : function ( cb ) {
+			console.warn( 'no minifier found; skipping' );
+			cb();
+		}
+	}
+];
+
+return function minify ( inFile, outFile, callback ) {
 	build.print( '\nminifying...' );
+	continuation( minifiers.slice() );
 
-	var min;
-	try {
-		min = require( 'uglify-js2' )
-			.minify( code, { fromString : true } ).code;
-	}
-	catch ( e ) {
-		console.error( e.toString() );
-		return;
+	function continuation (fiers /* 'Merica */) {
+		var minifier = fiers.shift();
+
+		minifier.test(
+			function success () {
+				build.print( 'running minifier: ' + minifier.name );
+				runMinifier( minifier );
+			},
+			function fail () {
+				build.print( 'skipping minifier: ' + minifier.name );
+				continuation(fiers);
+			}
+		);
 	}
 
-	fs.writeFile( outName, min, finish );
+	function runMinifier ( minifier ) {
+		minifier.minify( inFile, outFile, finish );
+	}
 
 	function finish ( err ) {
 		if ( err ) {
 			throw err;
 		}
-		callback( outName, min.length );
+		callback( outFile, fs.statSync(outFile).size );
 	}
 };
+
+})();
 
 var preprocessor = (function () {
 
