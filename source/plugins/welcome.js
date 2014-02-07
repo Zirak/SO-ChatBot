@@ -1,15 +1,18 @@
 (function () {
 "use strict";
-//welcomes new users with a link to the room rules
+//welcomes new users with a link to the room rules and a short message.
 
 var seen = bot.memory.get( 'users' );
 
 var message = "Welcome to the JavaScript chat! Please review the " +
 		bot.adapter.link(
 			"room pseudo-rules",
-			"http://rlemon.github.com/so-chat-javascript-rules/" ) + ". " +
-	"Please don't ask if you can ask or if anyone's around; just ask " +
-	"your question, and if anyone's free and interested they'll help.";
+			"http://rlemon.github.com/so-chat-javascript-rules/"
+		) +
+		". Please don't ask if you can ask or if anyone's around; just ask " +
+		"your question, and if anyone's free and interested they'll help.";
+
+var messageCountRe = /transcript\/17(?:'|")>([\d\.]+)(k?)/i;
 
 function welcome ( name, room ) {
 	bot.adapter.out.add(
@@ -39,12 +42,20 @@ IO.register( 'userregister', function ( user, room ) {
 	function complete ( resp ) {
 		//I'm parsing html with regexps. hopefully Cthulu won't eat me.
 		// <a href="/transcript/17">7</a>
-		// <a href="/transcript/17">47.1k</a>
-		var chatMessages = /transcript\/17(?:'|")>([\d\.]+)(k?)/.exec( resp );
+		// [..., "17", null]
+		// <a href="/transcript/17">2.1k</a>
+		// [..., "2.1", "k"]
+		var chatMessages = messageCountRe.exec( resp ),
+			newUser;
 
-		if ( !chatMessages || (
-			!chatMessages[ 2 ] || parseFloat( chatMessages[1] ) < 2
-		)) {
+		if ( chatMessages ) {
+			newUser = !chatMessages[ 2 ] && Number( chatMessages[1] ) < 2;
+		}
+		else {
+			newUser = true;
+		}
+
+		if ( newUser ) {
 			welcome( user.name, room );
 		}
 		finish();

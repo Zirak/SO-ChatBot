@@ -6091,6 +6091,52 @@ bot.addCommand({
 
 ;
 (function () {
+var re = /(which |what |give me a )?stargate|sg1( episode)?/i;
+
+var episodes; //will be filled in next line.
+//SG1 is seperated so Atlantis can be added in later.
+episodes = {"SG1":{"Season 1":["Children of the Gods","The Enemy Within","Emancipation","The Broca Divide","The First Commandment","Brief Candle","Cold Lazarus","Thor's Hammer","The Torment of Tantalus","Bloodlines","Fire and Water","The Nox","Hathor","Singularity","Cor-ai","Enigma","Tin Man","Solitudes","There But for the Grace of God ","Politics ","Within the Serpent's Grasp "],"Season 2":["The Serpent's Lair ","In the Line of Duty","Prisoners","The Gamekeeper","Need","Thor's Chariot","Message in a Bottle",
+"Family","Secrets","Bane","The Tok'ra","The Tok'ra (Part 2)","Spirits","Touchstone","A Matter of Time","The Fifth Race","Serpent's Song","Holiday","One False Step","Show and Tell","1969","Out of Mind "],"Season 3":["Into the Fire ","Seth","Fair Game","Legacy","Learning Curve","Point of View","Deadman Switch","Demons","Rules of Engagement","Forever in a Day","Past and Present","Jolinar's Memories ","The Devil You Know ","Foothold","Pretense","Urgo","A Hundred Days","Shades of Grey","New Ground","Maternal Instinct",
+"Crystal Skull","Nemesis "],"Season 4":["Small Victories ","The Other Side","Upgrades","Crossroads","Divide and Conquer","Window of Opportunity","Watergate","The First Ones","Scorched Earth","Beneath the Surface","Point of No Return","Tangent","The Curse","The Serpent's Venom","Chain Reaction","2010","Absolute Power","The Light","Prodigy","Entity","Double Jeopardy ","Exodus "],"Season 5":["Enemies ","Threshold ","Ascension","The Fifth Man","Red Sky","Rite of Passage","Beast of Burden","The Tomb",
+"Between Two Fires","2001","Desperate Measures","Wormhole X-Treme!","Proving Ground","48 Hours","Summit ","Last Stand ","Fail Safe","The Warrior","Menace","The Sentinel","Meridian","Revelations"],"Season 6":["Redemption","Redemption (Part 2)","Descent","Frozen","Nightwalkers","Abyss","Shadow Play","The Other Guys","Allegiance","Cure","Prometheus ","Unnatural Selection ","Sight Unseen","Smoke & Mirrors","Paradise Lost","Metamorphosis","Disclosure","Forsaken","The Changeling","Memento","Prophecy","Full Circle"],
+"Season 7":["Fallen ","Homecoming ","Fragile Balance","Orpheus","Revisions","Lifeboat","Enemy Mine","Space Race","Avenger 2.0","Birthright","Evolution","Evolution (Part 2)","Grace","Fallout","Chimera","Death Knell","Heroes","Heroes (Part 2)","Resurrection","Inauguration","Lost City","Lost City (Part 2)"],"Season 8":["New Order","New Order (Part 2)","Lockdown","Zero Hour","Icon","Avatar","Affinity","Covenant","Sacrifices","Endgame","Gemini","Prometheus Unbound","It's Good to Be King","Full Alert",
+"Citizen Joe","Reckoning","Reckoning (Part 2)","Threads","Moebius","Moebius (Part 2)"],"Season 9":["Avalon","Avalon (Part 2)","Origin ","The Ties That Bind","The Powers That Be","Beachhead","Ex Deus Machina","Babylon","Prototype","The Fourth Horseman","The Fourth Horseman (Part 2)","Collateral Damage","Ripple Effect","Stronghold","Ethon","Off the Grid","The Scourge","Arthur's Mantle","Crusade","Camelot "],"Season 10":["Flesh and Blood ","Morpheus","The Pegasus Project","Insiders","Uninvited","200",
+"Counterstrike","Memento Mori","Company of Thieves","The Quest","The Quest (Part 2)","Line in the Sand","The Road Not Taken","The Shroud","Bounty","Bad Guys","Talion","Family Ties","Dominion","Unending"]}};
+
+
+var selectStargateEpisode = function ( msg ) {
+	//no mention of episode, 5% chance of getting the movie
+	if ( msg.indexOf('episode') === -1 && Math.random() < 0.05 ) {
+		return 'Stargate (movie)';
+	}
+
+	var select = function ( arr ) {
+		var i = Math.rand( arr.length - 1 );
+
+		return {
+			value : arr[i],
+			index : i
+		};
+	};
+
+	var season  = select( Object.keys(episodes.SG1) ),
+		episode = select( episodes.SG1[season.value] );
+
+	var data = {
+		season  : season.value,
+		index   : episode.index + 1,
+		episode : episode.value
+	};
+
+
+	return '{season} episode #{index} - {episode}'.supplant( data );
+};
+
+bot.listen( re, selectStargateEpisode );
+})();
+
+;
+(function () {
 
 var template = '[{display_name}]({link}) '           +
 		'has {reputation} reputation, '              +
@@ -7251,16 +7297,19 @@ bot.addCommand({
 ;
 (function () {
 "use strict";
-//welcomes new users with a link to the room rules
+//welcomes new users with a link to the room rules and a short message.
 
 var seen = bot.memory.get( 'users' );
 
 var message = "Welcome to the JavaScript chat! Please review the " +
 		bot.adapter.link(
 			"room pseudo-rules",
-			"http://rlemon.github.com/so-chat-javascript-rules/" ) + ". " +
-	"Please don't ask if you can ask or if anyone's around; just ask " +
-	"your question, and if anyone's free and interested they'll help.";
+			"http://rlemon.github.com/so-chat-javascript-rules/"
+		) +
+		". Please don't ask if you can ask or if anyone's around; just ask " +
+		"your question, and if anyone's free and interested they'll help.";
+
+var messageCountRe = /transcript\/17(?:'|")>([\d\.]+)(k?)/i;
 
 function welcome ( name, room ) {
 	bot.adapter.out.add(
@@ -7290,12 +7339,20 @@ IO.register( 'userregister', function ( user, room ) {
 	function complete ( resp ) {
 		//I'm parsing html with regexps. hopefully Cthulu won't eat me.
 		// <a href="/transcript/17">7</a>
-		// <a href="/transcript/17">47.1k</a>
-		var chatMessages = /transcript\/17(?:'|")>([\d\.]+)(k?)/.exec( resp );
+		// [..., "17", null]
+		// <a href="/transcript/17">2.1k</a>
+		// [..., "2.1", "k"]
+		var chatMessages = messageCountRe.exec( resp ),
+			newUser;
 
-		if ( !chatMessages || (
-			!chatMessages[ 2 ] || parseFloat( chatMessages[1] ) < 2
-		)) {
+		if ( chatMessages ) {
+			newUser = !chatMessages[ 2 ] && Number( chatMessages[1] ) < 2;
+		}
+		else {
+			newUser = true;
+		}
+
+		if ( newUser ) {
 			welcome( user.name, room );
 		}
 		finish();
