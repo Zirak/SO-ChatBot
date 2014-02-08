@@ -251,29 +251,6 @@ return function ( html ) {
 	};
 });
 
-//a very incomplete circular-buffer implementation, used for the bored responses
-IO.CBuffer = function ( size ) {
-	var ret = {
-		items : [],
-		pos : 0,
-		size : size
-	};
-
-	ret.add = function ( item ) {
-		if ( this.pos === size ) {
-			this.pos = 0;
-		}
-
-		this.items[ this.pos ] = item;
-		this.pos += 1;
-	};
-	ret.contains = function ( item ) {
-		return this.items.indexOf( item ) > -1;
-	};
-
-	return ret;
-};
-
 IO.relativeUrlToAbsolute = function ( url ) {
 	//the anchor's href *property* will always be absolute, unlike the href
 	// *attribute*
@@ -1260,14 +1237,6 @@ bot.isOwner = function ( usrid ) {
 };
 
 IO.register( 'input', bot.parseMessage, bot );
-
-bot.beatInterval = 5000; //once every 5 seconds is Good Enough ™
-(function beat () {
-	bot.beat = setTimeout(function () {
-		IO.fire( 'heartbeat' );
-		beat();
-	}, bot.beatInterval );
-}());
 
 //execute arbitrary js code in a relatively safe environment
 bot.eval = (function () {
@@ -4979,7 +4948,7 @@ var history = {
 			data : {
 				format : 'json',
 				action : 'parse',
-				mobileformat : 'html',
+				mobileformat : true,
 				prop : 'text',
 				page : titles.join( ' ' )
 			},
@@ -5606,45 +5575,6 @@ bot.addCommand({
 });
 
 }());
-
-;
-(function () {
-//I wish you could use `default` as a variable name
-var def = {
-	895174 : [
-		'sbaaaang', 'badbetonbreakbutbedbackbone',
-		'okok', 'donotusetabtodigitthisnick' ]
-};
-
-var tracking = bot.memory.get( 'tracker', def );
-var message = '*→ {0} (also known as {1}) changed his name to {2}*',
-	messageNoAlias = '*→ {0} changed his name to {2}*';
-
-IO.register( 'userregister', function tracker ( user, room ) {
-	var names = tracking[ user.id ];
-
-	if ( !names ) {
-		return;
-	}
-	if ( names[0].toLowerCase() === user.name.toLowerCase() ) {
-		return;
-	}
-
-	bot.log( user, names, 'tracking found suspect' );
-
-	var userLink = bot.adapter.link(
-		names[0],
-		IO.relativeUrlToAbsolute( '/users/' + user.id ) );
-
-	var outFormat = names.length > 1 ? message : messageNoAlias,
-		out = outFormat.supplant(
-			userLink, names.slice(1), user.name );
-
-	bot.adapter.out.add( out, room );
-	names.unshift( user.name );
-});
-
-})();
 
 ;
 

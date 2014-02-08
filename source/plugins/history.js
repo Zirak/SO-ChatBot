@@ -131,7 +131,7 @@ var history = {
 			data : {
 				format : 'json',
 				action : 'parse',
-				mobileformat : 'html',
+				mobileformat : true,
 				prop : 'text',
 				page : titles.join( ' ' )
 			},
