@@ -51,6 +51,12 @@ function urban ( args, cb ) {
 		else {
 			msg = formatTop( resp.list[resultIndex] );
 		}
+
+		//truncate the message if it's too long. yes, this creates a problem
+		// with formatted messages. yes, we take extra leeway. shut up.
+		if ( msg.length > 500 ) {
+			msg = msg.slice( 0, 450 ) + '(snip)';
+		}
 		cache[ args ] = msg;
 
 		finish( msg );
