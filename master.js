@@ -5486,8 +5486,8 @@ function getMemeLink ( meme ) {
 (function () {
 "use strict";
 
-var unexisto = 'User {0} was not found (if the user is not in room {1}, pass ' +
-		'a user-id instead of a username).';
+var unexisto = 'User {0} was not found in room {1} (sorry, mustache only ' +
+		'works there).';
 
 function mustachify ( args ) {
 	var props = parseArgs( args ),
@@ -5543,7 +5543,7 @@ function mustachify ( args ) {
 			ret = {};
 
 		// /mustache usrid mustache
-		// /mustache user name mustache
+		// /mustache user-name mustache
 		//we've already `.pop`ed the mustache part, so we need to account for it
 		if ( parts.length > 0 && !(/\D/).test(last) ) {
 			ret.usrid = parts.join( ' ' );
@@ -5563,7 +5563,7 @@ function linkCheck ( suspect ) {
 	return suspect.startsWith( 'http' ) || suspect.startsWith( 'www' );
 }
 
-bot.addCommand({
+var cmd = {
 	name : 'mustache',
 	fun : mustachify,
 	privileges : {
@@ -5572,7 +5572,13 @@ bot.addCommand({
 
 	description : 'Mustachifies a user. ' +
 		'`/mustache [link|usrid|username] [mustache=rand(0,5)]`'
-});
+};
+
+bot.addCommand( cmd );
+
+// #176, alias moustache to mustache
+var moustache = Object.merge( cmd, { name : 'moustache' });
+bot.addCommand( moustache );
 
 }());
 
@@ -6224,9 +6230,9 @@ var cmd = {
 };
 bot.addCommand( cmd );
 
-// alias for stupid rlemon
+// alias for rlemon.
 var statsCmd = Object.merge( cmd, { name : 'stats'} );
-bot.addCommand(statsCmd);
+bot.addCommand( statsCmd );
 
 }());
 

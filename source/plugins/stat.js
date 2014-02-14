@@ -106,8 +106,8 @@ var cmd = {
 };
 bot.addCommand( cmd );
 
-// alias for stupid rlemon
+// alias for rlemon.
 var statsCmd = Object.merge( cmd, { name : 'stats'} );
-bot.addCommand(statsCmd);
+bot.addCommand( statsCmd );
 
 }());
