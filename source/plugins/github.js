@@ -1,29 +1,52 @@
-// issue #51 https://github.com/Zirak/SO-ChatBot/issues/51
+// issue #51 introduced this feature; #97 added user search.
 
 //valid args are one of the following:
 // /github reponame
 //which searches for a repository `reponame`
+// /github username/
+//which searches for a usernam `username`
 // /github username/reponame
 //which searches for a repository `reponame` under `username`
 var github = {
-
 	command : function ( args, cb ) {
-		var parts = /^([\S]+?)(?:\/([\S]+))?$/.exec( args ),
-			format = this.formatCb( finish );
+		var parts = /^([\S]+?)(?:(\/)([\S]+)?)?$/.exec( args ) || [],
+			self = this;
 
-		bot.log( parts, '/github input' );
+		parts = parts.filter( Boolean ).map( encodeURIComponent );
+		bot.log( args, parts, '/github input' );
 
-		if ( !parts ) {
+		if ( !parts.length ) {
 			finish( 'I can\'t quite understand that format. ' +
 					'See `/help github` for, well...help.' );
 		}
-		else if ( !parts[2] ) {
+		// username/reponame
+		else if ( parts[3] ) {
+			this.searchUserRepo( parts[1], parts[3], format );
+		}
+		// username/
+		else if ( parts[2] ) {
+			this.searchUser( parts[1], format );
+		}
+		// reponame
+		else {
 			this.searchRepo( parts[1], format );
 		}
-		else {
-			this.searchUserRepo( parts[1], parts[2], format );
-		}
 
+		function format ( obj ) {
+			var res;
+
+			if ( obj.error ) {
+				res = obj.error;
+			}
+			else if ( obj.type === 'user' ) {
+				res = self.userFormat( obj );
+			}
+			else {
+				res = self.repoFormat( obj );
+			}
+
+			finish( res );
+		}
 		function finish ( res ) {
 			bot.log( res, '/github finish' );
 
@@ -36,37 +59,22 @@ var github = {
 		}
 	},
 
-	formatCb : function ( cb ) {
-		var repoFullName = '{owner}/{name}';
+	repoFormat : function ( repo ) {
+		var name = repo.full_name, url = repo.html_url;
 
-		return function format ( repo ) {
-			if ( repo.error ) {
-				cb( repo.error );
-				return;
-			}
+		return bot.adapter.link( name, url ) + ' ' + repo.description;
+	},
 
-			//there are inconsistensies between the data returned from one
-			// API call and another. there're two important ones here:
-			//1. we have a full repo name (user/repoName) in one, but not
-			//     the other (and different property names can be used to
-			//     construct it)
-			//2. the link to the repo is called html_url in one, and
-			//      url in the other (in the former, url means something else)
-			var fullName = repo.full_name ?
-				repo.full_name : repoFullName.supplant( repo ),
-				url = repo.html_url || repo.url;
-
-			cb(
-				bot.adapter.link(fullName, url ) + ' ' + repo.description
-			);
-		};
+	userFormat : function ( user ) {
+		return bot.adapter.link( user.login, user.html_url );
 	},
 
 	searchRepo : function ( repoName, cb ) {
-		var keyword = encodeURIComponent( repoName );
-
 		IO.jsonp({
-			url : 'https://api.github.com/legacy/repos/search/' + keyword,
+			url : 'https://api.github.com/search/repositories',
+			data : {
+				q : repoName
+			},
 			jsonpName : 'callback',
 
 			fun : finish
@@ -74,44 +82,41 @@ var github = {
 
 		function finish ( resp ) {
 			bot.log( resp, '/github searchRepo response' );
-			var repo = resp.data.repositories[ 0 ];
+			var repo = resp.data.items[ 0 ];
 
-			if ( !repo ) {
-				repo = {
-					error : 'No results found'
-				};
-			}
+			repo = repo || { error : 'No results found' };
+			repo.type = 'repo';
 
 			cb( repo );
 		}
 	},
 
-	searchUserRepo : function ( userName, repoName, cb ) {
-		var keyword = encodeURIComponent( userName );
-		repoName = encodeURIComponent(
-			repoName.replace( / /g, '-' ).toLowerCase() );
-
-		var url = 'https://api.github.com/repos/{0}/{1}';
-		IO.jsonp({
-			url : url.supplant( keyword, repoName ),
-			jsonpName : 'callback',
-
-			fun : finish
-		});
+	searchUser : function ( username, cb ) {
+		this.sendAPIQuery( '/search/users', { q : username }, finish );
 
 		function finish ( resp ) {
-			bot.log( resp, '/github searchUserRepo response' );
+			bot.log( resp, '/github searchUser response' );
+			var user = resp.data.items[ 0 ];
 
-			var data = resp.data;
+			user = user || { error : 'No results found.' };
+			user.type = 'user';
 
-			if ( data.message === 'Not Found' ) {
-				data = {
-					error : 'User/Repo not found'
-				};
-			}
-
-			cb( data );
+			cb( user );
 		}
+	},
+
+	searchUserRepo : function ( userName, repoName, cb ) {
+		this.searchRepo( repoName + ' user:' + userName, cb );
+	},
+
+	sendAPIQuery : function ( path, data, cb ) {
+		IO.jsonp({
+			url : 'https://api.github.com' + path,
+			data : data,
+			jsonpName : 'callback',
+
+			fun : cb
+		});
 	}
 };
 
@@ -122,7 +127,8 @@ bot.addCommand({
 	permissions : {
 		del : 'NONE'
 	},
-	description : 'Search github for a repo.' +
-		'`/github repoName` or `/github username/reponame`',
+	description : 'Search github for a user or repo.' +
+		'`/github repoName` or `/github username/reponame` or ' +
+		'`/github username/`',
 	async : true
 });
