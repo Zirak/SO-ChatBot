@@ -4495,7 +4495,7 @@ var github = {
 
 		function finish ( resp ) {
 			bot.log( resp, '/github searchRepo response' );
-			var repo = resp.data.items[ 0 ];
+			var repo = ( resp.data.items || [] )[ 0 ];
 
 			repo = repo || { error : 'No results found' };
 			repo.type = 'repo';
@@ -4509,7 +4509,7 @@ var github = {
 
 		function finish ( resp ) {
 			bot.log( resp, '/github searchUser response' );
-			var user = resp.data.items[ 0 ];
+			var user = ( resp.data.items || [] )[ 0 ];
 
 			user = user || { error : 'No results found.' };
 			user.type = 'user';
