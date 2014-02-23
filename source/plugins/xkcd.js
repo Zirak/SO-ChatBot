@@ -65,9 +65,9 @@ function getXKCD( args, cb ) {
 
 	function finish( res ) {
 		bot.log( res, '/xkcd finish' );
-        
-        // because chat does not onebox https xkcd links
-        res = res.replace(/^https:/, 'http:');
+
+		// because chat does not onebox https xkcd links
+		res = res.replace(/^https:/, 'http:');
 
 		if ( cb && cb.call ) {
 			cb( res );
