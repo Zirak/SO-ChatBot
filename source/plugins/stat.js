@@ -162,7 +162,7 @@ function normalize_stats ( stats ) {
 	return stats;
 }
 
-bot.addCommand({
+var cmd = {
 	name : 'stat',
 	fun : stat,
 	permissions : {
@@ -172,6 +172,12 @@ bot.addCommand({
 	description : 'Gives useless stats on a user. ' +
 		'`/stat usrid|usrname [extended]`',
 	async : true
-});
+};
+
+bot.addCommand( cmd );
+
+// alias for rlemon.
+var statsCmd = Object.merge( cmd, { name : 'stats'} );
+bot.addCommand( statsCmd );
 
 }());

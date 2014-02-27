@@ -2948,6 +2948,35 @@ bot.listen(
 bot.listen( /^bitch/i, bot.personality.bitch, bot.personality );
 
 ;
+
+;
+(function () {
+var hammers = {
+	STOP  : 'HAMMERTIME!',
+	STAHP : 'HAMMAHTIME!',
+	HALT  : 'HAMMERZEIT!',
+	STOY  : 'ZABIVAT\' VREMYA!',
+	SISTITE: 'MALLEUS TEMPUS!'
+};
+
+// /(STOP|STAHP|...)[\.!\?]?$/
+var re = new RegExp(
+	'(' +
+		Object.keys(hammers).map(RegExp.escape).join('|') +
+	')[\\.!?]?$' );
+
+IO.register( 'input', function STOP ( msgObj ) {
+	var sentence = msgObj.content.toUpperCase(),
+		res = re.exec( sentence );
+
+	if ( res ) {
+		bot.adapter.out.add( hammers[res[1]], msgObj.room_id );
+	}
+});
+
+})();
+
+;
 //solves #86, mostly written by @Shmiddty
 (function () {
 "use strict";
@@ -3294,6 +3323,8 @@ bot.addCommand({
 });
 
 })();
+
+;
 
 ;
 (function () {
@@ -4514,6 +4545,8 @@ bot.addCommand({
 });
 
 ;
+
+;
 (function () {
 var nulls = [
 	'The Google contains no such knowledge',
@@ -5352,6 +5385,8 @@ bot.addCommand(bot.CommunityCommand({
 }));
 
 ;
+
+;
 (function () {
 
 function mdn ( args, cb ) {
@@ -5452,6 +5487,8 @@ function getMemeLink ( meme ) {
 })();
 
 ;
+
+;
 (function () {
 "use strict";
 
@@ -5550,6 +5587,8 @@ var moustache = Object.merge( cmd, { name : 'moustache' });
 bot.addCommand( moustache );
 
 }());
+
+;
 
 ;
 (function () {
@@ -5737,6 +5776,8 @@ bot.addCommand({
 	description : 'Returns result of "parsing" message according to the my ' +
 		'mini-macro capabilities (see online docs)',
 });
+
+;
 
 ;
 (function () {
@@ -6251,7 +6292,7 @@ function normalize_stats ( stats ) {
 	return stats;
 }
 
-bot.addCommand({
+var cmd = {
 	name : 'stat',
 	fun : stat,
 	permissions : {
@@ -6261,36 +6302,15 @@ bot.addCommand({
 	description : 'Gives useless stats on a user. ' +
 		'`/stat usrid|usrname [extended]`',
 	async : true
-});
-
-}());
-
-;
-(function () {
-var hammers = {
-	STOP  : 'HAMMERTIME!',
-	STAHP : 'HAMMAHTIME!',
-	HALT  : 'HAMMERZEIT!',
-	STOY  : 'ZABIVAT\' VREMYA!',
-	SISTITE: 'MALLEUS TEMPUS!'
 };
 
-// /(STOP|STAHP|...)[\.!\?]?$/
-var re = new RegExp(
-	'(' +
-		Object.keys(hammers).map(RegExp.escape).join('|') +
-	')[\\.!?]?$' );
+bot.addCommand( cmd );
 
-IO.register( 'input', function STOP ( msgObj ) {
-	var sentence = msgObj.content.toUpperCase(),
-		res = re.exec( sentence );
+// alias for rlemon.
+var statsCmd = Object.merge( cmd, { name : 'stats'} );
+bot.addCommand( statsCmd );
 
-	if ( res ) {
-		bot.adapter.out.add( hammers[res[1]], msgObj.room_id );
-	}
-});
-
-})();
+}());
 
 ;
 (function () {
