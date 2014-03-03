@@ -1,6 +1,6 @@
 (function () {
 var hammers = {
-	STOP  : 'HAMMERTIME!',
+	STOP  : 'http://i.imgur.com/ywiyRaI.gif',
 	STAHP : 'HAMMAHTIME!',
 	HALT  : 'HAMMERZEIT!',
 	STOY  : 'ZABIVAT\' VREMYA!',
