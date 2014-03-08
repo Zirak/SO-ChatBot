@@ -120,12 +120,14 @@ var linkTemplate = '[{text}]({url})';
 
 bot.adapter = {
 	//the following two only used in the adapter; you can change & drop at will
-	roomid : null,
-	fkey   : null,
+	roomid  : null,
+	fkey    : null,
 	//used in commands calling the SO API
-	site   : null,
+	site    : null,
 	//our user id
 	user_id : null,
+
+	maxLineLength : 500,
 
 	//not a necessary function, used in here to set some variables
 	init : function () {
@@ -135,9 +137,9 @@ bot.adapter = {
 			return;
 		}
 
-		this.fkey = fkey.value;
-		this.roomid = Number( /\d+/.exec(location)[0] );
-		this.site = this.getCurrentSite();
+		this.fkey    = fkey.value;
+		this.roomid  = Number( /\d+/.exec(location)[0] );
+		this.site    = this.getCurrentSite();
 		this.user_id = CHAT.user.current().id;
 
 		this.in.init();

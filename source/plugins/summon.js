@@ -11,6 +11,7 @@ var summon = function ( args ) {
 
 	bot.adapter.in.init( room );
 };
+
 var unsummon = function ( args, cb ) {
 	var room = args.content ? Number( args ) : args.get( 'room_id' );
 
@@ -21,7 +22,7 @@ var unsummon = function ( args, cb ) {
 
 	bot.adapter.in.leaveRoom( room, function ( err ) {
 		if ( err === 'base_room' ) {
-			finish( 'I can\'t leave my home.' );
+			finish( 'I can\'t leave my home!' );
 		}
 	});
 
@@ -42,7 +43,7 @@ bot.addCommand( bot.CommunityCommand({
 		del : 'NONE',
 		use : 'OWNER'
 	},
-	description : 'Say boopidi bee and in the room I shall appear. '+
+	description : 'Say boopidi bee and in the room I shall be. '+
 		'`/summon roomid`'
 }));
 
@@ -53,7 +54,7 @@ bot.addCommand( bot.CommunityCommand({
 		del : 'NONE',
 		use : 'OWNER'
 	},
-	description : 'Chant zippidi dee and from the room I shall take my leave. ' +
+	description : 'Chant zippidi lepat and from the room I shall depart. ' +
 		'`/unsummon [roomid=your_roomid]`'
 }));
 

@@ -65,7 +65,46 @@ function requestInfo ( room, ids, cb ) {
 		cb( user );
 	}
 }
+
 bot.users.request = requestInfo;
+
+bot.users.findUserId = function ( username ) {
+	var ids = Object.keys( bot.users );
+	username = normaliseName( username );
+
+	return ids.first( nameMatches ) || -1;
+
+	function nameMatches ( id ) {
+		return normaliseName( bot.users[id].name ) === username;
+	}
+
+	function normaliseName ( name ) {
+		return name.toLowerCase().replace( /\s/g, '' );
+	}
+}.memoize();
+
+bot.users.findUsername = (function () {
+var cache = {};
+
+return function ( id, cb ) {
+	if ( cache[id] ) {
+		finish( cache[id] );
+	}
+	else if ( bot.users[id] ) {
+		finish( bot.users[id].name );
+	}
+	else {
+		bot.users.request( bot.adapter.roomid, id, reqFinish );
+	}
+
+	function reqFinish ( user ) {
+		finish( user.name );
+	}
+	function finish ( name ) {
+		cb( cache[id] = name );
+	}
+};
+})();
 
 function loadUsers () {
 	if ( window.users ) {

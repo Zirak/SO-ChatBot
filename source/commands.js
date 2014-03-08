@@ -271,7 +271,7 @@ var unTellable = {
 Object.iterate( commands, function ( cmdName, fun ) {
 	var cmd = {
 		name : cmdName,
-		fun	 : fun,
+		fun  : fun,
 		permissions : {
 			del : 'NONE',
 			use : privilegedCommands[ cmdName ] ? 'OWNER' : 'ALL'

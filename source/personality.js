@@ -71,7 +71,7 @@ bot.personality = {
 	},
 
 	isThatTimeOfTheMonth : function () {
-		var day = (new Date).getDate();
+		var day = (new Date()).getDate();
 		//based on a true story
 		return day < 2 || day > 27;
 	}

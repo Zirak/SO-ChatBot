@@ -1,5 +1,11 @@
 //345678901234567890123456789012345678901234567890123456789012345678901234567890
 //small utility functions
+
+//takes n objects, and merges them into one super-object, which'll one day rule
+// the galaxy. Non-mutative. The merging, not the galaxy ruling.
+//
+// > Object.merge( {a : 4, b : 5}, {a : 6, c : 7} )
+// { a : 6, b : 5, c : 7 }
 Object.merge = function () {
 	return [].reduce.call( arguments, function ( ret, merger ) {
 
@@ -11,12 +17,17 @@ Object.merge = function () {
 	}, {} );
 };
 
+//iterates over an object. the callback receives the key, value and the obejct.
+// > Object.iterate( {a : 4, b : 5}, console.log.bind(console) )
+// a 4 { a: 4, b: 5 }
+// b 5 { a: 4, b: 5 }
 Object.iterate = function ( obj, cb, thisArg ) {
 	Object.keys( obj ).forEach(function (key) {
 		cb.call( thisArg, key, obj[key], obj );
 	});
 };
 
+//takes an array, and turns it into the truth map (item[i] => true)
 Object.TruthMap = function ( props ) {
 	return ( props || [] ).reduce( assignTrue, Object.create(null) );
 
@@ -32,7 +43,7 @@ Array.from = function ( arrayLike, start ) {
 };
 
 //SO chat uses an unfiltered for...in to iterate over an array somewhere, so
-// that I have to use Object.defineProperty to make these non-enumerable
+// that we have to use Object.defineProperty to make these non-enumerable
 Object.defineProperty( Array.prototype, 'invoke', {
 	value : function ( funName ) {
 		var args = Array.from( arguments, 1 );
@@ -47,6 +58,25 @@ Object.defineProperty( Array.prototype, 'invoke', {
 			}
 
 			return res;
+		}
+	},
+
+	configurable : true,
+	writable : true
+});
+
+Object.defineProperty( Array.prototype, 'pluck', {
+	value : function ( propName ) {
+		return this.map( pluck );
+
+		function pluck ( item, index, arr ) {
+			//protection aganst null/undefined.
+			try {
+				return item[ propName ];
+			}
+			catch (e) {
+				return item;
+			}
 		}
 	},
 
@@ -299,7 +329,9 @@ Date.timeSince = function ( d0, d1 ) {
 		//anything else is ms
 	];
 
-	while ( delay = delays.shift() ) {
+	while ( delays.length ) {
+		delay = delays.shift()
+
 		if ( ms >= delay.delta ) {
 			return format( ms / delay.delta, delay.suffix );
 		}

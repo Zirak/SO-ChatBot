@@ -358,6 +358,12 @@ IO.jsonp.google = function ( query, cb ) {
 ;
 //345678901234567890123456789012345678901234567890123456789012345678901234567890
 //small utility functions
+
+//takes n objects, and merges them into one super-object, which'll one day rule
+// the galaxy. Non-mutative. The merging, not the galaxy ruling.
+//
+// > Object.merge( {a : 4, b : 5}, {a : 6, c : 7} )
+// { a : 6, b : 5, c : 7 }
 Object.merge = function () {
 	return [].reduce.call( arguments, function ( ret, merger ) {
 
@@ -369,12 +375,17 @@ Object.merge = function () {
 	}, {} );
 };
 
+//iterates over an object. the callback receives the key, value and the obejct.
+// > Object.iterate( {a : 4, b : 5}, console.log.bind(console) )
+// a 4 { a: 4, b: 5 }
+// b 5 { a: 4, b: 5 }
 Object.iterate = function ( obj, cb, thisArg ) {
 	Object.keys( obj ).forEach(function (key) {
 		cb.call( thisArg, key, obj[key], obj );
 	});
 };
 
+//takes an array, and turns it into the truth map (item[i] => true)
 Object.TruthMap = function ( props ) {
 	return ( props || [] ).reduce( assignTrue, Object.create(null) );
 
@@ -390,7 +401,7 @@ Array.from = function ( arrayLike, start ) {
 };
 
 //SO chat uses an unfiltered for...in to iterate over an array somewhere, so
-// that I have to use Object.defineProperty to make these non-enumerable
+// that we have to use Object.defineProperty to make these non-enumerable
 Object.defineProperty( Array.prototype, 'invoke', {
 	value : function ( funName ) {
 		var args = Array.from( arguments, 1 );
@@ -405,6 +416,25 @@ Object.defineProperty( Array.prototype, 'invoke', {
 			}
 
 			return res;
+		}
+	},
+
+	configurable : true,
+	writable : true
+});
+
+Object.defineProperty( Array.prototype, 'pluck', {
+	value : function ( propName ) {
+		return this.map( pluck );
+
+		function pluck ( item, index, arr ) {
+			//protection aganst null/undefined.
+			try {
+				return item[ propName ];
+			}
+			catch (e) {
+				return item;
+			}
 		}
 	},
 
@@ -657,7 +687,9 @@ Date.timeSince = function ( d0, d1 ) {
 		//anything else is ms
 	];
 
-	while ( delay = delays.shift() ) {
+	while ( delays.length ) {
+		delay = delays.shift()
+
 		if ( ms >= delay.delta ) {
 			return format( ms / delay.delta, delay.suffix );
 		}
@@ -686,7 +718,7 @@ var bot = window.bot = {
 		invoked   : 0,
 		learned   : 0,
 		forgotten : 0,
-		start     : new Date
+		start     : new Date()
 	},
 	users : {}, //will be filled in build
 
@@ -1012,6 +1044,7 @@ bot.banlist.remove = function ( id ) {
 //some sort of pseudo constructor
 bot.Command = function ( cmd ) {
 	cmd.name = cmd.name.toLowerCase();
+	cmd.thisArg = cmd.thisArg || cmd;
 
 	cmd.permissions = cmd.permissions || {};
 	cmd.permissions.use = cmd.permissions.use || 'ALL';
@@ -1043,6 +1076,7 @@ bot.Command = function ( cmd ) {
 
 	cmd.exec = function () {
 		this.invoked += 1;
+
 		return this.fun.apply( this.thisArg, arguments );
 	};
 
@@ -1097,7 +1131,7 @@ bot.CommunityCommand = function ( command, req ) {
 			return 'Already registered; still need {0} more'.supplant( needed );
 		}
 
-		used[ usrid ] = new Date;
+		used[ usrid ] = new Date();
 		needed -= 1;
 
 		if ( needed > 0 ) {
@@ -1109,7 +1143,7 @@ bot.CommunityCommand = function ( command, req ) {
 	}
 
 	function clean () {
-		var tenMinsAgo = new Date;
+		var tenMinsAgo = new Date();
 		tenMinsAgo.setMinutes( tenMinsAgo.getMinutes() - 10 );
 
 		Object.keys( used ).reduce( rm, used );
@@ -1148,16 +1182,19 @@ bot.Message = function ( text, msgObj ) {
 		//parse( msgToParse ) parses msgToParse
 		//parse( msgToParse, true ) combination of the above
 		parse : function ( msg, map ) {
-			if ( !!msg === msg ) {
+			// parse( true )
+			if ( Boolean(msg) === msg ) {
 				map = msg;
 				msg = text;
 			}
 			var parsed = bot.parseCommandArgs( msg || text );
 
+			// parse( msgToParse )
 			if ( !map ) {
 				return parsed;
 			}
 
+			// parse( msgToParse, true )
 			return parsed.map(function ( part ) {
 				return bot.Message( part, msgObj );
 			});
@@ -1166,45 +1203,13 @@ bot.Message = function ( text, msgObj ) {
 		//execute a regexp against the text, saving it inside the object
 		exec : function ( regexp ) {
 			var match = regexp.exec( text );
-			this.matches = match ? match : [];
+			this.matches = match || [];
 
 			return match;
 		},
 
-		findUserid : function ( username ) {
-			username = username.toLowerCase().replace( /\s/g, '' );
-			var ids = Object.keys( bot.users );
-
-			return ids.first(function ( id ) {
-				var name = bot.users[ id ].name
-					.toLowerCase().replace( /\s/g, '' );
-
-				return name === username;
-			}) || -1;
-		}.memoize(),
-
-		findUsername : (function () {
-			var cache = {};
-
-			return function ( id, cb ) {
-				if ( cache[id] ) {
-					finish( cache[id] );
-				}
-				else if ( bot.users[id] ) {
-					finish( bot.users[id].name );
-				}
-				else {
-					bot.users.request( bot.adapter.roomid, id, reqFinish );
-				}
-
-				function reqFinish ( user ) {
-					finish( user.name );
-				}
-				function finish ( name ) {
-					cb( cache[id] = name );
-				}
-			};
-		})(),
+		findUserId   : bot.users.findUserId,
+		findUsername : bot.users.findUsername,
 
 		codify : bot.adapter.codify.bind( bot.adapter ),
 		escape : bot.adapter.escape.bind( bot.adapter ),
@@ -2108,7 +2113,7 @@ var unTellable = {
 Object.iterate( commands, function ( cmdName, fun ) {
 	var cmd = {
 		name : cmdName,
-		fun	 : fun,
+		fun  : fun,
 		permissions : {
 			del : 'NONE',
 			use : privilegedCommands[ cmdName ] ? 'OWNER' : 'ALL'
@@ -2340,12 +2345,14 @@ var linkTemplate = '[{text}]({url})';
 
 bot.adapter = {
 	//the following two only used in the adapter; you can change & drop at will
-	roomid : null,
-	fkey   : null,
+	roomid  : null,
+	fkey    : null,
 	//used in commands calling the SO API
-	site   : null,
+	site    : null,
 	//our user id
 	user_id : null,
+
+	maxLineLength : 500,
 
 	//not a necessary function, used in here to set some variables
 	init : function () {
@@ -2355,9 +2362,9 @@ bot.adapter = {
 			return;
 		}
 
-		this.fkey = fkey.value;
-		this.roomid = Number( /\d+/.exec(location)[0] );
-		this.site = this.getCurrentSite();
+		this.fkey    = fkey.value;
+		this.roomid  = Number( /\d+/.exec(location)[0] );
+		this.site    = this.getCurrentSite();
 		this.user_id = CHAT.user.current().id;
 
 		this.in.init();
@@ -2849,7 +2856,46 @@ function requestInfo ( room, ids, cb ) {
 		cb( user );
 	}
 }
+
 bot.users.request = requestInfo;
+
+bot.users.findUserId = function ( username ) {
+	var ids = Object.keys( bot.users );
+	username = normaliseName( username );
+
+	return ids.first( nameMatches ) || -1;
+
+	function nameMatches ( id ) {
+		return normaliseName( bot.users[id].name ) === username;
+	}
+
+	function normaliseName ( name ) {
+		return name.toLowerCase().replace( /\s/g, '' );
+	}
+}.memoize();
+
+bot.users.findUsername = (function () {
+var cache = {};
+
+return function ( id, cb ) {
+	if ( cache[id] ) {
+		finish( cache[id] );
+	}
+	else if ( bot.users[id] ) {
+		finish( bot.users[id].name );
+	}
+	else {
+		bot.users.request( bot.adapter.roomid, id, reqFinish );
+	}
+
+	function reqFinish ( user ) {
+		finish( user.name );
+	}
+	function finish ( name ) {
+		cb( cache[id] = name );
+	}
+};
+})();
 
 function loadUsers () {
 	if ( window.users ) {
@@ -2934,7 +2980,7 @@ bot.personality = {
 	},
 
 	isThatTimeOfTheMonth : function () {
-		var day = (new Date).getDate();
+		var day = (new Date()).getDate();
 		//based on a true story
 		return day < 2 || day > 27;
 	}
@@ -2946,8 +2992,6 @@ bot.listen(
 	/(I('m| am))?\s*sorry/i,
 	bot.personality.apologize, bot.personality );
 bot.listen( /^bitch/i, bot.personality.bitch, bot.personality );
-
-;
 
 ;
 (function () {
@@ -3132,8 +3176,6 @@ var commandHandler = function ( msg ) {
 	}
 
 	bot.memory.save( 'afk' );
-	//msg.directreply( reply ); // disable direct replying on returning from AFK since it's annoying.
-	                            // keep the functionality in the background in the meantime.
 };
 
 bot.addCommand({
@@ -3199,6 +3241,8 @@ IO.register( 'input', function afkInputListener ( msgObj ) {
 })();
 
 ;
+
+;
 (function () {
 "use strict";
 
@@ -3235,96 +3279,135 @@ bot.addCommand({
 
 ;
 (function () {
+"use strict";
 
-function ban ( args ) {
-	var ret = [];
-	if ( args.content ) {
-		args.parse().forEach( ban );
-	}
-	else {
-		ret = Object.keys( bot.banlist ).filter( Number ).map( format );
-	}
+//status codes for (un)ban.
+var codes = {
+	added : 0,
+	0 : '{0} added to mindjail.',
 
-	return ret.join( ' ' ) || 'Nothing to show/do.';
+	notFound : 1,
+	1 : 'I couldn\'t find {0}.',
 
-	function ban ( usrid ) {
-		var id = Number( usrid ),
-		    msg;
-		if ( isNaN(id) ) {
-			id = args.findUserid( usrid.replace(/^@/, '') );
+	owner : 2,
+	2 : 'I can\'t mindjail {0}, they\'re an owner.',
+
+	alreadyIn : 3,
+	3 : '{0} is already in mindjail.',
+
+	notIn : 4,
+	4 : '{0} isn\'t in mindjail.',
+
+	freed : 5,
+	5 : '{0} freed from mindjail!'
+};
+
+var ban = {
+	name : 'ban',
+
+	fun : function ( msg ) {
+		return this.format( this.logic(msg.toString()) );
+	},
+
+	//takes a username or userid or the empty string. if the last is given,
+	// an array of banned user ids. under regular conditions, an object with
+	// the message code (see codes above) and the argument is given.
+	logic : function ( arg ) {
+		if ( !arg ) {
+			return Object.keys( bot.banlist ).filter( Number );
 		}
+
+		var id = Number( arg ),
+			code;
+
+		if ( isNaN(id) ) {
+			id = bot.users.findUserId( arg.replace(/^@/, '') );
+		}
+
+		bot.log( arg, id, '/ban argument' );
 
 		if ( id < 0 ) {
-			msg = 'Cannot find user {0}.';
+			code = codes.notFound;
 		}
 		else if ( bot.isOwner(id) ) {
-			msg = 'Cannot mindjail owner {0}.';
+			code = codes.owner;
 		}
 		else if ( bot.banlist.contains(id) ) {
-			msg = 'User {0} already in mindjail.';
+			code = codes.alreadyIn;
 		}
 		else {
 			bot.banlist.add( id );
-			msg = 'User {0} added to mindjail.';
+			code = codes.added;
 		}
 
-		ret.push( msg.supplant(usrid) );
-	}
+		return { code : code, usrid : arg };
+	},
 
-	function format ( id ) {
-		var user = bot.users[ id ],
-		name = user ? user.name : '?';
+	//res is either an array of userids, or a success/error code with the userid
+	format : function ( res ) {
+		if ( Array.isArray(res) ) {
+			return res.map( this.formatUser ).join( ', ' )
+				|| 'Nothing to show.';
+		}
 
-		return '{0} ({1})'.supplant( id, name );
-	}
-}
+		return codes[ res.code ].supplant( res.usrid );
+	},
 
-function unban ( args ) {
-	var ret = [];
-	args.parse().forEach( unban );
+	formatUser : function ( usrid ) {
+		var user = bot.users[ usrid ],
+			name = user ? user.name : '?';
 
-	return ret.join( ' ' );
+		return '{0} ({1})'.supplant( usrid, name );
+	},
 
-	function unban ( usrid ) {
-		var id = Number( usrid ),
-		    msg;
+	permissions : { del : 'NONE', use : 'OWNER' },
+	description : 'Bans a user from using me. Lacking arguments, prints the ' +
+		'ban list. `/ban [usr_id|usr_name]`'
+};
+
+var unban = {
+	name : 'unban',
+
+	fun : function ( msg ) {
+		return this.format( this.logic(msg.toString()) );
+	},
+
+	logic : function ( arg ) {
+		var id = Number( arg ),
+			code;
 
 		if ( isNaN(id) ) {
-			id = args.findUserid( usrid.replace(/^@/, '') );
+			id = bot.users.findUserId( arg.replace(/^@/, '') );
 		}
 
+		bot.log( arg, id, '/unban argument' );
+
 		if ( id < 0 ) {
-			msg = 'Cannot find user {0}.';
+			code = codes.notFound;
 		}
 		else if ( !bot.banlist.contains(id) ) {
-			msg = 'User {0} isn\'t in mindjail.';
+			code = codes.notIn;
 		}
 		else {
 			bot.banlist.remove( id );
-			msg = 'User {0} freed from mindjail!';
+			code = codes.freed;
 		}
 
-		ret.push( msg.supplant(usrid) );
-	}
-}
-bot.addCommand(bot.CommunityCommand({
-	name : 'ban',
-	fun : ban,
-	permissions : { del : 'NONE', use : 'OWNER' },
-	description : 'Bans user(s) from using me. Lacking arguments, prints the ' +
-		'banlist. `/ban [usr_id|usr_name, [...]]`'
-}));
+		return { code : code, usrid : arg };
+	},
 
-bot.addCommand({
-	name : 'unban',
-	fun : unban,
+	format : function ( res ) {
+		return codes[ res.code ].supplant( res.usrid );
+	},
+
 	permissions : { del : 'NONE', use : 'OWNER' },
-	description : 'Removes a user from my mindjail. `/unban usr_id|usr_name`'
-});
+	description : 'Frees a user from my mindjail. `/unban usr_id|usr_name`'
+};
+
+bot.addCommand( bot.CommunityCommand(ban) );
+bot.addCommand( unban );
 
 })();
-
-;
 
 ;
 (function () {
@@ -4333,6 +4416,8 @@ bot.addCommand({
 }());
 
 ;
+
+;
 (function () {
 var findCommand = function ( args ) {
     var input = args.toString().toLowerCase(),
@@ -4392,6 +4477,8 @@ bot.addCommand({
         'name/description. `/findCommand partOfNameOrDescription`'
 });
 })();
+
+;
 
 ;
 //listener to help decide which Firefly episode to watch
@@ -4545,80 +4632,87 @@ bot.addCommand({
 });
 
 ;
-
-;
 (function () {
+
 var nulls = [
 	'The Google contains no such knowledge',
 	'There are no search results. Run.',
-	'My Google Fu has failed.'];
+	'My Google Fu has failed.' ];
 
-function google ( args, cb ) {
-	IO.jsonp.google( args.toString() + ' -site:w3schools.com', finishCall );
+var command = {
+	name : 'google',
 
-	function finishCall ( resp ) {
-		bot.log( resp, '/google response' );
-		if ( resp.responseStatus !== 200 ) {
-			finish( 'My Google-Fu is on vacation; status ' +
-					resp.responseStatus );
-			return;
+	fun : function ( msg, cb ) {
+		var self = this;
+
+		this.logic( msg, finishedLogic );
+
+		function finishedLogic ( obj ) {
+			var res = self.format( obj );
+
+			if ( cb && cb.call ) {
+				cb( res );
+			}
+			else {
+				msg.directreply( res );
+			}
 		}
+	},
 
-		//TODO: change hard limit to argument
-		var results = resp.responseData.results.slice( 0, 3 );
-		bot.log( results, '/google results' );
+	logic : function ( query, cb ) {
+		IO.jsonp.google( String(query) + ' -site:w3schools.com', finishCall );
 
+		function finishCall ( resp ) {
+			bot.log( resp, '/google response' );
+			if ( resp.responseStatus !== 200 ) {
+				finish( 'My Google-Fu is on vacation; status ' +
+						resp.responseStatus );
+				return;
+			}
+
+			//TODO: change hard limit to argument
+			var results = resp.responseData.results.slice( 0, 3 );
+			results.query = query;
+			bot.log( results, '/google results' );
+
+			cb( results );
+		}
+	},
+
+	format : function format ( results ) {
 		if ( !results.length ) {
-			finish( nulls.random() );
-			return;
+			return nulls.random();
 		}
-		finish( format(args.content, results) );
-	}
 
-	function format ( query, results ) {
-		var res = formatLink( query ) + ' ' +
+		var res = formatLink( results.query ) + ' ' +
 			results.map( formatResult ).join( ' ; ' );
 
-		if ( res.length > 200 ) {
-			res = results.map(function (r) {
-				return r.unescapedUrl;
-			}).join( ' ; ' );
+		if ( res.length > bot.adapter.maxLineLength ) {
+			res = results.pluck( 'unescapedUrl' ).join( ' ; ' );
 		}
 
 		return res;
-	}
 
-	function formatResult ( result ) {
-		var title = IO.decodehtmlEntities( result.titleNoFormatting );
-		return args.link( title, result.unescapedUrl );
-	}
-	function formatLink ( query ) {
-		return args.link(
-			'*',
-			'http://google.com/search?q=' +
-				encodeURIComponent( query ) );
-	}
-
-	function finish ( res ) {
-		bot.log( res, '/google final' );
-		if ( cb && cb.call ) {
-			cb( res );
+		function formatResult ( result ) {
+			var title = IO.decodehtmlEntities( result.titleNoFormatting );
+			return bot.adapter.link( title, result.unescapedUrl );
 		}
-		else {
-			args.reply( res );
-		}
-	}
-}
+		function formatLink ( query ) {
+			var link =
+				'http://google.com/search?q=' + encodeURIComponent( query );
 
-bot.addCommand({
-	name : 'google',
-	fun  : google,
+			return bot.adapter.link( '*', link );
+		}
+	},
+
 	permissions : {
 		del : 'NONE'
 	},
 	description : 'Search Google. `/google query`',
 	async : true
-});
+};
+
+bot.addCommand( command );
 }());
 
 ;
@@ -5156,6 +5250,8 @@ bot.addCommand({
 })();
 
 ;
+
+;
 (function () {
 "use strict";
 var storage = bot.memory.get( 'learn' );
@@ -5385,8 +5481,6 @@ bot.addCommand(bot.CommunityCommand({
 }));
 
 ;
-
-;
 (function () {
 
 function mdn ( args, cb ) {
@@ -5424,6 +5518,8 @@ bot.addCommand({
 });
 
 })();
+
+;
 
 ;
 (function () {
@@ -5485,8 +5581,6 @@ function getMemeLink ( meme ) {
 }
 
 })();
-
-;
 
 ;
 (function () {
@@ -5589,8 +5683,6 @@ bot.addCommand( moustache );
 }());
 
 ;
-
-;
 (function () {
 
 function norris ( args, cb ) {
@@ -5631,6 +5723,8 @@ bot.addCommand({
 });
 
 })();
+
+;
 
 ;
 (function () {
@@ -5776,8 +5870,6 @@ bot.addCommand({
 	description : 'Returns result of "parsing" message according to the my ' +
 		'mini-macro capabilities (see online docs)',
 });
-
-;
 
 ;
 (function () {
@@ -6044,6 +6136,8 @@ bot.addCommand({
 });
 
 })();
+
+;
 
 ;
 (function () {
@@ -6432,6 +6526,7 @@ var summon = function ( args ) {
 
 	bot.adapter.in.init( room );
 };
+
 var unsummon = function ( args, cb ) {
 	var room = args.content ? Number( args ) : args.get( 'room_id' );
 
@@ -6442,7 +6537,7 @@ var unsummon = function ( args, cb ) {
 
 	bot.adapter.in.leaveRoom( room, function ( err ) {
 		if ( err === 'base_room' ) {
-			finish( 'I can\'t leave my home.' );
+			finish( 'I can\'t leave my home!' );
 		}
 	});
 
@@ -6463,7 +6558,7 @@ bot.addCommand( bot.CommunityCommand({
 		del : 'NONE',
 		use : 'OWNER'
 	},
-	description : 'Say boopidi bee and in the room I shall appear. '+
+	description : 'Say boopidi bee and in the room I shall be. '+
 		'`/summon roomid`'
 }));
 
@@ -6474,7 +6569,7 @@ bot.addCommand( bot.CommunityCommand({
 		del : 'NONE',
 		use : 'OWNER'
 	},
-	description : 'Chant zippidi dee and from the room I shall take my leave. ' +
+	description : 'Chant zippidi lepat and from the room I shall depart. ' +
 		'`/unsummon [roomid=your_roomid]`'
 }));
 
@@ -7059,6 +7154,8 @@ bot.addCommand({
 })();
 
 ;
+
+;
 bot.addCommand({
 	name : 'user',
 	fun : function ( args ) {
@@ -7125,7 +7222,7 @@ undecided=["SSdtIG5vdCBzdXJl", "RVJST1IgQ0FMQ1VMQVRJTkcgUkVTVUxU","SSBrbm93IGp1c
 sameness=["VGhhdCdzIG5vdCByZWFsbHkgYSBjaG9pY2UsIG5vdyBpcyBpdD8=","U291bmRzIGxpa2UgeW91IGhhdmUgYWxyZWFkeSBkZWNpZGVk","Q2hlYXRlciBjaGVhdGVyIHlvdXIgaG91c2UgaXMgYSBoZWF0ZXI="].map(atob);
 
 //now for the juicy part
-answers=["QWJzb2x1dGVseSBub3Q=","QWJzb2x1dGVseSBub3Q=","QWJzb2x1dGVseSBub3Q=","QWxsIHNpZ25zIHBvaW50IHRvIG5v","QWxsIHNpZ25zIHBvaW50IHRvIG5v","QWxsIHNpZ25zIHBvaW50IHRvIG5v","QWxsIHNpZ25zIHBvaW50IHRvIHllcw==","QWxsIHNpZ25zIHBvaW50IHRvIHllcw==","QWxsIHNpZ25zIHBvaW50IHRvIHllcw==","QnV0IG9mIGNvdXJzZQ==","QnV0IG9mIGNvdXJzZQ==","QnV0IG9mIGNvdXJzZQ==","QnkgYWxsIG1lYW5z","QnkgYWxsIG1lYW5z","QnkgYWxsIG1lYW5z","Q2VydGFpbmx5IG5vdA==","Q2VydGFpbmx5IG5vdA==","Q2VydGFpbmx5IG5vdA==","Q2VydGFpbmx5","Q2VydGFpbmx5","Q2VydGFpbmx5","RGVmaW5pdGVseQ==","RGVmaW5pdGVseQ==","RGVmaW5pdGVseQ==","RG91YnRmdWxseQ==","RG91YnRmdWxseQ==","RG91YnRmdWxseQ==","RnJhbmtseSBteSBkZWFyLCBJIGRvbid0IGdpdmUgYSBkZWFu", "RnJhbmtseSBteSBkZWFyLCBJIGRvbid0IGdpdmUgYSBkZWFu", "SSBjYW4gbmVpdGhlciBjb25maXJtIG5vciBkZW55","SSBleHBlY3Qgc28=","SSBleHBlY3Qgc28=","SSBleHBlY3Qgc28=","SSdtIG5vdCBzbyBzdXJlIGFueW1vcmUuIEl0IGNhbiBnbyBlaXRoZXIgd2F5","SW1wb3NzaWJsZQ==","SW1wb3NzaWJsZQ==","SW1wb3NzaWJsZQ==","SW5kZWVk","SW5kZWVk","SW5kZWVk","SW5kdWJpdGFibHk=","SW5kdWJpdGFibHk=","SW5kdWJpdGFibHk=","Tm8gd2F5","Tm8gd2F5","Tm8gd2F5","Tm8=","Tm8=","Tm8=","Tm8=","Tm9wZQ==","Tm9wZQ==","Tm9wZQ==","Tm90IGEgY2hhbmNl","Tm90IGEgY2hhbmNl","Tm90IGEgY2hhbmNl","Tm90IGF0IGFsbA==","Tm90IGF0IGFsbA==","Tm90IGF0IGFsbA==","TnVoLXVo","TnVoLXVo","TnVoLXVo","T2YgY291cnNlIG5vdA==","T2YgY291cnNlIG5vdA==","T2YgY291cnNlIG5vdA==","T2YgY291cnNlIQ==","T2YgY291cnNlIQ==","T2YgY291cnNlIQ==","UHJvYmFibHk=","UHJvYmFibHk=","UHJvYmFibHk=","WWVzIQ==","WWVzIQ==","WWVzIQ==","WWVzIQ==","WWVzLCBhYnNvbHV0ZWx5","WWVzLCBhYnNvbHV0ZWx5","WWVzLCBhYnNvbHV0ZWx5"].map(atob)
+answers=["QWJzb2x1dGVseSBub3Q=","QWJzb2x1dGVseSBub3Q=","QWJzb2x1dGVseSBub3Q=","QWxsIHNpZ25zIHBvaW50IHRvIG5v","QWxsIHNpZ25zIHBvaW50IHRvIG5v","QWxsIHNpZ25zIHBvaW50IHRvIG5v","QWxsIHNpZ25zIHBvaW50IHRvIHllcw==","QWxsIHNpZ25zIHBvaW50IHRvIHllcw==","QWxsIHNpZ25zIHBvaW50IHRvIHllcw==","QnV0IG9mIGNvdXJzZQ==","QnV0IG9mIGNvdXJzZQ==","QnV0IG9mIGNvdXJzZQ==","QnkgYWxsIG1lYW5z","QnkgYWxsIG1lYW5z","QnkgYWxsIG1lYW5z","Q2VydGFpbmx5IG5vdA==","Q2VydGFpbmx5IG5vdA==","Q2VydGFpbmx5IG5vdA==","Q2VydGFpbmx5","Q2VydGFpbmx5","Q2VydGFpbmx5","RGVmaW5pdGVseQ==","RGVmaW5pdGVseQ==","RGVmaW5pdGVseQ==","RG91YnRmdWxseQ==","RG91YnRmdWxseQ==","RG91YnRmdWxseQ==","RnJhbmtseSBteSBkZWFyLCBJIGRvbid0IGdpdmUgYSBkZWFu", "RnJhbmtseSBteSBkZWFyLCBJIGRvbid0IGdpdmUgYSBkZWFu", "SSBjYW4gbmVpdGhlciBjb25maXJtIG5vciBkZW55","SSBleHBlY3Qgc28=","SSBleHBlY3Qgc28=","SSBleHBlY3Qgc28=","SSdtIG5vdCBzbyBzdXJlIGFueW1vcmUuIEl0IGNhbiBnbyBlaXRoZXIgd2F5","SW1wb3NzaWJsZQ==","SW1wb3NzaWJsZQ==","SW1wb3NzaWJsZQ==","SW5kZWVk","SW5kZWVk","SW5kZWVk","SW5kdWJpdGFibHk=","SW5kdWJpdGFibHk=","SW5kdWJpdGFibHk=","Tm8gd2F5","Tm8gd2F5","Tm8gd2F5","Tm8=","Tm8=","Tm8=","Tm8=","Tm9wZQ==","Tm9wZQ==","Tm9wZQ==","Tm90IGEgY2hhbmNl","Tm90IGEgY2hhbmNl","Tm90IGEgY2hhbmNl","Tm90IGF0IGFsbA==","Tm90IGF0IGFsbA==","Tm90IGF0IGFsbA==","TnVoLXVo","TnVoLXVo","TnVoLXVo","T2YgY291cnNlIG5vdA==","T2YgY291cnNlIG5vdA==","T2YgY291cnNlIG5vdA==","T2YgY291cnNlIQ==","T2YgY291cnNlIQ==","T2YgY291cnNlIQ==","UHJvYmFibHk=","UHJvYmFibHk=","UHJvYmFibHk=","WWVzIQ==","WWVzIQ==","WWVzIQ==","WWVzIQ==","WWVzLCBhYnNvbHV0ZWx5","WWVzLCBhYnNvbHV0ZWx5","WWVzLCBhYnNvbHV0ZWx5"].map(atob);
 //can you feel the nectar?
 
 

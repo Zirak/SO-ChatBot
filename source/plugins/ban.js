@@ -1,89 +1,130 @@
 (function () {
+"use strict";
 
-function ban ( args ) {
-	var ret = [];
-	if ( args.content ) {
-		args.parse().forEach( ban );
-	}
-	else {
-		ret = Object.keys( bot.banlist ).filter( Number ).map( format );
-	}
+//status codes for (un)ban.
+var codes = {
+	added : 0,
+	0 : '{0} added to mindjail.',
 
-	return ret.join( ' ' ) || 'Nothing to show/do.';
+	notFound : 1,
+	1 : 'I couldn\'t find {0}.',
 
-	function ban ( usrid ) {
-		var id = Number( usrid ),
-		    msg;
-		if ( isNaN(id) ) {
-			id = args.findUserid( usrid.replace(/^@/, '') );
+	owner : 2,
+	2 : 'I can\'t mindjail {0}, they\'re an owner.',
+
+	alreadyIn : 3,
+	3 : '{0} is already in mindjail.',
+
+	notIn : 4,
+	4 : '{0} isn\'t in mindjail.',
+
+	freed : 5,
+	5 : '{0} freed from mindjail!'
+};
+
+var ban = {
+	name : 'ban',
+
+	fun : function ( msg ) {
+		return this.format( this.logic(msg.toString()) );
+	},
+
+	//takes a username or userid or the empty string. if the last is given,
+	// an array of banned user ids. under regular conditions, an object with
+	// the message code (see codes above) and the argument is given.
+	logic : function ( arg ) {
+		if ( !arg ) {
+			return Object.keys( bot.banlist ).filter( Number );
 		}
+
+		var id = Number( arg ),
+			code;
+
+		if ( isNaN(id) ) {
+			id = bot.users.findUserId( arg.replace(/^@/, '') );
+		}
+
+		bot.log( arg, id, '/ban argument' );
 
 		if ( id < 0 ) {
-			msg = 'Cannot find user {0}.';
+			code = codes.notFound;
 		}
 		else if ( bot.isOwner(id) ) {
-			msg = 'Cannot mindjail owner {0}.';
+			code = codes.owner;
 		}
 		else if ( bot.banlist.contains(id) ) {
-			msg = 'User {0} already in mindjail.';
+			code = codes.alreadyIn;
 		}
 		else {
 			bot.banlist.add( id );
-			msg = 'User {0} added to mindjail.';
+			code = codes.added;
 		}
 
-		ret.push( msg.supplant(usrid) );
-	}
+		return { code : code, usrid : arg };
+	},
 
-	function format ( id ) {
-		var user = bot.users[ id ],
-		name = user ? user.name : '?';
+	//res is either an array of userids, or a success/error code with the userid
+	format : function ( res ) {
+		if ( Array.isArray(res) ) {
+			return res.map( this.formatUser ).join( ', ' )
+				|| 'Nothing to show.';
+		}
 
-		return '{0} ({1})'.supplant( id, name );
-	}
-}
+		return codes[ res.code ].supplant( res.usrid );
+	},
 
-function unban ( args ) {
-	var ret = [];
-	args.parse().forEach( unban );
+	formatUser : function ( usrid ) {
+		var user = bot.users[ usrid ],
+			name = user ? user.name : '?';
 
-	return ret.join( ' ' );
+		return '{0} ({1})'.supplant( usrid, name );
+	},
 
-	function unban ( usrid ) {
-		var id = Number( usrid ),
-		    msg;
+	permissions : { del : 'NONE', use : 'OWNER' },
+	description : 'Bans a user from using me. Lacking arguments, prints the ' +
+		'ban list. `/ban [usr_id|usr_name]`'
+};
+
+var unban = {
+	name : 'unban',
+
+	fun : function ( msg ) {
+		return this.format( this.logic(msg.toString()) );
+	},
+
+	logic : function ( arg ) {
+		var id = Number( arg ),
+			code;
 
 		if ( isNaN(id) ) {
-			id = args.findUserid( usrid.replace(/^@/, '') );
+			id = bot.users.findUserId( arg.replace(/^@/, '') );
 		}
 
+		bot.log( arg, id, '/unban argument' );
+
 		if ( id < 0 ) {
-			msg = 'Cannot find user {0}.';
+			code = codes.notFound;
 		}
 		else if ( !bot.banlist.contains(id) ) {
-			msg = 'User {0} isn\'t in mindjail.';
+			code = codes.notIn;
 		}
 		else {
 			bot.banlist.remove( id );
-			msg = 'User {0} freed from mindjail!';
+			code = codes.freed;
 		}
 
-		ret.push( msg.supplant(usrid) );
-	}
-}
-bot.addCommand(bot.CommunityCommand({
-	name : 'ban',
-	fun : ban,
-	permissions : { del : 'NONE', use : 'OWNER' },
-	description : 'Bans user(s) from using me. Lacking arguments, prints the ' +
-		'banlist. `/ban [usr_id|usr_name, [...]]`'
-}));
+		return { code : code, usrid : arg };
+	},
 
-bot.addCommand({
-	name : 'unban',
-	fun : unban,
+	format : function ( res ) {
+		return codes[ res.code ].supplant( res.usrid );
+	},
+
 	permissions : { del : 'NONE', use : 'OWNER' },
-	description : 'Removes a user from my mindjail. `/unban usr_id|usr_name`'
-});
+	description : 'Frees a user from my mindjail. `/unban usr_id|usr_name`'
+};
+
+bot.addCommand( bot.CommunityCommand(ban) );
+bot.addCommand( unban );
 
 })();

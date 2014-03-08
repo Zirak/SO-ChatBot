@@ -11,7 +11,7 @@ var bot = window.bot = {
 		invoked   : 0,
 		learned   : 0,
 		forgotten : 0,
-		start     : new Date
+		start     : new Date()
 	},
 	users : {}, //will be filled in build
 
@@ -337,6 +337,7 @@ bot.banlist.remove = function ( id ) {
 //some sort of pseudo constructor
 bot.Command = function ( cmd ) {
 	cmd.name = cmd.name.toLowerCase();
+	cmd.thisArg = cmd.thisArg || cmd;
 
 	cmd.permissions = cmd.permissions || {};
 	cmd.permissions.use = cmd.permissions.use || 'ALL';
@@ -368,6 +369,7 @@ bot.Command = function ( cmd ) {
 
 	cmd.exec = function () {
 		this.invoked += 1;
+
 		return this.fun.apply( this.thisArg, arguments );
 	};
 
@@ -422,7 +424,7 @@ bot.CommunityCommand = function ( command, req ) {
 			return 'Already registered; still need {0} more'.supplant( needed );
 		}
 
-		used[ usrid ] = new Date;
+		used[ usrid ] = new Date();
 		needed -= 1;
 
 		if ( needed > 0 ) {
@@ -434,7 +436,7 @@ bot.CommunityCommand = function ( command, req ) {
 	}
 
 	function clean () {
-		var tenMinsAgo = new Date;
+		var tenMinsAgo = new Date();
 		tenMinsAgo.setMinutes( tenMinsAgo.getMinutes() - 10 );
 
 		Object.keys( used ).reduce( rm, used );
@@ -473,16 +475,19 @@ bot.Message = function ( text, msgObj ) {
 		//parse( msgToParse ) parses msgToParse
 		//parse( msgToParse, true ) combination of the above
 		parse : function ( msg, map ) {
-			if ( !!msg === msg ) {
+			// parse( true )
+			if ( Boolean(msg) === msg ) {
 				map = msg;
 				msg = text;
 			}
 			var parsed = bot.parseCommandArgs( msg || text );
 
+			// parse( msgToParse )
 			if ( !map ) {
 				return parsed;
 			}
 
+			// parse( msgToParse, true )
 			return parsed.map(function ( part ) {
 				return bot.Message( part, msgObj );
 			});
@@ -491,45 +496,13 @@ bot.Message = function ( text, msgObj ) {
 		//execute a regexp against the text, saving it inside the object
 		exec : function ( regexp ) {
 			var match = regexp.exec( text );
-			this.matches = match ? match : [];
+			this.matches = match || [];
 
 			return match;
 		},
 
-		findUserid : function ( username ) {
-			username = username.toLowerCase().replace( /\s/g, '' );
-			var ids = Object.keys( bot.users );
-
-			return ids.first(function ( id ) {
-				var name = bot.users[ id ].name
-					.toLowerCase().replace( /\s/g, '' );
-
-				return name === username;
-			}) || -1;
-		}.memoize(),
-
-		findUsername : (function () {
-			var cache = {};
-
-			return function ( id, cb ) {
-				if ( cache[id] ) {
-					finish( cache[id] );
-				}
-				else if ( bot.users[id] ) {
-					finish( bot.users[id].name );
-				}
-				else {
-					bot.users.request( bot.adapter.roomid, id, reqFinish );
-				}
-
-				function reqFinish ( user ) {
-					finish( user.name );
-				}
-				function finish ( name ) {
-					cb( cache[id] = name );
-				}
-			};
-		})(),
+		findUserId   : bot.users.findUserId,
+		findUsername : bot.users.findUsername,
 
 		codify : bot.adapter.codify.bind( bot.adapter ),
 		escape : bot.adapter.escape.bind( bot.adapter ),
