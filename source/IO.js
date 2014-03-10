@@ -287,17 +287,17 @@ IO.xhr = function ( params ) {
 	var xhr = new XMLHttpRequest();
 	xhr.open( params.method, params.url );
 
-	xhr.addEventListener( 'readystatechange', function () {
-		if ( xhr.readyState === 4 ) {
-			params.complete.call(
-				params.thisArg, xhr.responseText, xhr
-			);
-		}
+	if ( params.document ) {
+		xhr.responseType = 'document';
+	}
+
+	xhr.addEventListener( 'load', function () {
+		params.complete.call(
+			params.thisArg, xhr.response, xhr
+		);
 	});
 
-	Object.iterate( params.headers, function ( header, value ) {
-		xhr.setRequestHeader( header, value );
-	});
+	Object.iterate( params.headers, xhr.setRequestHeader.bind(xhr) );
 
 	xhr.send( params.data );
 
