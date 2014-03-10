@@ -7477,8 +7477,6 @@ var message = "Welcome to the JavaScript chat! Please review the " +
 		". Please don't ask if you can ask or if anyone's around; just ask " +
 		"your question, and if anyone's free and interested they'll help.";
 
-var messageCountRe = /transcript\/17(?:'|")>([\d\.]+)(k?)/i;
-
 function welcome ( name, room ) {
 	bot.adapter.out.add(
 		bot.adapter.reply( name ) + " " + message, room );
@@ -7501,20 +7499,23 @@ IO.register( 'userregister', function ( user, room ) {
 		method : 'GET',
 		url : '/users/' + user.id,
 
+		document : true,
 		complete : complete
 	});
 
-	function complete ( resp ) {
-		//I'm parsing html with regexps. hopefully Cthulu won't eat me.
-		// <a href="/transcript/17">7</a>
-		// [..., "17", null]
-		// <a href="/transcript/17">2.1k</a>
-		// [..., "2.1", "k"]
-		var chatMessages = messageCountRe.exec( resp ),
+	function complete ( doc ) {
+		//<div id='room-17'>
+		// ...
+		// <div class='room-message-count' title='72279 all time messages (by Zirak)
+		//    ...
+		// </div>
+		// ...
+		//</div>
+		var messageCount = doc.querySelector( '#room-17 .room-message-count' ),
 			newUser;
 
-		if ( chatMessages ) {
-			newUser = !chatMessages[ 2 ] && Number( chatMessages[1] ) < 2;
+		if ( messageCount ) {
+			newUser = Number( /^\d+/.exec(messageCount.title) ) < 2;
 		}
 		else {
 			newUser = true;
