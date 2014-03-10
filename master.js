@@ -2018,7 +2018,8 @@ commands.tell = function ( args ) {
 	cmdName = cmdName.toLowerCase();
 	cmd = bot.getCommand( cmdName );
 	if ( cmd.error ) {
-		return cmd.error;
+		return cmd.error +
+			' (note that /tell works on commands, it\'s not an echo.)';
 	}
 
 	if ( cmd.unTellable ) {
