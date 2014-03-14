@@ -7,7 +7,7 @@ bot.addCommand({
 
 		//check for searching by username
 		if ( !(/^\d+$/.test(usrid)) ) {
-			id = args.findUserid( usrid );
+			id = args.findUserId( usrid );
 
 			if ( id < 0 ) {
 				return 'Can\'t find user ' + usrid + ' in this chatroom.';

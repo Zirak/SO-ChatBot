@@ -19,7 +19,7 @@ function mustachify ( args ) {
 		usrid = args.get( 'user_id' );
 	}
 	else if ( /\D/.test(usrid) ) {
-		usrid = args.findUserid( usrid );
+		usrid = args.findUserId( usrid );
 	}
 
 	bot.log( usrid, '/mustache mapped' );

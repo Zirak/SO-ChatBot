@@ -135,7 +135,7 @@ function userInfoFromParam ( param, args ) {
 	};
 
 	if ( /\D/.test(param) ) {
-		ret.id = args.findUserid( param );
+		ret.id = args.findUserId( param );
 	}
 
 	if ( ret.id < 0 ) {

@@ -55,7 +55,7 @@ function stat ( msg, cb ) {
 		id = msg.get( 'user_id' );
 	}
 	else if ( !/^\d+$/.test(id) ) {
-		id = msg.findUserid( args.length > 1 ? id : args.join(' ') );
+		id = msg.findUserId( args.length > 1 ? id : args.join(' ') );
 	}
 
 	if ( id < 0 ) {
