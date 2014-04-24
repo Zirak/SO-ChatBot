@@ -22,9 +22,10 @@ var define = {
 		bot.log( args, '/define input' );
 		this.fetchData( args.toString(), finish );
 
-		function finish ( definition, pageid ) {
-			bot.log( definition, pageid, '/define result' );
-			var res;
+		function finish ( definition ) {
+			bot.log( definition, '/define result' );
+			var pageid = definition.pageid,
+				res;
 
 			if ( pageid < 0 ) {
 				res = notFoundMsgs.random();
@@ -67,8 +68,9 @@ var define = {
 		}
 		else {
 			cb({
-				name : page.title,
-				text : definition.text
+				name   : page.title,
+				text   : definition.text,
+				pageid : pageid
 			});
 		}
 	},

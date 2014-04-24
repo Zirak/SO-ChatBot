@@ -1075,9 +1075,29 @@ bot.Command = function ( cmd ) {
 	});
 
 	cmd.exec = function () {
+		var args = arguments,
+			self = this,
+			ret;
+
 		this.invoked += 1;
 
-		return this.fun.apply( this.thisArg, arguments );
+		if (this.format && this.logic) {
+			if (this.async) {
+				args.push(function () {
+					self.format.apply(self, arguments);
+				});
+
+				this.logic.apply(this, args);
+			}
+			else {
+				ret = this.format(this.logic.apply(this, args));
+			}
+		}
+		else {
+			ret = this.fun.apply( this.thisArg, arguments );
+		}
+
+		return ret;
 	};
 
 	cmd.del = function () {
@@ -4108,9 +4128,10 @@ var define = {
 		bot.log( args, '/define input' );
 		this.fetchData( args.toString(), finish );
 
-		function finish ( definition, pageid ) {
-			bot.log( definition, pageid, '/define result' );
-			var res;
+		function finish ( definition ) {
+			bot.log( definition, '/define result' );
+			var pageid = definition.pageid,
+				res;
 
 			if ( pageid < 0 ) {
 				res = notFoundMsgs.random();
@@ -4153,8 +4174,9 @@ var define = {
 		}
 		else {
 			cb({
-				name : page.title,
-				text : definition.text
+				name   : page.title,
+				text   : definition.text,
+				pageid : pageid
 			});
 		}
 	},
@@ -6263,7 +6285,7 @@ bot.listen( re, selectStargateEpisode );
 */
 
 
-var template = '{display_name} ({link}) '           +
+var template = '{display_name} ({link}) '            +
 		'{indicative} {reputation} reputation, '     +
 		'earned {reputation_change_day} rep today, ' +
 		'asked {question_count} questions, '         +
@@ -6368,23 +6390,31 @@ function normalize_stats ( stats ) {
 		stats.avg_rep_post = 'T͎͍̘͙̖̤̉̌̇̅ͯ͋͢͜͝H̖͙̗̗̺͚̱͕̒́͟E̫̺̯͖͎̗̒͑̅̈ ̈ͮ̽ͯ̆̋́͏͙͓͓͇̹<̩̟̳̫̪̇ͩ̑̆͗̽̇͆́ͅC̬͎ͪͩ̓̑͊ͮͪ̄̚̕Ě̯̰̤̗̜̗͓͛͝N̶̴̞͇̟̲̪̅̓ͯͅT͍̯̰͓̬͚̅͆̄E̠͇͇̬̬͕͖ͨ̔̓͞R͚̠̻̲̗̹̀>̇̏ͣ҉̳̖̟̫͕ ̧̛͈͙͇͂̓̚͡C͈̞̻̩̯̠̻ͥ̆͐̄ͦ́̀͟A̛̪̫͙̺̱̥̞̙ͦͧ̽͛̈́ͯ̅̍N̦̭͕̹̤͓͙̲̑͋̾͊ͣŅ̜̝͌͟O̡̝͍͚̲̝ͣ̔́͝Ť͈͢ ̪̘̳͔̂̒̋ͭ͆̽͠H̢͈̤͚̬̪̭͗ͧͬ̈́̈̀͌͒͡Ơ̮͍͇̝̰͍͚͖̿ͮ̀̍́L͐̆ͨ̏̎͡҉̧̱̯̤̹͓̗̻̭ͅḐ̲̰͙͑̂̒̐́̊';
 	}
 
-	//for teh lulz
-	if ( !stats.question_count && stats.answer_count ) {
-		stats.ratio = "H̸̡̪̯ͨ͊̽̅̾̎Ȩ̬̩̾͛ͪ̈́̀́͘ ̶̧̨̱̹̭̯ͧ̾ͬC̷̙̲̝͖ͭ̏ͥͮ͟Oͮ͏̮̪̝͍M̲̖͊̒ͪͩͬ̚̚͜Ȇ̴̟̟͙̞ͩ͌͝S̨̥̫͎̭ͯ̿̔̀ͅ";
-	}
-	else if ( !stats.answer_count && stats.question_count ) {
-		stats.ratio = "TO͇̹̺ͅƝ̴ȳ̳ TH̘Ë͖́̉ ͠P̯͍̭O̚​N̐Y̡";
-	}
-	else if ( !stats.answer_count && !stats.question_count ) {
-		stats.ratio = 'http://i.imgur.com/F79hP.png';
-	}
-	else {
-		stats.ratio =
-			Math.ratio( stats.question_count, stats.answer_count );
-	}
+	stats.ratio = calc_qa_ratio( stats.question_count, stats.answer_count );
 
 	bot.log( stats, '/stat normalized' );
 	return stats;
+}
+
+function calc_qa_ratio ( questions, answers ) {
+	//for teh lulz
+	if ( !questions && answer ) {
+		return "H̸̡̪̯ͨ͊̽̅̾̎Ȩ̬̩̾͛ͪ̈́̀́͘ ̶̧̨̱̹̭̯ͧ̾ͬC̷̙̲̝͖ͭ̏ͥͮ͟Oͮ͏̮̪̝͍M̲̖͊̒ͪͩͬ̚̚͜Ȇ̴̟̟͙̞ͩ͌͝S̨̥̫͎̭ͯ̿̔̀ͅ";
+	}
+	else if ( !answer && questions ) {
+		return "TO͇̹̺ͅƝ̴ȳ̳ TH̘Ë͖́̉ ͠P̯͍̭O̚​N̐Y̡";
+	}
+	else if ( !answer && !questions ) {
+		return 'http://i.imgur.com/F79hP.png';
+	}
+
+	// #196:
+	// 1. GCD of 1.
+	// 2. Either the antecedent or the consequent are 1
+	//(in A:B, A is the antecedent, B is the consequent)
+	var gcd = Math.gcd( questions, answers );
+
+	return Math.ratio( questions, answers );
 }
 
 var cmd = {
