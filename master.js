@@ -1075,29 +1075,9 @@ bot.Command = function ( cmd ) {
 	});
 
 	cmd.exec = function () {
-		var args = arguments,
-			self = this,
-			ret;
-
 		this.invoked += 1;
 
-		if (this.format && this.logic) {
-			if (this.async) {
-				args.push(function () {
-					self.format.apply(self, arguments);
-				});
-
-				this.logic.apply(this, args);
-			}
-			else {
-				ret = this.format(this.logic.apply(this, args));
-			}
-		}
-		else {
-			ret = this.fun.apply( this.thisArg, arguments );
-		}
-
-		return ret;
+		return this.fun.apply( this.thisArg, arguments );
 	};
 
 	cmd.del = function () {
