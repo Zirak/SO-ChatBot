@@ -4138,7 +4138,10 @@ var define = {
 			html = page.extract;
 
 		if ( pageid === '-1' ) {
-			cb( {}, -1 );
+			cb({
+				pageid : -1
+			});
+
 			return;
 		}
 
