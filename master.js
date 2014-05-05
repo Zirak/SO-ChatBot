@@ -6381,13 +6381,13 @@ function normalize_stats ( stats ) {
 
 function calc_qa_ratio ( questions, answers ) {
 	//for teh lulz
-	if ( !questions && answer ) {
+	if ( !questions && answers ) {
 		return "H̸̡̪̯ͨ͊̽̅̾̎Ȩ̬̩̾͛ͪ̈́̀́͘ ̶̧̨̱̹̭̯ͧ̾ͬC̷̙̲̝͖ͭ̏ͥͮ͟Oͮ͏̮̪̝͍M̲̖͊̒ͪͩͬ̚̚͜Ȇ̴̟̟͙̞ͩ͌͝S̨̥̫͎̭ͯ̿̔̀ͅ";
 	}
-	else if ( !answer && questions ) {
+	else if ( !answers && questions ) {
 		return "TO͇̹̺ͅƝ̴ȳ̳ TH̘Ë͖́̉ ͠P̯͍̭O̚​N̐Y̡";
 	}
-	else if ( !answer && !questions ) {
+	else if ( !answers && !questions ) {
 		return 'http://i.imgur.com/F79hP.png';
 	}
 
