@@ -5899,6 +5899,8 @@ function checkMuted () {
 		}
 	});
 
+    galleryMode.unlockIfNeeded();
+
 	setTimeout( checkMuted, 60 * 1000 );
 }
 setTimeout( checkMuted, 60 * 1000 );
@@ -5977,6 +5979,73 @@ function takeVoice ( params, cb ) {
 		return ret;
 	}
 }
+
+var galleryMode = {
+	lockIfNeeded : function () {
+		if ( this.roomInGallery() ) {
+			bot.log('room already in gallery');
+			return;
+		}
+
+		bot.log('locking room');
+		this.lockRoom();
+	},
+
+	lockRoom : function () {
+		IO.xhr({
+			method : 'POST',
+			url : '/rooms/save',
+			data : fkey({
+				defaultAccess : 'read-only',
+				roomId : ownerRoom // implied state. change to variable?
+			}),
+
+			complete : finish
+		});
+
+		// Not much to do here, tbh...we'd probably get a refresh by the time
+		//this fires. Should probably do error checking.
+		function finish () {}
+	},
+
+	// Room should get locked if it's not already in gallery mode.
+	roomInGallery : function () {
+		var lockButtonClass = 'sprite-sec-gallery';
+		return document.getElementsByClassName( lockButtonClass ).length;
+	},
+
+	unlockIfNeeded : function () {
+		if ( !this.shouldUnlockRoom() ) {
+			bot.log('not unlocking room');
+			return;
+		}
+
+		bot.log( 'unlocking room' );
+		this.unlockRoom();
+	},
+
+	unlockRoom : function () {
+		IO.xhr({
+			method : 'POST',
+			url : '/rooms/save',
+			data : fkey({
+				defaultAccess : 'read-write',
+				roomId : ownerRoom // Again implied state.
+			}),
+
+			complete : finish
+		});
+
+		// Again, not much to do.
+		function finish () {}
+	},
+
+	// Room should be unlocked if there aren't any more muted users and we're
+    //locked.
+	shouldUnlockRoom : function () {
+		return this.roomInGallery() &&  !( Object.keys(muted).length );
+	}
+};
 
 IO.register( 'userregister', function permissionCb ( user, room ) {
 	bot.log( user, room, 'permissionCb' );
@@ -6081,7 +6150,7 @@ bot.addCommand({
 			return userInfo.error;
 		}
 		else if ( userInfo.id === bot.adapter.user_id ) {
-			return 'Never try and mute a bot who can own your ass.';
+			return 'Never try and mute a bot which can own your ass.';
 		}
 		else if ( bot.isOwner(userInfo.id) ) {
 			return 'You probably didn\'t want to mute a room owner.';
@@ -6101,6 +6170,7 @@ bot.addCommand({
 		function finish () {
 			args.reply(
 				'Muted user {0} for {1}'.supplant(userInfo.id, duration) );
+			galleryMode.lockIfNeeded();
 		}
 	},
 
@@ -6133,6 +6203,7 @@ bot.addCommand({
 
 		function finish () {
 			args.reply( 'Unmuted user ' + userID.id );
+			galleryMode.unlockIfNeeded();
 		}
 	},
 
