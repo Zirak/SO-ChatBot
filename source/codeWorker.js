@@ -115,10 +115,11 @@ Object.defineProperty( Array.prototype, 'join', {
 	}( Array.prototype.join ))
 });
 
+
 /* we define it outside so it'll not be in strict mode */
 var exec = function ( code ) {
 	return eval( 'undefined;\n' + code );
-}
+};
 var console = {
 	_items : [],
 	log : function() {
@@ -127,43 +128,36 @@ var console = {
 };
 console.error = console.info = console.debug = console.log;
 
-(function(){
+(function() {
 	"use strict";
 
 	global.onmessage = function ( event ) {
-		postMessage({
+		global.postMessage({
 			event : 'start'
 		});
 
 		var jsonStringify = JSON.stringify, /*backup*/
-			result;
+			result,
 
-		try {
-			result = exec( event.data );
-		}
-		catch ( e ) {
-			result = e.toString();
-		}
+            originalSetTimeout = setTimeout,
+            timeoutCounter = 0;
 
-		/*JSON does not like any of the following*/
-		var strung = {
-			Function  : true, Error  : true,
-			Undefined : true, RegExp : true
-		};
-		var should_string = function ( value ) {
-			var type = ( {} ).toString.call( value ).slice( 8, -1 );
+        var sendResult = function ( result ) {
+            global.postMessage({
+			    answer : jsonStringify( result, reviver ),
+			    log    : jsonStringify( console._items, reviver ).slice( 1, -1 )
+		    });
+        };
+        var done = function ( result ) {
+            if ( timeoutCounter < 1 ) {
+                sendResult( result );
+            }
+        };
 
-			if ( type in strung ) {
-				return true;
-			}
-			/*neither does it feel compassionate about NaN or Infinity*/
-			return value !== value || value === Infinity;
-		};
-
-		var reviver = function ( key, value ) {
+        var reviver = function ( key, value ) {
 			var output;
 
-			if ( should_string(value) ) {
+			if ( shouldString(value) ) {
 				output = '' + value;
 			}
 			else {
@@ -173,9 +167,49 @@ console.error = console.info = console.debug = console.log;
 			return output;
 		};
 
-		postMessage({
-			answer : jsonStringify( result, reviver ),
-			log    : jsonStringify( console._items, reviver ).slice( 1, -1 )
-		});
+        /*JSON does not like any of the following*/
+		var strung = {
+			Function  : true, Error  : true,
+			Undefined : true, RegExp : true
+		};
+		var shouldString = function ( value ) {
+			var type = ( {} ).toString.call( value ).slice( 8, -1 );
+
+			if ( type in strung ) {
+				return true;
+			}
+			/*neither does it feel compassionate about NaN or Infinity*/
+			return value !== value || value === Infinity;
+		};
+
+        self.setTimeout = function (cb) {
+            var args = [].slice.call( arguments );
+            args[ 0 ] = wrapper;
+            timeoutCounter += 1;
+
+            originalSetTimeout.apply( self, args );
+
+            function wrapper () {
+                timeoutCounter -= 1;
+                cb.apply( self, arguments );
+
+                done();
+            }
+        };
+
+		try {
+			result = exec( event.data );
+		}
+		catch ( e ) {
+			result = e.toString();
+		}
+
+        /*handle promises appropriately*/
+        if ( result.then && result.catch ) {
+            result.then( done ).catch( done );
+        }
+        else {
+            done( result );
+        }
 	};
 })();

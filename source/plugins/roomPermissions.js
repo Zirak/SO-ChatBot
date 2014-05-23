@@ -161,7 +161,7 @@ var galleryMode = {
 	// Room should be unlocked if there aren't any more muted users and we're
     //locked.
 	shouldUnlockRoom : function () {
-		return this.roomInGallery() &&  !( Object.keys(muted).length );
+		return this.roomInGallery() && !( Object.keys(muted).length );
 	}
 };
 
