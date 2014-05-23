@@ -61,41 +61,41 @@ var whitey = {
 	'Uint8ClampedArray' : 1,
 
 	/*
-	these properties allow FF to function. without them, a fuckfest of
-	inexplicable errors enuses. took me about 4 hours to track these fuckers
-	down.
-	fuck hell it isn't future-proof, but the errors thrown are uncatchable
-	and untracable. so a heads-up. enjoy, future-me!
-	*/
-	'DOMException' : 1,
-	'Event'        : 1,
-	'MessageEvent' : 1,
+	 these properties allow FF to function. without them, a fuckfest of
+	 inexplicable errors enuses. took me about 4 hours to track these fuckers
+	 down.
+	 fuck hell it isn't future-proof, but the errors thrown are uncatchable
+	 and untracable. so a heads-up. enjoy, future-me!
+	 */
+	'DOMException'      : 1,
+	'Event'             : 1,
+	'MessageEvent'      : 1,
 	'WorkerMessageEvent': 1
 };
 
 [ global, Object.getPrototypeOf(global) ].forEach(function ( obj ) {
 	Object.getOwnPropertyNames( obj ).forEach(function( prop ) {
 		if( whitey.hasOwnProperty(prop) ) {
-            return;
+			return;
 		}
 
-        try {
-            Object.defineProperty( obj, prop, {
-                get : function () {
-                    /* TEE HEE */
-                    throw new ReferenceError( prop + ' is not defined' );
-                },
-                configurable : false,
-                enumerable : false
-            });
-        }
-        catch ( e ) {
-            delete obj[ prop ];
+		try {
+			Object.defineProperty( obj, prop, {
+				get : function () {
+					/* TEE HEE */
+					throw new ReferenceError( prop + ' is not defined' );
+				},
+				configurable : false,
+				enumerable : false
+			});
+		}
+		catch ( e ) {
+			delete obj[ prop ];
 
-            if ( obj[ prop ] !== undefined ) {
-                obj[ prop ] = null;
-            }
-        }
+			if ( obj[ prop ] !== undefined ) {
+				obj[ prop ] = null;
+			}
+		}
 	});
 });
 
@@ -139,22 +139,22 @@ console.error = console.info = console.debug = console.log;
 		var jsonStringify = JSON.stringify, /*backup*/
 			result,
 
-            originalSetTimeout = setTimeout,
-            timeoutCounter = 0;
+			originalSetTimeout = setTimeout,
+			timeoutCounter = 0;
 
-        var sendResult = function ( result ) {
-            global.postMessage({
-			    answer : jsonStringify( result, reviver ),
-			    log    : jsonStringify( console._items, reviver ).slice( 1, -1 )
-		    });
-        };
-        var done = function ( result ) {
-            if ( timeoutCounter < 1 ) {
-                sendResult( result );
-            }
-        };
+		var sendResult = function ( result ) {
+			global.postMessage({
+				answer : jsonStringify( result, reviver ),
+				log    : jsonStringify( console._items, reviver ).slice( 1, -1 )
+			});
+		};
+		var done = function ( result ) {
+			if ( timeoutCounter < 1 ) {
+				sendResult( result );
+			}
+		};
 
-        var reviver = function ( key, value ) {
+		var reviver = function ( key, value ) {
 			var output;
 
 			if ( shouldString(value) ) {
@@ -167,9 +167,9 @@ console.error = console.info = console.debug = console.log;
 			return output;
 		};
 
-        /*JSON does not like any of the following*/
+		/*JSON does not like any of the following*/
 		var strung = {
-			Function  : true, Error  : true,
+			Function  : true, Error	 : true,
 			Undefined : true, RegExp : true
 		};
 		var shouldString = function ( value ) {
@@ -182,20 +182,20 @@ console.error = console.info = console.debug = console.log;
 			return value !== value || value === Infinity;
 		};
 
-        self.setTimeout = function (cb) {
-            var args = [].slice.call( arguments );
-            args[ 0 ] = wrapper;
-            timeoutCounter += 1;
+		self.setTimeout = function (cb) {
+			var args = [].slice.call( arguments );
+			args[ 0 ] = wrapper;
+			timeoutCounter += 1;
 
-            originalSetTimeout.apply( self, args );
+			originalSetTimeout.apply( self, args );
 
-            function wrapper () {
-                timeoutCounter -= 1;
-                cb.apply( self, arguments );
+			function wrapper () {
+				timeoutCounter -= 1;
+				cb.apply( self, arguments );
 
-                done();
-            }
-        };
+				done();
+			}
+		};
 
 		try {
 			result = exec( event.data );
@@ -204,12 +204,12 @@ console.error = console.info = console.debug = console.log;
 			result = e.toString();
 		}
 
-        /*handle promises appropriately*/
-        if ( result.then && result.catch ) {
-            result.then( done ).catch( done );
-        }
-        else {
-            done( result );
-        }
+		/*handle promises appropriately*/
+		if ( result && result.then && result.catch ) {
+			result.then( done ).catch( done );
+		}
+		else {
+			done( result );
+		}
 	};
 })();
