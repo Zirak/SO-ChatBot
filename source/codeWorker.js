@@ -183,6 +183,11 @@ console.error = console.info = console.debug = console.log;
 		};
 
 		self.setTimeout = function (cb) {
+			/*because of SomeKittens*/
+			if (!cb) {
+				return;
+			}
+
 			var args = [].slice.call( arguments );
 			args[ 0 ] = wrapper;
 			timeoutCounter += 1;
