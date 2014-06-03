@@ -64,12 +64,12 @@ var unonebox = {
 		var frag = document.createElement( 'div' );
 		frag.innerHTML = msgObj.content;
 		// do not un-onebox youtube videos and quotes 
-		// .content > is required because quotes of images (!!artisticpoop) 
-		// have a nested .onebox element inside of them
-		var link = frag.querySelector( '.content > .onebox:not(.ob-youtube):not(.ob-message) a' );
+		var link = frag.querySelector( '.onebox:not(.ob-youtube):not(.ob-message) a' );
 
 		// No onebox, no un-oneboxing.
-		if ( !link ) {
+		// ugly fix for quoted messages as well.
+		// TODO - think of a better solution for this.
+		if ( !link || link.parentNode.parentNode.classList.contains('quote') ) {
 			return;
 		}
 
