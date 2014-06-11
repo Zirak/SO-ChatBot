@@ -4495,6 +4495,8 @@ var urlBase = 'http://cdn.alltheragefaces.com/img/faces/png/',
 
 var memes = {
 	deskflip : 'angry-desk-flip',
+	fuu : 'rage-classic',
+	iseewhatyoudidthere : 'happy-i-see-what-you-did-there-(clean)',
 	no : 'angry-no',
 	notbad : 'obama-not-bad',
 	ohyou : 'happy-oh-stop-it-you',
@@ -4530,15 +4532,18 @@ bot.addCommand({
 	fun : function ( args ) {
 		var name = args.replace( /\.\w+$/, '' );
 
-		if ( !memes[name] ) {
+		if ( !name || name === 'list' ) {
+			return Object.keys( memes ).join( ', ' );
+		}
+		else if ( !memes.hasOwnProperty(name) ) {
 			return 'Sorry, I don\'t know that one.';
 		}
-		//TODO: list possible memes (reply with Object.keys(meme))
 
 		args.directreply( getMemeLink(name) );
 	},
 	permissions : { del : 'NONE' },
-	description : 'Return a simple meme link. `/meme memeName`'
+	description : 'Return a simple meme link. Pass no arguments or `list` to ' +
+		'get a list of known memes. `/meme [memeName]`.'
 });
 
 function getMemeLink ( meme ) {
@@ -5778,7 +5783,7 @@ var unonebox = {
 		var frag = document.createElement( 'div' );
 		frag.innerHTML = msgObj.content;
 		// do not un-onebox youtube videos and quotes 
-		var link = frag.querySelector( '.onebox:not(.ob-youtube):not(.ob-message) a' );
+		var link = frag.querySelector( '.onebox:not(.ob-youtube):not(.ob-message):not(.ob-wikipedia) a' );
 
 		// No onebox, no un-oneboxing.
 		// ugly fix for quoted messages as well.
