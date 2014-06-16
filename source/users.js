@@ -108,7 +108,7 @@ return function ( id, cb ) {
 
 function loadUsers () {
 	if ( window.users ) {
-		bot.users = Object.merge( bot.users, window.users );
+		bot.users = window.users;
 	}
 }
 

@@ -2902,7 +2902,7 @@ return function ( id, cb ) {
 
 function loadUsers () {
 	if ( window.users ) {
-		bot.users = Object.merge( bot.users, window.users );
+		bot.users = window.users;
 	}
 }
 
@@ -6238,7 +6238,9 @@ bot.addCommand({
 "use strict";
 //welcomes new users with a link to the room rules and a short message.
 
-var seen = bot.memory.get( 'users' );
+var seen = bot.memory.get( 'users' ),
+	//hardcoded for some (in)sanity. Change accordingly.
+	ownerRoom = 55728;
 
 var message = "Welcome to the JavaScript chat! Please review the " +
 		bot.adapter.link(
@@ -6249,16 +6251,16 @@ var message = "Welcome to the JavaScript chat! Please review the " +
 		"your question, and if anyone's free and interested they'll help.";
 
 function welcome ( name, room ) {
-	bot.adapter.out.add(
-		bot.adapter.reply( name ) + " " + message, room );
+	bot.adapter.out.add( bot.adapter.reply(name) + " " + message, room );
 }
 
-IO.register( 'userregister', function ( user, room ) {
-	var semiLegitUser = bot.isOwner( user.id ) ||
-		user.reputation > 1000 || user.reputation < 20;
+IO.register( 'input', function welcomeListener ( msgObj ) {
+	var user = bot.users[ msgObj.user_id ],
+		room = msgObj.room_id;
 
+	var semiLegitUser = user && isSemiLegitUser( user );
 	if (
-		Number( room ) !== 17 || semiLegitUser  || seen[ user.id ]
+		Number( room ) !== ownerRoom || semiLegitUser  || seen[ user.id ]
 	) {
 		if ( semiLegitUser ) {
 			finish( true );
@@ -6282,7 +6284,9 @@ IO.register( 'userregister', function ( user, room ) {
 		// </div>
 		// ...
 		//</div>
-		var messageCount = doc.querySelector( '#room-17 .room-message-count' ),
+		var messageCount = doc.querySelector(
+			'#room-' + ownerRoom + ' .room-message-count'
+		),
 			newUser;
 
 		if ( messageCount ) {
@@ -6306,6 +6310,12 @@ IO.register( 'userregister', function ( user, room ) {
 			seen[ user.id ] = true;
 		}
 		bot.memory.save( 'users' );
+	}
+
+	function isSemiLegitUser ( user ) {
+		return bot.isOwner( user.id ) ||
+			user.reputation > 1000 ||
+			user.reputation < 20;
 	}
 });
 
