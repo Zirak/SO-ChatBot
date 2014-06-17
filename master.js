@@ -6260,7 +6260,7 @@ IO.register( 'input', function welcomeListener ( msgObj ) {
 
 	var semiLegitUser = user && isSemiLegitUser( user );
 	if (
-		Number( room ) !== ownerRoom || semiLegitUser  || seen[ user.id ]
+		Number( room ) !== ownerRoom || semiLegitUser  || seen[ msgObj.user_id ]
 	) {
 		if ( semiLegitUser ) {
 			finish( true );
