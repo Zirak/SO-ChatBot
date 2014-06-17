@@ -4,7 +4,7 @@
 
 var seen = bot.memory.get( 'users' ),
 	//hardcoded for some (in)sanity. Change accordingly.
-	ownerRoom = 55728;
+	ownerRoom = 17;
 
 var message = "Welcome to the JavaScript chat! Please review the " +
 		bot.adapter.link(
