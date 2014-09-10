@@ -315,6 +315,14 @@ bot.memory = {
 		clearTimeout( this.saveIntervalId );
 		setTimeout( this.saveLoop.bind(this), this.saveInterval );
 	}
+	
+	clear : function () {
+		Object.iterate( localStorage, function ( key, val ) {
+			if ( key.startsWith('bot_') ) {
+				localStorage.removeItem(key);
+			}
+		});
+		this.data = {};
 };
 
 bot.memory.loadAll();
