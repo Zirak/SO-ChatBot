@@ -314,7 +314,7 @@ bot.memory = {
 	saveLoop : function () {
 		clearTimeout( this.saveIntervalId );
 		setTimeout( this.saveLoop.bind(this), this.saveInterval );
-	}
+	},
 	
 	clear : function () {
 		Object.iterate( localStorage, function ( key, val ) {
@@ -323,6 +323,7 @@ bot.memory = {
 			}
 		});
 		this.data = {};
+	}
 };
 
 bot.memory.loadAll();
