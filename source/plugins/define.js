@@ -17,10 +17,24 @@ var wikiUrl = 'http://en.wiktionary.org';
 */
 var alternativeRe = /(alternative (spelling|term)|common misspelling|informal form|archaic spelling) (of|for) (.+?)\.?$/i;
 
+//this object is not planned out well.
+//I do not apologise. Except that I do. Sorry future me.
+//btw, how did that trip to Iceland go? Awesome! Hope you (we?) had fun.
 var define = {
 	command : function defineCommand ( args, cb ) {
-		bot.log( args, '/define input' );
-		this.fetchData( args.toString(), finish );
+		var parts = args.parse(),
+			definitionIndex = Number( parts.pop() ),
+			definee = parts.join(' ');
+
+		if ( !definitionIndex ) {
+			definitionIndex = 0;
+			definee = args.toString();
+		}
+
+		bot.log( args, definee, definitionIndex, '/define input' );
+		var self = this;
+
+		this.fetchDefinition( definee, definitionIndex, finish );
 
 		function finish ( definition ) {
 			bot.log( definition, '/define result' );
@@ -36,6 +50,10 @@ var define = {
 				) + ' ' + definition.text;
 			}
 
+			if ( definition.overflow ) {
+				res = 'Index too large; showing last definition. ' + res;
+			}
+
 			if ( cb && cb.call ) {
 				cb( res );
 			}
@@ -45,40 +63,57 @@ var define = {
 		}
 	},
 
-	handleResponse : function ( resp, cb ) {
-		var query = resp.query,
-			pageid = query.pageids[ 0 ],
-			page = query.pages[ pageid ],
-			html = page.extract;
+	fetchDefinition : function ( term, definitionIndex, cb ) {
+		var self = this;
+		this.fetchData( term, gotData );
 
-		if ( pageid === '-1' ) {
-			cb({
-				pageid : -1
-			});
+		function gotData ( resp ) {
+			var query = resp.query,
+				pageid = query.pageids[ 0 ],
+				page = query.pages[ pageid ],
+				html = page.extract;
 
-			return;
-		}
+			if ( pageid === '-1' ) {
+				cb({
+					pageid : -1
+				});
 
-		var root = document.createElement( 'body' );
-		root.innerHTML = html; //forgive me...
-		var definition  = this.extractDefinition( root );
+				return;
+			}
 
-		//if this is an alternative definition (or spelling, or whatever),
-		// return the actual version.
-		if ( definition.alternative ) {
-			bot.log( definition.alternative, '/define found alternative' );
-			this.fetchData( definition.alternative, cb );
-		}
-		else {
+			var root = document.createElement( 'body' );
+			root.innerHTML = html; //forgive me...
+			var definitions = self.extractDefinitions( root ),
+				definition = definitions[0],
+				overflow = false;
+
+			bot.log( definitions, '/define got definitions' );
+
+			// before fetching the actual definition, we first need to check for
+			//alternatives.
+			if ( definition.alternative ) {
+				bot.log( definition.alternative, '/define found alternative' );
+				self.fetchData( definition.alternative, gotData );
+				return;
+			}
+
+			definition = definitions[ definitionIndex ];
+
+			if ( !definition ) {
+				definition = definitions[definitions.length - 1];
+				overflow = true;
+			}
+
 			cb({
 				name   : page.title,
 				text   : definition.text,
-				pageid : pageid
+				pageid : pageid,
+				overflow : overflow
 			});
 		}
 	},
 
-	extractDefinition : function ( root ) {
+	extractDefinitions : function ( root ) {
 		/*
 		Result of 42:
 			<ol>
@@ -115,14 +150,26 @@ var define = {
 				</li>
 			</ol>
 		*/
-		var defList = root.getElementsByTagName( 'ol' )[ 0 ],
-			defElement = defList.firstElementChild,
-			links = defElement.getElementsByTagName( 'a' );
+		var defList = root.getElementsByTagName( 'ol' )[ 0 ];
+		console.log( defList, '/define definition list' );
 
+		return Array.from( defList.children )
+			.map( this.extractSingleDefinition, this );
+	},
+
+	extractSingleDefinition : function ( root ) {
 		//before we start messing around with the element's innards, try and
 		// find if it's an alternative of something else.
-		var alternative = this.extractAlternative( defElement.textContent );
+		var alternative = this.extractAlternative( root.textContent );
 
+		//remove any quotations
+		Array.from(root.children).forEach(function (child) {
+			if (child.tagName === 'UL') {
+				root.removeChild(child);
+			}
+		});
+
+		var links = root.getElementsByTagName( 'a' );
 		//be sure to replace links with formatted links.
 		while ( links.length ) {
 			replaceLink( links[0] );
@@ -130,7 +177,7 @@ var define = {
 
 		return {
 			alternative : alternative,
-			text : defElement.textContent
+			text : root.textContent
 		};
 
 		function replaceLink ( link ) {
@@ -161,7 +208,7 @@ var define = {
 				indexpageids : true
 			},
 			fun : function ( resp ) {
-				self.handleResponse( resp, cb );
+				cb.call( self, resp );
 			}
 		});
 	}
