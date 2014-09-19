@@ -159,6 +159,8 @@ var bot = window.bot = {
 		return (
 			//make sure we don't process our own messages,
 			msgObj.user_id !== bot.adapter.user_id &&
+			//make sure we don't process Feeds
+			msgObj.user_id > 0 &&
 			//and the message begins with the invocationPattern
 			msg.startsWith( this.invocationPattern ) );
 	},
