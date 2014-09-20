@@ -214,7 +214,7 @@ var minifiers = [
 		test : function ( success ) {
 			success();
 		},
-		minify : function ( cb ) {
+		minify : function ( sourceFile, outFile, cb ) {
 			console.warn( 'no minifier found; skipping' );
 			cb();
 		}
