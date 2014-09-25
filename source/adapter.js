@@ -140,7 +140,7 @@ bot.adapter = {
 		this.fkey    = fkey.value;
 		this.roomid  = Number( /\d+/.exec(location)[0] );
 		this.site    = this.getCurrentSite();
-		this.user_id = CHAT.user.current().id;
+		this.user_id = CHAT.RoomUsers.current().id;
 
 		this.in.init();
 		this.out.init();
