@@ -2241,7 +2241,7 @@ bot.adapter = {
 		this.fkey    = fkey.value;
 		this.roomid  = Number( /\d+/.exec(location)[0] );
 		this.site    = this.getCurrentSite();
-		this.user_id = CHAT.user.current().id;
+		this.user_id = CHAT.RoomUsers.current().id;
 
 		this.in.init();
 		this.out.init();
@@ -3117,8 +3117,6 @@ IO.register( 'input', function afkInputListener ( msgObj ) {
 })();
 
 ;
-
-;
 (function () {
 "use strict";
 
@@ -3750,10 +3748,6 @@ bot.addCommand({
 }());
 
 ;
-
-;
-
-;
 //listener to help decide which Firefly episode to watch
 
 bot.listen( /(which |what |give me a )?firefly( episode)?/i, function ( msg ) {
@@ -4135,8 +4129,6 @@ bot.addCommand({
 })();
 
 ;
-
-;
 (function () {
 "use strict";
 var storage = bot.memory.get( 'learn' );
@@ -4405,8 +4397,6 @@ bot.addCommand({
 })();
 
 ;
-
-;
 (function () {
 // #151: Listen for meme image names and reply with that meme.
 
@@ -4573,8 +4563,6 @@ bot.addCommand( moustache );
 }());
 
 ;
-
-;
 (function () {
 
 //collection of nudges; msgObj, time left and the message itself
@@ -4700,8 +4688,6 @@ function nudgeListener ( args ) {
 }
 
 }());
-
-;
 
 ;
 (function () {
@@ -5519,8 +5505,6 @@ bot.addCommand({
 });
 
 })();
-
-;
 
 ;
 bot.addCommand({
