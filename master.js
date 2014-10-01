@@ -2241,7 +2241,7 @@ bot.adapter = {
 		this.fkey    = fkey.value;
 		this.roomid  = Number( /\d+/.exec(location)[0] );
 		this.site    = this.getCurrentSite();
-		this.user_id = CHAT.RoomUsers.current().id;
+		this.user_id = CHAT.CURRENT_USER_ID;
 
 		this.in.init();
 		this.out.init();
@@ -2774,9 +2774,9 @@ return function ( id, cb ) {
 })();
 
 function loadUsers () {
-	if ( window.users ) {
-		bot.users = Object.merge( bot.users, window.users );
-	}
+	CHAT.RoomUsers.all().forEach(function (user) {
+		bot.users[user.id] = user;
+	});
 }
 
 loadUsers();
@@ -3115,6 +3115,8 @@ IO.register( 'input', function afkInputListener ( msgObj ) {
 });
 
 })();
+
+;
 
 ;
 (function () {
@@ -3748,6 +3750,10 @@ bot.addCommand({
 }());
 
 ;
+
+;
+
+;
 //listener to help decide which Firefly episode to watch
 
 bot.listen( /(which |what |give me a )?firefly( episode)?/i, function ( msg ) {
@@ -4129,6 +4135,8 @@ bot.addCommand({
 })();
 
 ;
+
+;
 (function () {
 "use strict";
 var storage = bot.memory.get( 'learn' );
@@ -4397,6 +4405,8 @@ bot.addCommand({
 })();
 
 ;
+
+;
 (function () {
 // #151: Listen for meme image names and reply with that meme.
 
@@ -4563,6 +4573,8 @@ bot.addCommand( moustache );
 }());
 
 ;
+
+;
 (function () {
 
 //collection of nudges; msgObj, time left and the message itself
@@ -4688,6 +4700,8 @@ function nudgeListener ( args ) {
 }
 
 }());
+
+;
 
 ;
 (function () {
@@ -5507,6 +5521,8 @@ bot.addCommand({
 })();
 
 ;
+
+;
 bot.addCommand({
 	name : 'user',
 	fun : function () {
@@ -5822,7 +5838,8 @@ function welcome ( name, room ) {
 }
 
 IO.register( 'input', function welcomeListener ( msgObj ) {
-	var user = bot.users[ msgObj.user_id ],
+	var uid = msgObj.user_id,
+	    user = bot.users[ msgObj.user_id ],
 		room = msgObj.room_id;
 
 	var semiLegitUser = user && isSemiLegitUser( user );
@@ -5837,7 +5854,7 @@ IO.register( 'input', function welcomeListener ( msgObj ) {
 
 	IO.xhr({
 		method : 'GET',
-		url : '/users/' + user.id,
+		url : '/users/' + uid,
 
 		document : true,
 		complete : complete
@@ -5871,10 +5888,10 @@ IO.register( 'input', function welcomeListener ( msgObj ) {
 
 	function finish ( unsee ) {
 		if ( unsee ) {
-			delete seen[ user.id ];
+			delete seen[ uid ];
 		}
 		else {
-			seen[ user.id ] = true;
+			seen[ uid ] = true;
 		}
 		bot.memory.save( 'users' );
 	}

@@ -107,9 +107,9 @@ return function ( id, cb ) {
 })();
 
 function loadUsers () {
-	if ( window.users ) {
-		bot.users = Object.merge( bot.users, window.users );
-	}
+	CHAT.RoomUsers.all().forEach(function (user) {
+		bot.users[user.id] = user;
+	});
 }
 
 loadUsers();
