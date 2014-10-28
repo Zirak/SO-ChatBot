@@ -206,6 +206,13 @@ Function.prototype.memoizeAsync = function ( hasher ) {
 	};
 };
 
+//returns the function in string-form, without the enclosing crap.
+Function.prototype.stringContents = function () {
+	return this.toString()
+		.replace(/^function\*? \([^)]*\) \{/, '')
+		.replace(/\}$/, '');
+};
+
 //returns the number with at most `places` digits after the dot
 //examples:
 // 1.337.maxDecimal(1) === 1.3

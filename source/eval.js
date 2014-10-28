@@ -1,38 +1,41 @@
-//execute arbitrary js code in a relatively safe environment
-bot.eval = (function () {
-
-//translation tool: http://tinkerbin.heroku.com/84dPpGFr
-//just a base64 encode of codeWorker.js
-var workerCode = atob( 'dmFyIGdsb2JhbCA9IHRoaXM7CgovKm1vc3QgZXh0cmEgZnVuY3Rpb25zIGNvdWxkIGJlIHBvc3NpYmx5IHVuc2FmZSovCnZhciB3aGl0ZXkgPSB7CgknQXJyYXknICAgICAgICAgICAgICA6IDEsCgknQm9vbGVhbicgICAgICAgICAgICA6IDEsCgknRGF0ZScgICAgICAgICAgICAgICA6IDEsCgknRXJyb3InICAgICAgICAgICAgICA6IDEsCgknRXZhbEVycm9yJyAgICAgICAgICA6IDEsCgknRnVuY3Rpb24nICAgICAgICAgICA6IDEsCgknSW5maW5pdHknICAgICAgICAgICA6IDEsCgknSlNPTicgICAgICAgICAgICAgICA6IDEsCgknTWFwJyAgICAgICAgICAgICAgICA6IDEsCgknTWF0aCcgICAgICAgICAgICAgICA6IDEsCgknTmFOJyAgICAgICAgICAgICAgICA6IDEsCgknTnVtYmVyJyAgICAgICAgICAgICA6IDEsCgknT2JqZWN0JyAgICAgICAgICAgICA6IDEsCgknUHJvbWlzZScgICAgICAgICAgICA6IDEsCgknUHJveHknICAgICAgICAgICAgICA6IDEsCgknUmFuZ2VFcnJvcicgICAgICAgICA6IDEsCgknUmVmZXJlbmNlRXJyb3InICAgICA6IDEsCgknUmVnRXhwJyAgICAgICAgICAgICA6IDEsCgknU2V0JyAgICAgICAgICAgICAgICA6IDEsCgknU3RyaW5nJyAgICAgICAgICAgICA6IDEsCgknU3ludGF4RXJyb3InICAgICAgICA6IDEsCgknVHlwZUVycm9yJyAgICAgICAgICA6IDEsCgknVVJJRXJyb3InICAgICAgICAgICA6IDEsCgknV2Vha01hcCcgICAgICAgICAgICA6IDEsCgknV2Vha1NldCcgICAgICAgICAgICA6IDEsCgknYXRvYicgICAgICAgICAgICAgICA6IDEsCgknYnRvYScgICAgICAgICAgICAgICA6IDEsCgknY29uc29sZScgICAgICAgICAgICA6IDEsCgknZGVjb2RlVVJJJyAgICAgICAgICA6IDEsCgknZGVjb2RlVVJJQ29tcG9uZW50JyA6IDEsCgknZW5jb2RlVVJJJyAgICAgICAgICA6IDEsCgknZW5jb2RlVVJJQ29tcG9uZW50JyA6IDEsCgknZXZhbCcgICAgICAgICAgICAgICA6IDEsCgknZXhlYycgICAgICAgICAgICAgICA6IDEsIC8qIG91ciBvd24gZnVuY3Rpb24gKi8KCSdnbG9iYWwnICAgICAgICAgICAgIDogMSwKCSdpc0Zpbml0ZScgICAgICAgICAgIDogMSwKCSdpc05hTicgICAgICAgICAgICAgIDogMSwKCSdvbm1lc3NhZ2UnICAgICAgICAgIDogMSwKCSdwYXJzZUZsb2F0JyAgICAgICAgIDogMSwKCSdwYXJzZUludCcgICAgICAgICAgIDogMSwKCSdwb3N0TWVzc2FnZScgICAgICAgIDogMSwKCSdzZWxmJyAgICAgICAgICAgICAgIDogMSwKCSd1bmRlZmluZWQnICAgICAgICAgIDogMSwKCSd3aGl0ZXknICAgICAgICAgICAgIDogMSwKCgkvKiB0eXBlZCBhcnJheXMgYW5kIHNoaXQgKi8KCSdBcnJheUJ1ZmZlcicgICAgICAgOiAxLAoJJ0Jsb2InICAgICAgICAgICAgICA6IDEsCgknRmxvYXQzMkFycmF5JyAgICAgIDogMSwKCSdGbG9hdDY0QXJyYXknICAgICAgOiAxLAoJJ0ludDhBcnJheScgICAgICAgICA6IDEsCgknSW50MTZBcnJheScgICAgICAgIDogMSwKCSdJbnQzMkFycmF5JyAgICAgICAgOiAxLAoJJ1VpbnQ4QXJyYXknICAgICAgICA6IDEsCgknVWludDE2QXJyYXknICAgICAgIDogMSwKCSdVaW50MzJBcnJheScgICAgICAgOiAxLAoJJ1VpbnQ4Q2xhbXBlZEFycmF5JyA6IDEsCgoJLyoKCSB0aGVzZSBwcm9wZXJ0aWVzIGFsbG93IEZGIHRvIGZ1bmN0aW9uLiB3aXRob3V0IHRoZW0sIGEgZnVja2Zlc3Qgb2YKCSBpbmV4cGxpY2FibGUgZXJyb3JzIGVudXNlcy4gdG9vayBtZSBhYm91dCA0IGhvdXJzIHRvIHRyYWNrIHRoZXNlIGZ1Y2tlcnMKCSBkb3duLgoJIGZ1Y2sgaGVsbCBpdCBpc24ndCBmdXR1cmUtcHJvb2YsIGJ1dCB0aGUgZXJyb3JzIHRocm93biBhcmUgdW5jYXRjaGFibGUKCSBhbmQgdW50cmFjYWJsZS4gc28gYSBoZWFkcy11cC4gZW5qb3ksIGZ1dHVyZS1tZSEKCSAqLwoJJ0RPTUV4Y2VwdGlvbicgICAgICA6IDEsCgknRXZlbnQnICAgICAgICAgICAgIDogMSwKCSdNZXNzYWdlRXZlbnQnICAgICAgOiAxLAoJJ1dvcmtlck1lc3NhZ2VFdmVudCc6IDEKfTsKClsgZ2xvYmFsLCBPYmplY3QuZ2V0UHJvdG90eXBlT2YoZ2xvYmFsKSBdLmZvckVhY2goZnVuY3Rpb24gKCBvYmogKSB7CglPYmplY3QuZ2V0T3duUHJvcGVydHlOYW1lcyggb2JqICkuZm9yRWFjaChmdW5jdGlvbiggcHJvcCApIHsKCQlpZiggd2hpdGV5Lmhhc093blByb3BlcnR5KHByb3ApICkgewoJCQlyZXR1cm47CgkJfQoKCQl0cnkgewoJCQlPYmplY3QuZGVmaW5lUHJvcGVydHkoIG9iaiwgcHJvcCwgewoJCQkJZ2V0IDogZnVuY3Rpb24gKCkgewoJCQkJCS8qIFRFRSBIRUUgKi8KCQkJCQl0aHJvdyBuZXcgUmVmZXJlbmNlRXJyb3IoIHByb3AgKyAnIGlzIG5vdCBkZWZpbmVkJyApOwoJCQkJfSwKCQkJCWNvbmZpZ3VyYWJsZSA6IGZhbHNlLAoJCQkJZW51bWVyYWJsZSA6IGZhbHNlCgkJCX0pOwoJCX0KCQljYXRjaCAoIGUgKSB7CgkJCWRlbGV0ZSBvYmpbIHByb3AgXTsKCgkJCWlmICggb2JqWyBwcm9wIF0gIT09IHVuZGVmaW5lZCApIHsKCQkJCW9ialsgcHJvcCBdID0gbnVsbDsKCQkJfQoJCX0KCX0pOwp9KTsKCk9iamVjdC5kZWZpbmVQcm9wZXJ0eSggQXJyYXkucHJvdG90eXBlLCAnam9pbicsIHsKCXdyaXRhYmxlOiBmYWxzZSwKCWNvbmZpZ3VyYWJsZTogZmFsc2UsCgllbnVtcmFibGU6IGZhbHNlLAoKCXZhbHVlOiAoZnVuY3Rpb24gKCBvbGQgKSB7CgkJcmV0dXJuIGZ1bmN0aW9uICggYXJnICkgewoJCQlpZiAoIHRoaXMubGVuZ3RoID4gNTAwIHx8IChhcmcgJiYgYXJnLmxlbmd0aCA+IDUwMCkgKSB7CgkJCQl0aHJvdyAnRXhjZXB0aW9uOiB0b28gbWFueSBpdGVtcyc7CgkJCX0KCgkJCXJldHVybiBvbGQuYXBwbHkoIHRoaXMsIGFyZ3VtZW50cyApOwoJCX07Cgl9KCBBcnJheS5wcm90b3R5cGUuam9pbiApKQp9KTsKCgovKiB3ZSBkZWZpbmUgaXQgb3V0c2lkZSBzbyBpdCdsbCBub3QgYmUgaW4gc3RyaWN0IG1vZGUgKi8KdmFyIGV4ZWMgPSBmdW5jdGlvbiAoIGNvZGUgKSB7CglyZXR1cm4gZXZhbCggJ3VuZGVmaW5lZDtcbicgKyBjb2RlICk7Cn07CnZhciBjb25zb2xlID0gewoJX2l0ZW1zIDogW10sCglsb2cgOiBmdW5jdGlvbigpIHsKCQljb25zb2xlLl9pdGVtcy5wdXNoLmFwcGx5KCBjb25zb2xlLl9pdGVtcywgYXJndW1lbnRzICk7Cgl9Cn07CmNvbnNvbGUuZXJyb3IgPSBjb25zb2xlLmluZm8gPSBjb25zb2xlLmRlYnVnID0gY29uc29sZS5sb2c7CgooZnVuY3Rpb24oKSB7CgkidXNlIHN0cmljdCI7CgoJZ2xvYmFsLm9ubWVzc2FnZSA9IGZ1bmN0aW9uICggZXZlbnQgKSB7CgkJZ2xvYmFsLnBvc3RNZXNzYWdlKHsKCQkJZXZlbnQgOiAnc3RhcnQnCgkJfSk7CgoJCXZhciBqc29uU3RyaW5naWZ5ID0gSlNPTi5zdHJpbmdpZnksIC8qYmFja3VwKi8KCQkJcmVzdWx0LAoKCQkJb3JpZ2luYWxTZXRUaW1lb3V0ID0gc2V0VGltZW91dCwKCQkJdGltZW91dENvdW50ZXIgPSAwOwoKCQl2YXIgc2VuZFJlc3VsdCA9IGZ1bmN0aW9uICggcmVzdWx0ICkgewoJCQlnbG9iYWwucG9zdE1lc3NhZ2UoewoJCQkJYW5zd2VyIDoganNvblN0cmluZ2lmeSggcmVzdWx0LCByZXZpdmVyICksCgkJCQlsb2cgICAgOiBqc29uU3RyaW5naWZ5KCBjb25zb2xlLl9pdGVtcywgcmV2aXZlciApLnNsaWNlKCAxLCAtMSApCgkJCX0pOwoJCX07CgkJdmFyIGRvbmUgPSBmdW5jdGlvbiAoIHJlc3VsdCApIHsKCQkJaWYgKCB0aW1lb3V0Q291bnRlciA8IDEgKSB7CgkJCQlzZW5kUmVzdWx0KCByZXN1bHQgKTsKCQkJfQoJCX07CgoJCXZhciByZXZpdmVyID0gZnVuY3Rpb24gKCBrZXksIHZhbHVlICkgewoJCQl2YXIgb3V0cHV0OwoKCQkJaWYgKCBzaG91bGRTdHJpbmcodmFsdWUpICkgewoJCQkJb3V0cHV0ID0gJycgKyB2YWx1ZTsKCQkJfQoJCQllbHNlIHsKCQkJCW91dHB1dCA9IHZhbHVlOwoJCQl9CgoJCQlyZXR1cm4gb3V0cHV0OwoJCX07CgoJCS8qSlNPTiBkb2VzIG5vdCBsaWtlIGFueSBvZiB0aGUgZm9sbG93aW5nKi8KCQl2YXIgc3RydW5nID0gewoJCQlGdW5jdGlvbiAgOiB0cnVlLCBFcnJvcgkgOiB0cnVlLAoJCQlVbmRlZmluZWQgOiB0cnVlLCBSZWdFeHAgOiB0cnVlCgkJfTsKCQl2YXIgc2hvdWxkU3RyaW5nID0gZnVuY3Rpb24gKCB2YWx1ZSApIHsKCQkJdmFyIHR5cGUgPSAoIHt9ICkudG9TdHJpbmcuY2FsbCggdmFsdWUgKS5zbGljZSggOCwgLTEgKTsKCgkJCWlmICggdHlwZSBpbiBzdHJ1bmcgKSB7CgkJCQlyZXR1cm4gdHJ1ZTsKCQkJfQoJCQkvKm5laXRoZXIgZG9lcyBpdCBmZWVsIGNvbXBhc3Npb25hdGUgYWJvdXQgTmFOIG9yIEluZmluaXR5Ki8KCQkJcmV0dXJuIHZhbHVlICE9PSB2YWx1ZSB8fCB2YWx1ZSA9PT0gSW5maW5pdHk7CgkJfTsKCgkJc2VsZi5zZXRUaW1lb3V0ID0gZnVuY3Rpb24gKGNiKSB7CgkJCS8qYmVjYXVzZSBvZiBTb21lS2l0dGVucyovCgkJCWlmICghY2IpIHsKCQkJCXJldHVybjsKCQkJfQoKCQkJdmFyIGFyZ3MgPSBbXS5zbGljZS5jYWxsKCBhcmd1bWVudHMgKTsKCQkJYXJnc1sgMCBdID0gd3JhcHBlcjsKCQkJdGltZW91dENvdW50ZXIgKz0gMTsKCgkJCW9yaWdpbmFsU2V0VGltZW91dC5hcHBseSggc2VsZiwgYXJncyApOwoKCQkJZnVuY3Rpb24gd3JhcHBlciAoKSB7CgkJCQl0aW1lb3V0Q291bnRlciAtPSAxOwoJCQkJY2IuYXBwbHkoIHNlbGYsIGFyZ3VtZW50cyApOwoKCQkJCWRvbmUoKTsKCQkJfQoJCX07CgoJCXRyeSB7CgkJCXJlc3VsdCA9IGV4ZWMoIGV2ZW50LmRhdGEgKTsKCQl9CgkJY2F0Y2ggKCBlICkgewoJCQlyZXN1bHQgPSBlLnRvU3RyaW5nKCk7CgkJfQoKCQkvKmhhbmRsZSBwcm9taXNlcyBhcHByb3ByaWF0ZWx5Ki8KCQlpZiAoIHJlc3VsdCAmJiByZXN1bHQudGhlbiAmJiByZXN1bHQuY2F0Y2ggKSB7CgkJCXJlc3VsdC50aGVuKCBkb25lICkuY2F0Y2goIGRvbmUgKTsKCQl9CgkJZWxzZSB7CgkJCWRvbmUoIHJlc3VsdCApOwoJCX0KCX07Cn0pKCk7Cg==' );
-
-var blob = new Blob( [workerCode], { type : 'application/javascript' } ),
-	codeUrl = window.URL.createObjectURL( blob );
-
+//load up coffeescript if we're not in dev mdoe
 setTimeout(function () {
 	if (bot.devMode) {
 		return;
 	}
+
 	IO.injectScript( 'https://raw.github.com/jashkenas/coffee-script/master/extras/coffee-script.js' );
 }, 1000);
 
-return function ( code, cb ) {
+//execute arbitrary js code in a relatively safe environment
+bot.eval = (function () {
+
+var workerCode = function () {
+//#build codeWorker.js
+}.stringContents();
+
+var blob = new Blob( [workerCode], { type : 'application/javascript' } ),
+	codeUrl = window.URL.createObjectURL( blob );
+
+return function ( code, arg, cb ) {
+    if ( arguments.length === 2 ) {
+		cb  = arg;
+		arg = null;
+	}
+
 	var worker = new Worker( codeUrl ),
 		timeout;
 
-	if ( code[0] === 'c' ) {
-		code = CoffeeScript.compile( code.replace(/^c>/, ''), {bare:1} );
-	}
-	else {
-		code = code.replace( /^>/, '' );
-	}
-
 	worker.onmessage = function ( evt ) {
+        bot.log( evt, 'eval worker.onmessage' );
+
 		var type = evt.data.event;
+
 		if ( type === 'start' ) {
 			start();
 		}
 		else {
-			finish( dressUpAnswer(evt.data) );
+			finish( null, evt.data );
 		}
 	};
 
@@ -42,7 +45,10 @@ return function ( code, cb ) {
 	};
 
 	//and it all boils down to this...
-	worker.postMessage( code );
+	worker.postMessage({
+		code : code,
+		arg  : arg
+	});
 	//so fucking cool.
 
 	function start () {
@@ -55,12 +61,12 @@ return function ( code, cb ) {
 		}, 500 );
 	}
 
-	function finish ( result ) {
+	function finish ( err, result ) {
 		clearTimeout( timeout );
 		worker.terminate();
 
 		if ( cb && cb.call ) {
-			cb( result );
+			cb( err, result );
 		}
 		else {
 			console.warn( 'eval did not get callback' );
@@ -68,37 +74,63 @@ return function ( code, cb ) {
 	}
 };
 
-function dressUpAnswer ( answerObj ) {
-	bot.log( answerObj, 'eval answerObj' );
-	var answer = answerObj.answer,
-		log = answerObj.log,
-		result;
+}());
 
-	if ( answer === undefined ) {
-		return 'Malformed output from web-worker. If you weren\'t just ' +
-			'fooling around trying to break me, raise an issue or contact ' +
-			'Zirak';
+bot.prettyEval = function ( code, arg, cb ) {
+	if ( arguments.length === 2 ) {
+		cb  = arg;
+		arg = null;
 	}
 
-	result = snipAndCodify( answer );
-
-	if ( log && log.length ) {
-		result += ' Logged: ' + snipAndCodify( log );
-	}
-
-	return result;
-}
-
-function snipAndCodify ( str ) {
-	var ret;
-
-	if ( str.length > 400 ) {
-		ret = '`' +	 str.slice(0, 400) + '` (snip)';
+	if ( code[0] === 'c' ) {
+		code = CoffeeScript.compile( code.replace(/^c>/, ''), {bare:1} );
 	}
 	else {
-		ret = '`' + str +'`';
+		code = code.replace( /^>/, '' );
 	}
 
-	return ret;
-}
-}());
+	return bot.eval( code, arg, finish );
+
+    function finish ( err, answerObj ) {
+        if ( err ) {
+            cb( err );
+        }
+        else {
+            cb( dressUpAnswer(answerObj) );
+        }
+    }
+
+    function dressUpAnswer ( answerObj ) {
+	    bot.log( answerObj, 'eval answerObj' );
+	    var answer = answerObj.answer,
+		    log = answerObj.log,
+		    result;
+
+	    if ( answer === undefined ) {
+		    return 'Malformed output from web-worker. If you weren\'t just ' +
+			    'fooling around trying to break me, raise an issue or contact ' +
+			    'Zirak';
+	    }
+
+	    result = snipAndCodify( answer );
+
+	    if ( log && log.length ) {
+		    result += ' Logged: ' + snipAndCodify( log );
+	    }
+
+	    return result;
+    }
+
+    function snipAndCodify ( str ) {
+	    var ret;
+
+	    if ( str.length > 400 ) {
+		    ret = '`' +	 str.slice(0, 400) + '` (snip)';
+	    }
+	    else {
+		    ret = '`' + str +'`';
+	    }
+
+	    return ret;
+    }
+};

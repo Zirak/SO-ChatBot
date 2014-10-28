@@ -117,7 +117,7 @@ Object.defineProperty( Array.prototype, 'join', {
 
 
 /* we define it outside so it'll not be in strict mode */
-var exec = function ( code ) {
+var exec = function ( code, arg ) {
 	return eval( 'undefined;\n' + code );
 };
 var console = {
@@ -203,7 +203,7 @@ console.error = console.info = console.debug = console.log;
 		};
 
 		try {
-			result = exec( event.data );
+			result = exec( event.data.code, event.data.arg );
 		}
 		catch ( e ) {
 			result = e.toString();

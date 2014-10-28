@@ -16,6 +16,7 @@ function learn ( args ) {
 		input  : commandParts[ 2 ] || '.*',
 		//meta info
 		creator: args.get( 'user_name' ),
+		creatorID : args.get('user_id' ),
 		date   : new Date()
 	};
 
@@ -54,7 +55,8 @@ function addCustomCommand ( command ) {
 		fun : makeCustomCommand( command ),
 		permissions : {
 			use : 'ALL',
-			del : 'ALL'
+			//to fix #171, command.creatorID was added. we need to retain BC
+			del : command.creatorID ? [ command.creatorID ] : 'OWNER'
 		}
 	});
 	cmd.learned = true;
@@ -195,4 +197,5 @@ bot.addCommand({
 });
 
 loadCommands();
+
 }());

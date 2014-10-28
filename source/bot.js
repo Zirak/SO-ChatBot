@@ -39,7 +39,7 @@ var bot = window.bot = {
 		try {
 			//it wants to execute some code
 			if ( /^c?>/.test(msg) ) {
-				this.eval( msg.toString(), msg.directreply.bind(msg) );
+				this.prettyEval( msg.toString(), msg.directreply.bind(msg) );
 			}
 			//or maybe some other action.
 			else {
@@ -362,9 +362,10 @@ bot.Command = function ( cmd ) {
 			else if ( canDo === 'NONE' ) {
 				return false;
 			}
-			else if ( canDo === 'OWNER' ) {
-				return bot.isOwner( usrid );
+			else if ( bot.isOwner(usrid) ) {
+				return true;
 			}
+
 			return canDo.indexOf( usrid ) > -1;
 		};
 	});
