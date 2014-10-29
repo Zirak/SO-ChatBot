@@ -116,6 +116,10 @@ var build = {
 				throw err;
 			}
 
+			if ( that.doMinify ) {
+				minify( that.outputName, that.outputMin, that.minEndCallback );
+			}
+
 			that.endCallback();
 		});
 	},
@@ -126,10 +130,6 @@ var build = {
 			var code = this.buildFinalCodeString();
 
 			this.write( code );
-
-			if ( this.doMinify ) {
-				minify( this.outputName, this.outputMin, this.minEndCallback );
-			}
 			code = null;
 		}
 	},
@@ -159,36 +159,10 @@ var exec = require('child_process').exec;
 
 var minifiers = [
 	{
-		name : 'closure-compiler',
-		test : function ( success, fail ) {
-			exec( 'java -version &> /dev/null; echo $?', finish );
-
-			function finish ( err, stdout, stderr ) {
-				if (err || Number(stdout)) {
-					fail();
-				}
-				else {
-					success();
-				}
-			}
-		},
-		minify : function ( sourceFile, outFile, cb ) {
-			var cmd = [
-				'java -jar closure-compiler.jar',
-				'--language_in ECMASCRIPT5_STRICT',
-				'--compilation_level SIMPLE_OPTIMIZATIONS',
-				'--js', sourceFile,
-				'--js_output_file', outFile,
-			].join( ' ' );
-
-			exec( cmd, cb );
-		}
-	},
-	{
 		name : 'uglify2',
 		test : function ( success, fail ) {
 			try {
-				require.resolve( 'uglify-js2' );
+				require.resolve( 'uglify-js' );
 				success();
 			}
 			catch ( e ) {
@@ -196,11 +170,14 @@ var minifiers = [
 			}
 		},
 		minify : function ( sourceFile, outFile, cb ) {
+			console.log( sourceFile );
 			var code;
 			try {
-				code = require( 'uglify-js2' ).minify( sourceFile ).code;
+				code = require( 'uglify-js' ).minify( sourceFile ).code;
+				console.log('floop');
 			}
 			catch ( e ) {
+				console.error(e);
 				cb( e );
 				//I find it extremely pleasing how the above lines line up.
 				return;
