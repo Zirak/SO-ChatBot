@@ -209,7 +209,7 @@ Function.prototype.memoizeAsync = function ( hasher ) {
 //returns the function in string-form, without the enclosing crap.
 Function.prototype.stringContents = function () {
 	return this.toString()
-		.replace(/^function\*? \([^)]*\) \{/, '')
+		.replace(/^function\*?\s+\([^)]*\)\s*\{/, '')
 		.replace(/\}$/, '');
 };
 
