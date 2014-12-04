@@ -91,7 +91,7 @@ bot.addCommand({
 			return message;
 		}
 
-		welcome( args, args.get('roomid') );
+		welcome( args, args.get('room_id') );
 	},
 	permission : {
 		del : 'NONE'
