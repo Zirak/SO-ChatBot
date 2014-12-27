@@ -1703,10 +1703,9 @@ var macros = {
 
 		//the chat keeps a low opacity for users who remained silent for long,
 		// and high opacity for those who recently talked
-		var active = [].filter.call( presentUsers, function ( user ) {
+		var user = Array.filter( presentUsers, function ( user ) {
 			return Number( user.style.opacity ) >= 0.5;
-		}),
-		user = active[ Math.floor(Math.random() * (active.length-1)) ];
+		}).random();
 
 		if ( !user ) {
 			return 'Nobody';
@@ -1726,8 +1725,21 @@ var macros = {
 	//random number, min <= n <= max
 	//treats non-numeric inputs like they don't exist
 	rand : function ( msgObj, min, max ) {
-		min = Number( min );
-		max = Number( max );
+		// rand() === rand( 0, 10 )
+		if ( !min ) {
+			min = 0;
+			max = 10;
+		}
+		// rand( max ) === rand( 0, max )
+		else if ( !max ) {
+			max = min;
+			min = 0;
+		}
+		else {
+			min = Number( min );
+			max = Number( max );
+		}
+
 		return Math.rand( min, max );
 	}
 };
@@ -1776,10 +1788,8 @@ bot.parseMacro = function parse ( source, extraVars ) {
 
 		//parse the arguments, split them into individual arguments,
 		// and trim'em (to cover the case of "arg,arg" and "arg, arg")
-		return (
-			[ source ].concat(
-				parse( macroArgs, extraVars )
-					.split( ',' ).invoke( 'trim' ) ) );
+		var parsedArgs = parse( macroArgs, extraVars );
+		return [ source ].concat( parsedArgs.split(',').invoke('trim') );
 		//this is not good code
 	}
 
@@ -4312,6 +4322,8 @@ bot.addCommand({
 }());
 
 ;
+
+;
 (function () {
 var baseURL = 'http://api.jquery.com/';
 
@@ -6221,7 +6233,7 @@ bot.addCommand({
 			return message;
 		}
 
-		welcome( args, args.get('roomid') );
+		welcome( args, args.get('room_id') );
 	},
 	permission : {
 		del : 'NONE'
