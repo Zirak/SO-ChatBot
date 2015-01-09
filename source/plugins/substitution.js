@@ -88,7 +88,8 @@ function getMatchingMessage ( re, onlyBefore, cb ) {
     //to bot.eval
     // we do the skip and jump through bot.eval to avoid a ReDoS (#217).
     var matcher = function () {
-        var matchIndex = null;
+		var arg = arguments[1],
+			matchIndex = null;
 
         arg.messages.some(function ( msg, idx ) {
             if ( msg.id < arg.maxId && arg.pattern.test(msg.text) ) {
@@ -100,10 +101,16 @@ function getMatchingMessage ( re, onlyBefore, cb ) {
         });
 
         // remember we're inside bot.eval, final expression is the result.
-        matchIndex;
+		// so it'll work well with minification, we have to create an expression
+		//which won't be removed
+		(function () {
+			return matchIndex;
+		})();
     };
 
 	bot.eval( matcher.stringContents(), arg, function ( err, resp ) {
+		bot.log( err, resp, 'substitution matcher response' );
+
         // meh
         if ( err ) {
             cb( err );
