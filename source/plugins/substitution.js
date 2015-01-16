@@ -22,9 +22,13 @@
   (      #flag capturing group
     g?   #global (optional)
     i?   #case insensitive (optional)
-  )      #FIN
+  )
+  (?:
+    \s+
+    (\d+) #message id
+  )?  #FIN
  */
-var sub = /^\s*s(\/|\|)((?:(?:\\\1)|[^\1])*?)\1((?:(?:\\\1)|[^\1])*?)\1(g?i?)/;
+var sub = /^\s*s(\/|\|)((?:(?:\\\1)|[^\1])*?)\1((?:(?:\\\1)|[^\1])*?)\1(g?i?)(?:\s+(\d+))?/;
 bot.listen( sub, substitute );
 
 function substitute ( msg ) {
@@ -35,7 +39,17 @@ function substitute ( msg ) {
 		return 'Empty regex is empty';
 	}
 
-	getMatchingMessage( re, msg.get('message_id'), function ( err, message ) {
+	var messages;
+	if ( msg.matches[5] ) {
+		messages = Array.from(
+			document.querySelectorAll('#message-' + msg.matches[5] + ' .content') );
+	}
+	else {
+		messages = Array.from(
+			document.getElementsByClassName('content') ).reverse();
+	}
+
+	getMatchingMessage( re, messages, msg.get('message_id'), function ( err, message ) {
         if ( err ) {
             msg.reply( err );
             return;
@@ -68,10 +82,7 @@ function substitute ( msg ) {
 	});
 }
 
-function getMatchingMessage ( re, onlyBefore, cb ) {
-	var messages = Array.from(
-		document.getElementsByClassName('content') ).reverse();
-
+function getMatchingMessage ( re, messages, onlyBefore, cb ) {
     var arg = {
         maxId : onlyBefore,
         pattern : re,
