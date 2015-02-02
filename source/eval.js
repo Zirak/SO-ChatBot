@@ -18,7 +18,7 @@ var blob = new Blob( [workerCode], { type : 'application/javascript' } ),
 	codeUrl = window.URL.createObjectURL( blob );
 
 return function ( code, arg, cb ) {
-    if ( arguments.length === 2 ) {
+	if ( arguments.length === 2 ) {
 		cb  = arg;
 		arg = null;
 	}
@@ -27,7 +27,7 @@ return function ( code, arg, cb ) {
 		timeout;
 
 	worker.onmessage = function ( evt ) {
-        bot.log( evt, 'eval worker.onmessage' );
+		bot.log( evt, 'eval worker.onmessage' );
 
 		var type = evt.data.event;
 
@@ -91,46 +91,46 @@ bot.prettyEval = function ( code, arg, cb ) {
 
 	return bot.eval( code, arg, finish );
 
-    function finish ( err, answerObj ) {
-        if ( err ) {
-            cb( err );
-        }
-        else {
-            cb( dressUpAnswer(answerObj) );
-        }
-    }
+	function finish ( err, answerObj ) {
+		if ( err ) {
+			cb( err );
+		}
+		else {
+			cb( dressUpAnswer(answerObj) );
+		}
+	}
 
-    function dressUpAnswer ( answerObj ) {
-	    bot.log( answerObj, 'eval answerObj' );
-	    var answer = answerObj.answer,
-		    log = answerObj.log,
-		    result;
+	function dressUpAnswer ( answerObj ) {
+		bot.log( answerObj, 'eval answerObj' );
+		var answer = answerObj.answer,
+			log = answerObj.log,
+			result;
 
-	    if ( answer === undefined ) {
-		    return 'Malformed output from web-worker. If you weren\'t just ' +
-			    'fooling around trying to break me, raise an issue or contact ' +
-			    'Zirak';
-	    }
+		if ( answer === undefined ) {
+			return 'Malformed output from web-worker. If you weren\'t just ' +
+				'fooling around trying to break me, raise an issue or contact ' +
+				'Zirak';
+		}
 
-	    result = snipAndCodify( answer );
+		result = snipAndCodify( answer );
 
-	    if ( log && log.length ) {
-		    result += ' Logged: ' + snipAndCodify( log );
-	    }
+		if ( log && log.length ) {
+			result += ' Logged: ' + snipAndCodify( log );
+		}
 
-	    return result;
-    }
+		return result;
+	}
 
-    function snipAndCodify ( str ) {
-	    var ret;
+	function snipAndCodify ( str ) {
+		var ret;
 
-	    if ( str.length > 400 ) {
-		    ret = '`' +	 str.slice(0, 400) + '` (snip)';
-	    }
-	    else {
-		    ret = '`' + str +'`';
-	    }
+		if ( str.length > 400 ) {
+			ret = '`' + str.slice(0, 400) + '` (snip)';
+		}
+		else {
+			ret = '`' + str +'`';
+		}
 
-	    return ret;
-    }
+		return ret;
+	}
 };

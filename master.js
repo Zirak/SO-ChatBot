@@ -1259,7 +1259,7 @@ setTimeout(function () {
 		return;
 	}
 
-	IO.injectScript( 'https://raw.github.com/jashkenas/coffee-script/master/extras/coffee-script.js' );
+	IO.injectScript( 'https://rawgithub.com/jashkenas/coffee-script/master/extras/coffee-script.js' );
 }, 1000);
 
 //execute arbitrary js code in a relatively safe environment
@@ -1493,7 +1493,7 @@ var blob = new Blob( [workerCode], { type : 'application/javascript' } ),
 	codeUrl = window.URL.createObjectURL( blob );
 
 return function ( code, arg, cb ) {
-    if ( arguments.length === 2 ) {
+	if ( arguments.length === 2 ) {
 		cb  = arg;
 		arg = null;
 	}
@@ -1502,7 +1502,7 @@ return function ( code, arg, cb ) {
 		timeout;
 
 	worker.onmessage = function ( evt ) {
-        bot.log( evt, 'eval worker.onmessage' );
+		bot.log( evt, 'eval worker.onmessage' );
 
 		var type = evt.data.event;
 
@@ -1566,48 +1566,48 @@ bot.prettyEval = function ( code, arg, cb ) {
 
 	return bot.eval( code, arg, finish );
 
-    function finish ( err, answerObj ) {
-        if ( err ) {
-            cb( err );
-        }
-        else {
-            cb( dressUpAnswer(answerObj) );
-        }
-    }
+	function finish ( err, answerObj ) {
+		if ( err ) {
+			cb( err );
+		}
+		else {
+			cb( dressUpAnswer(answerObj) );
+		}
+	}
 
-    function dressUpAnswer ( answerObj ) {
-	    bot.log( answerObj, 'eval answerObj' );
-	    var answer = answerObj.answer,
-		    log = answerObj.log,
-		    result;
+	function dressUpAnswer ( answerObj ) {
+		bot.log( answerObj, 'eval answerObj' );
+		var answer = answerObj.answer,
+			log = answerObj.log,
+			result;
 
-	    if ( answer === undefined ) {
-		    return 'Malformed output from web-worker. If you weren\'t just ' +
-			    'fooling around trying to break me, raise an issue or contact ' +
-			    'Zirak';
-	    }
+		if ( answer === undefined ) {
+			return 'Malformed output from web-worker. If you weren\'t just ' +
+				'fooling around trying to break me, raise an issue or contact ' +
+				'Zirak';
+		}
 
-	    result = snipAndCodify( answer );
+		result = snipAndCodify( answer );
 
-	    if ( log && log.length ) {
-		    result += ' Logged: ' + snipAndCodify( log );
-	    }
+		if ( log && log.length ) {
+			result += ' Logged: ' + snipAndCodify( log );
+		}
 
-	    return result;
-    }
+		return result;
+	}
 
-    function snipAndCodify ( str ) {
-	    var ret;
+	function snipAndCodify ( str ) {
+		var ret;
 
-	    if ( str.length > 400 ) {
-		    ret = '`' +	 str.slice(0, 400) + '` (snip)';
-	    }
-	    else {
-		    ret = '`' + str +'`';
-	    }
+		if ( str.length > 400 ) {
+			ret = '`' + str.slice(0, 400) + '` (snip)';
+		}
+		else {
+			ret = '`' + str +'`';
+		}
 
-	    return ret;
-    }
+		return ret;
+	}
 };
 
 
@@ -5757,24 +5757,26 @@ function substitute ( msg ) {
 	var messages;
 	if ( msg.matches[5] ) {
 		messages = Array.from(
-			document.querySelectorAll('#message-' + msg.matches[5] + ' .content') );
+			document.querySelectorAll('#message-' + msg.matches[5] + ' .content')
+		);
 	}
 	else {
 		messages = Array.from(
-			document.getElementsByClassName('content') ).reverse();
+			document.getElementsByClassName('content')
+		).reverse();
 	}
 
 	getMatchingMessage( re, messages, msg.get('message_id'), function ( err, message ) {
-        if ( err ) {
-            msg.reply( err );
-            return;
-        }
+		if ( err ) {
+			msg.reply( err );
+			return;
+		}
 
 		if ( !message ) {
 			msg.reply(
 				'No matching message (are you sure we\'re in the right room?)'
 			);
-            return;
+			return;
 		}
 		bot.log( message, 'substitution found message' );
 
@@ -5798,58 +5800,59 @@ function substitute ( msg ) {
 }
 
 function getMatchingMessage ( re, messages, onlyBefore, cb ) {
-    var arg = {
-        maxId : onlyBefore,
-        pattern : re,
-        messages : messages.map(function ( el ) {
-            return {
-                id   : Number( el.parentElement.id.match(/\d+/)[0] ),
-                text : el.textContent
-            };
-        })
-    };
+	bot.log( re, messages, onlyBefore, 'substitution getMatchingMessage args' );
+	var arg = {
+		maxId : onlyBefore,
+		pattern : re,
+		messages : messages.map(function ( el ) {
+			return {
+				id	 : Number( el.parentElement.id.match(/\d+/)[0] ),
+				text : el.textContent
+			};
+		})
+	};
 
-    // the following function is passed to bot.eval, which means it will run in
-    //a different context. the only variable we get is ~arg~, because we pass it
-    //to bot.eval
-    // we do the skip and jump through bot.eval to avoid a ReDoS (#217).
-    var matcher = function () {
+	// the following function is passed to bot.eval, which means it will run in
+	//a different context. the only variable we get is ~arg~, because we pass it
+	//to bot.eval
+	// we do the skip and jump through bot.eval to avoid a ReDoS (#217).
+	var matcher = function () {
 		var arg = arguments[1],
 			matchIndex = null;
 
-        arg.messages.some(function ( msg, idx ) {
-            if ( msg.id < arg.maxId && arg.pattern.test(msg.text) ) {
-                matchIndex = idx;
-                return true;
-            }
+		arg.messages.some(function ( msg, idx ) {
+			if ( msg.id < arg.maxId && arg.pattern.test(msg.text) ) {
+				matchIndex = idx;
+				return true;
+			}
 
-            return false;
-        });
+			return false;
+		});
 
-        // remember we're inside bot.eval, final expression is the result.
+		// remember we're inside bot.eval, final expression is the result.
 		// so it'll work well with minification, we have to create an expression
 		//which won't be removed
 		(function () {
 			return matchIndex;
 		})();
-    };
+	};
 
 	bot.eval( matcher.stringContents(), arg, function ( err, resp ) {
 		bot.log( err, resp, 'substitution matcher response' );
 
-        // meh
-        if ( err ) {
-            cb( err );
-            return;
-        }
+		// meh
+		if ( err ) {
+			cb( err );
+			return;
+		}
 
-        var index = JSON.parse( resp.answer );
-        if ( Number(index) !== index ) {
-            return;
-        }
+		var index = JSON.parse( resp.answer );
+		if ( Number(index) !== index ) {
+			return;
+		}
 
-        cb( null, messages[index] );
-    });
+		cb( null, messages[index] );
+	});
 }
 
 // <a class="action-link" href="/transcript/message/msgid#msgid>...</a>
@@ -5867,8 +5870,8 @@ function getMessageLink ( message ) {
 }
 
 // <div class="content">
-//  <div class="partial"> ... </div>
-//  <a class="more-data" href="what we want">(see full text)</a>
+//	<div class="partial"> ... </div>
+//	<a class="more-data" href="what we want">(see full text)</a>
 // </div>
 function retrieveFullText ( message, cb ) {
 	var href = message.children[ 1 ].href;
