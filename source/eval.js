@@ -4,7 +4,7 @@ setTimeout(function () {
 		return;
 	}
 
-	IO.injectScript( 'https://raw.github.com/jashkenas/coffee-script/master/extras/coffee-script.js' );
+	IO.injectScript( 'https://rawgithub.com/jashkenas/coffee-script/master/extras/coffee-script.js' );
 }, 1000);
 
 //execute arbitrary js code in a relatively safe environment
