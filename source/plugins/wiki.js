@@ -16,8 +16,8 @@ function command ( args, cb ) {
 
 	function finish ( resp ) {
 		//the result will look like this:
-		// [search_term, [title0, title1, title2, ...]]
-		//we only asked for one result, so the 2nd array will have 1 item
+		// [search_term, [title0, title1, title2, ...], [description0, description1...], [link0, link1...]]
+		//we only asked for one result, so the inner arrays will have only 1 item each
 		var title = resp[ 1 ][ 0 ],
 			base = 'http://en.wikipedia.org/wiki/',
 			found = true, res;
@@ -31,10 +31,7 @@ function command ( args, cb ) {
 			].random();
 		}
 		else {
-			//for some reason, wikipedia can't simply return a url
-			title = encodeURIComponent( title.replace(/ /g, '_') );
-
-			res = base + title;
+			res = resp[3][0]; // grab the link from the last inner array
 		}
 
 		if ( cb && cb.call ) {
