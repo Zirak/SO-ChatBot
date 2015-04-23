@@ -4,40 +4,32 @@ var nulls = [
 	'I could not find such a video',
 	'The Lords of YouTube did not find your query favorable' ];
 function youtube ( args, cb ) {
-	IO.jsonp({
-		url : 'https://gdata.youtube.com/feeds/api/videos',
-		jsonpName : 'callback',
-		data : {
-			q : args.toString(),
-			'max-results' : 1,
-			v : 2,
-			alt : 'json'
-		},
-		fun : finish
-	});
+	IO.jsonp.google(
+		args.toString() + ' site:youtube.com', finishCall );
 
-	//the response looks something like this:
-	/*
-	{
-		tons of crap
-		"entry" : [{
-			lots of crap
-			"link" : [{
-				some crap
-				"href" : what we care about
-			}]
-			some more crap
-		}]
-		and then some more
-	}
-	*/
-	function finish ( resp ) {
-		var entry = resp.feed.entry;
-		if ( !entry || !entry.length ) {
-			args.reply( nulls.random() );
+	function finishCall ( resp ) {
+		if ( resp.responseStatus !== 200 ) {
+			finish( 'Something went on fire; status ' + resp.responseStatus );
+			return;
+		}
+
+		var result = resp.responseData.results[ 0 ];
+		bot.log( result, '/youtube result' );
+
+		if ( !result ) {
+			finish( nulls.random() );
 		}
 		else {
-			args.send( entry[0].link[0].href );
+			finish( decodeURIComponent(result.url) );
+		}
+	}
+
+	function finish ( res ) {
+		if ( cb && cb.call ) {
+			cb( res );
+		}
+		else {
+			args.directreply( res );
 		}
 	}
 }
