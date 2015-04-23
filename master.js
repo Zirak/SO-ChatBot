@@ -6907,7 +6907,7 @@ var nulls = [
 	'The Lords of YouTube did not find your query favorable' ];
 function youtube ( args, cb ) {
 	IO.jsonp.google(
-		args.toString() + ' site:youtube.com/user', finishCall );
+		args.toString() + ' site:youtube.com/watch', finishCall );
 
 	function finishCall ( resp ) {
 		if ( resp.responseStatus !== 200 ) {
