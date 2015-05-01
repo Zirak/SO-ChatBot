@@ -1106,6 +1106,9 @@ bot.CommunityCommand = function ( command, req ) {
 		old_execute = cmd.exec,
 		old_canUse  = cmd.canUse;
 
+	var pendingMessage = command.pendingMessage ||
+			'Already registered; still need {0} more';
+	console.log( command.pendingMessage, pendingMessage );
 	req = req || 2;
 
 	cmd.canUse = function () {
@@ -1145,7 +1148,7 @@ bot.CommunityCommand = function ( command, req ) {
 		needed -= 1;
 
 		if ( needed > 0 ) {
-			return 'Registered; need {0} more to execute'.supplant( needed );
+			return pendingMessage.supplant( needed );
 		}
 
 		bot.log( 'should execute' );
@@ -2265,12 +2268,13 @@ Object.iterate( commands, function ( cmdName, fun ) {
 			use : privilegedCommands[ cmdName ] ? 'OWNER' : 'ALL'
 		},
 		description : descriptions[ cmdName ],
+		pendingMessage: fun.pendingMessage,
 		unTellable : unTellable[ cmdName ],
-		async : commands[ cmdName ].async
+		async : fun.async
 	};
 
 	if ( communal[cmdName] ) {
-		cmd = bot.CommunityCommand( cmd );
+		cmd = bot.CommunityCommand( cmd, fun.invokeReq );
 	}
 	bot.addCommand( cmd );
 });
@@ -3473,7 +3477,8 @@ var ban = {
 
 	permissions : { del : 'NONE', use : 'OWNER' },
 	description : 'Bans a user from using me. Lacking arguments, prints the ' +
-		'ban list. `/ban [usr_id|usr_name]`'
+		'ban list. `/ban [usr_id|usr_name]`',
+	pendingMessage : 'The user will be thrown into mindjail in {0} more invocations'
 };
 
 var unban = {
@@ -5097,6 +5102,7 @@ bot.addCommand(bot.CommunityCommand({
 	},
 	permissions : { del : 'NONE', use : 'OWNER' },
 	description : 'Kills me :(',
+	pendingMessage : 'I will shut up after {0} more invocations.'
 }));
 
 ;
@@ -5959,7 +5965,8 @@ bot.addCommand( bot.CommunityCommand({
 		use : 'OWNER'
 	},
 	description : 'Say boopidi bee and in the room I shall be. '+
-		'`/summon roomid`'
+		'`/summon roomid`',
+	pendingMessage: 'I will appear in that room after {0} more invocation(s)'
 }));
 
 bot.addCommand( bot.CommunityCommand({
@@ -5970,7 +5977,8 @@ bot.addCommand( bot.CommunityCommand({
 		use : 'OWNER'
 	},
 	description : 'Chant zippidi lepat and from the room I shall depart. ' +
-		'`/unsummon [roomid=your_roomid]`'
+		'`/unsummon [roomid=your_roomid]`',
+	pendingMessage: 'I will leave this room after {0} more invocation(s)'
 }));
 
 })();

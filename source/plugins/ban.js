@@ -82,7 +82,8 @@ var ban = {
 
 	permissions : { del : 'NONE', use : 'OWNER' },
 	description : 'Bans a user from using me. Lacking arguments, prints the ' +
-		'ban list. `/ban [usr_id|usr_name]`'
+		'ban list. `/ban [usr_id|usr_name]`',
+	pendingMessage : 'The user will be thrown into mindjail in {0} more invocations'
 };
 
 var unban = {

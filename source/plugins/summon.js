@@ -44,7 +44,8 @@ bot.addCommand( bot.CommunityCommand({
 		use : 'OWNER'
 	},
 	description : 'Say boopidi bee and in the room I shall be. '+
-		'`/summon roomid`'
+		'`/summon roomid`',
+	pendingMessage: 'I will appear in that room after {0} more invocation(s)'
 }));
 
 bot.addCommand( bot.CommunityCommand({
@@ -55,7 +56,8 @@ bot.addCommand( bot.CommunityCommand({
 		use : 'OWNER'
 	},
 	description : 'Chant zippidi lepat and from the room I shall depart. ' +
-		'`/unsummon [roomid=your_roomid]`'
+		'`/unsummon [roomid=your_roomid]`',
+	pendingMessage: 'I will leave this room after {0} more invocation(s)'
 }));
 
 })();
