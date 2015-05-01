@@ -159,7 +159,7 @@ var exec = require('child_process').exec;
 
 var minifiers = [
 	{
-		name : 'uglify2',
+		name : 'uglify',
 		test : function ( success, fail ) {
 			try {
 				require.resolve( 'uglify-js' );

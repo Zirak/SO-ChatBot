@@ -1,0 +1,26 @@
+{
+	"name": "so-chatbot",
+	"version": "0.1.0",
+	"description": "A chatbot for StackOverflow.",
+	"main": "run-headless.js",
+	"dependencies": {
+		"uglify-js": "^2.4.15",
+		"nightmare": "^1.8.1"
+	},
+	"devDependencies": {},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Zirak/SO-ChatBot.git"
+	},
+	"keywords": [
+		"chatbot",
+		"horse-lime",
+		"goats"
+	],
+	"author": "Zirak",
+	"license": "WTFPL",
+	"bugs": {
+		"url": "https://github.com/Zirak/SO-ChatBot/issues"
+	},
+	"homepage": "https://github.com/Zirak/SO-ChatBot#readme"
+}
