@@ -392,6 +392,9 @@ bot.CommunityCommand = function ( command, req ) {
 		old_execute = cmd.exec,
 		old_canUse  = cmd.canUse;
 
+	var pendingMessage = command.pendingMessage ||
+			'Already registered; still need {0} more';
+	console.log( command.pendingMessage, pendingMessage );
 	req = req || 2;
 
 	cmd.canUse = function () {
@@ -431,7 +434,7 @@ bot.CommunityCommand = function ( command, req ) {
 		needed -= 1;
 
 		if ( needed > 0 ) {
-			return 'Registered; need {0} more to execute'.supplant( needed );
+			return pendingMessage.supplant( needed );
 		}
 
 		bot.log( 'should execute' );

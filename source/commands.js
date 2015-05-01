@@ -278,12 +278,13 @@ Object.iterate( commands, function ( cmdName, fun ) {
 			use : privilegedCommands[ cmdName ] ? 'OWNER' : 'ALL'
 		},
 		description : descriptions[ cmdName ],
+		pendingMessage: fun.pendingMessage,
 		unTellable : unTellable[ cmdName ],
-		async : commands[ cmdName ].async
+		async : fun.async
 	};
 
 	if ( communal[cmdName] ) {
-		cmd = bot.CommunityCommand( cmd );
+		cmd = bot.CommunityCommand( cmd, fun.invokeReq );
 	}
 	bot.addCommand( cmd );
 });

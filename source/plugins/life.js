@@ -24,4 +24,5 @@ bot.addCommand(bot.CommunityCommand({
 	},
 	permissions : { del : 'NONE', use : 'OWNER' },
 	description : 'Kills me :(',
+	pendingMessage : 'I will shut up after {0} more invocations.'
 }));
