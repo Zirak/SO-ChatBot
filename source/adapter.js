@@ -212,6 +212,19 @@ bot.adapter = {
 			text : this.escape( text ),
 			url  : url
 		});
+	},
+
+	moveMessage : function ( msgid, fromRoom, toRoom, cb ) {
+		IO.xhr({
+			method : 'POST',
+			url : '/admin/movePosts/' + fromRoom,
+			data : {
+				fkey: bot.adapter.fkey,
+				to: toRoom,
+				ids: msgid
+			},
+			finish : cb || function () {}
+		});
 	}
 };
 
@@ -366,17 +379,17 @@ var polling = bot.adapter.in = {
 	},
 
 	handleMultilineMessage : function ( msg ) {
-		this.breakMultilineMessage( msg ).forEach(function ( line ) {
+		this.breakMultilineMessage( msg.content ).forEach(function ( line ) {
 			var msgObj = Object.merge( msg, { content : line.trim() });
 
 			IO.in.receive( msgObj );
 		});
 	},
-	breakMultilineMessage : function ( msg ) {
+	breakMultilineMessage : function ( content ) {
 		//remove the enclosing tag
-		var multiline = msg.content
+		var multiline = content
 			//slice upto the beginning of the ending tag
-			.slice( 0, msg.content.lastIndexOf('</div>') )
+			.slice( 0, content.lastIndexOf('</div>') )
 			//and strip away the beginning tag
 			.replace( '<div class=\'full\'>', '' );
 
