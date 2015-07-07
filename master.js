@@ -1492,7 +1492,7 @@ console.error = console.info = console.debug = console.log;
 
 }.stringContents();
 
-var blob = new Blob( [workerCode], { type : 'application/javascript' } ),
+var blob = new Blob( [workerCode], { type : 'application/javascript;version=1.8' } ),
 	codeUrl = window.URL.createObjectURL( blob );
 
 return function ( code, arg, cb ) {
@@ -3157,33 +3157,6 @@ bot.listen(
 bot.listen( /^bitch/i, bot.personality.bitch, bot.personality );
 
 ;
-(function () {
-var hammers = {
-	STOP  : 'HAMMERTIME!',
-	STAHP : 'HAMMAHTIME!',
-	HALT  : 'HAMMERZEIT!',
-	STOY  : 'ZABIVAT\' VREMYA!',
-	SISTITE: 'MALLEUS TEMPUS!'
-};
-
-// /(STOP|STAHP|...)[\.!\?]?$/
-var re = new RegExp(
-	'(' +
-		Object.keys(hammers).map(RegExp.escape).join('|') +
-	')[\\.!?]?$' );
-
-IO.register( 'input', function STOP ( msgObj ) {
-	var sentence = msgObj.content.toUpperCase(),
-		res = re.exec( sentence );
-
-	if ( res ) {
-		bot.adapter.out.add( hammers[res[1]], msgObj.room_id );
-	}
-});
-
-})();
-
-;
 //solves #86, mostly written by @Shmiddty
 (function () {
 "use strict";
@@ -3402,8 +3375,6 @@ IO.register( 'input', function afkInputListener ( msgObj ) {
 });
 
 })();
-
-;
 
 ;
 (function () {
@@ -4497,10 +4468,6 @@ bot.addCommand({
 }());
 
 ;
-
-;
-
-;
 //listener to help decide which Firefly episode to watch
 
 bot.listen( /(which |what |give me a )?firefly( episode)?/i, function ( msg ) {
@@ -4799,8 +4766,6 @@ bot.addCommand({
 }());
 
 ;
-
-;
 (function () {
 var baseURL = 'http://api.jquery.com/';
 
@@ -4882,8 +4847,6 @@ bot.addCommand({
 });
 
 })();
-
-;
 
 ;
 (function () {
@@ -5183,8 +5146,6 @@ bot.addCommand({
 })();
 
 ;
-
-;
 (function () {
 // #151: Listen for meme image names and reply with that meme.
 
@@ -5351,8 +5312,6 @@ bot.addCommand( moustache );
 }());
 
 ;
-
-;
 (function () {
 
 //collection of nudges; msgObj, time left and the message itself
@@ -5478,8 +5437,6 @@ function nudgeListener ( args ) {
 }
 
 }());
-
-;
 
 ;
 (function () {
@@ -5755,6 +5712,33 @@ var statsCmd = Object.merge( cmd, { name : 'stats'} );
 bot.addCommand( statsCmd );
 
 }());
+
+;
+(function () {
+var hammers = {
+	STOP  : 'HAMMERTIME!',
+	STAHP : 'HAMMAHTIME!',
+	HALT  : 'HAMMERZEIT!',
+	STOY  : 'ZABIVAT\' VREMYA!',
+	SISTITE: 'MALLEUS TEMPUS!'
+};
+
+// /(STOP|STAHP|...)[\.!\?]?$/
+var re = new RegExp(
+	'(' +
+		Object.keys(hammers).map(RegExp.escape).join('|') +
+	')[\\.!?]?$' );
+
+IO.register( 'input', function STOP ( msgObj ) {
+	var sentence = msgObj.content.toUpperCase(),
+		res = re.exec( sentence );
+
+	if ( res ) {
+		bot.adapter.out.add( hammers[res[1]], msgObj.room_id );
+	}
+});
+
+})();
 
 ;
 (function () {
@@ -6236,7 +6220,8 @@ function createLecture ( content ) {
 
 	var lecture = (
 		'Please don\'t post unformatted code - ' +
-		'hit Ctrl+K before sending, and see the {0}.'
+		'hit Ctrl+K before sending, use up-arrow to edit messages, ' +
+		'and see the {0}.'
 	).supplant( bot.adapter.link('faq', '/faq') );
 
 	if ( lineCount >= 10 ) {
@@ -6258,8 +6243,6 @@ function hasUnformattedCode ( text ) {
 }
 
 })();
-
-;
 
 ;
 (function () {
@@ -6481,8 +6464,6 @@ bot.addCommand({
 });
 
 })();
-
-;
 
 ;
 bot.addCommand({
