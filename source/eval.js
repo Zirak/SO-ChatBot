@@ -14,7 +14,7 @@ var workerCode = function () {
 //#build codeWorker.js
 }.stringContents();
 
-var blob = new Blob( [workerCode], { type : 'application/javascript' } ),
+var blob = new Blob( [workerCode], { type : 'application/javascript;version=1.8' } ),
 	codeUrl = window.URL.createObjectURL( blob );
 
 return function ( code, arg, cb ) {
