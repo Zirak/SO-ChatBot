@@ -3404,8 +3404,6 @@ IO.register( 'input', function afkInputListener ( msgObj ) {
 })();
 
 ;
-
-;
 (function () {
 "use strict";
 
@@ -4497,10 +4495,6 @@ bot.addCommand({
 }());
 
 ;
-
-;
-
-;
 //listener to help decide which Firefly episode to watch
 
 bot.listen( /(which |what |give me a )?firefly( episode)?/i, function ( msg ) {
@@ -4799,7 +4793,68 @@ bot.addCommand({
 }());
 
 ;
+(function () {
 
+function imdb ( args, cb ) {
+   var terms = args.toString().split(/,\s*/g);
+   var results = {
+      unescapedUrls : [],
+      formatted : []
+   };
+
+   terms.forEach(function ( term ) {
+      IO.jsonp.google(
+         term + ' site:imdb.com', finishCall );
+   });
+
+   function finishCall ( resp ) {
+      if ( resp.responseStatus !== 200 ) {
+         finish( 'Something went on fire; status ' + resp.responseStatus );
+         return;
+      }
+
+      var result = resp.responseData.results[ 0 ];
+      bot.log( result, '/imdb result' );
+
+      var title = IO.decodehtmlEntities(
+         result.titleNoFormatting.split(' -')[0].trim()
+      );
+
+      results.formatted.push( bot.adapter.link(title, result.url) );
+      results.unescapedUrls.push( result.url );
+
+      if ( results.formatted.length === terms.length ) {
+         aggregatedResults();
+      }
+   }
+   function aggregatedResults () {
+      var msg = results.formatted.join( ', ' );
+      if ( msg.length > bot.adapter.maxLineLength ) {
+         msg = results.unescapedUrls.join( ', ' );
+      }
+
+      finish( msg );
+   }
+   function finish ( res ) {
+      if ( cb && cb.call ) {
+         cb( res );
+      }
+      else {
+         args.reply( res );
+      }
+   }
+};
+
+bot.addCommand({
+   name : 'imdb',
+   fun : imdb,
+
+   permissions : { del : 'NONE', use : 'ALL' },
+   description : 'Fetches imdb page. `/imdb what`',
+   async : true
+});
+
+})();
 ;
 (function () {
 var baseURL = 'http://api.jquery.com/';
@@ -4882,8 +4937,6 @@ bot.addCommand({
 });
 
 })();
-
-;
 
 ;
 (function () {
@@ -5183,8 +5236,6 @@ bot.addCommand({
 })();
 
 ;
-
-;
 (function () {
 // #151: Listen for meme image names and reply with that meme.
 
@@ -5351,8 +5402,6 @@ bot.addCommand( moustache );
 }());
 
 ;
-
-;
 (function () {
 
 //collection of nudges; msgObj, time left and the message itself
@@ -5478,8 +5527,6 @@ function nudgeListener ( args ) {
 }
 
 }());
-
-;
 
 ;
 (function () {
@@ -6236,7 +6283,8 @@ function createLecture ( content ) {
 
 	var lecture = (
 		'Please don\'t post unformatted code - ' +
-		'hit Ctrl+K before sending, and see the {0}.'
+		'hit Ctrl+K before sending, use up-arrow to edit messages, ' +
+		'and see the {0}.'
 	).supplant( bot.adapter.link('faq', '/faq') );
 
 	if ( lineCount >= 10 ) {
@@ -6258,8 +6306,6 @@ function hasUnformattedCode ( text ) {
 }
 
 })();
-
-;
 
 ;
 (function () {
@@ -6481,8 +6527,6 @@ bot.addCommand({
 });
 
 })();
-
-;
 
 ;
 bot.addCommand({
