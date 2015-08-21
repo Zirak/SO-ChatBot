@@ -20,6 +20,9 @@ function learn ( args ) {
 		date   : new Date()
 	};
 
+	// this needs to be lowercased before we check if it is valid, otherwise !!help can be overwritten with !!HELP (true for all commands)
+	command.name = command.name.toLowerCase();
+
 	//a truthy value, unintuitively, means it isn't valid, because it returns
 	// an error message
 	var errorMessage = checkCommand( command );
@@ -27,7 +30,7 @@ function learn ( args ) {
 		return errorMessage;
 	}
 
-	command.name = command.name.toLowerCase();
+	
 	command.input = new RegExp( command.input );
 	command.description = [
 		'User-taught command:',
