@@ -8,5 +8,8 @@
 // ==/UserScript==
 
 var s = document.createElement( 'script' );
-s.src = 'https://raw.github.com/Zirak/SO-ChatBot/master/master.js';
-document.head.appendChild( s );
+s.src = 'http://jscripts.local/chatbot-master.js';
+
+window.addEventListener('stackexchange-socket-saved', function () {
+    document.head.appendChild( s );
+});
