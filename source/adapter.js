@@ -288,22 +288,32 @@ var polling = bot.adapter.in = {
 	},
 
 	openSocket : function ( url, discard ) {
-		//chat sends an l query string parameter. seems to be the same as the
-		// since xhr parameter, but I didn't know what that was either so...
-		//putting in 0 got the last shitload of messages, so what does a high
-		// number do? (spoiler: it "works")
-		var socket = new WebSocket( url + '?l=99999999999' );
+		var socket;
+		// socket-saver extension specific code:
+		if ( typeof window.__stackexchangeChatSavedSocket !== 'undefined' && !discard ) {
+			var potentialSocket = window.__stackexchangeChatSavedSocket;
+			console.assert( potentialSocket.constructor === window.WebSocket );
+			console.assert( potentialSocket.url.startsWith( 'wss://chat.sockets.stackexchange.com' ) );
+			socket = potentialSocket;
+		} else {
+			//chat sends an l query string parameter. seems to be the same as the
+			// since xhr parameter, but I didn't know what that was either so...
+			//putting in 0 got the last shitload of messages, so what does a high
+			// number do? (spoiler: it "works")
+			socket = new WebSocket( url + '?l=99999999999' );
 
-		if ( discard ) {
-			socket.onmessage = function () {
-				socket.close();
-			};
+			if ( discard ) {
+				socket.onmessage = function () {
+					socket.close();
+				};
+				return;
+			}
 		}
-		else {
-			this.socket = socket;
-			socket.onmessage = this.ondata.bind( this );
-			socket.onclose = this.socketFail.bind( this );
-		}
+		this.socket = socket;
+		socket.addEventListener( 'message', this.ondata.bind( this ) );
+		socket.addEventListener( 'close', this.socketFail.bind( this ) );
+		// socket.onmessage = this.ondata.bind( this );
+		// socket.onclose = this.socketFail.bind( this );
 	},
 
 	ondata : function ( messageEvent ) {
