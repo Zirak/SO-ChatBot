@@ -2675,7 +2675,7 @@ var polling = bot.adapter.in = {
 	openSocket : function ( url, discard ) {
 		var socket;
 		// socket-saver extension specific code:
-		if ( typeof window.__stackexchangeChatSavedSocket !== 'undefined' ) {
+		if ( typeof window.__stackexchangeChatSavedSocket !== 'undefined' && !discard ) {
 			var potentialSocket = window.__stackexchangeChatSavedSocket;
 			console.assert( potentialSocket.constructor === window.WebSocket );
 			console.assert( potentialSocket.url.startsWith( 'wss://chat.sockets.stackexchange.com' ) );
