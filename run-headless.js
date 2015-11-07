@@ -1,18 +1,12 @@
 var Nightmare = require('nightmare'),
-	readline = require('readline');
+	readline = require('readline'),
+	fs = require('fs');
 
 var hound = new Nightmare({
 	cookiesFile: 'cookies.jar'
 });
 
-/***********	Change me!	  ***********/
-var config = {
-	email:	  'you can guess',
-	password: 'what these are',
-
-	siteUrl: 'https://stackoverflow.com',
-	roomUrl: 'https://chat.stackoverflow.com/rooms/1'
-};
+var config = JSON.parse(fs.readFileSync('run-headless.config.json', 'utf8'));
 
 function once (fn) {
 	var called = false, res;
