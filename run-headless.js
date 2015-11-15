@@ -5,14 +5,7 @@ var hound = new Nightmare({
 	cookiesFile: 'cookies.jar'
 });
 
-/***********	Change me!	  ***********/
-var config = {
-	email:	  'you can guess',
-	password: 'what these are',
-
-	siteUrl: 'https://stackoverflow.com',
-	roomUrl: 'https://chat.stackoverflow.com/rooms/1'
-};
+var config = require('run-headless.config.json');
 
 function once (fn) {
 	var called = false, res;
