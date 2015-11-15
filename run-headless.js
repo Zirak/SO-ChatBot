@@ -1,12 +1,11 @@
 var Nightmare = require('nightmare'),
-	readline = require('readline'),
-	fs = require('fs');
+	readline = require('readline');
 
 var hound = new Nightmare({
 	cookiesFile: 'cookies.jar'
 });
 
-var config = JSON.parse(fs.readFileSync('run-headless.config.json', 'utf8'));
+var config = require('run-headless.config.json');
 
 function once (fn) {
 	var called = false, res;
