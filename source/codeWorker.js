@@ -189,7 +189,7 @@ console.error = console.info = console.debug = console.log;
 				return true;
 			}
 			/*neither does it feel compassionate about NaN or Infinity*/
-			return value !== value || value === Infinity;
+			return value !== value || !Number.isFinite(value);
 		};
 
 		self.setTimeout = function (cb) {
