@@ -31,7 +31,7 @@ function learn ( args ) {
 	}
 
 	
-	command.input = new RegExp( command.input );
+	command.input = new RegExp( command.input, commandParts[4] || '');
 	command.description = [
 		'User-taught command:',
 		commandParts[3] || '',
