@@ -30,7 +30,6 @@ function learn ( args ) {
         return errorMessage;
     }
 
-    
     command.input = new RegExp( command.input );
     command.description = [
         'User-taught command:',
@@ -40,6 +39,7 @@ function learn ( args ) {
 
     bot.log( command, '/learn parsed' );
 
+    bot.info.learned += 1;
     addCustomCommand( command );
     saveCommand( command );
 
@@ -154,7 +154,10 @@ function loadCommands () {
     Object.iterate( storage, teach );
 
     function teach ( key, cmd ) {
-        cmd = JSON.parse( cmd );
+        if ( cmd.charAt ) {
+            cmd = JSON.parse( cmd );
+        }
+
         cmd.input = turnToRegexp( cmd.input );
         cmd.date = new Date( Date.parse(cmd.date) );
 
@@ -180,7 +183,7 @@ function loadCommands () {
 function saveCommand ( command ) {
     //h4x in source/util.js defines RegExp.prototype.toJSON so we don't worry
     // about the input regexp stringifying
-    storage[ command.name ] = JSON.stringify( command );
+    storage[ command.name ] = command;
     bot.memory.save( 'learn' );
 }
 function deleteCommand ( name ) {

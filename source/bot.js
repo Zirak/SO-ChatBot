@@ -156,23 +156,18 @@ var bot = window.bot = {
             return false;
         }
 
-        return (
-            //make sure we don't process our own messages,
-            msgObj.user_id !== bot.adapter.user_id &&
-                //make sure we don't process Feeds
-                msgObj.user_id > 0 &&
-                //and the message begins with the invocationPattern
-                msg.startsWith( this.invocationPattern ) );
+        //make sure we don't process our own messages,
+        return msgObj.user_id !== bot.adapter.user_id &&
+            //make sure we don't process Feeds
+            msgObj.user_id > 0 &&
+            //and the message begins with the invocationPattern
+            msg.startsWith( this.invocationPattern );
     },
 
     addCommand : function ( cmd ) {
         if ( !cmd.exec || !cmd.del ) {
             cmd = this.Command( cmd );
         }
-        if ( cmd.learned ) {
-            this.info.learned += 1;
-        }
-        cmd.invoked = 0;
 
         this.commands[ cmd.name ] = cmd;
         this.commandDictionary.trie.add( cmd.name );
@@ -347,7 +342,6 @@ bot.Command = function ( cmd ) {
 
     cmd.description = cmd.description || '';
     cmd.creator = cmd.creator || 'God';
-    cmd.invoked = 0;
 
     //make canUse and canDel
     [ 'Use', 'Del' ].forEach(function ( perm ) {
@@ -371,8 +365,6 @@ bot.Command = function ( cmd ) {
     });
 
     cmd.exec = function () {
-        this.invoked += 1;
-
         return this.fun.apply( this.thisArg, arguments );
     };
 

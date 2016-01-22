@@ -888,23 +888,18 @@ var bot = window.bot = {
             return false;
         }
 
-        return (
-            //make sure we don't process our own messages,
-            msgObj.user_id !== bot.adapter.user_id &&
-                //make sure we don't process Feeds
-                msgObj.user_id > 0 &&
-                //and the message begins with the invocationPattern
-                msg.startsWith( this.invocationPattern ) );
+        //make sure we don't process our own messages,
+        return msgObj.user_id !== bot.adapter.user_id &&
+            //make sure we don't process Feeds
+            msgObj.user_id > 0 &&
+            //and the message begins with the invocationPattern
+            msg.startsWith( this.invocationPattern );
     },
 
     addCommand : function ( cmd ) {
         if ( !cmd.exec || !cmd.del ) {
             cmd = this.Command( cmd );
         }
-        if ( cmd.learned ) {
-            this.info.learned += 1;
-        }
-        cmd.invoked = 0;
 
         this.commands[ cmd.name ] = cmd;
         this.commandDictionary.trie.add( cmd.name );
@@ -1079,7 +1074,6 @@ bot.Command = function ( cmd ) {
 
     cmd.description = cmd.description || '';
     cmd.creator = cmd.creator || 'God';
-    cmd.invoked = 0;
 
     //make canUse and canDel
     [ 'Use', 'Del' ].forEach(function ( perm ) {
@@ -1103,8 +1097,6 @@ bot.Command = function ( cmd ) {
     });
 
     cmd.exec = function () {
-        this.invoked += 1;
-
         return this.fun.apply( this.thisArg, arguments );
     };
 
@@ -2096,13 +2088,6 @@ var commands = {
 
             if ( cmd.date ) {
                 ret += ' on ' + cmd.date.toUTCString();
-            }
-
-            if ( cmd.invoked ) {
-                ret += ', invoked ' + cmd.invoked + ' times';
-            }
-            else {
-                ret += ' but hasn\'t been used yet';
             }
 
             return ret;
@@ -3201,6 +3186,8 @@ bot.listen(
     /(I('m| am))?\s*sorry/i,
     bot.personality.apologize, bot.personality );
 bot.listen( /^bitch/i, bot.personality.bitch, bot.personality );
+
+;
 
 ;
 (function () {
@@ -5017,7 +5004,6 @@ function learn ( args ) {
         return errorMessage;
     }
 
-    
     command.input = new RegExp( command.input );
     command.description = [
         'User-taught command:',
@@ -5027,6 +5013,7 @@ function learn ( args ) {
 
     bot.log( command, '/learn parsed' );
 
+    bot.info.learned += 1;
     addCustomCommand( command );
     saveCommand( command );
 
@@ -5141,7 +5128,10 @@ function loadCommands () {
     Object.iterate( storage, teach );
 
     function teach ( key, cmd ) {
-        cmd = JSON.parse( cmd );
+        if ( cmd.charAt ) {
+            cmd = JSON.parse( cmd );
+        }
+
         cmd.input = turnToRegexp( cmd.input );
         cmd.date = new Date( Date.parse(cmd.date) );
 
@@ -5167,7 +5157,7 @@ function loadCommands () {
 function saveCommand ( command ) {
     //h4x in source/util.js defines RegExp.prototype.toJSON so we don't worry
     // about the input regexp stringifying
-    storage[ command.name ] = JSON.stringify( command );
+    storage[ command.name ] = command;
     bot.memory.save( 'learn' );
 }
 function deleteCommand ( name ) {

@@ -80,13 +80,6 @@ var commands = {
                 ret += ' on ' + cmd.date.toUTCString();
             }
 
-            if ( cmd.invoked ) {
-                ret += ', invoked ' + cmd.invoked + ' times';
-            }
-            else {
-                ret += ' but hasn\'t been used yet';
-            }
-
             return ret;
         }
 
