@@ -12,7 +12,7 @@ Now to the lesser stuff:
 
 ## Whitespace ##
 
-Use hard tabs for indentation. I've recently been converted to spaces myself, but the bot was written before that when I used tabs. So, use tabs for indentation. If we start an offshoot of the bot or if someone is willing to convert everything, then 4 spaces.
+Use 4 spaces for indentation. Tabs are better, but our editing tools are not meant to be good.
 
 Object literals' keys should not be wrapped in quotes unless you have to (why would you?), and the colon be padded on both sites:
 

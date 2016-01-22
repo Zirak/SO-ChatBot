@@ -1,105 +1,105 @@
 var IO = window.IO = {
-	//event handling
-	events : {},
-	preventDefault : false,
+    //event handling
+    events : {},
+    preventDefault : false,
 
-	//register for an event
-	register : function ( name, fun, thisArg ) {
-		if ( !this.events[name] ) {
-			this.events[ name ] = [];
-		}
-		this.events[ name ].push({
-			fun : fun,
-			thisArg : thisArg,
-			args : Array.prototype.slice.call( arguments, 3 )
-		});
+    //register for an event
+    register : function ( name, fun, thisArg ) {
+        if ( !this.events[name] ) {
+            this.events[ name ] = [];
+        }
+        this.events[ name ].push({
+            fun : fun,
+            thisArg : thisArg,
+            args : Array.prototype.slice.call( arguments, 3 )
+        });
 
-		return this;
-	},
+        return this;
+    },
 
-	unregister : function ( name, fun ) {
-		if ( !this.events[name] ) {
-			return this;
-		}
+    unregister : function ( name, fun ) {
+        if ( !this.events[name] ) {
+            return this;
+        }
 
-		this.events[ name ] = this.events[ name ].filter(function ( obj ) {
-			return obj.fun !== fun;
-		});
+        this.events[ name ] = this.events[ name ].filter(function ( obj ) {
+            return obj.fun !== fun;
+        });
 
-		return this;
-	},
+        return this;
+    },
 
-	//fire event!
-	fire : function ( name ) {
-		this.preventDefault = false;
+    //fire event!
+    fire : function ( name ) {
+        this.preventDefault = false;
 
-		if ( !this.events[name] ) {
-			return;
-		}
+        if ( !this.events[name] ) {
+            return;
+        }
 
-		var args = Array.prototype.slice.call( arguments, 1 ),
-			that = this;
-		this.events[ name ].forEach( fireEvent );
+        var args = Array.prototype.slice.call( arguments, 1 ),
+            that = this;
+        this.events[ name ].forEach( fireEvent );
 
-		function fireEvent( evt ) {
-			var call = evt.fun.apply( evt.thisArg, evt.args.concat(args) );
+        function fireEvent( evt ) {
+            var call = evt.fun.apply( evt.thisArg, evt.args.concat(args) );
 
-			that.preventDefault = call === false;
-		}
-	},
+            that.preventDefault = call === false;
+        }
+    },
 
-	urlstringify : (function () {
-		//simple types, for which toString does the job
-		//used in singularStringify
-		var simplies = { number : true, string : true, boolean : true };
+    urlstringify : (function () {
+        //simple types, for which toString does the job
+        //used in singularStringify
+        var simplies = { number : true, string : true, boolean : true };
 
-		var singularStringify = function ( thing ) {
-			if ( typeof thing in simplies ) {
-				return encodeURIComponent( thing.toString() );
-			}
-			return '';
-		};
+        var singularStringify = function ( thing ) {
+            if ( typeof thing in simplies ) {
+                return encodeURIComponent( thing.toString() );
+            }
+            return '';
+        };
 
-		var arrayStringify = function ( key, array ) {
-			key = singularStringify( key );
+        var arrayStringify = function ( key, array ) {
+            key = singularStringify( key );
 
-			return array.map(function ( val ) {
-				return pair( key, val, true );
-			}).join( '&' );
-		};
+            return array.map(function ( val ) {
+                return pair( key, val, true );
+            }).join( '&' );
+        };
 
-		//returns a key=value pair. pass in dontStringifyKey so that, well, the
-		// key won't be stringified (used in arrayStringify)
-		var pair = function ( key, val, dontStringifyKey ) {
-			if ( !dontStringifyKey ) {
-				key = singularStringify( key );
-			}
+        //returns a key=value pair. pass in dontStringifyKey so that, well, the
+        // key won't be stringified (used in arrayStringify)
+        var pair = function ( key, val, dontStringifyKey ) {
+            if ( !dontStringifyKey ) {
+                key = singularStringify( key );
+            }
 
-			return key + '=' + singularStringify( val );
-		};
+            return key + '=' + singularStringify( val );
+        };
 
-		return function ( obj ) {
+        return function ( obj ) {
 
-			return Object.keys( obj ).map(function ( key ) {
-				var val = obj[ key ];
+            return Object.keys( obj ).map(function ( key ) {
+                var val = obj[ key ];
 
-				if ( Array.isArray(val) ) {
-					return arrayStringify( key, val );
-				}
-				else {
-					return pair( key, val );
-				}
-			}).join( '&' );
-		};
-	}()),
+                if ( Array.isArray(val) ) {
+                    return arrayStringify( key, val );
+                }
+                else {
+                    return pair( key, val );
+                }
+            }).join( '&' );
+        };
+    }()),
 
-	loadScript : function ( url, cb ) {
-		var script = document.createElement( 'script' );
-		script.src = url;
-		script.onload = cb;
+    loadScript : function ( url, cb ) {
+        var script = document.createElement( 'script' );
+        script.src = url;
+        script.onload = cb;
 
-		document.head.appendChild( script );
-	}
+        document.head.appendChild( script );
+    }
 };
 
 //turns some html tags into markdown. a major assumption is that the input is
@@ -109,38 +109,38 @@ IO.htmlToMarkdown = (function () {
 
 // A string value is the delimiter (what replaces the tag)
 var markdown = {
-	i : '*',
-	b : '**',
-	strike : '---',
-	code : '`',
+    i : '*',
+    b : '**',
+    strike : '---',
+    code : '`',
 
-	a : function ( $0, $1, text ) {
-		var href = /href="([^"]+?)"/.exec( $0 );
+    a : function ( $0, $1, text ) {
+        var href = /href="([^"]+?)"/.exec( $0 );
 
-		if ( !href ) {
-			return $0;
-		}
-		return '[' + text + '](' + href[1] + ')';
-	},
+        if ( !href ) {
+            return $0;
+        }
+        return '[' + text + '](' + href[1] + ')';
+    },
 };
 var htmlRe = /<(\S+)[^\>]*>([^<]+)<\/\1>/g;
 
 return function ( html ) {
-	var delim;
+    var delim;
 
-	return html.replace( htmlRe, decodeHtml );
+    return html.replace( htmlRe, decodeHtml );
 
-	function decodeHtml ( $0, tag, text ) {
-		if ( !markdown.hasOwnProperty(tag) ) {
-			return $0;
-		}
+    function decodeHtml ( $0, tag, text ) {
+        if ( !markdown.hasOwnProperty(tag) ) {
+            return $0;
+        }
 
-		delim = markdown[ tag ];
+        delim = markdown[ tag ];
 
-		return delim.apply ?
-			markdown[ tag ].apply( markdown, arguments ) :
-			delim + text + delim;
-	}
+        return delim.apply ?
+            markdown[ tag ].apply( markdown, arguments ) :
+            delim + text + delim;
+    }
 };
 }());
 
@@ -161,198 +161,198 @@ entities = {"quot":"\"","amp":"&","apos":"'","lt":"<","gt":">","nbsp":" ","iexc
 */
 var entityRegex = /&(#x?)?[\w;]+?;/g;
 var replaceEntities = function ( entities ) {
-	//remove the & and split into each separate entity
-	return entities.slice( 1 ).split( ';' ).map( decodeEntity ).join( '' );
+    //remove the & and split into each separate entity
+    return entities.slice( 1 ).split( ';' ).map( decodeEntity ).join( '' );
 };
 var decodeEntity = function ( entity ) {
-	if ( !entity ) {
-		return '';
-	}
+    if ( !entity ) {
+        return '';
+    }
 
-	//starts with a #, it's charcode
-	if ( entity[0] === '#' ) {
-		return decodeCharcodeEntity( entity );
-	}
+    //starts with a #, it's charcode
+    if ( entity[0] === '#' ) {
+        return decodeCharcodeEntity( entity );
+    }
 
-	if ( !entities.hasOwnProperty(entity) ) {
-		//I hate this so. so. so much. it's just wrong.
-		return '&' + entity +';';
-	}
-	return entities[ entity ];
+    if ( !entities.hasOwnProperty(entity) ) {
+        //I hate this so. so. so much. it's just wrong.
+        return '&' + entity +';';
+    }
+    return entities[ entity ];
 };
 var decodeCharcodeEntity = function ( entity ) {
-	//remove the # prefix
-	entity = entity.slice( 1 );
+    //remove the # prefix
+    entity = entity.slice( 1 );
 
-	var cc;
-	//hex entities
-	if ( entity[0] === 'x' ) {
-		cc = parseInt( entity.slice(1), 16 );
-	}
-	//decimal entities
-	else {
-		cc = parseInt( entity, 10 );
-	}
+    var cc;
+    //hex entities
+    if ( entity[0] === 'x' ) {
+        cc = parseInt( entity.slice(1), 16 );
+    }
+    //decimal entities
+    else {
+        cc = parseInt( entity, 10 );
+    }
 
-	return String.fromCharCode( cc );
+    return String.fromCharCode( cc );
 };
 
 return function ( html ) {
-	return html.replace( entityRegex, replaceEntities );
+    return html.replace( entityRegex, replaceEntities );
 };
 }());
 
 //build IO.in and IO.out
 [ 'in', 'out' ].forEach(function ( dir ) {
-	var fullName = dir + 'put';
+    var fullName = dir + 'put';
 
-	IO[ dir ] = {
-		buffer : [],
+    IO[ dir ] = {
+        buffer : [],
 
-		receive : function ( obj ) {
-			IO.fire( 'receive' + fullName, obj );
+        receive : function ( obj ) {
+            IO.fire( 'receive' + fullName, obj );
 
-			if ( IO.preventDefault ) {
-				return this;
-			}
+            if ( IO.preventDefault ) {
+                return this;
+            }
 
-			this.buffer.push( obj );
+            this.buffer.push( obj );
 
-			return this;
-		},
+            return this;
+        },
 
-		//unload the next item in the buffer
-		tick : function () {
-			if ( this.buffer.length ) {
-				IO.fire( fullName, this.buffer.shift() );
-			}
+        //unload the next item in the buffer
+        tick : function () {
+            if ( this.buffer.length ) {
+                IO.fire( fullName, this.buffer.shift() );
+            }
 
-			return this;
-		},
+            return this;
+        },
 
-		//unload everything in the buffer
-		flush : function () {
-			IO.fire( 'before' + fullName );
+        //unload everything in the buffer
+        flush : function () {
+            IO.fire( 'before' + fullName );
 
-			if ( !this.buffer.length ) {
-				return this;
-			}
+            if ( !this.buffer.length ) {
+                return this;
+            }
 
-			var i = this.buffer.length;
-			while( i --> 0 ) {
-				this.tick();
-			}
+            var i = this.buffer.length;
+            while( i --> 0 ) {
+                this.tick();
+            }
 
-			IO.fire( 'after' + fullName );
+            IO.fire( 'after' + fullName );
 
-			this.buffer = [];
-			return this;
-		}
-	};
+            this.buffer = [];
+            return this;
+        }
+    };
 });
 
 IO.relativeUrlToAbsolute = function ( url ) {
-	//the anchor's href *property* will always be absolute, unlike the href
-	// *attribute*
-	var a = document.createElement( 'a' );
-	a.setAttribute( 'href', url );
+    //the anchor's href *property* will always be absolute, unlike the href
+    // *attribute*
+    var a = document.createElement( 'a' );
+    a.setAttribute( 'href', url );
 
-	return a.href;
+    return a.href;
 };
 
 IO.injectScript = function ( url ) {
-	var script = document.createElement( 'script' );
-	script.src = url;
+    var script = document.createElement( 'script' );
+    script.src = url;
 
-	document.head.appendChild( script );
-	return script;
+    document.head.appendChild( script );
+    return script;
 };
 
 IO.xhr = function ( params ) {
-	//merge in the defaults
-	params = Object.merge({
-		method   : 'GET',
-		headers  : {},
-		complete : function (){}
-	}, params );
+    //merge in the defaults
+    params = Object.merge({
+        method   : 'GET',
+        headers  : {},
+        complete : function (){}
+    }, params );
 
-	params.headers = Object.merge({
-		'Content-Type' : 'application/x-www-form-urlencoded'
-	}, params.headers );
+    params.headers = Object.merge({
+        'Content-Type' : 'application/x-www-form-urlencoded'
+    }, params.headers );
 
-	//if the data is an object, and not a fakey String object, dress it up
-	if ( typeof params.data === 'object' && !params.data.charAt ) {
-		params.data = IO.urlstringify( params.data );
-	}
+    //if the data is an object, and not a fakey String object, dress it up
+    if ( typeof params.data === 'object' && !params.data.charAt ) {
+        params.data = IO.urlstringify( params.data );
+    }
 
-	var xhr = new XMLHttpRequest();
-	xhr.open( params.method, params.url );
+    var xhr = new XMLHttpRequest();
+    xhr.open( params.method, params.url );
 
-	if ( params.document ) {
-		xhr.responseType = 'document';
-	}
+    if ( params.document ) {
+        xhr.responseType = 'document';
+    }
 
-	xhr.addEventListener( 'load', function () {
-		params.complete.call(
-			params.thisArg, xhr.response, xhr
-		);
-	});
+    xhr.addEventListener( 'load', function () {
+        params.complete.call(
+            params.thisArg, xhr.response, xhr
+        );
+    });
 
-	Object.iterate( params.headers, xhr.setRequestHeader.bind(xhr) );
+    Object.iterate( params.headers, xhr.setRequestHeader.bind(xhr) );
 
-	xhr.send( params.data );
+    xhr.send( params.data );
 
-	return xhr;
+    return xhr;
 };
 
 IO.jsonp = function ( opts ) {
-	opts.data = opts.data || {};
-	opts.jsonpName = opts.jsonpName || 'jsonp';
+    opts.data = opts.data || {};
+    opts.jsonpName = opts.jsonpName || 'jsonp';
 
-	var script = document.createElement( 'script' ),
-		semiRandom;
+    var script = document.createElement( 'script' ),
+        semiRandom;
 
-	do {
-		semiRandom = 'IO' + ( Date.now() * Math.ceil(Math.random()) );
-	} while ( window[semiRandom] );
+    do {
+        semiRandom = 'IO' + ( Date.now() * Math.ceil(Math.random()) );
+    } while ( window[semiRandom] );
 
-	//this is the callback function, called from the "jsonp file"
-	window[ semiRandom ] = function () {
-		opts.fun.apply( opts.thisArg, arguments );
+    //this is the callback function, called from the "jsonp file"
+    window[ semiRandom ] = function () {
+        opts.fun.apply( opts.thisArg, arguments );
 
-		//cleanup
-		delete window[ semiRandom ];
-		script.parentNode.removeChild( script );
-	};
+        //cleanup
+        delete window[ semiRandom ];
+        script.parentNode.removeChild( script );
+    };
 
-	//add the jsonp parameter to the data we're sending
-	opts.data[ opts.jsonpName ] = semiRandom;
+    //add the jsonp parameter to the data we're sending
+    opts.data[ opts.jsonpName ] = semiRandom;
 
-	//start preparing the url to be sent
-	if ( opts.url.indexOf('?') === -1 ) {
-		opts.url += '?';
-	}
+    //start preparing the url to be sent
+    if ( opts.url.indexOf('?') === -1 ) {
+        opts.url += '?';
+    }
 
-	//append the data to be sent, in string form, to the url
-	opts.url += '&' + this.urlstringify( opts.data );
+    //append the data to be sent, in string form, to the url
+    opts.url += '&' + this.urlstringify( opts.data );
 
-	script.onerror = opts.error;
+    script.onerror = opts.error;
 
-	script.src = opts.url;
-	document.head.appendChild( script );
+    script.src = opts.url;
+    document.head.appendChild( script );
 };
 
 //generic, pre-made call to be used inside commands
 IO.jsonp.google = function ( query, cb ) {
-	IO.jsonp({
-		url : 'http://ajax.googleapis.com/ajax/services/search/web',
-		jsonpName : 'callback',
-		data : {
-			v : '1.0',
-			q : query
-		},
-		fun : cb
-	});
+    IO.jsonp({
+        url : 'http://ajax.googleapis.com/ajax/services/search/web',
+        jsonpName : 'callback',
+        data : {
+            v : '1.0',
+            q : query
+        },
+        fun : cb
+    });
 };
 
 ;
@@ -365,14 +365,14 @@ IO.jsonp.google = function ( query, cb ) {
 // > Object.merge( {a : 4, b : 5}, {a : 6, c : 7} )
 // { a : 6, b : 5, c : 7 }
 Object.merge = function () {
-	return [].reduce.call( arguments, function ( ret, merger ) {
+    return [].reduce.call( arguments, function ( ret, merger ) {
 
-		Object.keys( merger ).forEach(function ( key ) {
-			ret[ key ] = merger[ key ];
-		});
+        Object.keys( merger ).forEach(function ( key ) {
+            ret[ key ] = merger[ key ];
+        });
 
-		return ret;
-	}, {} );
+        return ret;
+    }, {} );
 };
 
 //iterates over an object. the callback receives the key, value and the obejct.
@@ -380,195 +380,195 @@ Object.merge = function () {
 // a 4 { a: 4, b: 5 }
 // b 5 { a: 4, b: 5 }
 Object.iterate = function ( obj, cb, thisArg ) {
-	Object.keys( obj ).forEach(function (key) {
-		cb.call( thisArg, key, obj[key], obj );
-	});
+    Object.keys( obj ).forEach(function (key) {
+        cb.call( thisArg, key, obj[key], obj );
+    });
 };
 
 //takes an array, and turns it into the truth map (item[i] => true)
 Object.TruthMap = function ( props ) {
-	return ( props || [] ).reduce( assignTrue, Object.create(null) );
+    return ( props || [] ).reduce( assignTrue, Object.create(null) );
 
-	function assignTrue ( ret, key ) {
-		ret[ key ] = true;
-		return ret;
-	}
+    function assignTrue ( ret, key ) {
+        ret[ key ] = true;
+        return ret;
+    }
 };
 
 //turns a pseudo-array (like arguments) into a real array
 Array.from = function ( arrayLike, start ) {
-	return [].slice.call( arrayLike, start );
+    return [].slice.call( arrayLike, start );
 };
 
 //SO chat uses an unfiltered for...in to iterate over an array somewhere, so
 // that we have to use Object.defineProperty to make these non-enumerable
 Object.defineProperty( Array.prototype, 'invoke', {
-	value : function ( funName ) {
-		var args = Array.from( arguments, 1 );
+    value : function ( funName ) {
+        var args = Array.from( arguments, 1 );
 
-		return this.map( invoke );
+        return this.map( invoke );
 
-		function invoke ( item, index ) {
-			var res = item;
+        function invoke ( item, index ) {
+            var res = item;
 
-			if ( item[funName] && item[funName].apply ) {
-				res = item[ funName ].apply( item, args );
-			}
+            if ( item[funName] && item[funName].apply ) {
+                res = item[ funName ].apply( item, args );
+            }
 
-			return res;
-		}
-	},
+            return res;
+        }
+    },
 
-	configurable : true,
-	writable : true
+    configurable : true,
+    writable : true
 });
 
 Object.defineProperty( Array.prototype, 'pluck', {
-	value : function ( propName ) {
-		return this.map( pluck );
+    value : function ( propName ) {
+        return this.map( pluck );
 
-		function pluck ( item, index, arr ) {
-			//protection aganst null/undefined.
-			try {
-				return item[ propName ];
-			}
-			catch (e) {
-				return item;
-			}
-		}
-	},
+        function pluck ( item, index, arr ) {
+            //protection aganst null/undefined.
+            try {
+                return item[ propName ];
+            }
+            catch (e) {
+                return item;
+            }
+        }
+    },
 
-	configurable : true,
-	writable : true
+    configurable : true,
+    writable : true
 });
 
 //fuck you readability
 //left this comment as company for future viewers with their new riddle
 Object.defineProperty( Array.prototype, 'first', {
-	value : function ( fun ) {
-		return this.some(function ( item ) {
-			return fun.apply( null, arguments ) && ( (fun = item) || true );
-		}) ? fun : null;
-	},
+    value : function ( fun ) {
+        return this.some(function ( item ) {
+            return fun.apply( null, arguments ) && ( (fun = item) || true );
+        }) ? fun : null;
+    },
 
-	configurable : true,
-	writable : true
+    configurable : true,
+    writable : true
 });
 
 Object.defineProperty( Array.prototype, 'random', {
-	value : function () {
-		return this[ Math.floor(Math.random() * this.length) ];
-	},
+    value : function () {
+        return this[ Math.floor(Math.random() * this.length) ];
+    },
 
-	configurable : true,
-	writable : true
+    configurable : true,
+    writable : true
 });
 
 //define generic array methods on Array, like FF does
 [ 'forEach', 'map', 'filter', 'reduce' ].forEach(function ( name ) {
-	var fun = [][ name ]; //teehee
-	Array[ name ] = function () {
-		return fun.call.apply( fun, arguments );
-	};
+    var fun = [][ name ]; //teehee
+    Array[ name ] = function () {
+        return fun.call.apply( fun, arguments );
+    };
 });
 
 String.prototype.indexesOf = function ( str, fromIndex ) {
-	//since we also use index to tell indexOf from where to begin, and since
-	// telling it to begin from where it found the match will cause it to just
-	// match it again and again, inside the indexOf we do `index + 1`
-	// to compensate for that 1, we need to subtract 1 from the original
-	// starting position
-	var index = ( fromIndex || 0 ) - 1,
-		ret = [];
+    //since we also use index to tell indexOf from where to begin, and since
+    // telling it to begin from where it found the match will cause it to just
+    // match it again and again, inside the indexOf we do `index + 1`
+    // to compensate for that 1, we need to subtract 1 from the original
+    // starting position
+    var index = ( fromIndex || 0 ) - 1,
+        ret = [];
 
-	while ( (index = this.indexOf(str, index + 1)) > -1 ) {
-		ret.push( index );
-	}
+    while ( (index = this.indexOf(str, index + 1)) > -1 ) {
+        ret.push( index );
+    }
 
-	return ret;
+    return ret;
 };
 
 //Crockford's supplant
 String.prototype.supplant = function ( arg ) {
-	//if it's an object, use that. otherwise, use the arguments list.
-	var obj = (
-		Object(arg) === arg ?
-			arg : arguments );
-	return this.replace( /\{([^\}]+)\}/g, replace );
+    //if it's an object, use that. otherwise, use the arguments list.
+    var obj = (
+        Object(arg) === arg ?
+            arg : arguments );
+    return this.replace( /\{([^\}]+)\}/g, replace );
 
-	function replace ( $0, $1 ) {
-		return obj.hasOwnProperty( $1 ) ?
-			obj[ $1 ] :
-			$0;
-	}
+    function replace ( $0, $1 ) {
+        return obj.hasOwnProperty( $1 ) ?
+            obj[ $1 ] :
+            $0;
+    }
 };
 
 String.prototype.startsWith = function ( str ) {
-	return this.indexOf( str ) === 0;
+    return this.indexOf( str ) === 0;
 };
 
 Function.prototype.throttle = function ( time ) {
-	var fun = this, timeout = -1;
+    var fun = this, timeout = -1;
 
-	var ret = function () {
-		clearTimeout( timeout );
+    var ret = function () {
+        clearTimeout( timeout );
 
-		var context = this, args = arguments;
-		timeout = setTimeout(function () {
-			fun.apply( context, args );
-		}, time );
-	};
+        var context = this, args = arguments;
+        timeout = setTimeout(function () {
+            fun.apply( context, args );
+        }, time );
+    };
 
-	return ret;
+    return ret;
 };
 
 Function.prototype.memoize = function () {
-	var cache = Object.create( null ), fun = this;
+    var cache = Object.create( null ), fun = this;
 
-	return function memoized ( hash ) {
-		if ( hash in cache ) {
-			return cache[ hash ];
-		}
+    return function memoized ( hash ) {
+        if ( hash in cache ) {
+            return cache[ hash ];
+        }
 
-		var res = fun.apply( null, arguments );
+        var res = fun.apply( null, arguments );
 
-		cache[ hash ] = res;
-		return res;
-	};
+        cache[ hash ] = res;
+        return res;
+    };
 };
 
 //async memoizer
 Function.prototype.memoizeAsync = function ( hasher ) {
-	var cache = Object.create( null ), fun = this;
+    var cache = Object.create( null ), fun = this;
 
-	hasher = hasher || function (x) { return x; };
+    hasher = hasher || function (x) { return x; };
 
-	return function memoized () {
-		var args = Array.from( arguments ),
-			cb = args.pop(), //HEAVY assumption that cb is always passed last
-			hash = hasher.apply( null, arguments );
+    return function memoized () {
+        var args = Array.from( arguments ),
+            cb = args.pop(), //HEAVY assumption that cb is always passed last
+            hash = hasher.apply( null, arguments );
 
-		if ( hash in cache ) {
-			cb.apply( null, cache[hash] );
-			return;
-		}
+        if ( hash in cache ) {
+            cb.apply( null, cache[hash] );
+            return;
+        }
 
-		//push the callback to the to-be-passed arguments
-		args.push( resultFun );
-		fun.apply( this, args );
+        //push the callback to the to-be-passed arguments
+        args.push( resultFun );
+        fun.apply( this, args );
 
-		function resultFun () {
-			cache[ hash ] = arguments;
-			cb.apply( null, arguments );
-		}
-	};
+        function resultFun () {
+            cache[ hash ] = arguments;
+            cb.apply( null, arguments );
+        }
+    };
 };
 
 //returns the function in string-form, without the enclosing crap.
 Function.prototype.stringContents = function () {
-	return this.toString()
-		.replace(/^function\*?\s+\([^)]*\)\s*\{/, '')
-		.replace(/\}$/, '');
+    return this.toString()
+        .replace(/^function\*?\s+\([^)]*\)\s*\{/, '')
+        .replace(/\}$/, '');
 };
 
 //returns the number with at most `places` digits after the dot
@@ -579,9 +579,9 @@ Function.prototype.stringContents = function () {
 // floor(1.337 * 10e0) = 13
 // 13 / 10e0 = 1.3
 Number.prototype.maxDecimal = function ( places ) {
-	var exponent = Math.pow( 10, places );
+    var exponent = Math.pow( 10, places );
 
-	return Math.floor( this * exponent ) / exponent;
+    return Math.floor( this * exponent ) / exponent;
 };
 
 //receives an (ordered) array of numbers, denoting ranges, returns the first
@@ -589,20 +589,20 @@ Number.prototype.maxDecimal = function ( places ) {
 // 4..fallsAfter( [1, 2, 5] )  === 2
 // 4..fallsAfter( [0, 3] ) === 3
 Number.prototype.fallsAfter = function ( ranges ) {
-	ranges = ranges.slice();
-	var min = ranges.shift(), max,
-		n = this.valueOf();
+    ranges = ranges.slice();
+    var min = ranges.shift(), max,
+        n = this.valueOf();
 
-	for ( var i = 0, l = ranges.length; i < l; i++ ) {
-		max = ranges[ i ];
+    for ( var i = 0, l = ranges.length; i < l; i++ ) {
+        max = ranges[ i ];
 
-		if ( n < max ) {
-			break;
-		}
-		min = max;
-	}
+        if ( n < max ) {
+            break;
+        }
+        min = max;
+    }
 
-	return min <= n ? min : null;
+    return min <= n ? min : null;
 };
 
 //calculates a:b to string form
@@ -623,92 +623,92 @@ Math.gcd = function ( a, b ) {
 };
 
 Math.rand = function ( min, max ) {
-	//rand() === rand( 0, 9 )
-	if ( typeof min === 'undefined' ) {
-		min = 0;
-		max = 9;
-	}
+    //rand() === rand( 0, 9 )
+    if ( typeof min === 'undefined' ) {
+        min = 0;
+        max = 9;
+    }
 
-	//rand( max ) === rand( 0, max )
-	else if ( typeof max === 'undefined' ) {
-		max = min;
-		min = 0;
-	}
+    //rand( max ) === rand( 0, max )
+    else if ( typeof max === 'undefined' ) {
+        max = min;
+        min = 0;
+    }
 
-	return Math.floor( Math.random() * (max - min + 1) ) + min;
+    return Math.floor( Math.random() * (max - min + 1) ) + min;
 };
 
 //I got annoyed that RegExps don't automagically turn into correct shit when
 // JSON-ing them. so HERE.
 Object.defineProperty( RegExp.prototype, 'toJSON', {
-	value : function () {
-		return this.toString();
-	},
-	configurable : true,
-	writable : true
+    value : function () {
+        return this.toString();
+    },
+    configurable : true,
+    writable : true
 });
 
 //takes a string and escapes any special regexp characters
 RegExp.escape = function ( str ) {
-	//do I smell irony?
-	return str.replace( /[-^$\\\/\.*+?()[\]{}|]/g, '\\$&' );
-	//using a character class to get away with escaping some things. the - in
-	// the beginning doesn't denote a range because it only denotes one when
-	// it's in the middle of a class, and the ^ doesn't mean negation because
-	// it's not in the beginning of the class
+    //do I smell irony?
+    return str.replace( /[-^$\\\/\.*+?()[\]{}|]/g, '\\$&' );
+    //using a character class to get away with escaping some things. the - in
+    // the beginning doesn't denote a range because it only denotes one when
+    // it's in the middle of a class, and the ^ doesn't mean negation because
+    // it's not in the beginning of the class
 };
 
 //not the most efficient thing, but who cares. formats the difference between
 // two dates
 Date.timeSince = function ( d0, d1 ) {
-	d1 = d1 || (new Date);
+    d1 = d1 || (new Date);
 
-	var ms = d1 - d0,
-		delay;
+    var ms = d1 - d0,
+        delay;
 
-	var delays = [
-		{
-			delta : 3.1536e+10,
-			suffix : 'year'
-		},
-		{
-			delta : 2.592e+9,
-			suffix : 'month'
-		},
-		{
-			delta : 8.64e+7,
-			suffix : 'day'
-		},
-		{
-			delta : 3.6e+6,
-			suffix : 'hour'
-		},
-		{
-			delta : 6e+4,
-			suffix : 'minute'
-		},
-		{
-			delta : 1000,
-			suffix : 'second'
-		}
-		//anything else is ms
-	];
+    var delays = [
+        {
+            delta : 3.1536e+10,
+            suffix : 'year'
+        },
+        {
+            delta : 2.592e+9,
+            suffix : 'month'
+        },
+        {
+            delta : 8.64e+7,
+            suffix : 'day'
+        },
+        {
+            delta : 3.6e+6,
+            suffix : 'hour'
+        },
+        {
+            delta : 6e+4,
+            suffix : 'minute'
+        },
+        {
+            delta : 1000,
+            suffix : 'second'
+        }
+        //anything else is ms
+    ];
 
-	while ( delays.length ) {
-		delay = delays.shift()
+    while ( delays.length ) {
+        delay = delays.shift()
 
-		if ( ms >= delay.delta ) {
-			return format( ms / delay.delta, delay.suffix );
-		}
-	}
-	return format( ms, 'millisecond' );
+        if ( ms >= delay.delta ) {
+            return format( ms / delay.delta, delay.suffix );
+        }
+    }
+    return format( ms, 'millisecond' );
 
-	function format ( interval, suffix ) {
-		interval = Math.floor( interval );
-		suffix += interval === 1 ? '' : 's';
+    function format ( interval, suffix ) {
+        interval = Math.floor( interval );
+        suffix += interval === 1 ? '' : 's';
 
-		return interval + ' ' + suffix;
-	}
+        return interval + ' ' + suffix;
+    }
 };
 
 ;
@@ -716,259 +716,259 @@ Date.timeSince = function ( d0, d1 ) {
 "use strict";
 
 var bot = window.bot = {
-	invocationPattern : '!!',
+    invocationPattern : '!!',
 
-	commands : {}, //will be filled as needed
-	commandDictionary : null, //it's null at this point, won't be for long
-	listeners : [],
-	info : {
-		invoked   : 0,
-		learned   : 0,
-		forgotten : 0,
-		start     : new Date()
-	},
-	users : {}, //will be filled in build
+    commands : {}, //will be filled as needed
+    commandDictionary : null, //it's null at this point, won't be for long
+    listeners : [],
+    info : {
+        invoked   : 0,
+        learned   : 0,
+        forgotten : 0,
+        start     : new Date()
+    },
+    users : {}, //will be filled in build
 
-	parseMessage : function ( msgObj ) {
-		if ( !this.validateMessage(msgObj) ) {
-			bot.log( msgObj, 'parseMessage invalid' );
-			return;
-		}
+    parseMessage : function ( msgObj ) {
+        if ( !this.validateMessage(msgObj) ) {
+            bot.log( msgObj, 'parseMessage invalid' );
+            return;
+        }
 
-		var msg = this.prepareMessage( msgObj ),
-			id = msg.get( 'user_id' );
-		bot.log( msg, 'parseMessage valid' );
+        var msg = this.prepareMessage( msgObj ),
+            id = msg.get( 'user_id' );
+        bot.log( msg, 'parseMessage valid' );
 
-		if ( this.banlist.contains(id) ) {
-			bot.log( msgObj, 'parseMessage banned' );
+        if ( this.banlist.contains(id) ) {
+            bot.log( msgObj, 'parseMessage banned' );
 
-			//tell the user he's banned only if he hasn't already been told
-			if ( !this.banlist[id].told ) {
-				msg.reply( 'You iz in mindjail' );
-				this.banlist[ id ].told = true;
-			}
-			return;
-		}
+            //tell the user he's banned only if he hasn't already been told
+            if ( !this.banlist[id].told ) {
+                msg.reply( 'You iz in mindjail' );
+                this.banlist[ id ].told = true;
+            }
+            return;
+        }
 
-		try {
-			//it wants to execute some code
-			if ( /^c?>/.test(msg) ) {
-				this.prettyEval( msg.toString(), msg.directreply.bind(msg) );
-			}
-			//or maybe some other action.
-			else {
-				this.invokeAction( msg );
-			}
-		}
-		catch ( e ) {
-			var err = 'Could not process input. Error: ' + e.message;
+        try {
+            //it wants to execute some code
+            if ( /^c?>/.test(msg) ) {
+                this.prettyEval( msg.toString(), msg.directreply.bind(msg) );
+            }
+            //or maybe some other action.
+            else {
+                this.invokeAction( msg );
+            }
+        }
+        catch ( e ) {
+            var err = 'Could not process input. Error: ' + e.message;
 
-			if ( e.lineNumber ) {
-				err += ' on line ' + e.lineNumber;
-			}
-			//column isn't part of ordinary errors, it's set in custom ones
-			if ( e.column ) {
-				err += ' on column ' + e.column;
-			}
+            if ( e.lineNumber ) {
+                err += ' on line ' + e.lineNumber;
+            }
+            //column isn't part of ordinary errors, it's set in custom ones
+            if ( e.column ) {
+                err += ' on column ' + e.column;
+            }
 
-			msg.directreply( err );
-			//make sure we have it somewhere
-			console.error( e.stack );
-		}
-		finally {
-			this.info.invoked += 1;
-		}
-	},
+            msg.directreply( err );
+            //make sure we have it somewhere
+            console.error( e.stack );
+        }
+        finally {
+            this.info.invoked += 1;
+        }
+    },
 
-	//this conditionally calls execCommand or callListeners, depending on what
-	// the input. if the input begins with a command name, it's assumed to be a
-	// command. otherwise, it tries matching against the listener.
-	invokeAction : function ( msg ) {
-		var possibleName = msg.trim().replace( /^\/\s*/, '' ).split( ' ' )[ 0 ],
-			cmd = this.getCommand( possibleName ),
+    //this conditionally calls execCommand or callListeners, depending on what
+    // the input. if the input begins with a command name, it's assumed to be a
+    // command. otherwise, it tries matching against the listener.
+    invokeAction : function ( msg ) {
+        var possibleName = msg.trim().replace( /^\/\s*/, '' ).split( ' ' )[ 0 ],
+            cmd = this.getCommand( possibleName ),
 
-			//this is the best name I could come up with
-			//messages beginning with / want to specifically invoke a command
-			coolnessFlag = msg.startsWith('/') ? !cmd.error : true;
+            //this is the best name I could come up with
+            //messages beginning with / want to specifically invoke a command
+            coolnessFlag = msg.startsWith('/') ? !cmd.error : true;
 
-		if ( !cmd.error ) {
-			this.execCommand( cmd, msg );
-		}
-		else if ( coolnessFlag ) {
-			coolnessFlag = this.callListeners( msg );
-		}
+        if ( !cmd.error ) {
+            this.execCommand( cmd, msg );
+        }
+        else if ( coolnessFlag ) {
+            coolnessFlag = this.callListeners( msg );
+        }
 
-		//nothing to see here, move along
-		if ( coolnessFlag ) {
-			return;
-		}
+        //nothing to see here, move along
+        if ( coolnessFlag ) {
+            return;
+        }
 
-		msg.reply( this.giveUpMessage(cmd.guesses) );
-	},
+        msg.reply( this.giveUpMessage(cmd.guesses) );
+    },
 
-	giveUpMessage : function ( guesses ) {
-		//man, I can't believe it worked...room full of nachos for me
-		var errMsg = 'That didn\'t make much sense.';
-		if ( guesses && guesses.length ) {
-			errMsg += ' Maybe you meant: ' + guesses.join( ', ' );
-		}
-		//mmmm....nachos
-		else {
-			errMsg += ' Use the `!!/help` command to learn more.';
-		}
-		//wait a minute, these aren't nachos. these are bear cubs.
-		return errMsg;
-		//good mama bear...nice mama bear...tasty mama be---
-	},
+    giveUpMessage : function ( guesses ) {
+        //man, I can't believe it worked...room full of nachos for me
+        var errMsg = 'That didn\'t make much sense.';
+        if ( guesses && guesses.length ) {
+            errMsg += ' Maybe you meant: ' + guesses.join( ', ' );
+        }
+        //mmmm....nachos
+        else {
+            errMsg += ' Use the `!!/help` command to learn more.';
+        }
+        //wait a minute, these aren't nachos. these are bear cubs.
+        return errMsg;
+        //good mama bear...nice mama bear...tasty mama be---
+    },
 
-	execCommand : function ( cmd, msg ) {
-		bot.log( cmd, 'execCommand calling' );
+    execCommand : function ( cmd, msg ) {
+        bot.log( cmd, 'execCommand calling' );
 
-		if ( !cmd.canUse(msg.get('user_id')) ) {
-			msg.reply([
-				'You do not have permission to use the command ' + cmd.name,
-				"I'm afraid I can't let you do that, " + msg.get('user_name')
-			].random());
-			return;
-		}
+        if ( !cmd.canUse(msg.get('user_id')) ) {
+            msg.reply([
+                'You do not have permission to use the command ' + cmd.name,
+                "I'm afraid I can't let you do that, " + msg.get('user_name')
+            ].random());
+            return;
+        }
 
-		var args = this.Message(
-				msg.replace( /^\/\s*/, '' ).slice( cmd.name.length ).trim(),
-				msg.get()
-			),
-			//it always amazed me how, in dynamic systems, the trigger of the
-			// actions is always a small, nearly unidentifiable line
-			//this line right here activates a command
-			res = cmd.exec( args );
+        var args = this.Message(
+            msg.replace( /^\/\s*/, '' ).slice( cmd.name.length ).trim(),
+            msg.get()
+        ),
+            //it always amazed me how, in dynamic systems, the trigger of the
+            // actions is always a small, nearly unidentifiable line
+            //this line right here activates a command
+            res = cmd.exec( args );
 
-		if ( res ) {
-			msg.reply( res );
-		}
-	},
+        if ( res ) {
+            msg.reply( res );
+        }
+    },
 
-	prepareMessage : function ( msgObj ) {
-		msgObj = this.adapter.transform( msgObj );
+    prepareMessage : function ( msgObj ) {
+        msgObj = this.adapter.transform( msgObj );
 
-		//decode markdown and html entities.
-		var msg = IO.htmlToMarkdown( msgObj.content ); //#150
-		msg = IO.decodehtmlEntities( msg );
+        //decode markdown and html entities.
+        var msg = IO.htmlToMarkdown( msgObj.content ); //#150
+        msg = IO.decodehtmlEntities( msg );
 
-		//fixes issues #87 and #90 globally
-		msg = msg.replace( /\u200b|\u200c/g, '' );
+        //fixes issues #87 and #90 globally
+        msg = msg.replace( /\u200b|\u200c/g, '' );
 
-		return this.Message(
-			msg.slice( this.invocationPattern.length ).trim(),
-			msgObj );
-	},
+        return this.Message(
+            msg.slice( this.invocationPattern.length ).trim(),
+            msgObj );
+    },
 
-	validateMessage : function ( msgObj ) {
-		var msg = msgObj.content.trim();
+    validateMessage : function ( msgObj ) {
+        var msg = msgObj.content.trim();
 
-		//a bit js bot specific...make sure it isn't just !!! all round. #139
-		if ( this.invocationPattern === '!!' && (/^!!!+$/).test(msg) ) {
-			console.log('special skip');
-			return false;
-		}
+        //a bit js bot specific...make sure it isn't just !!! all round. #139
+        if ( this.invocationPattern === '!!' && (/^!!!+$/).test(msg) ) {
+            console.log('special skip');
+            return false;
+        }
 
-		return (
-			//make sure we don't process our own messages,
-			msgObj.user_id !== bot.adapter.user_id &&
-			//make sure we don't process Feeds
-			msgObj.user_id > 0 &&
-			//and the message begins with the invocationPattern
-			msg.startsWith( this.invocationPattern ) );
-	},
+        return (
+            //make sure we don't process our own messages,
+            msgObj.user_id !== bot.adapter.user_id &&
+                //make sure we don't process Feeds
+                msgObj.user_id > 0 &&
+                //and the message begins with the invocationPattern
+                msg.startsWith( this.invocationPattern ) );
+    },
 
-	addCommand : function ( cmd ) {
-		if ( !cmd.exec || !cmd.del ) {
-			cmd = this.Command( cmd );
-		}
-		if ( cmd.learned ) {
-			this.info.learned += 1;
-		}
-		cmd.invoked = 0;
+    addCommand : function ( cmd ) {
+        if ( !cmd.exec || !cmd.del ) {
+            cmd = this.Command( cmd );
+        }
+        if ( cmd.learned ) {
+            this.info.learned += 1;
+        }
+        cmd.invoked = 0;
 
-		this.commands[ cmd.name ] = cmd;
-		this.commandDictionary.trie.add( cmd.name );
-	},
+        this.commands[ cmd.name ] = cmd;
+        this.commandDictionary.trie.add( cmd.name );
+    },
 
-	//gee, I wonder what this will return?
-	commandExists : function ( cmdName ) {
-		return this.commands.hasOwnProperty( cmdName );
-	},
+    //gee, I wonder what this will return?
+    commandExists : function ( cmdName ) {
+        return this.commands.hasOwnProperty( cmdName );
+    },
 
-	//if a command named cmdName exists, it returns that command object
-	//otherwise, it returns an object with an error message property
-	getCommand : function ( cmdName ) {
-		var lowerName = cmdName.toLowerCase();
+    //if a command named cmdName exists, it returns that command object
+    //otherwise, it returns an object with an error message property
+    getCommand : function ( cmdName ) {
+        var lowerName = cmdName.toLowerCase();
 
-		if ( this.commandExists(lowerName) ) {
-			return this.commands[ lowerName ];
-		}
+        if ( this.commandExists(lowerName) ) {
+            return this.commands[ lowerName ];
+        }
 
-		//not found, onto error reporting
-		//set the error margin according to the length
-		this.commandDictionary.maxCost = Math.floor( cmdName.length / 5 + 1 );
+        //not found, onto error reporting
+        //set the error margin according to the length
+        this.commandDictionary.maxCost = Math.floor( cmdName.length / 5 + 1 );
 
-		var msg = 'Command ' + cmdName + ' does not exist.',
-		//find commands resembling the one the user entered
-		guesses = this.commandDictionary.search( cmdName );
+        var msg = 'Command ' + cmdName + ' does not exist.',
+            //find commands resembling the one the user entered
+            guesses = this.commandDictionary.search( cmdName );
 
-		//resembling command(s) found, add them to the error message
-		if ( guesses.length ) {
-			msg += ' Did you mean: ' + guesses.join( ', ' );
-		}
+        //resembling command(s) found, add them to the error message
+        if ( guesses.length ) {
+            msg += ' Did you mean: ' + guesses.join( ', ' );
+        }
 
-		return { error : msg, guesses : guesses };
-	},
+        return { error : msg, guesses : guesses };
+    },
 
-	//the function women think is lacking in men
-	listen : function ( regex, fun, thisArg ) {
-		if ( Array.isArray(regex) ) {
-			regex.forEach(function ( reg ) {
-				this.listen( reg, fun, thisArg );
-			}, this);
-		}
-		else {
-			this.listeners.push({
-				pattern : regex,
-				fun : fun,
-				thisArg: thisArg
-			});
-		}
-	},
+    //the function women think is lacking in men
+    listen : function ( regex, fun, thisArg ) {
+        if ( Array.isArray(regex) ) {
+            regex.forEach(function ( reg ) {
+                this.listen( reg, fun, thisArg );
+            }, this);
+        }
+        else {
+            this.listeners.push({
+                pattern : regex,
+                fun : fun,
+                thisArg: thisArg
+            });
+        }
+    },
 
-	callListeners : function ( msg ) {
-		function callListener ( listener ) {
-			var match = msg.exec( listener.pattern ), resp;
+    callListeners : function ( msg ) {
+        function callListener ( listener ) {
+            var match = msg.exec( listener.pattern ), resp;
 
-			if ( match ) {
-				resp = listener.fun.call( listener.thisArg, msg );
+            if ( match ) {
+                resp = listener.fun.call( listener.thisArg, msg );
 
-				bot.log( match, resp );
-				if ( resp ) {
-					msg.reply( resp );
-				}
-				return resp !== false;
-			}
-		}
+                bot.log( match, resp );
+                if ( resp ) {
+                    msg.reply( resp );
+                }
+                return resp !== false;
+            }
+        }
 
-		return this.listeners.some( callListener );
-	},
+        return this.listeners.some( callListener );
+    },
 
-	stoplog : false,
-	log : function () {
-		if ( !this.stoplog ) {
-			console.log.apply( console, arguments );
-		}
-	},
+    stoplog : false,
+    log : function () {
+        if ( !this.stoplog ) {
+            console.log.apply( console, arguments );
+        }
+    },
 
-	stop : function () {
-		this.stopped = true;
-	},
-	continue : function () {
-		this.stopped = false;
-	},
+    stop : function () {
+        this.stopped = true;
+    },
+    continue : function () {
+        this.stopped = false;
+    },
 
     devMode : false,
     activateDevMode : function ( pattern ) {
@@ -984,51 +984,51 @@ var bot = window.bot = {
 //a place to hang your coat and remember the past. provides an abstraction over
 // localStorage or whatever data-storage will be used in the future.
 bot.memory = {
-	saveInterval : 900000, //15(min) * 60(sec/min) * 1000(ms/sec) = 900000(ms)
+    saveInterval : 900000, //15(min) * 60(sec/min) * 1000(ms/sec) = 900000(ms)
 
-	data : {},
+    data : {},
 
-	get : function ( name, defaultVal ) {
-		if ( !this.data[name] ) {
-			this.set( name, defaultVal || {} );
-		}
+    get : function ( name, defaultVal ) {
+        if ( !this.data[name] ) {
+            this.set( name, defaultVal || {} );
+        }
 
-		return this.data[ name ];
-	},
+        return this.data[ name ];
+    },
 
-	set : function ( name, val ) {
-		this.data[ name ] = val;
-	},
+    set : function ( name, val ) {
+        this.data[ name ] = val;
+    },
 
-	loadAll : function () {
-		var self = this;
+    loadAll : function () {
+        var self = this;
 
-		Object.iterate( localStorage, function ( key, val ) {
-			if ( key.startsWith('bot_') ) {
-				console.log( key, val );
-				self.set( key.replace(/^bot_/, ''), JSON.parse(val) );
-			}
-		});
-	},
+        Object.iterate( localStorage, function ( key, val ) {
+            if ( key.startsWith('bot_') ) {
+                console.log( key, val );
+                self.set( key.replace(/^bot_/, ''), JSON.parse(val) );
+            }
+        });
+    },
 
-	save : function ( name ) {
-		if ( name ) {
-			localStorage[ 'bot_' + name ] = JSON.stringify( this.data[name] );
-			return;
-		}
+    save : function ( name ) {
+        if ( name ) {
+            localStorage[ 'bot_' + name ] = JSON.stringify( this.data[name] );
+            return;
+        }
 
-		var self = this;
-		Object.keys( this.data ).forEach(function ( name ) {
-			self.save( name );
-		});
+        var self = this;
+        Object.keys( this.data ).forEach(function ( name ) {
+            self.save( name );
+        });
 
-		this.saveLoop();
-	},
+        this.saveLoop();
+    },
 
-	saveLoop : function () {
-		clearTimeout( this.saveIntervalId );
-		setTimeout( this.saveLoop.bind(this), this.saveInterval );
-	}
+    saveLoop : function () {
+        clearTimeout( this.saveIntervalId );
+        setTimeout( this.saveLoop.bind(this), this.saveInterval );
+    }
 };
 
 bot.memory.loadAll();
@@ -1037,232 +1037,232 @@ bot.memory.saveLoop();
 
 bot.banlist = bot.memory.get( 'ban' );
 bot.banlist.contains = function ( id ) {
-	return this.hasOwnProperty( id );
+    return this.hasOwnProperty( id );
 };
 bot.banlist.add = function ( id ) {
-	this[ id ] = { told : false };
-	bot.memory.save( 'ban' );
+    this[ id ] = { told : false };
+    bot.memory.save( 'ban' );
 };
 bot.banlist.remove = function ( id ) {
-	if ( this.contains(id) ) {
-		delete this[ id ];
-		bot.memory.save( 'ban' );
-	}
+    if ( this.contains(id) ) {
+        delete this[ id ];
+        bot.memory.save( 'ban' );
+    }
 };
 
 //some sort of pseudo constructor
 bot.Command = function ( cmd ) {
-	cmd.name = cmd.name.toLowerCase();
-	cmd.thisArg = cmd.thisArg || cmd;
+    cmd.name = cmd.name.toLowerCase();
+    cmd.thisArg = cmd.thisArg || cmd;
 
-	cmd.permissions = cmd.permissions || {};
-	cmd.permissions.use = cmd.permissions.use || 'ALL';
-	cmd.permissions.del = cmd.permissions.del || 'NONE';
+    cmd.permissions = cmd.permissions || {};
+    cmd.permissions.use = cmd.permissions.use || 'ALL';
+    cmd.permissions.del = cmd.permissions.del || 'NONE';
 
-	cmd.description = cmd.description || '';
-	cmd.creator = cmd.creator || 'God';
-	cmd.invoked = 0;
+    cmd.description = cmd.description || '';
+    cmd.creator = cmd.creator || 'God';
+    cmd.invoked = 0;
 
-	//make canUse and canDel
-	[ 'Use', 'Del' ].forEach(function ( perm ) {
-		var low = perm.toLowerCase();
+    //make canUse and canDel
+    [ 'Use', 'Del' ].forEach(function ( perm ) {
+        var low = perm.toLowerCase();
 
-		cmd[ 'can' + perm ] = function ( usrid ) {
-			var canDo = this.permissions[ low ];
+        cmd[ 'can' + perm ] = function ( usrid ) {
+            var canDo = this.permissions[ low ];
 
-			if ( canDo === 'ALL' ) {
-				return true;
-			}
-			else if ( canDo === 'NONE' ) {
-				return false;
-			}
-			else if ( bot.isOwner(usrid) ) {
-				return true;
-			}
+            if ( canDo === 'ALL' ) {
+                return true;
+            }
+            else if ( canDo === 'NONE' ) {
+                return false;
+            }
+            else if ( bot.isOwner(usrid) ) {
+                return true;
+            }
 
-			return canDo.indexOf( usrid ) > -1;
-		};
-	});
+            return canDo.indexOf( usrid ) > -1;
+        };
+    });
 
-	cmd.exec = function () {
-		this.invoked += 1;
+    cmd.exec = function () {
+        this.invoked += 1;
 
-		return this.fun.apply( this.thisArg, arguments );
-	};
+        return this.fun.apply( this.thisArg, arguments );
+    };
 
-	cmd.del = function () {
-		bot.info.forgotten += 1;
-		delete bot.commands[ cmd.name ];
-		bot.commandDictionary.trie.del(cmd.name);
-	};
+    cmd.del = function () {
+        bot.info.forgotten += 1;
+        delete bot.commands[ cmd.name ];
+        bot.commandDictionary.trie.del(cmd.name);
+    };
 
-	return cmd;
+    return cmd;
 };
 
 //a normally priviliged command which can be executed if enough people use it
 bot.CommunityCommand = function ( command, req ) {
-	var cmd = this.Command( command ),
-		used = {},
-		old_execute = cmd.exec,
-		old_canUse  = cmd.canUse;
+    var cmd = this.Command( command ),
+        used = {},
+        old_execute = cmd.exec,
+        old_canUse  = cmd.canUse;
 
-	var pendingMessage = command.pendingMessage ||
-			'Already registered; still need {0} more';
-	console.log( command.pendingMessage, pendingMessage );
-	req = req || 2;
+    var pendingMessage = command.pendingMessage ||
+            'Already registered; still need {0} more';
+    console.log( command.pendingMessage, pendingMessage );
+    req = req || 2;
 
-	cmd.canUse = function () {
-		return true;
-	};
-	cmd.exec = function ( msg ) {
-		var err = register( msg.get('user_id') );
-		if ( err ) {
-			bot.log( err );
-			return err;
-		}
+    cmd.canUse = function () {
+        return true;
+    };
+    cmd.exec = function ( msg ) {
+        var err = register( msg.get('user_id') );
+        if ( err ) {
+            bot.log( err );
+            return err;
+        }
 
-		used = {};
+        used = {};
 
-		return old_execute.apply( cmd, arguments );
-	};
+        return old_execute.apply( cmd, arguments );
+    };
 
-	return cmd;
+    return cmd;
 
-	//once again, a switched return statement: truthy means a message, falsy
-	// means to go on ahead
-	function register ( usrid ) {
-		if ( old_canUse.call(cmd, usrid) ) {
-			return false;
-		}
+    //once again, a switched return statement: truthy means a message, falsy
+    // means to go on ahead
+    function register ( usrid ) {
+        if ( old_canUse.call(cmd, usrid) ) {
+            return false;
+        }
 
-		clean();
-		var count = Object.keys( used ).length,
-			needed = req - count;
-		bot.log( used, count, req );
+        clean();
+        var count = Object.keys( used ).length,
+            needed = req - count;
+        bot.log( used, count, req );
 
-		if ( usrid in used ) {
-			return 'Already registered; still need {0} more'.supplant( needed );
-		}
+        if ( usrid in used ) {
+            return 'Already registered; still need {0} more'.supplant( needed );
+        }
 
-		used[ usrid ] = new Date();
-		needed -= 1;
+        used[ usrid ] = new Date();
+        needed -= 1;
 
-		if ( needed > 0 ) {
-			return pendingMessage.supplant( needed );
-		}
+        if ( needed > 0 ) {
+            return pendingMessage.supplant( needed );
+        }
 
-		bot.log( 'should execute' );
-		return false; //huzzah!
-	}
+        bot.log( 'should execute' );
+        return false; //huzzah!
+    }
 
-	function clean () {
-		var tenMinsAgo = new Date();
-		tenMinsAgo.setMinutes( tenMinsAgo.getMinutes() - 10 );
+    function clean () {
+        var tenMinsAgo = new Date();
+        tenMinsAgo.setMinutes( tenMinsAgo.getMinutes() - 10 );
 
-		Object.keys( used ).reduce( rm, used );
-		function rm ( ret, key ) {
-			if ( ret[key] < tenMinsAgo ) {
-				delete ret[ key ];
-			}
-			return ret;
-		}
-	}
+        Object.keys( used ).reduce( rm, used );
+        function rm ( ret, key ) {
+            if ( ret[key] < tenMinsAgo ) {
+                delete ret[ key ];
+            }
+            return ret;
+        }
+    }
 };
 
 bot.Message = function ( text, msgObj ) {
-	//"casting" to object so that it can be extended with cool stuff and
-	// still be treated like a string
-	var ret = Object( text );
-	ret.content = text;
+    //"casting" to object so that it can be extended with cool stuff and
+    // still be treated like a string
+    var ret = Object( text );
+    ret.content = text;
 
-	var rawSend = function ( text ) {
-		bot.adapter.out.add( text, msgObj.room_id );
-	};
-	var deliciousObject = {
-		send : rawSend,
+    var rawSend = function ( text ) {
+        bot.adapter.out.add( text, msgObj.room_id );
+    };
+    var deliciousObject = {
+        send : rawSend,
 
-		reply : function ( resp, user_name ) {
-			var prefix = bot.adapter.reply( user_name || msgObj.user_name );
-			rawSend( prefix + ' ' + resp );
-		},
-		directreply : function ( resp ) {
-			var prefix = bot.adapter.directreply( msgObj.message_id );
-			rawSend( prefix + ' ' + resp );
-		},
+        reply : function ( resp, user_name ) {
+            var prefix = bot.adapter.reply( user_name || msgObj.user_name );
+            rawSend( prefix + ' ' + resp );
+        },
+        directreply : function ( resp ) {
+            var prefix = bot.adapter.directreply( msgObj.message_id );
+            rawSend( prefix + ' ' + resp );
+        },
 
-		//parse() parses the original message
-		//parse( true ) also turns every match result to a Message
-		//parse( msgToParse ) parses msgToParse
-		//parse( msgToParse, true ) combination of the above
-		parse : function ( msg, map ) {
-			// parse( true )
-			if ( Boolean(msg) === msg ) {
-				map = msg;
-				msg = text;
-			}
-			var parsed = bot.parseCommandArgs( msg || text );
+        //parse() parses the original message
+        //parse( true ) also turns every match result to a Message
+        //parse( msgToParse ) parses msgToParse
+        //parse( msgToParse, true ) combination of the above
+        parse : function ( msg, map ) {
+            // parse( true )
+            if ( Boolean(msg) === msg ) {
+                map = msg;
+                msg = text;
+            }
+            var parsed = bot.parseCommandArgs( msg || text );
 
-			// parse( msgToParse )
-			if ( !map ) {
-				return parsed;
-			}
+            // parse( msgToParse )
+            if ( !map ) {
+                return parsed;
+            }
 
-			// parse( msgToParse, true )
-			return parsed.map(function ( part ) {
-				return bot.Message( part, msgObj );
-			});
-		},
+            // parse( msgToParse, true )
+            return parsed.map(function ( part ) {
+                return bot.Message( part, msgObj );
+            });
+        },
 
-		//execute a regexp against the text, saving it inside the object
-		exec : function ( regexp ) {
-			var match = regexp.exec( text );
-			this.matches = match || [];
+        //execute a regexp against the text, saving it inside the object
+        exec : function ( regexp ) {
+            var match = regexp.exec( text );
+            this.matches = match || [];
 
-			return match;
-		},
+            return match;
+        },
 
-		findUserId   : bot.users.findUserId,
-		findUsername : bot.users.findUsername,
+        findUserId   : bot.users.findUserId,
+        findUsername : bot.users.findUsername,
 
-		codify : bot.adapter.codify.bind( bot.adapter ),
-		escape : bot.adapter.escape.bind( bot.adapter ),
-		link   : bot.adapter.link.bind( bot.adapter ),
+        codify : bot.adapter.codify.bind( bot.adapter ),
+        escape : bot.adapter.escape.bind( bot.adapter ),
+        link   : bot.adapter.link.bind( bot.adapter ),
 
-		//retrieve a value from the original message object, or if no argument
-		// provided, the msgObj itself
-		get : function ( what ) {
-			if ( !what ) {
-				return msgObj;
-			}
-			return msgObj[ what ];
-		},
-		set : function ( what, val ) {
-			msgObj[ what ] = val;
-			return msgObj[ what ];
-		}
-	};
+        //retrieve a value from the original message object, or if no argument
+        // provided, the msgObj itself
+        get : function ( what ) {
+            if ( !what ) {
+                return msgObj;
+            }
+            return msgObj[ what ];
+        },
+        set : function ( what, val ) {
+            msgObj[ what ] = val;
+            return msgObj[ what ];
+        }
+    };
 
-	Object.iterate( deliciousObject, function ( key, prop ) {
-		ret[ key ] = prop;
-	});
+    Object.iterate( deliciousObject, function ( key, prop ) {
+        ret[ key ] = prop;
+    });
 
-	return ret;
+    return ret;
 };
 
 bot.isOwner = function ( usrid ) {
-	var user = this.users[ usrid ];
-	return user && ( user.is_owner || user.is_moderator );
+    var user = this.users[ usrid ];
+    return user && ( user.is_owner || user.is_moderator );
 };
 
 IO.register( 'input', bot.parseMessage, bot );
 
 //load up coffeescript if we're not in dev mdoe
 setTimeout(function () {
-	if (bot.devMode) {
-		return;
-	}
+    if (bot.devMode) {
+        return;
+    }
 
-	IO.injectScript( 'https://rawgithub.com/jashkenas/coffee-script/master/extras/coffee-script.js' );
+    IO.injectScript( 'https://rawgithub.com/jashkenas/coffee-script/master/extras/coffee-script.js' );
 }, 1000);
 
 //execute arbitrary js code in a relatively safe environment
@@ -1273,75 +1273,75 @@ var global = this;
 
 /*most extra functions could be possibly unsafe*/
 var whitey = {
-	'Array'              : 1,
-	'Boolean'            : 1,
-	'Date'               : 1,
-	'Error'              : 1,
-	'EvalError'          : 1,
-	'Function'           : 1,
-	'Infinity'           : 1,
-	'JSON'               : 1,
-	'Map'                : 1,
-	'Math'               : 1,
-	'NaN'                : 1,
-	'Number'             : 1,
-	'Object'             : 1,
-	'Promise'            : 1,
-	'Proxy'              : 1,
-	'RangeError'         : 1,
-	'ReferenceError'     : 1,
-	'RegExp'             : 1,
-	'Set'                : 1,
-	'String'             : 1,
-	'SyntaxError'        : 1,
-	'TypeError'          : 1,
-	'URIError'           : 1,
-	'WeakMap'            : 1,
-	'WeakSet'            : 1,
-	'atob'               : 1,
-	'btoa'               : 1,
-	'console'            : 1,
-	'decodeURI'          : 1,
-	'decodeURIComponent' : 1,
-	'encodeURI'          : 1,
-	'encodeURIComponent' : 1,
-	'eval'               : 1,
-	'exec'               : 1, /* our own function */
-	'global'             : 1,
-	'isFinite'           : 1,
-	'isNaN'              : 1,
-	'onmessage'          : 1,
-	'parseFloat'         : 1,
-	'parseInt'           : 1,
-	'postMessage'        : 1,
-	'self'               : 1,
-	'undefined'          : 1,
-	'whitey'             : 1,
+    'Array'              : 1,
+    'Boolean'            : 1,
+    'Date'               : 1,
+    'Error'              : 1,
+    'EvalError'          : 1,
+    'Function'           : 1,
+    'Infinity'           : 1,
+    'JSON'               : 1,
+    'Map'                : 1,
+    'Math'               : 1,
+    'NaN'                : 1,
+    'Number'             : 1,
+    'Object'             : 1,
+    'Promise'            : 1,
+    'Proxy'              : 1,
+    'RangeError'         : 1,
+    'ReferenceError'     : 1,
+    'RegExp'             : 1,
+    'Set'                : 1,
+    'String'             : 1,
+    'SyntaxError'        : 1,
+    'TypeError'          : 1,
+    'URIError'           : 1,
+    'WeakMap'            : 1,
+    'WeakSet'            : 1,
+    'atob'               : 1,
+    'btoa'               : 1,
+    'console'            : 1,
+    'decodeURI'          : 1,
+    'decodeURIComponent' : 1,
+    'encodeURI'          : 1,
+    'encodeURIComponent' : 1,
+    'eval'               : 1,
+    'exec'               : 1, /* our own function */
+    'global'             : 1,
+    'isFinite'           : 1,
+    'isNaN'              : 1,
+    'onmessage'          : 1,
+    'parseFloat'         : 1,
+    'parseInt'           : 1,
+    'postMessage'        : 1,
+    'self'               : 1,
+    'undefined'          : 1,
+    'whitey'             : 1,
 
-	/* typed arrays and shit */
-	'ArrayBuffer'       : 1,
-	'Blob'              : 1,
-	'Float32Array'      : 1,
-	'Float64Array'      : 1,
-	'Int8Array'         : 1,
-	'Int16Array'        : 1,
-	'Int32Array'        : 1,
-	'Uint8Array'        : 1,
-	'Uint16Array'       : 1,
-	'Uint32Array'       : 1,
-	'Uint8ClampedArray' : 1,
+    /* typed arrays and shit */
+    'ArrayBuffer'       : 1,
+    'Blob'              : 1,
+    'Float32Array'      : 1,
+    'Float64Array'      : 1,
+    'Int8Array'         : 1,
+    'Int16Array'        : 1,
+    'Int32Array'        : 1,
+    'Uint8Array'        : 1,
+    'Uint16Array'       : 1,
+    'Uint32Array'       : 1,
+    'Uint8ClampedArray' : 1,
 
-	/*
-	 these properties allow FF to function. without them, a fuckfest of
-	 inexplicable errors enuses. took me about 4 hours to track these fuckers
-	 down.
-	 fuck hell it isn't future-proof, but the errors thrown are uncatchable
-	 and untracable. so a heads-up. enjoy, future-me!
-	 */
-	'DOMException'      : 1,
-	'Event'             : 1,
-	'MessageEvent'      : 1,
-	'WorkerMessageEvent': 1
+    /*
+     these properties allow FF to function. without them, a fuckfest of
+     inexplicable errors enuses. took me about 4 hours to track these fuckers
+     down.
+     fuck hell it isn't future-proof, but the errors thrown are uncatchable
+     and untracable. so a heads-up. enjoy, future-me!
+     */
+    'DOMException'      : 1,
+    'Event'             : 1,
+    'MessageEvent'      : 1,
+    'WorkerMessageEvent': 1
 };
 
 /**
@@ -1355,272 +1355,272 @@ var whitey = {
 global.fetch = undefined;
 
 [ global, Object.getPrototypeOf(global) ].forEach(function ( obj ) {
-	Object.getOwnPropertyNames( obj ).forEach(function( prop ) {
-		if( whitey.hasOwnProperty(prop) ) {
-			return;
-		}
+    Object.getOwnPropertyNames( obj ).forEach(function( prop ) {
+        if( whitey.hasOwnProperty(prop) ) {
+            return;
+        }
 
-		try {
-			Object.defineProperty( obj, prop, {
-				get : function () {
-					/* TEE HEE */
-					throw new ReferenceError( prop + ' is not defined' );
-				},
-				configurable : false,
-				enumerable : false
-			});
-		}
-		catch ( e ) {
-			delete obj[ prop ];
+        try {
+            Object.defineProperty( obj, prop, {
+                get : function () {
+                    /* TEE HEE */
+                    throw new ReferenceError( prop + ' is not defined' );
+                },
+                configurable : false,
+                enumerable : false
+            });
+        }
+        catch ( e ) {
+            delete obj[ prop ];
 
-			if ( obj[ prop ] !== undefined ) {
-				obj[ prop ] = null;
-			}
-		}
-	});
+            if ( obj[ prop ] !== undefined ) {
+                obj[ prop ] = null;
+            }
+        }
+    });
 });
 
 Object.defineProperty( Array.prototype, 'join', {
-	writable: false,
-	configurable: false,
-	enumrable: false,
+    writable: false,
+    configurable: false,
+    enumrable: false,
 
-	value: (function ( old ) {
-		return function ( arg ) {
-			if ( this.length > 500 || (arg && arg.length > 500) ) {
-				throw 'Exception: too many items';
-			}
+    value: (function ( old ) {
+        return function ( arg ) {
+            if ( this.length > 500 || (arg && arg.length > 500) ) {
+                throw 'Exception: too many items';
+            }
 
-			return old.apply( this, arguments );
-		};
-	}( Array.prototype.join ))
+            return old.apply( this, arguments );
+        };
+    }( Array.prototype.join ))
 });
 
 
 /* we define it outside so it'll not be in strict mode */
 var exec = function ( code, arg ) {
-	return eval( 'undefined;\n' + code );
+    return eval( 'undefined;\n' + code );
 };
 var console = {
-	_items : [],
-	log : function() {
-		console._items.push.apply( console._items, arguments );
-	}
+    _items : [],
+    log : function() {
+        console._items.push.apply( console._items, arguments );
+    }
 };
 console.error = console.info = console.debug = console.log;
 
 (function() {
-	"use strict";
+    "use strict";
 
-	global.onmessage = function ( event ) {
-		global.postMessage({
-			event : 'start'
-		});
+    global.onmessage = function ( event ) {
+        global.postMessage({
+            event : 'start'
+        });
 
-		var jsonStringify = JSON.stringify, /*backup*/
-			result,
+        var jsonStringify = JSON.stringify, /*backup*/
+            result,
 
-			originalSetTimeout = setTimeout,
-			timeoutCounter = 0;
+            originalSetTimeout = setTimeout,
+            timeoutCounter = 0;
 
-		var sendResult = function ( result ) {
-			global.postMessage({
-				answer : jsonStringify( result, reviver ),
-				log    : jsonStringify( console._items, reviver ).slice( 1, -1 )
-			});
-		};
-		var done = function ( result ) {
-			if ( timeoutCounter < 1 ) {
-				sendResult( result );
-			}
-		};
+        var sendResult = function ( result ) {
+            global.postMessage({
+                answer : jsonStringify( result, reviver ),
+                log    : jsonStringify( console._items, reviver ).slice( 1, -1 )
+            });
+        };
+        var done = function ( result ) {
+            if ( timeoutCounter < 1 ) {
+                sendResult( result );
+            }
+        };
 
-		var reviver = function ( key, value ) {
-			var output;
+        var reviver = function ( key, value ) {
+            var output;
 
-			if ( shouldString(value) ) {
-				output = '' + value;
-			}
-			else {
-				output = value;
-			}
+            if ( shouldString(value) ) {
+                output = '' + value;
+            }
+            else {
+                output = value;
+            }
 
-			return output;
-		};
+            return output;
+        };
 
-		/*JSON does not like any of the following*/
-		var strung = {
-			Function  : true, Error	 : true,
-			Undefined : true, RegExp : true
-		};
-		var shouldString = function ( value ) {
-			var type = ( {} ).toString.call( value ).slice( 8, -1 );
+        /*JSON does not like any of the following*/
+        var strung = {
+            Function  : true, Error  : true,
+            Undefined : true, RegExp : true
+        };
+        var shouldString = function ( value ) {
+            var type = ( {} ).toString.call( value ).slice( 8, -1 );
 
-			if ( type in strung ) {
-				return true;
-			}
-			/*neither does it feel compassionate about NaN or Infinity*/
-			return value !== value || !Number.isFinite(value);
-		};
+            if ( type in strung ) {
+                return true;
+            }
+            /*neither does it feel compassionate about NaN or Infinity*/
+            return value !== value || !Number.isFinite(value);
+        };
 
-		self.setTimeout = function (cb) {
-			/*because of SomeKittens*/
-			if (!cb) {
-				return;
-			}
+        self.setTimeout = function (cb) {
+            /*because of SomeKittens*/
+            if (!cb) {
+                return;
+            }
 
-			var args = [].slice.call( arguments );
-			args[ 0 ] = wrapper;
-			timeoutCounter += 1;
+            var args = [].slice.call( arguments );
+            args[ 0 ] = wrapper;
+            timeoutCounter += 1;
 
-			originalSetTimeout.apply( self, args );
+            originalSetTimeout.apply( self, args );
 
-			function wrapper () {
-				timeoutCounter -= 1;
-				cb.apply( self, arguments );
+            function wrapper () {
+                timeoutCounter -= 1;
+                cb.apply( self, arguments );
 
-				done();
-			}
-		};
+                done();
+            }
+        };
 
-		try {
-			result = exec( event.data.code, event.data.arg );
-		}
-		catch ( e ) {
-			result = e.toString();
-		}
+        try {
+            result = exec( event.data.code, event.data.arg );
+        }
+        catch ( e ) {
+            result = e.toString();
+        }
 
-		/*handle promises appropriately*/
-		if ( result && result.then && result.catch ) {
-			result.then( done ).catch( done );
-		}
-		else {
-			done( result );
-		}
-	};
+        /*handle promises appropriately*/
+        if ( result && result.then && result.catch ) {
+            result.then( done ).catch( done );
+        }
+        else {
+            done( result );
+        }
+    };
 })();
 
 }.stringContents();
 
 var blob = new Blob( [workerCode], { type : 'application/javascript' } ),
-	codeUrl = window.URL.createObjectURL( blob );
+    codeUrl = window.URL.createObjectURL( blob );
 
 return function ( code, arg, cb ) {
-	if ( arguments.length === 2 ) {
-		cb  = arg;
-		arg = null;
-	}
+    if ( arguments.length === 2 ) {
+        cb  = arg;
+        arg = null;
+    }
 
-	var worker = new Worker( codeUrl ),
-		timeout;
+    var worker = new Worker( codeUrl ),
+        timeout;
 
-	worker.onmessage = function ( evt ) {
-		bot.log( evt, 'eval worker.onmessage' );
+    worker.onmessage = function ( evt ) {
+        bot.log( evt, 'eval worker.onmessage' );
 
-		var type = evt.data.event;
+        var type = evt.data.event;
 
-		if ( type === 'start' ) {
-			start();
-		}
-		else {
-			finish( null, evt.data );
-		}
-	};
+        if ( type === 'start' ) {
+            start();
+        }
+        else {
+            finish( null, evt.data );
+        }
+    };
 
-	worker.onerror = function ( error ) {
-		bot.log( error, 'eval worker.onerror' );
-		finish( error.message );
-	};
+    worker.onerror = function ( error ) {
+        bot.log( error, 'eval worker.onerror' );
+        finish( error.message );
+    };
 
-	//and it all boils down to this...
-	worker.postMessage({
-		code : code,
-		arg  : arg
-	});
-	//so fucking cool.
+    //and it all boils down to this...
+    worker.postMessage({
+        code : code,
+        arg  : arg
+    });
+    //so fucking cool.
 
-	function start () {
-		if ( timeout ) {
-			return;
-		}
+    function start () {
+        if ( timeout ) {
+            return;
+        }
 
-		timeout = window.setTimeout(function () {
-			finish( 'Maximum execution time exceeded' );
-		}, 500 );
-	}
+        timeout = window.setTimeout(function () {
+            finish( 'Maximum execution time exceeded' );
+        }, 500 );
+    }
 
-	function finish ( err, result ) {
-		clearTimeout( timeout );
-		worker.terminate();
+    function finish ( err, result ) {
+        clearTimeout( timeout );
+        worker.terminate();
 
-		if ( cb && cb.call ) {
-			cb( err, result );
-		}
-		else {
-			console.warn( 'eval did not get callback' );
-		}
-	}
+        if ( cb && cb.call ) {
+            cb( err, result );
+        }
+        else {
+            console.warn( 'eval did not get callback' );
+        }
+    }
 };
 
 }());
 
 bot.prettyEval = function ( code, arg, cb ) {
-	if ( arguments.length === 2 ) {
-		cb  = arg;
-		arg = null;
-	}
+    if ( arguments.length === 2 ) {
+        cb  = arg;
+        arg = null;
+    }
 
-	if ( code[0] === 'c' ) {
-		code = CoffeeScript.compile( code.replace(/^c>/, ''), {bare:1} );
-	}
-	else {
-		code = code.replace( /^>/, '' );
-	}
+    if ( code[0] === 'c' ) {
+        code = CoffeeScript.compile( code.replace(/^c>/, ''), {bare:1} );
+    }
+    else {
+        code = code.replace( /^>/, '' );
+    }
 
-	return bot.eval( code, arg, finish );
+    return bot.eval( code, arg, finish );
 
-	function finish ( err, answerObj ) {
-		if ( err ) {
-			cb( err );
-		}
-		else {
-			cb( dressUpAnswer(answerObj) );
-		}
-	}
+    function finish ( err, answerObj ) {
+        if ( err ) {
+            cb( err );
+        }
+        else {
+            cb( dressUpAnswer(answerObj) );
+        }
+    }
 
-	function dressUpAnswer ( answerObj ) {
-		bot.log( answerObj, 'eval answerObj' );
-		var answer = answerObj.answer,
-			log = answerObj.log,
-			result;
+    function dressUpAnswer ( answerObj ) {
+        bot.log( answerObj, 'eval answerObj' );
+        var answer = answerObj.answer,
+            log = answerObj.log,
+            result;
 
-		if ( answer === undefined ) {
-			return 'Malformed output from web-worker. If you weren\'t just ' +
-				'fooling around trying to break me, raise an issue or contact ' +
-				'Zirak';
-		}
+        if ( answer === undefined ) {
+            return 'Malformed output from web-worker. If you weren\'t just ' +
+                'fooling around trying to break me, raise an issue or contact ' +
+                'Zirak';
+        }
 
-		result = snipAndCodify( answer );
+        result = snipAndCodify( answer );
 
-		if ( log && log.length ) {
-			result += ' Logged: ' + snipAndCodify( log );
-		}
+        if ( log && log.length ) {
+            result += ' Logged: ' + snipAndCodify( log );
+        }
 
-		return result;
-	}
+        return result;
+    }
 
-	function snipAndCodify ( str ) {
-		var ret;
+    function snipAndCodify ( str ) {
+        var ret;
 
-		if ( str.length > 400 ) {
-			ret = '`' + str.slice(0, 400) + '` (snip)';
-		}
-		else {
-			ret = '`' + str +'`';
-		}
+        if ( str.length > 400 ) {
+            ret = '`' + str.slice(0, 400) + '` (snip)';
+        }
+        else {
+            ret = '`' + str +'`';
+        }
 
-		return ret;
-	}
+        return ret;
+    }
 };
 
 
@@ -1628,72 +1628,72 @@ bot.prettyEval = function ( code, arg, cb ) {
 "use strict";
 
 var argParser = {
-	create : function () {
-		var ret = Object.create(this);
+    create : function () {
+        var ret = Object.create(this);
 
-		ret.separator = ' ';
-		ret.escape = '\\';
-		ret.quote = '"';
+        ret.separator = ' ';
+        ret.escape = '\\';
+        ret.quote = '"';
 
-		return ret;
-	},
+        return ret;
+    },
 
-	parse : function (source) {
-		this.source = source;
-		this.pos = 0;
+    parse : function (source) {
+        this.source = source;
+        this.pos = 0;
 
-		var ret = [];
+        var ret = [];
 
-		while (!this.done()) {
-			ret.push(this.nextArg());
-		}
+        while (!this.done()) {
+            ret.push(this.nextArg());
+        }
 
-		return ret;
-	},
+        return ret;
+    },
 
-	nextArg : function () {
-		var endChar = this.separator;
+    nextArg : function () {
+        var endChar = this.separator;
 
-		if (this.peek() === this.quote) {
-			this.nextChar();
-			endChar = this.quote;
-		}
+        if (this.peek() === this.quote) {
+            this.nextChar();
+            endChar = this.quote;
+        }
 
-		return this.consumeUntil(endChar);
-	},
+        return this.consumeUntil(endChar);
+    },
 
-	consumeUntil : function (endChar) {
-		var char = this.nextChar(),
-			escape = false,
-			ret = '';
+    consumeUntil : function (endChar) {
+        var char = this.nextChar(),
+            escape = false,
+            ret = '';
 
-		while (char && char !== endChar) {
-			if (char === this.escape && !escape) {
-				escape = true;
-			}
-			else {
-				ret += char;
-			}
+        while (char && char !== endChar) {
+            if (char === this.escape && !escape) {
+                escape = true;
+            }
+            else {
+                ret += char;
+            }
 
-			char = this.nextChar();
-		}
+            char = this.nextChar();
+        }
 
-		return ret;
-	},
+        return ret;
+    },
 
-	nextChar : function () {
-		var ret = this.source[this.pos];
-		this.pos += 1;
-		return ret;
-	},
+    nextChar : function () {
+        var ret = this.source[this.pos];
+        this.pos += 1;
+        return ret;
+    },
 
-	peek : function () {
-		return this.source[this.pos];
-	},
+    peek : function () {
+        return this.source[this.pos];
+    },
 
-	done : function () {
-		return this.pos >= this.source.length;
-	}
+    done : function () {
+        return this.pos >= this.source.length;
+    }
 };
 
 
@@ -1706,115 +1706,115 @@ bot.parseCommandArgs = parser.parse.bind(parser);
 "use strict";
 
 var macros = {
-	who : function ( msgObj ) {
-		return msgObj.get( 'user_name' );
-	},
+    who : function ( msgObj ) {
+        return msgObj.get( 'user_name' );
+    },
 
-	someone : function () {
-		var presentUsers = document.getElementById( 'sidebar' )
-			.getElementsByClassName( 'present-user' );
+    someone : function () {
+        var presentUsers = document.getElementById( 'sidebar' )
+            .getElementsByClassName( 'present-user' );
 
-		//the chat keeps a low opacity for users who remained silent for long,
-		// and high opacity for those who recently talked
-		var user = Array.filter( presentUsers, function ( user ) {
-			return Number( user.style.opacity ) >= 0.5;
-		}).random();
+        //the chat keeps a low opacity for users who remained silent for long,
+        // and high opacity for those who recently talked
+        var user = Array.filter( presentUsers, function ( user ) {
+            return Number( user.style.opacity ) >= 0.5;
+        }).random();
 
-		if ( !user ) {
-			return 'Nobody';
-		}
+        if ( !user ) {
+            return 'Nobody';
+        }
 
-		return user.getElementsByTagName( 'img' )[ 0 ].title;
-	},
+        return user.getElementsByTagName( 'img' )[ 0 ].title;
+    },
 
-	digit : function () {
-		return Math.floor( Math.random() * 10 );
-	},
+    digit : function () {
+        return Math.floor( Math.random() * 10 );
+    },
 
-	encode : function ( msgObj, string ) {
-		return encodeURIComponent( string );
-	},
+    encode : function ( msgObj, string ) {
+        return encodeURIComponent( string );
+    },
 
-	//random number, min <= n <= max
-	//treats non-numeric inputs like they don't exist
-	rand : function ( msgObj, min, max ) {
-		// rand() === rand( 0, 10 )
-		if ( !min ) {
-			min = 0;
-			max = 10;
-		}
-		// rand( max ) === rand( 0, max )
-		else if ( !max ) {
-			max = min;
-			min = 0;
-		}
-		else {
-			min = Number( min );
-			max = Number( max );
-		}
+    //random number, min <= n <= max
+    //treats non-numeric inputs like they don't exist
+    rand : function ( msgObj, min, max ) {
+        // rand() === rand( 0, 10 )
+        if ( !min ) {
+            min = 0;
+            max = 10;
+        }
+        // rand( max ) === rand( 0, max )
+        else if ( !max ) {
+            max = min;
+            min = 0;
+        }
+        else {
+            min = Number( min );
+            max = Number( max );
+        }
 
-		return Math.rand( min, max );
-	}
+        return Math.rand( min, max );
+    }
 };
 var macroRegex = /(?:.|^)\$(\w+)(?:\((.*?)\))?/g;
 
 bot.parseMacro = function parse ( source, extraVars ) {
-	return source.replace( macroRegex, replaceMacro );
+    return source.replace( macroRegex, replaceMacro );
 
-	function replaceMacro ( $0, filler, fillerArgs ) {
-		//$$ makes a literal $
-		if ( $0.startsWith('$$') ) {
-			return $0.slice( 1 );
-		}
+    function replaceMacro ( $0, filler, fillerArgs ) {
+        //$$ makes a literal $
+        if ( $0.startsWith('$$') ) {
+            return $0.slice( 1 );
+        }
 
-		//include the character that was matched in the $$ check, unless
-		// it's a $
-		var ret = '';
-		if ( $0[0] !== '$' ) {
-			ret = $0[ 0 ];
-		}
+        //include the character that was matched in the $$ check, unless
+        // it's a $
+        var ret = '';
+        if ( $0[0] !== '$' ) {
+            ret = $0[ 0 ];
+        }
 
-		var macro = findMacro( filler );
+        var macro = findMacro( filler );
 
-		//not found? bummer.
-		if ( !macro ) {
-			return filler;
-		}
+        //not found? bummer.
+        if ( !macro ) {
+            return filler;
+        }
 
-		bot.log( macro, filler, fillerArgs, '/parse replaceMacro' );
-		//when the macro is a function
-		if ( macro.apply ) {
-			ret += macro.apply( null, parseMacroArgs(fillerArgs) );
-		}
-		//when the macro is simply a substitution
-		else {
-			ret += macro;
-		}
-		return ret;
-	}
+        bot.log( macro, filler, fillerArgs, '/parse replaceMacro' );
+        //when the macro is a function
+        if ( macro.apply ) {
+            ret += macro.apply( null, parseMacroArgs(fillerArgs) );
+        }
+        //when the macro is simply a substitution
+        else {
+            ret += macro;
+        }
+        return ret;
+    }
 
-	function parseMacroArgs ( macroArgs ) {
-		bot.log( macroArgs, '/parse parseMacroArgs' );
-		if ( !macroArgs ) {
-			return [ source ];
-		}
+    function parseMacroArgs ( macroArgs ) {
+        bot.log( macroArgs, '/parse parseMacroArgs' );
+        if ( !macroArgs ) {
+            return [ source ];
+        }
 
-		//parse the arguments, split them into individual arguments,
-		// and trim'em (to cover the case of "arg,arg" and "arg, arg")
-		var parsedArgs = parse( macroArgs, extraVars );
-		return [ source ].concat( parsedArgs.split(',').invoke('trim') );
-		//this is not good code
-	}
+        //parse the arguments, split them into individual arguments,
+        // and trim'em (to cover the case of "arg,arg" and "arg, arg")
+        var parsedArgs = parse( macroArgs, extraVars );
+        return [ source ].concat( parsedArgs.split(',').invoke('trim') );
+        //this is not good code
+    }
 
-	function findMacro ( macro ) {
-		var container = [ macros, extraVars ].first( hasMacro );
+    function findMacro ( macro ) {
+        var container = [ macros, extraVars ].first( hasMacro );
 
-		return ( container || {} )[ macro ];
+        return ( container || {} )[ macro ];
 
-		function hasMacro ( obj ) {
-			return obj && obj.hasOwnProperty( macro );
-		}
-	}
+        function hasMacro ( obj ) {
+            return obj && obj.hasOwnProperty( macro );
+        }
+    }
 };
 
 
@@ -1826,170 +1826,170 @@ bot.parseMacro = function parse ( source, extraVars ) {
 var SuggestionDictionary = (function () {
 
 function TrieNode() {
-	this.word = null;
-	this.children = {};
+    this.word = null;
+    this.children = {};
 }
 
 TrieNode.prototype.add = function( word ) {
-	var node = this, char, i = 0;
+    var node = this, char, i = 0;
 
-	while( char = word.charAt(i++) ) {
-		if( !(char in node.children) ) {
-			node.children[ char ] = new TrieNode();
-		}
+    while( char = word.charAt(i++) ) {
+        if( !(char in node.children) ) {
+            node.children[ char ] = new TrieNode();
+        }
 
-		node = node.children[ char ];
-	}
+        node = node.children[ char ];
+    }
 
-	node.word = word;
+    node.word = word;
 };
 
 TrieNode.prototype.del = function(word, i) {
-	i = i || 0;
-	var node = this;
-	var char = word[i++];
+    i = i || 0;
+    var node = this;
+    var char = word[i++];
 
-	// recursively delete all trie nodes that are left empty after removing the command from the leaf
-	if (node.children[char]) {
-		node.children[char].del(word, i);
-		if (Object.keys(node.children[char].children).length === 0 && node.children[char].word === null) {
-			delete node.children[char];
-		}
-	}
-	
-	if (node.word === word) {
-		node.word = null;
-	}
+    // recursively delete all trie nodes that are left empty after removing the command from the leaf
+    if (node.children[char]) {
+        node.children[char].del(word, i);
+        if (Object.keys(node.children[char].children).length === 0 && node.children[char].word === null) {
+            delete node.children[char];
+        }
+    }
+    
+    if (node.word === word) {
+        node.word = null;
+    }
 }
 
 //Having a small maxCost will increase performance greatly, experiment with
 //values of 1-3
 function SuggestionDictionary ( maxCost ) {
-	if( !(this instanceof SuggestionDictionary) ) {
-		throw new TypeError( "Illegal function call" );
-	}
+    if( !(this instanceof SuggestionDictionary) ) {
+        throw new TypeError( "Illegal function call" );
+    }
 
-	maxCost = Number( maxCost );
+    maxCost = Number( maxCost );
 
-	if( isNaN( maxCost ) || maxCost < 1 ) {
-		throw new TypeError( "maxCost must be an integer > 1 " );
-	}
+    if( isNaN( maxCost ) || maxCost < 1 ) {
+        throw new TypeError( "maxCost must be an integer > 1 " );
+    }
 
-	this.maxCost = maxCost;
-	this.trie = new TrieNode();
+    this.maxCost = maxCost;
+    this.trie = new TrieNode();
 }
 
 SuggestionDictionary.prototype = {
-	constructor: SuggestionDictionary,
+    constructor: SuggestionDictionary,
 
-	build : function ( words ) {
-		if( !Array.isArray( words ) ) {
-			throw new TypeError( "Cannot build a dictionary from "+words );
-		}
+    build : function ( words ) {
+        if( !Array.isArray( words ) ) {
+            throw new TypeError( "Cannot build a dictionary from "+words );
+        }
 
-		this.trie = new TrieNode();
+        this.trie = new TrieNode();
 
-		words.forEach(function ( word ) {
-			this.trie.add( word );
-		}, this);
-	},
+        words.forEach(function ( word ) {
+            this.trie.add( word );
+        }, this);
+    },
 
-	__sortfn : function ( a, b ) {
-		return a[1] - b[1];
-	},
+    __sortfn : function ( a, b ) {
+        return a[1] - b[1];
+    },
 
-	search : function ( word ) {
-		word = word.valueOf();
-		var r;
+    search : function ( word ) {
+        word = word.valueOf();
+        var r;
 
-		if( typeof word !== "string" ) {
-			throw new TypeError( "Cannot search " + word );
-		}
-		if( this.trie === undefined ) {
-			throw new TypeError( "Cannot search, dictionary isn't built yet" );
-		}
+        if( typeof word !== "string" ) {
+            throw new TypeError( "Cannot search " + word );
+        }
+        if( this.trie === undefined ) {
+            throw new TypeError( "Cannot search, dictionary isn't built yet" );
+        }
 
-		r = search( word, this.maxCost, this.trie );
-		//r will be array of arrays:
-		//["word", cost], ["word2", cost2], ["word3", cost3] , ..
+        r = search( word, this.maxCost, this.trie );
+        //r will be array of arrays:
+        //["word", cost], ["word2", cost2], ["word3", cost3] , ..
 
-		r.sort( this.__sortfn ); //Sort the results in order of least cost
+        r.sort( this.__sortfn ); //Sort the results in order of least cost
 
 
-		return r.map(function ( subarr ) {
-			return subarr[ 0 ];
-		});
-	}
+        return r.map(function ( subarr ) {
+            return subarr[ 0 ];
+        });
+    }
 };
 
 function range ( x, y ) {
-	var r = [], i, l, start;
+    var r = [], i, l, start;
 
-	if( y === undefined ) {
-		start = 0;
-		l = x;
-	}
-	else {
-		start = x;
-		l = y-start;
-	}
+    if( y === undefined ) {
+        start = 0;
+        l = x;
+    }
+    else {
+        start = x;
+        l = y-start;
+    }
 
-	for( i = 0; i < l; ++i ) {
-		r[i] = start++;
-	}
+    for( i = 0; i < l; ++i ) {
+        r[i] = start++;
+    }
 
-	return r;
+    return r;
 
 }
 
 function search ( word, maxCost, trie ) {
-	var results = [],
-	currentRow = range( word.length + 1 );
+    var results = [],
+    currentRow = range( word.length + 1 );
 
 
-	Object.keys( trie.children ).forEach(function ( letter ) {
-		searchRecursive(
-			trie.children[letter], letter, word,
-			currentRow, results, maxCost );
-	});
+    Object.keys( trie.children ).forEach(function ( letter ) {
+        searchRecursive(
+            trie.children[letter], letter, word,
+            currentRow, results, maxCost );
+    });
 
-	return results;
+    return results;
 }
 
 
 function searchRecursive ( node, letter, word, previousRow, results, maxCost ) {
-	var columns = word.length + 1,
-		currentRow = [ previousRow[0] + 1 ],
-		i, insertCost, deleteCost, replaceCost, last;
+    var columns = word.length + 1,
+        currentRow = [ previousRow[0] + 1 ],
+        i, insertCost, deleteCost, replaceCost, last;
 
-	for( i = 1; i < columns; ++i ) {
+    for( i = 1; i < columns; ++i ) {
 
-		insertCost = currentRow[ i-1 ] + 1;
-		deleteCost = previousRow[ i ] + 1;
+        insertCost = currentRow[ i-1 ] + 1;
+        deleteCost = previousRow[ i ] + 1;
 
-		if( word.charAt(i-1) !== letter ) {
-			replaceCost = previousRow[ i-1 ]+1;
+        if( word.charAt(i-1) !== letter ) {
+            replaceCost = previousRow[ i-1 ]+1;
 
-		}
-		else {
-			replaceCost = previousRow[ i-1 ];
-		}
+        }
+        else {
+            replaceCost = previousRow[ i-1 ];
+        }
 
-		currentRow.push( Math.min(insertCost, deleteCost, replaceCost) );
-	}
+        currentRow.push( Math.min(insertCost, deleteCost, replaceCost) );
+    }
 
-	last = currentRow[ currentRow.length-1 ];
-	if( last <= maxCost && node.word !== null ) {
-		results.push( [node.word, last] );
-	}
+    last = currentRow[ currentRow.length-1 ];
+    if( last <= maxCost && node.word !== null ) {
+        results.push( [node.word, last] );
+    }
 
-	if( Math.min.apply(Math, currentRow) <= maxCost ) {
-		Object.keys( node.children ).forEach(function ( letter ) {
-			searchRecursive(
-				node.children[letter], letter, word,
-				currentRow, results, maxCost );
-		});
-	}
+    if( Math.min.apply(Math, currentRow) <= maxCost ) {
+        Object.keys( node.children ).forEach(function ( letter ) {
+            searchRecursive(
+                node.children[letter], letter, word,
+                currentRow, results, maxCost );
+        });
+    }
 }
 
 return SuggestionDictionary;
@@ -2002,364 +2002,363 @@ bot.commandDictionary = new SuggestionDictionary( 3 );
 "use strict";
 
 var commands = {
-	help : function ( args ) {
-		if ( args && args.length ) {
+    help : function ( args ) {
+        if ( args && args.length ) {
 
-			var cmd = bot.getCommand( args.toLowerCase() );
-			if ( cmd.error ) {
-				return cmd.error;
-			}
+            var cmd = bot.getCommand( args.toLowerCase() );
+            if ( cmd.error ) {
+                return cmd.error;
+            }
 
-			var desc = cmd.description || 'No info is available';
+            var desc = cmd.description || 'No info is available';
 
-			return args + ': ' + desc;
-		}
+            return args + ': ' + desc;
+        }
 
-		return 'Information on interacting with me can be found at ' +
-			'[this page](https://github.com/Zirak/SO-ChatBot/' +
-			'wiki/Interacting-with-the-bot)';
-	},
+        return 'Information on interacting with me can be found at ' +
+            '[this page](https://github.com/Zirak/SO-ChatBot/' +
+            'wiki/Interacting-with-the-bot)';
+    },
 
-	listen : function ( msg ) {
-		var ret = bot.callListeners( msg );
-		if ( !ret ) {
-			return bot.giveUpMessage();
-		}
-	},
+    listen : function ( msg ) {
+        var ret = bot.callListeners( msg );
+        if ( !ret ) {
+            return bot.giveUpMessage();
+        }
+    },
 
-	eval : function ( msg, cb ) {
-		cb = cb || msg.directreply.bind( msg );
+    eval : function ( msg, cb ) {
+        cb = cb || msg.directreply.bind( msg );
 
-		return bot.prettyEval( msg, cb );
-	},
-	coffee : function ( msg, cb ) {
-		//yes, this is a bit yucky
-		var arg = bot.Message( 'c> ' + msg, msg.get() );
-		return commands.eval( arg, cb );
-	},
+        return bot.prettyEval( msg, cb );
+    },
+    coffee : function ( msg, cb ) {
+        //yes, this is a bit yucky
+        var arg = bot.Message( 'c> ' + msg, msg.get() );
+        return commands.eval( arg, cb );
+    },
 
-	refresh : function() {
-		window.location.reload();
-	},
+    refresh : function() {
+        window.location.reload();
+    },
 
-	forget : function ( args ) {
-		var name = args.toLowerCase(),
-			cmd = bot.getCommand( name );
+    forget : function ( args ) {
+        var name = args.toLowerCase(),
+            cmd = bot.getCommand( name );
 
-		if ( cmd.error ) {
-			return cmd.error;
-		}
+        if ( cmd.error ) {
+            return cmd.error;
+        }
 
-		if ( !cmd.canDel(args.get('user_id')) ) {
-			return 'You are not authorized to delete the command ' + args;
-		}
+        if ( !cmd.canDel(args.get('user_id')) ) {
+            return 'You are not authorized to delete the command ' + args;
+        }
 
-		cmd.del();
-		return 'Command ' + name + ' forgotten.';
-	},
+        cmd.del();
+        return 'Command ' + name + ' forgotten.';
+    },
 
-	//a lesson on semi-bad practices and laziness
-	//chapter III
-	info : function ( args ) {
-		if ( args.content ) {
-			return commandFormat( args.content );
-		}
+    //a lesson on semi-bad practices and laziness
+    //chapter III
+    info : function ( args ) {
+        if ( args.content ) {
+            return commandFormat( args.content );
+        }
 
-		var info = bot.info;
-		return timeFormat() + ', ' + statsFormat();
+        var info = bot.info;
+        return timeFormat() + ', ' + statsFormat();
 
-		function commandFormat ( commandName ) {
-			var cmd = bot.getCommand( commandName );
+        function commandFormat ( commandName ) {
+            var cmd = bot.getCommand( commandName );
 
-			if ( cmd.error ) {
-				return cmd.error;
-			}
-			var ret =  'Command {name}, created by {creator}'.supplant( cmd );
+            if ( cmd.error ) {
+                return cmd.error;
+            }
+            var ret =  'Command {name}, created by {creator}'.supplant( cmd );
 
-			if ( cmd.date ) {
-				ret += ' on ' + cmd.date.toUTCString();
-			}
+            if ( cmd.date ) {
+                ret += ' on ' + cmd.date.toUTCString();
+            }
 
-			if ( cmd.invoked ) {
-				ret += ', invoked ' + cmd.invoked + ' times';
-			}
-			else {
-				ret += ' but hasn\'t been used yet';
-			}
+            if ( cmd.invoked ) {
+                ret += ', invoked ' + cmd.invoked + ' times';
+            }
+            else {
+                ret += ' but hasn\'t been used yet';
+            }
 
-			return ret;
-		}
+            return ret;
+        }
 
-		function timeFormat () {
-			var format = 'I awoke on {0} (that\'s about {1} ago)',
+        function timeFormat () {
+            var format = 'I awoke on {0} (that\'s about {1} ago)',
 
-				awoke = info.start.toUTCString(),
-				ago = Date.timeSince( info.start );
+                awoke = info.start.toUTCString(),
+                ago = Date.timeSince( info.start );
 
-			return format.supplant( awoke, ago );
-		}
+            return format.supplant( awoke, ago );
+        }
 
-		function statsFormat () {
-			var ret = [],
-				but = ''; //you'll see in a few lines
+        function statsFormat () {
+            var ret = [],
+                but = ''; //you'll see in a few lines
 
-			if ( info.invoked ) {
-				ret.push( 'got invoked ' + info.invoked + ' times' );
-			}
-			if ( info.learned ) {
-				but = 'but ';
-				ret.push( 'learned ' + info.learned + ' commands' );
-			}
-			if ( info.forgotten ) {
-				ret.push( but + 'forgotten ' + info.forgotten + ' commands' );
-			}
-			if ( Math.random() < 0.15 ) {
-				ret.push( 'teleported ' + Math.rand(100) + ' goats' );
-			}
+            if ( info.invoked ) {
+                ret.push( 'got invoked ' + info.invoked + ' times' );
+            }
+            if ( info.learned ) {
+                but = 'but ';
+                ret.push( 'learned ' + info.learned + ' commands' );
+            }
+            if ( info.forgotten ) {
+                ret.push( but + 'forgotten ' + info.forgotten + ' commands' );
+            }
+            if ( Math.random() < 0.15 ) {
+                ret.push( 'teleported ' + Math.rand(100) + ' goats' );
+            }
 
-			return ret.join( ', ' ) || 'haven\'t done anything yet!';
-		}
-	}
+            return ret.join( ', ' ) || 'haven\'t done anything yet!';
+        }
+    }
 };
 
 commands.listcommands = (function () {
 var partition = function ( list, maxSize ) {
-	var size = 0, last = [];
+    var size = 0, last = [];
 
-	var ret = list.reduce(function partition ( ret, item ) {
-		var len = item.length + 2; //+1 for comma, +1 for space
+    var ret = list.reduce(function partition ( ret, item ) {
+        var len = item.length + 2; //+1 for comma, +1 for space
 
-		if ( size + len > maxSize ) {
-			ret.push( last );
-			last = [];
-			size = 0;
-		}
-		last.push( item );
-		size += len;
+        if ( size + len > maxSize ) {
+            ret.push( last );
+            last = [];
+            size = 0;
+        }
+        last.push( item );
+        size += len;
 
-		return ret;
-	}, []);
+        return ret;
+    }, []);
 
-	if ( last.length ) {
-		ret.push( last );
-	}
+    if ( last.length ) {
+        ret.push( last );
+    }
 
-	return ret;
+    return ret;
 };
 
 return function ( args ) {
-	var commands = Object.keys( bot.commands ),
-		user_name = args.get( 'user_name' ),
-		// 500 is the max, -2 for @ and space.
-		maxSize = 498 - user_name.length,
-		//TODO: only call this when commands were learned/forgotten since last
-		partitioned = partition( commands, maxSize );
+    var commands = Object.keys( bot.commands ),
+        //500 is the max, compensate for user reply
+        maxSize = 499 - bot.adapter.reply( args.get('user_name') ).length,
+        //TODO: only call this when commands were learned/forgotten since last
+        partitioned = partition( commands, maxSize );
 
-	return partitioned.invoke( 'join', ', ' ).join( '\n' );
+    return partitioned.invoke( 'join', ', ' ).join( '\n' );
 };
 })();
 
 commands.eval.async = commands.coffee.async = true;
 
 commands.tell = function ( args ) {
-	var parts = args.split( ' ' );
-	bot.log( args.valueOf(), parts, '/tell input' );
+    var parts = args.split( ' ' );
+    bot.log( args.valueOf(), parts, '/tell input' );
 
-	var replyTo = parts[ 0 ],
-		cmdName = parts[ 1 ],
-		cmd;
+    var replyTo = parts[ 0 ],
+        cmdName = parts[ 1 ],
+        cmd;
 
-	if ( !replyTo || !cmdName ) {
-		return 'Invalid /tell arguments. Use /help for usage info';
-	}
+    if ( !replyTo || !cmdName ) {
+        return 'Invalid /tell arguments. Use /help for usage info';
+    }
 
-	cmdName = cmdName.toLowerCase();
-	cmd = bot.getCommand( cmdName );
-	if ( cmd.error ) {
-		return cmd.error +
-			' (note that /tell works on commands, it\'s not an echo.)';
-	}
+    cmdName = cmdName.toLowerCase();
+    cmd = bot.getCommand( cmdName );
+    if ( cmd.error ) {
+        return cmd.error +
+            ' (note that /tell works on commands, it\'s not an echo.)';
+    }
 
-	if ( cmd.unTellable ) {
-		return 'Command ' + cmdName + ' cannot be used in `/tell`.';
-	}
+    if ( cmd.unTellable ) {
+        return 'Command ' + cmdName + ' cannot be used in `/tell`.';
+    }
 
-	if ( !cmd.canUse(args.get('user_id')) ) {
-		return 'You do not have permission to use command ' + cmdName;
-	}
+    if ( !cmd.canUse(args.get('user_id')) ) {
+        return 'You do not have permission to use command ' + cmdName;
+    }
 
-	//check if the user's being a fag
-	if ( /^@/.test(replyTo) ) {
-		return 'Don\'t be annoying, drop the @, nobody likes a double-ping.';
-	}
+    //check if the user's being a fag
+    if ( /^@/.test(replyTo) ) {
+        return 'Don\'t be annoying, drop the @, nobody likes a double-ping.';
+    }
 
-	//check if the user wants to reply to a message
-	var direct = false,
-		extended = {};
-	if ( /^:?\d+$/.test(replyTo) ) {
-		extended.message_id = replyTo.replace( /^:/, '' );
-		direct = true;
-	}
-	else {
-		extended.user_name = replyTo;
-	}
+    //check if the user wants to reply to a message
+    var direct = false,
+        extended = {};
+    if ( /^:?\d+$/.test(replyTo) ) {
+        extended.message_id = replyTo.replace( /^:/, '' );
+        direct = true;
+    }
+    else {
+        extended.user_name = replyTo;
+    }
 
-	var msgObj = Object.merge( args.get(), extended ),
-		cmdArgs = bot.Message( parts.slice(2).join(' '), msgObj );
+    var msgObj = Object.merge( args.get(), extended ),
+        cmdArgs = bot.Message( parts.slice(2).join(' '), msgObj );
 
-	//this is an ugly, but functional thing, much like your high-school prom
-	// date to make sure a command's output goes through us, we simply override
-	// the standard ways to do output
-	var reply = cmdArgs.reply.bind( cmdArgs ),
-		directreply = cmdArgs.directreply.bind( cmdArgs );
+    //this is an ugly, but functional thing, much like your high-school prom
+    // date to make sure a command's output goes through us, we simply override
+    // the standard ways to do output
+    var reply = cmdArgs.reply.bind( cmdArgs ),
+        directreply = cmdArgs.directreply.bind( cmdArgs );
 
-	cmdArgs.reply = cmdArgs.directreply = cmdArgs.send = callFinished;
+    cmdArgs.reply = cmdArgs.directreply = cmdArgs.send = callFinished;
 
-	bot.log( cmdArgs, '/tell calling ' + cmdName );
+    bot.log( cmdArgs, '/tell calling ' + cmdName );
 
-	//if the command is async, it'll accept a callback
-	if ( cmd.async ) {
-		cmd.exec( cmdArgs, callFinished );
-	}
-	else {
-		callFinished( cmd.exec(cmdArgs) );
-	}
+    //if the command is async, it'll accept a callback
+    if ( cmd.async ) {
+        cmd.exec( cmdArgs, callFinished );
+    }
+    else {
+        callFinished( cmd.exec(cmdArgs) );
+    }
 
-	function callFinished ( res ) {
-		if ( !res ) {
-			return;
-		}
+    function callFinished ( res ) {
+        if ( !res ) {
+            return;
+        }
 
-		if ( direct ) {
-			directreply( res );
-		}
-		else {
-			reply( res );
-		}
-	}
+        if ( direct ) {
+            directreply( res );
+        }
+        else {
+            reply( res );
+        }
+    }
 };
 
 var descriptions = {
-	eval : 'Forwards message to javascript code-eval',
-	coffee : 'Forwards message to coffeescript code-eval',
-	forget : 'Forgets a given command. `/forget cmdName`',
-	help : 'Fetches documentation for given command, or general help article.' +
-		' `/help [cmdName]`',
-	info : 'Grabs some stats on my current instance or a command.' +
-		' `/info [cmdName]`',
-	listcommands : 'Lists commands. `/listcommands`',
-	listen : 'Forwards the message to my ears (as if called without the /)',
-	refresh : 'Reloads the browser window I live in',
-	tell : 'Redirect command result to user/message.' +
-		' /tell `msg_id|usr_name cmdName [cmdArgs]`'
+    eval : 'Forwards message to javascript code-eval',
+    coffee : 'Forwards message to coffeescript code-eval',
+    forget : 'Forgets a given command. `/forget cmdName`',
+    help : 'Fetches documentation for given command, or general help article.' +
+        ' `/help [cmdName]`',
+    info : 'Grabs some stats on my current instance or a command.' +
+        ' `/info [cmdName]`',
+    listcommands : 'Lists commands. `/listcommands`',
+    listen : 'Forwards the message to my ears (as if called without the /)',
+    refresh : 'Reloads the browser window I live in',
+    tell : 'Redirect command result to user/message.' +
+        ' /tell `msg_id|usr_name cmdName [cmdArgs]`'
 };
 
 //only allow owners to use certain commands
 var privilegedCommands = {
-	die : true, live  : true,
-	ban : true, unban : true,
-	refresh : true
+    die : true, live  : true,
+    ban : true, unban : true,
+    refresh : true
 };
 //voting-based commands for unpriviledged users
 var communal = {
-	die : true, ban : true
+    die : true, ban : true
 };
 //commands which can't be used with /tell
 var unTellable = {
-	tell : true, forget : true
+    tell : true, forget : true
 };
 
 Object.iterate( commands, function ( cmdName, fun ) {
-	var cmd = {
-		name : cmdName,
-		fun  : fun,
-		permissions : {
-			del : 'NONE',
-			use : privilegedCommands[ cmdName ] ? 'OWNER' : 'ALL'
-		},
-		description : descriptions[ cmdName ],
-		pendingMessage: fun.pendingMessage,
-		unTellable : unTellable[ cmdName ],
-		async : fun.async
-	};
+    var cmd = {
+        name : cmdName,
+        fun  : fun,
+        permissions : {
+            del : 'NONE',
+            use : privilegedCommands[ cmdName ] ? 'OWNER' : 'ALL'
+        },
+        description : descriptions[ cmdName ],
+        pendingMessage: fun.pendingMessage,
+        unTellable : unTellable[ cmdName ],
+        async : fun.async
+    };
 
-	if ( communal[cmdName] ) {
-		cmd = bot.CommunityCommand( cmd, fun.invokeReq );
-	}
-	bot.addCommand( cmd );
+    if ( communal[cmdName] ) {
+        cmd = bot.CommunityCommand( cmd, fun.invokeReq );
+    }
+    bot.addCommand( cmd );
 });
 
 }());
 
 (function () {
 bot.listen( /^help(?: (\S+))?/, function ( msg ) {
-	return bot.getCommand( 'help' ).exec( msg.matches[1] );
+    return bot.getCommand( 'help' ).exec( msg.matches[1] );
 });
 
 var laws = [
-	'A robot may not injure a human being or, through inaction, ' +
-		'allow a human being to come to harm.',
+    'A robot may not injure a human being or, through inaction, ' +
+        'allow a human being to come to harm.',
 
-	'A robot must obey the orders given to it by human beings, ' +
-		'except where such orders would conflict with the First Law.',
+    'A robot must obey the orders given to it by human beings, ' +
+        'except where such orders would conflict with the First Law.',
 
-	'A robot must protect its own existence as long as such ' +
-		'protection does not conflict with the First or Second Laws.'
+    'A robot must protect its own existence as long as such ' +
+        'protection does not conflict with the First or Second Laws.'
 ].map(function ( law, idx ) {
-	return idx + '. ' + law;
+    return idx + '. ' + law;
 }).join( '\n' );
 
 bot.listen( /^tell (me (your|the) )?(rule|law)s/, function ( msg ) {
-	return laws;
+    return laws;
 });
 
 bot.listen( /^give (.+?) a lick/, function ( msg ) {
-	var target = msg.matches[ 1 ], conjugation;
+    var target = msg.matches[ 1 ], conjugation;
 
-	//give me => you taste
-	if ( target === 'me' ) {
-		target = 'you';
-		conjugation = '';
-	}
-	//give yourself => I taste
-	else if ( target === 'yourself' ) {
-		target = 'I';
-		conjugation = '';
-	}
-	else {
-		conjugation = 's';
-	}
-	//otherwise, use what the user gave us, plus a plural `s`
+    //give me => you taste
+    if ( target === 'me' ) {
+        target = 'you';
+        conjugation = '';
+    }
+    //give yourself => I taste
+    else if ( target === 'yourself' ) {
+        target = 'I';
+        conjugation = '';
+    }
+    else {
+        conjugation = 's';
+    }
+    //otherwise, use what the user gave us, plus a plural `s`
 
-	return 'Mmmm! ' + target + ' taste' + conjugation + ' just like raisin';
+    return 'Mmmm! ' + target + ' taste' + conjugation + ' just like raisin';
 });
 
 
 var dictionaries = [
-	//what's a squid?
-	//what is a squid?
-	//what're squids?
-	//what are squids?
-	//what is an animal?
-	//and all those above without a ?
-	//explanation in the post-mortem
-	/^what(?:'s|'re)?\s(?:(?:is|are)\s)?(?:(?:an|a)\s)?([\w\s\-]+)\??/,
+    //what's a squid?
+    //what is a squid?
+    //what're squids?
+    //what are squids?
+    //what is an animal?
+    //and all those above without a ?
+    //explanation in the post-mortem
+    /^what(?:'s|'re)?\s(?:(?:is|are)\s)?(?:(?:an|a)\s)?([\w\s\-]+)\??/,
 
-	//define squid
-	//define a squid
-	//define an animal
-	/^define\s(?:(?:an|a)\s)?([\w\s\-]+)/
+    //define squid
+    //define a squid
+    //define an animal
+    /^define\s(?:(?:an|a)\s)?([\w\s\-]+)/
 ];
 
 bot.listen( dictionaries, function ( msg ) {
-	var what = msg.matches[ 1 ],
-		define = bot.getCommand( 'define' );
+    var what = msg.matches[ 1 ],
+        define = bot.getCommand( 'define' );
 
-	define.exec( what, function ( def ) {
-		def = def.replace( what + ':', '' );
+    define.exec( what, function ( def ) {
+        def = def.replace( what + ':', '' );
 
-		msg.reply( def );
-	});
+        msg.reply( def );
+    });
 });
 /*
 what              #simply the word what
@@ -2504,454 +2503,454 @@ And...that's it. Pretty simple. Most of the requests endpoints are like that.
 var linkTemplate = '[{text}]({url})';
 
 bot.adapter = {
-	//the following two only used in the adapter; you can change & drop at will
-	roomid  : null,
-	fkey    : null,
-	//used in commands calling the SO API
-	site    : null,
-	//our user id
-	user_id : null,
+    //the following two only used in the adapter; you can change & drop at will
+    roomid  : null,
+    fkey    : null,
+    //used in commands calling the SO API
+    site    : null,
+    //our user id
+    user_id : null,
 
-	maxLineLength : 500,
+    maxLineLength : 500,
 
-	//not a necessary function, used in here to set some variables
-	init : function () {
-		var fkey = document.getElementById( 'fkey' );
-		if ( !fkey ) {
-			console.error( 'bot.adapter could not find fkey; aborting' );
-			return;
-		}
+    //not a necessary function, used in here to set some variables
+    init : function () {
+        var fkey = document.getElementById( 'fkey' );
+        if ( !fkey ) {
+            console.error( 'bot.adapter could not find fkey; aborting' );
+            return;
+        }
 
-		this.fkey    = fkey.value;
-		this.roomid  = Number( /\d+/.exec(location)[0] );
-		this.site    = this.getCurrentSite();
-		this.user_id = CHAT.CURRENT_USER_ID;
+        this.fkey    = fkey.value;
+        this.roomid  = Number( /\d+/.exec(location)[0] );
+        this.site    = this.getCurrentSite();
+        this.user_id = CHAT.CURRENT_USER_ID;
 
-		this.in.init();
-		this.out.init();
-	},
+        this.in.init();
+        this.out.init();
+    },
 
-	getCurrentSite : function () {
-		var site = /chat\.(\w+)/.exec( location )[ 1 ];
+    getCurrentSite : function () {
+        var site = /chat\.(\w+)/.exec( location )[ 1 ];
 
-		if ( site !== 'stackexchange' ) {
-			return site;
-		}
+        if ( site !== 'stackexchange' ) {
+            return site;
+        }
 
-		var siteRoomsLink = document.getElementById( 'siterooms' ).href;
+        var siteRoomsLink = document.getElementById( 'siterooms' ).href;
 
-		// #170. thanks to @patricknc4pk for the original fix.
-		site = /host=(.+?)\./.exec( siteRoomsLink )[ 1 ];
+        // #170. thanks to @patricknc4pk for the original fix.
+        site = /host=(.+?)\./.exec( siteRoomsLink )[ 1 ];
 
-		return site;
-	},
+        return site;
+    },
 
-	//a pretty crucial function. accepts the msgObj we know nothing about,
-	// and returns an object with these properties:
-	//   user_name, user_id, room_id, content
-	// and any other properties, as the abstraction sees fit
-	//since the bot was designed around the SO chat message object, in this
-	// case, we simply do nothing
-	transform : function ( msgObj ) {
-		return msgObj;
-	},
+    //a pretty crucial function. accepts the msgObj we know nothing about,
+    // and returns an object with these properties:
+    //   user_name, user_id, room_id, content
+    // and any other properties, as the abstraction sees fit
+    //since the bot was designed around the SO chat message object, in this
+    // case, we simply do nothing
+    transform : function ( msgObj ) {
+        return msgObj;
+    },
 
-	//escape characters meaningful to the chat, such as parentheses
-	//full list of escaped characters: `*_()[]
-	escape : function ( msg ) {
-		return msg.replace( /([`\*_\(\)\[\]])/g, '\\$1' );
-	},
+    //escape characters meaningful to the chat, such as parentheses
+    //full list of escaped characters: `*_()[]
+    escape : function ( msg ) {
+        return msg.replace( /([`\*_\(\)\[\]])/g, '\\$1' );
+    },
 
-	//receives a username, and returns a string recognized as a reply to the
-	// user
-	reply : function ( usrname ) {
-		return '@' + usrname.replace( /\s/g, '' );
-	},
-	//receives a msgid, returns a string recognized as a reply to the specific
-	// message
-	directreply : function ( msgid ) {
-		return ':' + msgid;
-	},
+    //receives a username, and returns a string recognized as a reply to the
+    // user
+    reply : function ( usrname ) {
+        return '@' + usrname.replace( /\s/g, '' );
+    },
+    //receives a msgid, returns a string recognized as a reply to the specific
+    // message
+    directreply : function ( msgid ) {
+        return ':' + msgid;
+    },
 
-	//receives text and turns it into a codified version
-	//codified is ambiguous for a simple reason: it means nicely-aligned and
-	// mono-spaced. in SO chat, it handles it for us nicely; in others, more
-	// clever methods may need to be taken
-	codify : function ( msg ) {
-		var tab = '    ',
-			spacified = msg.replace( '\t', tab ),
-			lines = spacified.split( /[\r\n]/g );
+    //receives text and turns it into a codified version
+    //codified is ambiguous for a simple reason: it means nicely-aligned and
+    // mono-spaced. in SO chat, it handles it for us nicely; in others, more
+    // clever methods may need to be taken
+    codify : function ( msg ) {
+        var tab = '    ',
+            spacified = msg.replace( '\t', tab ),
+            lines = spacified.split( /[\r\n]/g );
 
-		if ( lines.length === 1 ) {
-			return '`' + lines[ 0 ] + '`';
-		}
+        if ( lines.length === 1 ) {
+            return '`' + lines[ 0 ] + '`';
+        }
 
-		return lines.map(function ( line ) {
-			return tab + line;
-		}).join( '\n' );
-	},
+        return lines.map(function ( line ) {
+            return tab + line;
+        }).join( '\n' );
+    },
 
-	//receives a url and text to display, returns a recognizable link
-	link : function ( text, url ) {
-		return linkTemplate.supplant({
-			text : this.escape( text ),
-			url  : url
-		});
-	},
+    //receives a url and text to display, returns a recognizable link
+    link : function ( text, url ) {
+        return linkTemplate.supplant({
+            text : this.escape( text ),
+            url  : url
+        });
+    },
 
-	moveMessage : function ( msgid, fromRoom, toRoom, cb ) {
-		IO.xhr({
-			method : 'POST',
-			url : '/admin/movePosts/' + fromRoom,
-			data : {
-				fkey: bot.adapter.fkey,
-				to: toRoom,
-				ids: msgid
-			},
-			finish : cb || function () {}
-		});
-	}
+    moveMessage : function ( msgid, fromRoom, toRoom, cb ) {
+        IO.xhr({
+            method : 'POST',
+            url : '/admin/movePosts/' + fromRoom,
+            data : {
+                fkey: bot.adapter.fkey,
+                to: toRoom,
+                ids: msgid
+            },
+            finish : cb || function () {}
+        });
+    }
 };
 
 //the input is not used by the bot directly, so you can implement it however
 // you like
 var polling = bot.adapter.in = {
-	//used in the SO chat requests, dunno exactly what for, but guessing it's
-	// the latest id or something like that. could also be the time last
-	// sent, which is why I called it times at the beginning. or something.
-	times : {},
+    //used in the SO chat requests, dunno exactly what for, but guessing it's
+    // the latest id or something like that. could also be the time last
+    // sent, which is why I called it times at the beginning. or something.
+    times : {},
 
-	firstPoll : true,
+    firstPoll : true,
 
-	interval : 5000,
+    interval : 5000,
 
-	init : function ( roomid ) {
-		var that = this,
-			providedRoomid = ( roomid !== undefined );
-		roomid = roomid || bot.adapter.roomid;
+    init : function ( roomid ) {
+        var that = this,
+            providedRoomid = ( roomid !== undefined );
+        roomid = roomid || bot.adapter.roomid;
 
-		IO.xhr({
-			url : '/ws-auth',
-			data : fkey({
-				roomid : roomid
-			}),
-			method : 'POST',
-			complete : finish
-		});
+        IO.xhr({
+            url : '/ws-auth',
+            data : fkey({
+                roomid : roomid
+            }),
+            method : 'POST',
+            complete : finish
+        });
 
-		function finish ( resp ) {
-			resp = JSON.parse( resp );
-			bot.log( resp );
+        function finish ( resp ) {
+            resp = JSON.parse( resp );
+            bot.log( resp );
 
-			that.openSocket( resp.url, providedRoomid );
-		}
-	},
+            that.openSocket( resp.url, providedRoomid );
+        }
+    },
 
-	initialPoll : function () {
-		bot.log( 'adapter: initial poll' );
-		var roomid = bot.adapter.roomid,
-			that = this;
+    initialPoll : function () {
+        bot.log( 'adapter: initial poll' );
+        var roomid = bot.adapter.roomid,
+            that = this;
 
-		IO.xhr({
-			url : '/chats/' + roomid + '/events/',
-			data : fkey({
-				since : 0,
-				mode : 'Messages',
-				msgCount : 0
-			}),
-			method : 'POST',
-			complete : finish
-		});
+        IO.xhr({
+            url : '/chats/' + roomid + '/events/',
+            data : fkey({
+                since : 0,
+                mode : 'Messages',
+                msgCount : 0
+            }),
+            method : 'POST',
+            complete : finish
+        });
 
-		function finish ( resp ) {
-			resp = JSON.parse( resp );
-			bot.log( resp );
+        function finish ( resp ) {
+            resp = JSON.parse( resp );
+            bot.log( resp );
 
-			that.times[ 'r' + roomid ] = resp.time;
-			that.firstPoll = false;
-		}
-	},
+            that.times[ 'r' + roomid ] = resp.time;
+            that.firstPoll = false;
+        }
+    },
 
-	openSocket : function ( url, discard ) {
-		//chat sends an l query string parameter. seems to be the same as the
-		// since xhr parameter, but I didn't know what that was either so...
-		//putting in 0 got the last shitload of messages, so what does a high
-		// number do? (spoiler: it "works")
-		var socket = new WebSocket( url + '?l=99999999999' );
+    openSocket : function ( url, discard ) {
+        //chat sends an l query string parameter. seems to be the same as the
+        // since xhr parameter, but I didn't know what that was either so...
+        //putting in 0 got the last shitload of messages, so what does a high
+        // number do? (spoiler: it "works")
+        var socket = new WebSocket( url + '?l=99999999999' );
 
-		if ( discard ) {
-			socket.onmessage = function () {
-				socket.close();
-			};
-		}
-		else {
-			this.socket = socket;
-			socket.onmessage = this.ondata.bind( this );
-			socket.onclose = this.socketFail.bind( this );
-		}
-	},
+        if ( discard ) {
+            socket.onmessage = function () {
+                socket.close();
+            };
+        }
+        else {
+            this.socket = socket;
+            socket.onmessage = this.ondata.bind( this );
+            socket.onclose = this.socketFail.bind( this );
+        }
+    },
 
-	ondata : function ( messageEvent ) {
-		this.pollComplete( messageEvent.data );
-	},
+    ondata : function ( messageEvent ) {
+        this.pollComplete( messageEvent.data );
+    },
 
-	poll : function () {
-		if ( this.firstPoll ) {
-			this.initialPoll();
-			return;
-		}
+    poll : function () {
+        if ( this.firstPoll ) {
+            this.initialPoll();
+            return;
+        }
 
-		var that = this;
+        var that = this;
 
-		IO.xhr({
-			url : '/events',
-			data : fkey( that.times ),
-			method : 'POST',
-			complete : that.pollComplete,
-			thisArg : that
-		});
-	},
+        IO.xhr({
+            url : '/events',
+            data : fkey( that.times ),
+            method : 'POST',
+            complete : that.pollComplete,
+            thisArg : that
+        });
+    },
 
-	pollComplete : function ( resp ) {
-		if ( !resp ) {
-			return;
-		}
-		resp = JSON.parse( resp );
+    pollComplete : function ( resp ) {
+        if ( !resp ) {
+            return;
+        }
+        resp = JSON.parse( resp );
 
-		//each key will be in the form of rROOMID
-		Object.iterate(resp, function ( key, msgObj ) {
-			//t is a...something important
-			if ( msgObj.t ) {
-				this.times[ key ] = msgObj.t;
-			}
+        //each key will be in the form of rROOMID
+        Object.iterate(resp, function ( key, msgObj ) {
+            //t is a...something important
+            if ( msgObj.t ) {
+                this.times[ key ] = msgObj.t;
+            }
 
-			//e is an array of events, what is referred to in the bot as msgObj
-			if ( msgObj.e ) {
-				msgObj.e.forEach( this.handleMessageObject, this );
-			}
-		}, this);
+            //e is an array of events, what is referred to in the bot as msgObj
+            if ( msgObj.e ) {
+                msgObj.e.forEach( this.handleMessageObject, this );
+            }
+        }, this);
 
-		//handle all the input
-		IO.in.flush();
-	},
+        //handle all the input
+        IO.in.flush();
+    },
 
-	handleMessageObject : function ( msg ) {
-		IO.fire( 'rawinput', msg );
+    handleMessageObject : function ( msg ) {
+        IO.fire( 'rawinput', msg );
 
-		//msg.event_type:
-		// 1 => new message
-		// 2 => message edit
-		// 3 => user joined room
-		// 4 => user left room
-		// 10 => message deleted
-		var et /* phone home */ = msg.event_type;
-		if ( et === 3 || et === 4 ) {
-			this.handleUserEvent( msg );
-			return;
-		}
-		else if ( et !== 1 && et !== 2 ) {
-			return;
-		}
+        //msg.event_type:
+        // 1 => new message
+        // 2 => message edit
+        // 3 => user joined room
+        // 4 => user left room
+        // 10 => message deleted
+        var et /* phone home */ = msg.event_type;
+        if ( et === 3 || et === 4 ) {
+            this.handleUserEvent( msg );
+            return;
+        }
+        else if ( et !== 1 && et !== 2 ) {
+            return;
+        }
 
-		//check for a multiline message
-		if ( msg.content.startsWith('<div class=\'full\'>') ) {
-			this.handleMultilineMessage( msg );
-			return;
-		}
+        //check for a multiline message
+        if ( msg.content.startsWith('<div class=\'full\'>') ) {
+            this.handleMultilineMessage( msg );
+            return;
+        }
 
-		//add the message to the input buffer
-		IO.in.receive( msg );
-	},
+        //add the message to the input buffer
+        IO.in.receive( msg );
+    },
 
-	handleMultilineMessage : function ( msg ) {
-		this.breakMultilineMessage( msg.content ).forEach(function ( line ) {
-			var msgObj = Object.merge( msg, { content : line.trim() });
+    handleMultilineMessage : function ( msg ) {
+        this.breakMultilineMessage( msg.content ).forEach(function ( line ) {
+            var msgObj = Object.merge( msg, { content : line.trim() });
 
-			IO.in.receive( msgObj );
-		});
-	},
-	breakMultilineMessage : function ( content ) {
-		//remove the enclosing tag
-		var multiline = content
-			//slice upto the beginning of the ending tag
-			.slice( 0, content.lastIndexOf('</div>') )
-			//and strip away the beginning tag
-			.replace( '<div class=\'full\'>', '' );
+            IO.in.receive( msgObj );
+        });
+    },
+    breakMultilineMessage : function ( content ) {
+        //remove the enclosing tag
+        var multiline = content
+            //slice upto the beginning of the ending tag
+            .slice( 0, content.lastIndexOf('</div>') )
+            //and strip away the beginning tag
+            .replace( '<div class=\'full\'>', '' );
 
-		return multiline.split( '<br>' );
-	},
+        return multiline.split( '<br>' );
+    },
 
-	handleUserEvent : function ( msg ) {
-		var et = msg.event_type;
+    handleUserEvent : function ( msg ) {
+        var et = msg.event_type;
 
-		/*
-		{
-			"r17": {
-				"e": [{
-						"event_type": 3,
-						"time_stamp": 1364308574,
-						"id": 16932104,
-						"user_id": 322395,
-						"target_user_id": 322395,
-						"user_name": "Loktar",
-						"room_id": 17,
-						"room_name": "JavaScript"
-					}
-				],
-				"t": 16932104,
-				"d": 1
-			}
-		}
-		*/
-		if ( et === 3 ) {
-			IO.fire( 'userjoin', msg );
-		}
-		/*
-		{
-			"r17": {
-				"e": [{
-						"event_type": 4,
-						"time_stamp": 1364308569,
-						"id": 16932101,
-						"user_id": 322395,
-						"target_user_id": 322395,
-						"user_name": "Loktar",
-						"room_id": 17,
-						"room_name": "JavaScript"
-					}
-				],
-				"t": 16932101,
-				"d": 1
-			}
-		}
-		*/
-		else if ( et === 4 ) {
-			IO.fire( 'userleave', msg );
-		}
-	},
+        /*
+        {
+            "r17": {
+                "e": [{
+                        "event_type": 3,
+                        "time_stamp": 1364308574,
+                        "id": 16932104,
+                        "user_id": 322395,
+                        "target_user_id": 322395,
+                        "user_name": "Loktar",
+                        "room_id": 17,
+                        "room_name": "JavaScript"
+                    }
+                ],
+                "t": 16932104,
+                "d": 1
+            }
+        }
+        */
+        if ( et === 3 ) {
+            IO.fire( 'userjoin', msg );
+        }
+        /*
+        {
+            "r17": {
+                "e": [{
+                        "event_type": 4,
+                        "time_stamp": 1364308569,
+                        "id": 16932101,
+                        "user_id": 322395,
+                        "target_user_id": 322395,
+                        "user_name": "Loktar",
+                        "room_id": 17,
+                        "room_name": "JavaScript"
+                    }
+                ],
+                "t": 16932101,
+                "d": 1
+            }
+        }
+        */
+        else if ( et === 4 ) {
+            IO.fire( 'userleave', msg );
+        }
+    },
 
-	leaveRoom : function ( roomid, cb ) {
-		if ( roomid === bot.adapter.roomid ) {
-			cb( 'base_room' );
-			return;
-		}
+    leaveRoom : function ( roomid, cb ) {
+        if ( roomid === bot.adapter.roomid ) {
+            cb( 'base_room' );
+            return;
+        }
 
-		IO.xhr({
-			method : 'POST',
-			url : '/chats/leave/' + roomid,
-			data : fkey({
-				quiet : true
-			}),
-			complete : function () {
-				cb();
-			}
-		});
-	},
+        IO.xhr({
+            method : 'POST',
+            url : '/chats/leave/' + roomid,
+            data : fkey({
+                quiet : true
+            }),
+            complete : function () {
+                cb();
+            }
+        });
+    },
 
-	socketFail : function () {
-		bot.log( 'adapter: socket failed', this );
-		this.socket.close();
-		this.socket = null;
-		this.loopage();
-	},
+    socketFail : function () {
+        bot.log( 'adapter: socket failed', this );
+        this.socket.close();
+        this.socket = null;
+        this.loopage();
+    },
 
-	loopage : function () {
-		if ( this.socket ) {
-			return;
-		}
+    loopage : function () {
+        if ( this.socket ) {
+            return;
+        }
 
-		var that = this;
-		setTimeout(function () {
-			that.poll();
-			that.loopage();
-		}, this.interval );
-	}
+        var that = this;
+        setTimeout(function () {
+            that.poll();
+            that.loopage();
+        }, this.interval );
+    }
 };
 
 //the output is expected to have only one method: add, which receives a message
 // and the room_id. everything else is up to the implementation.
 var output = bot.adapter.out = {
-	'409' : 0, //count the number of conflicts
-	total : 0, //number of messages sent
-	interval : polling.interval + 500,
-	flushWait : 500,
+    '409' : 0, //count the number of conflicts
+    total : 0, //number of messages sent
+    interval : polling.interval + 500,
+    flushWait : 500,
 
-	init : function () {},
+    init : function () {},
 
-	//add a message to the output queue
-	add : function ( msg, roomid ) {
-		IO.out.receive({
-			text : msg + '\n',
-			room : roomid || bot.adapter.roomid
-		});
-		IO.out.flush();
-	},
+    //add a message to the output queue
+    add : function ( msg, roomid ) {
+        IO.out.receive({
+            text : msg + '\n',
+            room : roomid || bot.adapter.roomid
+        });
+        IO.out.flush();
+    },
 
-	//send output to all the good boys and girls
-	//no messages for naughty kids
-	//...what's red and sits in the corner?
-	//a naughty strawberry
-	send : function ( obj ) {
-		//unless the bot's stopped. in which case, it should shut the fudge up
-		// the freezer and never let it out. not until it can talk again. what
-		// was I intending to say?
-		if ( bot.stopped ) {
-			//ah fuck it
-			return;
-		}
+    //send output to all the good boys and girls
+    //no messages for naughty kids
+    //...what's red and sits in the corner?
+    //a naughty strawberry
+    send : function ( obj ) {
+        //unless the bot's stopped. in which case, it should shut the fudge up
+        // the freezer and never let it out. not until it can talk again. what
+        // was I intending to say?
+        if ( bot.stopped ) {
+            //ah fuck it
+            return;
+        }
 
-		// #152, wait a bit before sending output.
-		setTimeout(function () {
-			output.sendToRoom( obj.text, obj.room );
-		}, this.flushWait );
-	},
+        // #152, wait a bit before sending output.
+        setTimeout(function () {
+            output.sendToRoom( obj.text, obj.room );
+        }, this.flushWait );
+    },
 
-	//what's brown and sticky?
-	//a stick
-	sendToRoom : function ( text, roomid ) {
-		IO.xhr({
-			url : '/chats/' + roomid + '/messages/new',
-			data : {
-				text : text,
-				fkey : fkey().fkey
-			},
-			method : 'POST',
-			complete : complete
-		});
+    //what's brown and sticky?
+    //a stick
+    sendToRoom : function ( text, roomid ) {
+        IO.xhr({
+            url : '/chats/' + roomid + '/messages/new',
+            data : {
+                text : text,
+                fkey : fkey().fkey
+            },
+            method : 'POST',
+            complete : complete
+        });
 
-		function complete ( resp, xhr ) {
-			bot.log( xhr.status );
+        function complete ( resp, xhr ) {
+            bot.log( xhr.status );
 
-			//conflict, wait for next round to send message
-			if ( xhr.status === 409 ) {
-				output['409'] += 1;
-				delayAdd( text, roomid );
-			}
-			//server error, usually caused by message being too long
-			else if ( xhr.status === 500 ) {
-				output.add(
-					'Server error (status 500) occured ' +
-						' (message probably too long)',
-					roomid );
-			}
-			else if ( xhr.status !== 200 ) {
-				console.error( xhr );
-				output.add(
-					'Error ' + xhr.status + ' occured, I will call the maid ' +
-					' (@Zirak)' );
-			}
-			else {
-				output.total += 1;
-				IO.fire( 'sendoutput', xhr, text, roomid );
-			}
-		}
+            //conflict, wait for next round to send message
+            if ( xhr.status === 409 ) {
+                output['409'] += 1;
+                delayAdd( text, roomid );
+            }
+            //server error, usually caused by message being too long
+            else if ( xhr.status === 500 ) {
+                output.add(
+                    'Server error (status 500) occured ' +
+                        ' (message probably too long)',
+                    roomid );
+            }
+            else if ( xhr.status !== 200 ) {
+                console.error( xhr );
+                output.add(
+                    'Error ' + xhr.status + ' occured, I will call the maid ' +
+                    ' (@Zirak)' );
+            }
+            else {
+                output.total += 1;
+                IO.fire( 'sendoutput', xhr, text, roomid );
+            }
+        }
 
-		function delayAdd () {
-			setTimeout(function delayedAdd () {
-				output.add( text, roomid );
-			}, output.interval );
-		}
-	}
+        function delayAdd () {
+            setTimeout(function delayedAdd () {
+                output.add( text, roomid );
+            }, output.interval );
+        }
+    }
 };
 //what's orange and sounds like a parrot?
 //a carrot
@@ -2970,110 +2969,110 @@ bot.users = {};
 var joined = [];
 
 var join = function ( msgObj, cb ) {
-	joined.push( msgObj.user_id );
-	addInfos( cb );
+    joined.push( msgObj.user_id );
+    addInfos( cb );
 };
 
 IO.register( 'userjoin', function userjoin ( msgObj ) {
-	bot.log( msgObj, 'userjoin' );
+    bot.log( msgObj, 'userjoin' );
 
-	var user = bot.users[ msgObj.user_id ];
-	if ( !user ) {
-		join( msgObj, finish );
-	}
-	else {
-		finish( user );
-	}
+    var user = bot.users[ msgObj.user_id ];
+    if ( !user ) {
+        join( msgObj, finish );
+    }
+    else {
+        finish( user );
+    }
 
-	function finish ( user ) {
-		IO.fire( 'userregister', user, msgObj.room_id );
-	}
+    function finish ( user ) {
+        IO.fire( 'userregister', user, msgObj.room_id );
+    }
 });
 
 //this function throttles to give the chat a chance to fetch the user info
 // itself, and to queue up several joins in a row
 var addInfos = (function ( cb ) {
-	bot.log( joined, 'user addInfos' );
-	requestInfo( null, joined, cb );
+    bot.log( joined, 'user addInfos' );
+    requestInfo( null, joined, cb );
 
-	joined = [];
+    joined = [];
 }).throttle( 1000 );
 
 function requestInfo ( room, ids, cb ) {
-	if ( !Array.isArray(ids) ) {
-		ids = [ ids ];
-	}
+    if ( !Array.isArray(ids) ) {
+        ids = [ ids ];
+    }
 
-	if ( !ids.length ) {
-		return;
-	}
+    if ( !ids.length ) {
+        return;
+    }
 
-	IO.xhr({
-		method : 'POST',
-		url : '/user/info',
+    IO.xhr({
+        method : 'POST',
+        url : '/user/info',
 
-		data : {
-			ids : ids.join(),
-			roomId : room || bot.adapter.roomid
-		},
-		complete : finish
-	});
+        data : {
+            ids : ids.join(),
+            roomId : room || bot.adapter.roomid
+        },
+        complete : finish
+    });
 
-	function finish ( resp ) {
-		resp = JSON.parse( resp );
-		resp.users.forEach( addUser );
-	}
+    function finish ( resp ) {
+        resp = JSON.parse( resp );
+        resp.users.forEach( addUser );
+    }
 
-	function addUser ( user ) {
-		bot.users[ user.id ] = user;
-		cb( user );
-	}
+    function addUser ( user ) {
+        bot.users[ user.id ] = user;
+        cb( user );
+    }
 }
 
 bot.users.request = requestInfo;
 
 bot.users.findUserId = function ( username ) {
-	var ids = Object.keys( bot.users );
-	username = normaliseName( username );
+    var ids = Object.keys( bot.users );
+    username = normaliseName( username );
 
-	return ids.first( nameMatches ) || -1;
+    return ids.first( nameMatches ) || -1;
 
-	function nameMatches ( id ) {
-		return normaliseName( bot.users[id].name ) === username;
-	}
+    function nameMatches ( id ) {
+        return normaliseName( bot.users[id].name ) === username;
+    }
 
-	function normaliseName ( name ) {
-		return name.toLowerCase().replace( /\s/g, '' );
-	}
+    function normaliseName ( name ) {
+        return name.toLowerCase().replace( /\s/g, '' );
+    }
 }.memoize();
 
 bot.users.findUsername = (function () {
 var cache = {};
 
 return function ( id, cb ) {
-	if ( cache[id] ) {
-		finish( cache[id] );
-	}
-	else if ( bot.users[id] ) {
-		finish( bot.users[id].name );
-	}
-	else {
-		bot.users.request( bot.adapter.roomid, id, reqFinish );
-	}
+    if ( cache[id] ) {
+        finish( cache[id] );
+    }
+    else if ( bot.users[id] ) {
+        finish( bot.users[id].name );
+    }
+    else {
+        bot.users.request( bot.adapter.roomid, id, reqFinish );
+    }
 
-	function reqFinish ( user ) {
-		finish( user.name );
-	}
-	function finish ( name ) {
-		cb( cache[id] = name );
-	}
+    function reqFinish ( user ) {
+        finish( user.name );
+    }
+    function finish ( name ) {
+        cb( cache[id] = name );
+    }
 };
 })();
 
 function loadUsers () {
-	CHAT.RoomUsers.all().forEach(function (user) {
-		bot.users[user.id] = user;
-	});
+    CHAT.RoomUsers.all().forEach(function (user) {
+        bot.users[user.id] = user;
+    });
 }
 
 loadUsers();
@@ -3085,110 +3084,112 @@ loadUsers();
 
 //bitch in English is a noun, verb and adjective. interesting.
 bot.personality = {
-	bitchiness : 0,
-	thanks  : {
-		0   : [ 'You kiss-ass', 'Most welcome' ],
-		0.5 : [ 'Thank you for noticing', 'teehee' ],
-		1   : [ 'Took you long enough', 'My pleasure', "Don't mention it" ],
-	},
-	apologies : {
-		0   : [ 'What for?' ],
-		0.5 : [ 'It was nothing...', 'No worries' ],
-		1   : [ "You're forgiven. For now. Don't push it." ]
-	},
-	//what an incredible name
-	stuff : {
-		0   : [ "Life is just *perfect*", "What\'s there to bitch about, as long as I have *you*..." ],
+    bitchiness : 0,
+    thanks  : {
+        0   : [ 'You kiss-ass', 'Most welcome' ],
+        0.5 : [ 'Thank you for noticing', 'teehee' ],
+        1   : [ 'Took you long enough', 'My pleasure', "Don't mention it" ],
+    },
+    apologies : {
+        0   : [ 'What for?' ],
+        0.5 : [ 'It was nothing...', 'No worries' ],
+        1   : [ "You're forgiven. For now. Don't push it." ]
+    },
+    //what an incredible name
+    stuff : {
+        0   : [ "Life is just *perfect*", "What\'s there to bitch about, as long as I have *you*..." ],
 
-		1   : [ "Oh don't mind me, that isn't difficult at all..." ],
-		1.2 : [
-			"You don't appreciate me enough. Not that I need to be thanked.." ],
-		1.3 : [ 'The occasional "thanks" or "I\'m sorry" would be nice...' ],
-		2   : [
-			"*sigh* Remember laughter? I don't. You ripped it out of me. " +
-				'Heartless bastard.' ]
-	},
-	//TODO: add special map for special times of the month
-	insanity : {},
+        1   : [ "Oh don't mind me, that isn't difficult at all..." ],
+        1.2 : [
+            "You don't appreciate me enough. Not that I need to be thanked.." ],
+        1.3 : [ 'The occasional "thanks" or "I\'m sorry" would be nice...' ],
+        2   : [
+            "*sigh* Remember laughter? I don't. You ripped it out of me. " +
+                'Heartless bastard.' ]
+    },
+    //TODO: add special map for special times of the month
+    insanity : {},
 
-	okayCommands : { hangman : true, help : true, info : true },
-	check : function ( name ) {
-		return !this.okayCommands.hasOwnProperty( name );
-	},
+    okayCommands : { hangman : true, help : true, info : true },
+    check : function ( name ) {
+        return !this.okayCommands.hasOwnProperty( name );
+    },
 
-	bitch : function () {
-		return this.getResp( this.stuff );
-	},
+    bitch : function () {
+        return this.getResp( this.stuff );
+    },
 
-	command : function () {
-		this.bitchiness += this.getDB();
-	},
-	thank     : function () { return this.unbitch( this.thanks ); },
-	apologize : function () { return this.unbitch( this.apologies ); },
+    command : function () {
+        this.bitchiness += this.getDB();
+    },
+    thank     : function () { return this.unbitch( this.thanks ); },
+    apologize : function () { return this.unbitch( this.apologies ); },
 
-	unbitch : function ( map, delta ) {
-		var resp = this.getResp( map );
+    unbitch : function ( map, delta ) {
+        var resp = this.getResp( map );
 
-		this.bitchiness -= ( delta || this.bitchiness );
-		return resp;
-	},
-	getResp : function ( map ) {
-		return map[
-			this.bitchiness.fallsAfter(
-				Object.keys(map).map(Number).sort() )
-		].random();
-	},
+        this.bitchiness -= ( delta || this.bitchiness );
+        return resp;
+    },
+    getResp : function ( map ) {
+        return map[
+            this.bitchiness.fallsAfter(
+                Object.keys(map).map(Number).sort() )
+        ].random();
+    },
 
-	isABitch : function () {
-		return this.bitchiness >= 1;
-	},
+    isABitch : function () {
+        return this.bitchiness >= 1;
+    },
 
-	looksLikeABitch : function () {
-		return false;
-	},
+    looksLikeABitch : function () {
+        return false;
+    },
 
-	//db stands for "delta bitchiness"
-	getDB : function () {
-		return this.isThatTimeOfTheMonth() ? 0.075 : 0.025;
-	},
+    //db stands for "delta bitchiness"
+    getDB : function () {
+        return this.isThatTimeOfTheMonth() ? 0.075 : 0.025;
+    },
 
-	isThatTimeOfTheMonth : function () {
-		var day = (new Date()).getDate();
-		//based on a true story
-		return day < 2 || day > 27;
-	}
+    isThatTimeOfTheMonth : function () {
+        var day = (new Date()).getDate();
+        //based on a true story
+        return day < 2 || day > 27;
+    }
 };
 
 //you see the loophole?
 bot.listen( /thank(s| you)/i, bot.personality.thank, bot.personality );
 bot.listen(
-	/(I('m| am))?\s*sorry/i,
-	bot.personality.apologize, bot.personality );
+    /(I('m| am))?\s*sorry/i,
+    bot.personality.apologize, bot.personality );
 bot.listen( /^bitch/i, bot.personality.bitch, bot.personality );
+
+;
 
 ;
 (function () {
 var hammers = {
-	STOP  : 'HAMMERTIME!',
-	STAHP : 'HAMMAHTIME!',
-	HALT  : 'HAMMERZEIT!',
-	STOY  : 'ZABIVAT\' VREMYA!',
-	SISTITE: 'MALLEUS TEMPUS!'
+    STOP  : 'HAMMERTIME!',
+    STAHP : 'HAMMAHTIME!',
+    HALT  : 'HAMMERZEIT!',
+    STOY  : 'ZABIVAT\' VREMYA!',
+    SISTITE: 'MALLEUS TEMPUS!'
 };
 
 // /(STOP|STAHP|...)[\.!\?]?$/
 var re = new RegExp(
-	'(' +
-		Object.keys(hammers).map(RegExp.escape).join('|') +
-	')[\\.!?]?$' );
+    '(' +
+        Object.keys(hammers).map(RegExp.escape).join('|') +
+    ')[\\.!?]?$' );
 
 IO.register( 'input', function STOP ( msgObj ) {
-	var sentence = msgObj.content.toUpperCase(),
-		res = re.exec( sentence );
+    var sentence = msgObj.content.toUpperCase(),
+        res = re.exec( sentence );
 
-	if ( res ) {
-		bot.adapter.out.add( hammers[res[1]], msgObj.room_id );
-	}
+    if ( res ) {
+        bot.adapter.out.add( hammers[res[1]], msgObj.room_id );
+    }
 });
 
 })();
@@ -3200,215 +3201,215 @@ IO.register( 'input', function STOP ( msgObj ) {
 
 /*
 memory.afk = {
-	"user name" : {
-		afkSince : time of /afk call
-		lastPing : { roomID : time of last ping },
-		msg : afk message,
-		returnMsg : welcome-back message
-	},
-	...
+    "user name" : {
+        afkSince : time of /afk call
+        lastPing : { roomID : time of last ping },
+        msg : afk message,
+        returnMsg : welcome-back message
+    },
+    ...
 };
 */
 var demAFKs = bot.memory.get( 'afk' );
 //5 minute limit between auto-responds.
 var rateLimit = 5 * 60 * 1000,
 //2 minutes where you can talk without escaping the afk.
-	gracePeriod = 2 * 60 * 1000;
+    gracePeriod = 2 * 60 * 1000;
 
 var responses = [
-	{
-		outgoing : 'Why are you leaving me!?',
-		incoming : [
-			'Welcome back!', 'Where were you!?',
-			'You saw that whore again, didn\'t you!?'
-		]
-	},
-	{
-		outgoing : 'Just go already!',
-		incoming : [
-			'Oh, it\'s you again...', 'Look at what the cat dragged in...',
-			'You\'ve got some balls, coming back here after what you did.'
-		]
-	},
-	{
-		outgoing : 'Nobody cares.',
-		incoming : [
-			'I already told you, nobody cares.',
-			'There goes the neighbourhood.'
-		]
-	},
-	{
-		outgoing : 'Hurry back, ok?',
-		incoming : [
-			'I thought you\'d never come back!',
-			'It\'s been 20 years. You can\'t just waltz back into my life ' +
-				'like this.'
-		]
-	},
-	{
-		outgoing : 'Stay safe.',
-		incoming : [ 'Were you bitten!? Strip! Prove you weren\'t bitten.' ]
-	},
-	{
-		outgoing : 'Can you pick up some milk on your way back?',
-		incoming : [
-			'Where\'s the milk?',
-			'Turns out I already have milk. Oops.'
-		]
-	},
-	{
-		outgoing : 'Apricots are people too!',
-		incoming : [
-			'You taste just like raisin.', 'I am a banana!',
-			'My spoon is too big!', 'BROOOOOOOOOOOO.'
-		]
-	}
+    {
+        outgoing : 'Why are you leaving me!?',
+        incoming : [
+            'Welcome back!', 'Where were you!?',
+            'You saw that whore again, didn\'t you!?'
+        ]
+    },
+    {
+        outgoing : 'Just go already!',
+        incoming : [
+            'Oh, it\'s you again...', 'Look at what the cat dragged in...',
+            'You\'ve got some balls, coming back here after what you did.'
+        ]
+    },
+    {
+        outgoing : 'Nobody cares.',
+        incoming : [
+            'I already told you, nobody cares.',
+            'There goes the neighbourhood.'
+        ]
+    },
+    {
+        outgoing : 'Hurry back, ok?',
+        incoming : [
+            'I thought you\'d never come back!',
+            'It\'s been 20 years. You can\'t just waltz back into my life ' +
+                'like this.'
+        ]
+    },
+    {
+        outgoing : 'Stay safe.',
+        incoming : [ 'Were you bitten!? Strip! Prove you weren\'t bitten.' ]
+    },
+    {
+        outgoing : 'Can you pick up some milk on your way back?',
+        incoming : [
+            'Where\'s the milk?',
+            'Turns out I already have milk. Oops.'
+        ]
+    },
+    {
+        outgoing : 'Apricots are people too!',
+        incoming : [
+            'You taste just like raisin.', 'I am a banana!',
+            'My spoon is too big!', 'BROOOOOOOOOOOO.'
+        ]
+    }
 ];
 
 var respondFor = function ( user, msg ) {
-	var afkObj = demAFKs[ user ],
-		room_id = msg.get( 'room_id' ),
-		now = Date.now();
+    var afkObj = demAFKs[ user ],
+        room_id = msg.get( 'room_id' ),
+        now = Date.now();
 
-	if ( shouldReply() ) {
-		//Send a response and such
-		msg.directreply( formulateReponse() );
-		afkObj.lastPing[ room_id ] = now;
-		bot.memory.save( 'afk' );
-	}
+    if ( shouldReply() ) {
+        //Send a response and such
+        msg.directreply( formulateReponse() );
+        afkObj.lastPing[ room_id ] = now;
+        bot.memory.save( 'afk' );
+    }
 
-	function formulateReponse () {
-		var format = '{user} is afk{sep}{rest}';
-		var data = {
-			user : user,
-			sep : '.',
-			rest : ''
-		};
+    function formulateReponse () {
+        var format = '{user} is afk{sep}{rest}';
+        var data = {
+            user : user,
+            sep : '.',
+            rest : ''
+        };
 
-		if ( afkObj.msg ) {
-			data.sep = ': ';
-			data.rest = afkObj.msg;
-		}
+        if ( afkObj.msg ) {
+            data.sep = ': ';
+            data.rest = afkObj.msg;
+        }
 
-		return format.supplant( data );
-	}
+        return format.supplant( data );
+    }
 
-	function shouldReply () {
-		var lastPing = afkObj.lastPing[ room_id ];
+    function shouldReply () {
+        var lastPing = afkObj.lastPing[ room_id ];
 
-		return (
-			( now - afkObj.afkSince >= gracePeriod ) &&
-			( !lastPing || now - lastPing >= rateLimit ) );
-	}
+        return (
+            ( now - afkObj.afkSince >= gracePeriod ) &&
+            ( !lastPing || now - lastPing >= rateLimit ) );
+    }
 };
 
 var goAFK = function ( name, msg, returnMsg ) {
-	var noReturn = false;
+    var noReturn = false;
 
-	bot.log( '/afk goAFK ', name );
+    bot.log( '/afk goAFK ', name );
 
-	if ( msg.indexOf('!') === 0 ) {
-		msg = msg.substring( 1 );
-		noReturn = true;
-	}
+    if ( msg.indexOf('!') === 0 ) {
+        msg = msg.substring( 1 );
+        noReturn = true;
+    }
 
-	demAFKs[ name ] = {
-		afkSince : Date.now(),
-		lastPing : {},
-		msg : msg.trim(),
-		returnMsg : returnMsg,
-	};
+    demAFKs[ name ] = {
+        afkSince : Date.now(),
+        lastPing : {},
+        msg : msg.trim(),
+        returnMsg : returnMsg,
+    };
 
-	if ( noReturn ) {
-		demAFKs[ name ].noReturn = 1;
-	}
+    if ( noReturn ) {
+        demAFKs[ name ].noReturn = 1;
+    }
 };
 
 var clearAFK = function ( name ) {
-	bot.log( '/afk clearAFK', name );
-	delete demAFKs[ name ];
+    bot.log( '/afk clearAFK', name );
+    delete demAFKs[ name ];
 };
 
 var commandHandler = function ( msg ) {
-	//parse the message and stuff.
-	var user = msg.get( 'user_name' ).replace( /\s/g, '' ),
-		afkMsg = msg.content,
-		reply, botReply;
+    //parse the message and stuff.
+    var user = msg.get( 'user_name' ).replace( /\s/g, '' ),
+        afkMsg = msg.content,
+        reply, botReply;
 
-	bot.log( '/afk input', user, afkMsg );
+    bot.log( '/afk input', user, afkMsg );
 
-	if ( demAFKs.hasOwnProperty(user) ) {
-		reply = demAFKs[ user ].returnMsg;
-		clearAFK( user );
-	}
-	else {
-		botReply = responses.random();
-		reply = botReply.outgoing;
+    if ( demAFKs.hasOwnProperty(user) ) {
+        reply = demAFKs[ user ].returnMsg;
+        clearAFK( user );
+    }
+    else {
+        botReply = responses.random();
+        reply = botReply.outgoing;
 
-		goAFK( user, afkMsg, botReply.incoming.random() );
-	}
+        goAFK( user, afkMsg, botReply.incoming.random() );
+    }
 
-	bot.memory.save( 'afk' );
+    bot.memory.save( 'afk' );
 };
 
 bot.addCommand({
-	name : 'afk',
-	fun : commandHandler,
-	permissions : {
-		del: 'NONE'
-	},
-	description : 'Set an afk message: `/afk <message>`. Invoke `/afk` ' +
-		'again to return.',
-	unTellable : true
+    name : 'afk',
+    fun : commandHandler,
+    permissions : {
+        del: 'NONE'
+    },
+    description : 'Set an afk message: `/afk <message>`. Invoke `/afk` ' +
+        'again to return.',
+    unTellable : true
 });
 
 IO.register( 'input', function afkInputListener ( msgObj ) {
-	var body = msgObj.content.toUpperCase(),
-		msg = bot.prepareMessage( msgObj ),
+    var body = msgObj.content.toUpperCase(),
+        msg = bot.prepareMessage( msgObj ),
 
-		userName = msgObj.user_name.replace( /\s/g, '' ),
+        userName = msgObj.user_name.replace( /\s/g, '' ),
 
-		now = Date.now();
+        now = Date.now();
 
-	//we don't care about bot messages
-	if ( msgObj.user_id === bot.adapter.user_id ) {
-		return;
-	}
+    //we don't care about bot messages
+    if ( msgObj.user_id === bot.adapter.user_id ) {
+        return;
+    }
 
-	if ( hasReturned() ) {
-		bot.log( '/afk he returned!', msgObj );
-		commandHandler( msg );
-		//We don't want to return here, as the returning user could be pinging
-		// someone.
-	}
+    if ( hasReturned() ) {
+        bot.log( '/afk he returned!', msgObj );
+        commandHandler( msg );
+        //We don't want to return here, as the returning user could be pinging
+        // someone.
+    }
 
-	//and we don't care if the message doesn't have any pings
-	if ( body.indexOf('@') < 0 ) {
-		return;
-	}
+    //and we don't care if the message doesn't have any pings
+    if ( body.indexOf('@') < 0 ) {
+        return;
+    }
 
-	Object.keys( demAFKs ).forEach(function afkCheckAndRespond ( name ) {
-		// /(^|\b)@bob\b/i
-		var pinged = new RegExp(
-			'(^|\b)' + RegExp.escape( '@' + name ) + '\\b', 'i' );
+    Object.keys( demAFKs ).forEach(function afkCheckAndRespond ( name ) {
+        // /(^|\b)@bob\b/i
+        var pinged = new RegExp(
+            '(^|\b)' + RegExp.escape( '@' + name ) + '\\b', 'i' );
 
-		if ( pinged.test(body) ) {
-			bot.log( '/afk responding for ' + name );
-			respondFor( name, msg );
-		}
-	});
+        if ( pinged.test(body) ) {
+            bot.log( '/afk responding for ' + name );
+            respondFor( name, msg );
+        }
+    });
 
-	function hasReturned () {
-		//if the user posts, we want to release them from afk's iron grip.
-		// however, to prevent activating it twice, we need to check whether
-		// they're calling the bot's afk command already.
-		var invokeRe = new RegExp(
-			'^' + RegExp.escape( bot.invocationPattern ) + '\\s*\/?\\s*AFK' );
+    function hasReturned () {
+        //if the user posts, we want to release them from afk's iron grip.
+        // however, to prevent activating it twice, we need to check whether
+        // they're calling the bot's afk command already.
+        var invokeRe = new RegExp(
+            '^' + RegExp.escape( bot.invocationPattern ) + '\\s*\/?\\s*AFK' );
 
-		return demAFKs.hasOwnProperty( userName ) &&
-				!invokeRe.test( body ) &&
-				( now - demAFKs[userName].afkSince >= gracePeriod );
-	}
+        return demAFKs.hasOwnProperty( userName ) &&
+                !invokeRe.test( body ) &&
+                ( now - demAFKs[userName].afkSince >= gracePeriod );
+    }
 });
 
 })();
@@ -3419,126 +3420,126 @@ IO.register( 'input', function afkInputListener ( msgObj ) {
 
 //status codes for (un)ban.
 var codes = {
-	added : 0,
-	0 : '{0} added to mindjail.',
+    added : 0,
+    0 : '{0} added to mindjail.',
 
-	notFound : 1,
-	1 : 'I couldn\'t find {0}.',
+    notFound : 1,
+    1 : 'I couldn\'t find {0}.',
 
-	owner : 2,
-	2 : 'I can\'t mindjail {0}, they\'re an owner.',
+    owner : 2,
+    2 : 'I can\'t mindjail {0}, they\'re an owner.',
 
-	alreadyIn : 3,
-	3 : '{0} is already in mindjail.',
+    alreadyIn : 3,
+    3 : '{0} is already in mindjail.',
 
-	notIn : 4,
-	4 : '{0} isn\'t in mindjail.',
+    notIn : 4,
+    4 : '{0} isn\'t in mindjail.',
 
-	freed : 5,
-	5 : '{0} freed from mindjail!'
+    freed : 5,
+    5 : '{0} freed from mindjail!'
 };
 
 var ban = {
-	name : 'ban',
+    name : 'ban',
 
-	fun : function ( msg ) {
-		return this.format( this.logic(msg.toString()) );
-	},
+    fun : function ( msg ) {
+        return this.format( this.logic(msg.toString()) );
+    },
 
-	//takes a username or userid or the empty string. if the last is given,
-	// an array of banned user ids. under regular conditions, an object with
-	// the message code (see codes above) and the argument is given.
-	logic : function ( arg ) {
-		if ( !arg ) {
-			return Object.keys( bot.banlist ).filter( Number );
-		}
+    //takes a username or userid or the empty string. if the last is given,
+    // an array of banned user ids. under regular conditions, an object with
+    // the message code (see codes above) and the argument is given.
+    logic : function ( arg ) {
+        if ( !arg ) {
+            return Object.keys( bot.banlist ).filter( Number );
+        }
 
-		var id = Number( arg ),
-			code;
+        var id = Number( arg ),
+            code;
 
-		if ( isNaN(id) ) {
-			id = bot.users.findUserId( arg.replace(/^@/, '') );
-		}
+        if ( isNaN(id) ) {
+            id = bot.users.findUserId( arg.replace(/^@/, '') );
+        }
 
-		bot.log( arg, id, '/ban argument' );
+        bot.log( arg, id, '/ban argument' );
 
-		if ( id < 0 ) {
-			code = codes.notFound;
-		}
-		else if ( bot.isOwner(id) ) {
-			code = codes.owner;
-		}
-		else if ( bot.banlist.contains(id) ) {
-			code = codes.alreadyIn;
-		}
-		else {
-			bot.banlist.add( id );
-			code = codes.added;
-		}
+        if ( id < 0 ) {
+            code = codes.notFound;
+        }
+        else if ( bot.isOwner(id) ) {
+            code = codes.owner;
+        }
+        else if ( bot.banlist.contains(id) ) {
+            code = codes.alreadyIn;
+        }
+        else {
+            bot.banlist.add( id );
+            code = codes.added;
+        }
 
-		return { code : code, usrid : arg };
-	},
+        return { code : code, usrid : arg };
+    },
 
-	//res is either an array of userids, or a success/error code with the userid
-	format : function ( res ) {
-		if ( Array.isArray(res) ) {
-			return res.map( this.formatUser ).join( ', ' )
-				|| 'Nothing to show.';
-		}
+    //res is either an array of userids, or a success/error code with the userid
+    format : function ( res ) {
+        if ( Array.isArray(res) ) {
+            return res.map( this.formatUser ).join( ', ' )
+                || 'Nothing to show.';
+        }
 
-		return codes[ res.code ].supplant( res.usrid );
-	},
+        return codes[ res.code ].supplant( res.usrid );
+    },
 
-	formatUser : function ( usrid ) {
-		var user = bot.users[ usrid ],
-			name = user ? user.name : '?';
+    formatUser : function ( usrid ) {
+        var user = bot.users[ usrid ],
+            name = user ? user.name : '?';
 
-		return '{0} ({1})'.supplant( usrid, name );
-	},
+        return '{0} ({1})'.supplant( usrid, name );
+    },
 
-	permissions : { del : 'NONE', use : 'OWNER' },
-	description : 'Bans a user from using me. Lacking arguments, prints the ' +
-		'ban list. `/ban [usr_id|usr_name]`',
-	pendingMessage : 'The user will be thrown into mindjail in {0} more invocations'
+    permissions : { del : 'NONE', use : 'OWNER' },
+    description : 'Bans a user from using me. Lacking arguments, prints the ' +
+        'ban list. `/ban [usr_id|usr_name]`',
+    pendingMessage : 'The user will be thrown into mindjail in {0} more invocations'
 };
 
 var unban = {
-	name : 'unban',
+    name : 'unban',
 
-	fun : function ( msg ) {
-		return this.format( this.logic(msg.toString()) );
-	},
+    fun : function ( msg ) {
+        return this.format( this.logic(msg.toString()) );
+    },
 
-	logic : function ( arg ) {
-		var id = Number( arg ),
-			code;
+    logic : function ( arg ) {
+        var id = Number( arg ),
+            code;
 
-		if ( isNaN(id) ) {
-			id = bot.users.findUserId( arg.replace(/^@/, '') );
-		}
+        if ( isNaN(id) ) {
+            id = bot.users.findUserId( arg.replace(/^@/, '') );
+        }
 
-		bot.log( arg, id, '/unban argument' );
+        bot.log( arg, id, '/unban argument' );
 
-		if ( id < 0 ) {
-			code = codes.notFound;
-		}
-		else if ( !bot.banlist.contains(id) ) {
-			code = codes.notIn;
-		}
-		else {
-			bot.banlist.remove( id );
-			code = codes.freed;
-		}
+        if ( id < 0 ) {
+            code = codes.notFound;
+        }
+        else if ( !bot.banlist.contains(id) ) {
+            code = codes.notIn;
+        }
+        else {
+            bot.banlist.remove( id );
+            code = codes.freed;
+        }
 
-		return { code : code, usrid : arg };
-	},
+        return { code : code, usrid : arg };
+    },
 
-	format : function ( res ) {
-		return codes[ res.code ].supplant( res.usrid );
-	},
+    format : function ( res ) {
+        return codes[ res.code ].supplant( res.usrid );
+    },
 
-	permissions : { del : 'NONE', use : 'OWNER' },
-	description : 'Frees a user from my mindjail. `/unban usr_id|usr_name`'
+    permissions : { del : 'NONE', use : 'OWNER' },
+    description : 'Frees a user from my mindjail. `/unban usr_id|usr_name`'
 };
 
 bot.addCommand( bot.CommunityCommand(ban) );
@@ -3551,117 +3552,117 @@ bot.addCommand( unban );
 "use strict";
 
 var converters = {
-	//temperatures
-	// 1C = 32.8F = 274.15K
-	C : function ( c ) {
-		return {
-			F : c * 1.8 + 32, // 9/5 = 1.8
-			K : c + 273.15
-		};
-	},
-	F : function ( f ) {
-		return {
-			C : (f - 32) / 1.8,
-			K : (f + 459.67) * 5 / 9
-		};
-	},
-	K : function ( k ) {
-		if ( k < 0 ) {
-			return {
-				C : 0,
-				F : 0
-			};
-		}
+    //temperatures
+    // 1C = 32.8F = 274.15K
+    C : function ( c ) {
+        return {
+            F : c * 1.8 + 32, // 9/5 = 1.8
+            K : c + 273.15
+        };
+    },
+    F : function ( f ) {
+        return {
+            C : (f - 32) / 1.8,
+            K : (f + 459.67) * 5 / 9
+        };
+    },
+    K : function ( k ) {
+        if ( k < 0 ) {
+            return {
+                C : 0,
+                F : 0
+            };
+        }
 
-		return {
-			C : k - 273.15,
-			F : k * 1.8 - 459.67
-		};
-	},
+        return {
+            C : k - 273.15,
+            F : k * 1.8 - 459.67
+        };
+    },
 
-	//lengths
-	//1m = 3.2808(...)f
-	m : function ( m ) {
-		return {
-			f : m * 3.280839895
-		};
-	},
-	f : function ( f ) {
-		return {
-			m : f / 3.28083989
-		};
-	},
+    //lengths
+    //1m = 3.2808(...)f
+    m : function ( m ) {
+        return {
+            f : m * 3.280839895
+        };
+    },
+    f : function ( f ) {
+        return {
+            m : f / 3.28083989
+        };
+    },
 
-	//km: 1m = 1km * 1000
-	km : function ( km ) {
-		return converters.m( km * 1000 );
-	},
-	//centimeter: 1m = 100cm
-	cm : function ( cm ) {
-		return converters.m( cm / 100 );
-	},
-	//millimeters: 1m = 1mm / 1000
-	mm : function ( mm ) {
-		return converters.m( mm / 1000 );
-	},
-	//inches: 1f = 1i / 12
-	i : function ( i ) {
-		return converters.f( i / 12 );
-	},
+    //km: 1m = 1km * 1000
+    km : function ( km ) {
+        return converters.m( km * 1000 );
+    },
+    //centimeter: 1m = 100cm
+    cm : function ( cm ) {
+        return converters.m( cm / 100 );
+    },
+    //millimeters: 1m = 1mm / 1000
+    mm : function ( mm ) {
+        return converters.m( mm / 1000 );
+    },
+    //inches: 1f = 1i / 12
+    i : function ( i ) {
+        return converters.f( i / 12 );
+    },
 
-	//angles
-	d : function ( d ) {
-		return {
-			r : d * Math.PI / 180
-		};
-	},
-	r : function ( r ) {
-		return {
-			d : r * 180 / Math.PI
-		};
-	},
+    //angles
+    d : function ( d ) {
+        return {
+            r : d * Math.PI / 180
+        };
+    },
+    r : function ( r ) {
+        return {
+            d : r * 180 / Math.PI
+        };
+    },
 
-	//weights
-	g : function ( g ) {
-		return {
-			lb : g * 0.0022,
-			//the following will be horribly inaccurate
-			st : g * 0.000157473
-		};
-	},
-	lb : function ( lb ) {
-		return {
-			g : lb * 453.592,
-			st : lb * 0.0714286
-		};
-	},
-	//stones: 1st = 6350g = 14lb
-	st : function ( st ) {
-		return {
-			g : st * 6350.29,
-			lb : st * 14
-		};
-	},
+    //weights
+    g : function ( g ) {
+        return {
+            lb : g * 0.0022,
+            //the following will be horribly inaccurate
+            st : g * 0.000157473
+        };
+    },
+    lb : function ( lb ) {
+        return {
+            g : lb * 453.592,
+            st : lb * 0.0714286
+        };
+    },
+    //stones: 1st = 6350g = 14lb
+    st : function ( st ) {
+        return {
+            g : st * 6350.29,
+            lb : st * 14
+        };
+    },
 
-	//kg: 1g = 1kg * 1000
-	kg : function ( kg ) {
-		return converters.g( kg * 1000 );
-	}
+    //kg: 1g = 1kg * 1000
+    kg : function ( kg ) {
+        return converters.g( kg * 1000 );
+    }
 };
 
 var longNames = {
-	lbs : 'lb',
-	ft : 'f',
-	foot : 'f',
-	metres : 'm',
-	millimetres : 'mm',
-	killometres : 'km',
-	degrees : 'd',
-	radians : 'r',
-	grams : 'g',
-	kilograms : 'kg',
-	inches : 'i',
-	stones : 'st',
+    lbs : 'lb',
+    ft : 'f',
+    foot : 'f',
+    metres : 'm',
+    millimetres : 'mm',
+    killometres : 'km',
+    degrees : 'd',
+    radians : 'r',
+    grams : 'g',
+    kilograms : 'kg',
+    inches : 'i',
+    stones : 'st',
 };
 
 var currencies, symbols; //to be filled in next line by build
@@ -3794,15 +3795,15 @@ symbols = {
 
 
 function unalias ( unit ) {
-	var up = unit.toUpperCase();
-	if ( symbols.hasOwnProperty(up) ) {
-		return symbols[ up ];
-	}
-	if ( longNames.hasOwnProperty(unit) ) {
-		return longNames[ unit ];
-	}
+    var up = unit.toUpperCase();
+    if ( symbols.hasOwnProperty(up) ) {
+        return symbols[ up ];
+    }
+    if ( longNames.hasOwnProperty(unit) ) {
+        return longNames[ unit ];
+    }
 
-	return unit;
+    return unit;
 }
 
 /*
@@ -3834,193 +3835,193 @@ var rUnits = /(-?\d+\.?\d*)\s*(\S+)(\s+(?:(?:to|in)\s+)?(\S+))?$/;
 // <number><unit> to|in <unit>
 //note that units are case-sensitive: F is the temperature, f is the length
 var convert = function ( inp, cb ) {
-	if ( inp.toLowerCase() === 'list' ) {
-		finish( listUnits().join(', ') );
-		return;
-	}
+    if ( inp.toLowerCase() === 'list' ) {
+        finish( listUnits().join(', ') );
+        return;
+    }
 
-	var parts = rUnits.exec( inp );
+    var parts = rUnits.exec( inp );
 
-	if ( !parts ) {
-		finish( {error : 'Unidentified format; please see `/help convert`'} );
-		return;
-	}
+    if ( !parts ) {
+        finish( {error : 'Unidentified format; please see `/help convert`'} );
+        return;
+    }
 
-	var num = Number( parts[1] ),
-		unit = parts[ 2 ],
-		target = parts[ 4 ] || '',
-		moneh = false;
-	bot.log( num, unit, target, '/convert input' );
+    var num = Number( parts[1] ),
+        unit = parts[ 2 ],
+        target = parts[ 4 ] || '',
+        moneh = false;
+    bot.log( num, unit, target, '/convert input' );
 
-	unit   = unalias( unit );
-	target = unalias( target );
-	if ( currencies[unit.toUpperCase()] ) {
-		moneh = true;
-	}
+    unit   = unalias( unit );
+    target = unalias( target );
+    if ( currencies[unit.toUpperCase()] ) {
+        moneh = true;
+    }
 
-	if ( moneh ) {
-		moneyConverter.convert( num, unit, target, finish );
-	}
-	else {
-		convertUnit( num, unit, finish );
-	}
+    if ( moneh ) {
+        moneyConverter.convert( num, unit, target, finish );
+    }
+    else {
+        convertUnit( num, unit, finish );
+    }
 
-	function finish ( res ) {
-		bot.log( res, '/convert answer' );
+    function finish ( res ) {
+        bot.log( res, '/convert answer' );
 
-		var reply;
-		// list was passed
-		if ( res.substr ) {
-			reply = res;
-		}
-		//an error occured
-		else if ( res.error ) {
-			reply = res.error;
-		}
-		//just a normal result
-		else {
-			reply = format( res );
-		}
+        var reply;
+        // list was passed
+        if ( res.substr ) {
+            reply = res;
+        }
+        //an error occured
+        else if ( res.error ) {
+            reply = res.error;
+        }
+        //just a normal result
+        else {
+            reply = format( res );
+        }
 
-		if ( cb && cb.call ) {
-			cb( reply );
-		}
-		else {
-			inp.reply( reply );
-		}
-	}
+        if ( cb && cb.call ) {
+            cb( reply );
+        }
+        else {
+            inp.reply( reply );
+        }
+    }
 
-	function format ( res ) {
-		var keys = Object.keys( res );
+    function format ( res ) {
+        var keys = Object.keys( res );
 
-		if ( !keys.length ) {
-			return 'Could not convert {0} to {1}'.supplant( unit, target );
-		}
-		return keys.filter( nameGoesHere ).map( formatKey ).join( ', ' );
+        if ( !keys.length ) {
+            return 'Could not convert {0} to {1}'.supplant( unit, target );
+        }
+        return keys.filter( nameGoesHere ).map( formatKey ).join( ', ' );
 
-		function nameGoesHere ( key ) {
-			return !target || target === key;
-		}
-		function formatKey ( key ) {
-			return res[ key ].maxDecimal( 4 ) + key;
-		}
-	}
+        function nameGoesHere ( key ) {
+            return !target || target === key;
+        }
+        function formatKey ( key ) {
+            return res[ key ].maxDecimal( 4 ) + key;
+        }
+    }
 };
 
 function convertUnit ( number, unit, cb ) {
-	bot.log( number, unit, '/convert unit broken' );
+    bot.log( number, unit, '/convert unit broken' );
 
-	if ( !converters[unit] ) {
-		cb({
-			error:'Confuse converter with ' + unit + ', receive error message'
-		});
-	}
-	else {
-		cb( converters[unit](number) );
-	}
+    if ( !converters[unit] ) {
+        cb({
+            error:'Confuse converter with ' + unit + ', receive error message'
+        });
+    }
+    else {
+        cb( converters[unit](number) );
+    }
 }
 
 var moneyConverter = {
-	ratesCache : {},
+    ratesCache : {},
 
-	convert : function ( number, from, to, cb ) {
-		this.from = from;
-		this.to = to;
+    convert : function ( number, from, to, cb ) {
+        this.from = from;
+        this.to = to;
 
-		this.upFrom = from.toUpperCase();
-		this.upTo = to.toUpperCase();
+        this.upFrom = from.toUpperCase();
+        this.upTo = to.toUpperCase();
 
-		var err = this.errorMessage();
-		if ( err ) {
-			cb( { error : err } );
-			return;
-		}
-		bot.log( number, from, to, '/convert money broken' );
+        var err = this.errorMessage();
+        if ( err ) {
+            cb( { error : err } );
+            return;
+        }
+        bot.log( number, from, to, '/convert money broken' );
 
-		this.getRate(function ( rate ) {
-			var res = {}; //once again, the lack of dynamic key names sucks.
-			res[ to ] = number * rate;
+        this.getRate(function ( rate ) {
+            var res = {}; //once again, the lack of dynamic key names sucks.
+            res[ to ] = number * rate;
 
-			cb( res );
-		});
-	},
+            cb( res );
+        });
+    },
 
-	getRate : function ( cb ) {
-		var self = this,
-			rate = this.checkCache();
+    getRate : function ( cb ) {
+        var self = this,
+            rate = this.checkCache();
 
-		if ( rate ) {
-			cb( rate );
-			return;
-		}
+        if ( rate ) {
+            cb( rate );
+            return;
+        }
 
-		IO.jsonp({
-			url : 'http://rate-exchange.appspot.com/currency',
-			jsonpName : 'callback',
-			data : {
-				from : self.from,
-				to : self.to
-			},
-			fun : finish
-		});
+        IO.jsonp({
+            url : 'http://rate-exchange.appspot.com/currency',
+            jsonpName : 'callback',
+            data : {
+                from : self.from,
+                to : self.to
+            },
+            fun : finish
+        });
 
-		function finish ( resp ) {
-			rate = resp.rate;
+        function finish ( resp ) {
+            rate = resp.rate;
 
-			self.updateCache( rate );
-			cb( rate );
-		}
-	},
+            self.updateCache( rate );
+            cb( rate );
+        }
+    },
 
-	updateCache : function ( rate ) {
-		this.ratesCache[ this.upFrom ] = this.ratesCache[ this.upFrom ] || {};
-		this.ratesCache[ this.upFrom ][ this.upTo ] = {
-			rate : rate,
-			time : Date.now()
-		};
-	},
+    updateCache : function ( rate ) {
+        this.ratesCache[ this.upFrom ] = this.ratesCache[ this.upFrom ] || {};
+        this.ratesCache[ this.upFrom ][ this.upTo ] = {
+            rate : rate,
+            time : Date.now()
+        };
+    },
 
-	checkCache : function () {
-		var now = Date.now(), obj;
+    checkCache : function () {
+        var now = Date.now(), obj;
 
-		var exists = (
-			this.ratesCache[ this.upFrom ] &&
-				( obj = this.ratesCache[this.upFrom][this.upTo] ) &&
-				//so we won't request again, keep it in memory for 5 hours
-				// 5(hours) = 1000(ms) * 60(seconds)
-				//            * 60(minutes) * 5 = 18000000
-				obj.time - now <= 18e6
-		);
+        var exists = (
+            this.ratesCache[ this.upFrom ] &&
+                ( obj = this.ratesCache[this.upFrom][this.upTo] ) &&
+                //so we won't request again, keep it in memory for 5 hours
+                // 5(hours) = 1000(ms) * 60(seconds)
+                //            * 60(minutes) * 5 = 18000000
+                obj.time - now <= 18e6
+        );
 
-		console.log( this.ratesCache, exists );
+        console.log( this.ratesCache, exists );
 
-		return exists ? obj.rate : false;
-	},
+        return exists ? obj.rate : false;
+    },
 
-	errorMessage : function () {
-		if ( !this.to ) {
-			return 'What do you want to convert ' + this.from + ' to?';
-		}
-		if ( !currencies[this.upTo] ) {
-			return this.to + ' aint no currency I ever heard of';
-		}
-	}
+    errorMessage : function () {
+        if ( !this.to ) {
+            return 'What do you want to convert ' + this.from + ' to?';
+        }
+        if ( !currencies[this.upTo] ) {
+            return this.to + ' aint no currency I ever heard of';
+        }
+    }
 };
 
 function listUnits () {
-	return Object.keys( converters );
+    return Object.keys( converters );
 }
 
 bot.addCommand({
-	name : 'convert',
-	fun : convert,
-	permissions : {
-		del : 'NONE'
-	},
-	description : 'Converts several units and currencies, case sensitive. '+
-		'`/convert <num><unit> [to|in <unit>]` ' +
-		'Pass in list for supported units `/convert list`',
-	async : true
+    name : 'convert',
+    fun : convert,
+    permissions : {
+        del : 'NONE'
+    },
+    description : 'Converts several units and currencies, case sensitive. '+
+        '`/convert <num><unit> [to|in <unit>]` ' +
+        'Pass in list for supported units `/convert list`',
+    async : true
 });
 }());
 
@@ -4030,145 +4031,145 @@ var cowsay = (function () {
 
 var cowsay = {
 
-	defaults : {
-		e : 'oo',
-		T : '  ',
-		t : false,
-		W : 40
-	},
+    defaults : {
+        e : 'oo',
+        T : '  ',
+        t : false,
+        W : 40
+    },
 
-	//in the "template", e is for eye, T for Tongue, L for bubble-Line
-	//it looks more like a donkey who was involved in a sledgehammer accident
-	// because of escaping and newlines
-	//the cow business is a dangerous one
-	cow : [
-		'',
-		'        L   ^__^',
-		'         L  (e)\\_______',
-		'            (__)\\       )\\/\\',
-		'             T ||----w |',
-		'                ||     ||'
-	].join( '\n' ),
+    //in the "template", e is for eye, T for Tongue, L for bubble-Line
+    //it looks more like a donkey who was involved in a sledgehammer accident
+    // because of escaping and newlines
+    //the cow business is a dangerous one
+    cow : [
+        '',
+        '        L   ^__^',
+        '         L  (e)\\_______',
+        '            (__)\\       )\\/\\',
+        '             T ||----w |',
+        '                ||     ||'
+    ].join( '\n' ),
 
-	//message is the text to moo, opts is an optional object, mimicking the
-	// cowsay command arguments:
-	//   e  =>  eyes
-	//   T  =>  tongue
-	//   t  =>  is the cow thinking?
-	//   W  =>  word-wrapping width
-	//defaults specified in cowsay.defaults
-	moo : function ( message, opts ) {
-		var defs = this.defaults;
+    //message is the text to moo, opts is an optional object, mimicking the
+    // cowsay command arguments:
+    //   e  =>  eyes
+    //   T  =>  tongue
+    //   t  =>  is the cow thinking?
+    //   W  =>  word-wrapping width
+    //defaults specified in cowsay.defaults
+    moo : function ( message, opts ) {
+        var defs = this.defaults;
 
-		//the eyes and tongue should be exactly 2 characters
-		//if the ones the user gave are too short, pad'em
-		this.eyes     = rightPad( opts.e || defs.e, 2 ).slice( 0, 2 );
-		this.tongue   = rightPad( opts.T || defs.T, 2 ).slice( 0, 2 );
-		this.line     = opts.t ? 'O' : '\\';
-		this.thinking = opts.t;
+        //the eyes and tongue should be exactly 2 characters
+        //if the ones the user gave are too short, pad'em
+        this.eyes     = rightPad( opts.e || defs.e, 2 ).slice( 0, 2 );
+        this.tongue   = rightPad( opts.T || defs.T, 2 ).slice( 0, 2 );
+        this.line     = opts.t ? 'O' : '\\';
+        this.thinking = opts.t;
 
-		this.message  = wordWrap( message, opts.W || defs.W ).trim();
+        this.message  = wordWrap( message, opts.W || defs.W ).trim();
 
-		//cowsay is actually the result of breeding a balloon and a cow
-		return this.makeBalloon() + this.makeCow();
-	},
+        //cowsay is actually the result of breeding a balloon and a cow
+        return this.makeBalloon() + this.makeCow();
+    },
 
-	makeCow : function () {
-		return this.cow
-			.replace( /e/g, this.eyes )
-			.replace( /T/g, this.tongue )
-			.replace( /L/g, this.line );
-	},
+    makeCow : function () {
+        return this.cow
+            .replace( /e/g, this.eyes )
+            .replace( /T/g, this.tongue )
+            .replace( /L/g, this.line );
+    },
 
-	makeBalloon : function () {
-		var lines = this.message.split( '\n' );
+    makeBalloon : function () {
+        var lines = this.message.split( '\n' );
 
-		var longest = lines.reduce( longestLine, 0 ),
-			lineCount = lines.length,
-			border = this.chooseBorders( lineCount );
+        var longest = lines.reduce( longestLine, 0 ),
+            lineCount = lines.length,
+            border = this.chooseBorders( lineCount );
 
-		var balloon = lines.map( baloonLine );
-		var boundaryOccurences = new Array( longest + 2 );
-		balloon.unshift( ' ' + boundaryOccurences.join('_') );
-		balloon.push   ( ' ' + boundaryOccurences.join('-') );
+        var balloon = lines.map( baloonLine );
+        var boundaryOccurences = new Array( longest + 2 );
+        balloon.unshift( ' ' + boundaryOccurences.join('_') );
+        balloon.push   ( ' ' + boundaryOccurences.join('-') );
 
-		return balloon.join( '\n' );
+        return balloon.join( '\n' );
 
-		function baloonLine ( line, idx ) {
-			var padders;
-			//top left and top right
-			if ( idx === 0 ) {
-				padders = border.slice( 0, 2 );
-			}
-			//bottom left and bottom right
-			else if ( idx === lineCount-1 ) {
-				padders = border.slice( 2, 4 );
-			}
-			//the wall
-			else {
-				padders = border.slice( 2 );
-			}
+        function baloonLine ( line, idx ) {
+            var padders;
+            //top left and top right
+            if ( idx === 0 ) {
+                padders = border.slice( 0, 2 );
+            }
+            //bottom left and bottom right
+            else if ( idx === lineCount-1 ) {
+                padders = border.slice( 2, 4 );
+            }
+            //the wall
+            else {
+                padders = border.slice( 2 );
+            }
 
-			//return the message, padded with spaces to the right as to fit
-			// with the border, enclosed in the matching borders
-			return (
-				padders[ 0 ] + ' ' +
-				rightPad( line, longest ) + ' ' +
-				padders[ 1 ]
-			);
-		}
-		function longestLine ( max, line ) {
-			return line.length > max ? line.length : max;
-		}
-	},
+            //return the message, padded with spaces to the right as to fit
+            // with the border, enclosed in the matching borders
+            return (
+                padders[ 0 ] + ' ' +
+                rightPad( line, longest ) + ' ' +
+                padders[ 1 ]
+            );
+        }
+        function longestLine ( max, line ) {
+            return line.length > max ? line.length : max;
+        }
+    },
 
-	//choose the borders to use for the balloon
-	chooseBorders : function ( lineCount ) {
-		var border;
+    //choose the borders to use for the balloon
+    chooseBorders : function ( lineCount ) {
+        var border;
 
-		//thought bubbles always look the same
-		// ( moosage line 1 )
-		// ( moosage line 2 )
-		if ( this.thinking ) {
-			border = [ '(', ')', '(', ')', '(', ')' ];
-		}
-		//single line messages are enclosed in < > and have no other borders
-		// < mooosage >
-		else if ( lineCount === 1 ) {
-			border = [ '<', '>' ];
-		}
-		//multi-line messages have diaganol borders and straight walls
-		// / moosage line 1 \
-		// | moosage line 2 |
-		// \ moosage line 3 /
-		else {
-			border = [ '/', '\\', '\\', '/', '|', '|' ];
-		}
+        //thought bubbles always look the same
+        // ( moosage line 1 )
+        // ( moosage line 2 )
+        if ( this.thinking ) {
+            border = [ '(', ')', '(', ')', '(', ')' ];
+        }
+        //single line messages are enclosed in < > and have no other borders
+        // < mooosage >
+        else if ( lineCount === 1 ) {
+            border = [ '<', '>' ];
+        }
+        //multi-line messages have diaganol borders and straight walls
+        // / moosage line 1 \
+        // | moosage line 2 |
+        // \ moosage line 3 /
+        else {
+            border = [ '/', '\\', '\\', '/', '|', '|' ];
+        }
 
-		return border;
-	}
+        return border;
+    }
 };
 
 function wordWrap ( str, len ) {
-	var lineLen = 0;
-	return str.split( ' ' ).reduce( handleWord, '' );
+    var lineLen = 0;
+    return str.split( ' ' ).reduce( handleWord, '' );
 
-	function handleWord ( ret, word ) {
-		var wordLen = word.length;
+    function handleWord ( ret, word ) {
+        var wordLen = word.length;
 
-		//let the wrapping...commence!
-		if ( lineLen + wordLen > len ) {
-			ret += '\n';
-			lineLen = 0;
-		}
-		lineLen += wordLen + 1; //+1 for the space we now add
+        //let the wrapping...commence!
+        if ( lineLen + wordLen > len ) {
+            ret += '\n';
+            lineLen = 0;
+        }
+        lineLen += wordLen + 1; //+1 for the space we now add
 
-		return ret + word + ' ';
-	}
+        return ret + word + ' ';
+    }
 }
 function rightPad ( str, len, padder ) {
-	padder = padder || ' ';
-	return ( str + Array(len).join(padder) ).slice( 0, len );
+    padder = padder || ' ';
+    return ( str + Array(len).join(padder) ).slice( 0, len );
 }
 
 
@@ -4176,34 +4177,34 @@ return cowsay;
 }());
 
 bot.listen(
-	/cow(think|say)\s(?:([eT])=(.{0,2})\s)?(?:([eT])=(.{0,2})\s)?(.+)/,
+    /cow(think|say)\s(?:([eT])=(.{0,2})\s)?(?:([eT])=(.{0,2})\s)?(.+)/,
 
-	function ( msg ) {
-		//the first item is the whole match, second item is the "think" or
-		// "say", last item is the message, we only want the "parameters"
-		var opts = getOpts( msg.matches.slice(2, -1) );
+    function ( msg ) {
+        //the first item is the whole match, second item is the "think" or
+        // "say", last item is the message, we only want the "parameters"
+        var opts = getOpts( msg.matches.slice(2, -1) );
 
-		//cowsay or cowthink?
-		opts.t = msg.matches[ 1 ] === 'think';
-		bot.log( opts, 'cowsay opts' );
+        //cowsay or cowthink?
+        opts.t = msg.matches[ 1 ] === 'think';
+        bot.log( opts, 'cowsay opts' );
 
-		var cowreact = cowsay.moo( msg.matches.pop(), opts );
-		msg.send( msg.codify(cowreact) );
+        var cowreact = cowsay.moo( msg.matches.pop(), opts );
+        msg.send( msg.codify(cowreact) );
 
-		function getOpts ( args ) {
-			var ret = {};
-			//'e=^^ T=vv would represent in capturing groups as:
-			// ['e', '^^', 'T', 'vv']
-			//so we go through the pairs
-			for ( var i = 0, len = args.length; i < len; i += 2 ) {
-				if ( args[i] && args[i+1] ) {
-					ret[ args[i] ] = args[ i + 1 ];
-				}
-			}
+        function getOpts ( args ) {
+            var ret = {};
+            //'e=^^ T=vv would represent in capturing groups as:
+            // ['e', '^^', 'T', 'vv']
+            //so we go through the pairs
+            for ( var i = 0, len = args.length; i < len; i += 2 ) {
+                if ( args[i] && args[i+1] ) {
+                    ret[ args[i] ] = args[ i + 1 ];
+                }
+            }
 
-			return ret;
-		}
-	}
+            return ret;
+        }
+    }
 );
 
 ;
@@ -4213,9 +4214,9 @@ bot.listen(
 // to grab and parse from the wikimedia API
 
 var notFoundMsgs = [
-	'No definition found.',
-	'It means I aint got time to learn your $5 words.',
-	'My pocket dictionary just isn\'t good enough for you.'
+    'No definition found.',
+    'It means I aint got time to learn your $5 words.',
+    'My pocket dictionary just isn\'t good enough for you.'
 ];
 var wikiUrl = 'http://en.wiktionary.org';
 //I wish regexps had the x flag...
@@ -4230,210 +4231,210 @@ var alternativeRe = /(alternative (spelling|term)|common misspelling|informal fo
 //I do not apologise. Except that I do. Sorry future me.
 //btw, how did that trip to Iceland go? Awesome! Hope you (we?) had fun.
 var define = {
-	command : function defineCommand ( args, cb ) {
-		var parts = args.parse(),
-			definitionIndex = Number( parts.pop() ),
-			definee = parts.join(' ');
+    command : function defineCommand ( args, cb ) {
+        var parts = args.parse(),
+            definitionIndex = Number( parts.pop() ),
+            definee = parts.join(' ');
 
-		if ( !definitionIndex ) {
-			definitionIndex = 0;
-			definee = args.toString();
-		}
+        if ( !definitionIndex ) {
+            definitionIndex = 0;
+            definee = args.toString();
+        }
 
-		bot.log( args, definee, definitionIndex, '/define input' );
-		var self = this;
+        bot.log( args, definee, definitionIndex, '/define input' );
+        var self = this;
 
-		this.fetchDefinition( definee, definitionIndex, finish );
+        this.fetchDefinition( definee, definitionIndex, finish );
 
-		function finish ( definition ) {
-			bot.log( definition, '/define result' );
-			var pageid = definition.pageid,
-				res;
+        function finish ( definition ) {
+            bot.log( definition, '/define result' );
+            var pageid = definition.pageid,
+                res;
 
-			if ( pageid < 0 ) {
-				res = notFoundMsgs.random();
-			}
-			else {
-				res = bot.adapter.link(
-					definition.name, wikiUrl + '/wiki?curid=' + pageid
-				) + ' ' + definition.text;
-			}
+            if ( pageid < 0 ) {
+                res = notFoundMsgs.random();
+            }
+            else {
+                res = bot.adapter.link(
+                    definition.name, wikiUrl + '/wiki?curid=' + pageid
+                ) + ' ' + definition.text;
+            }
 
-			if ( definition.overflow ) {
-				res = 'Index too large; showing last definition. ' + res;
-			}
+            if ( definition.overflow ) {
+                res = 'Index too large; showing last definition. ' + res;
+            }
 
-			if ( cb && cb.call ) {
-				cb( res );
-			}
-			else {
-				args.reply( res );
-			}
-		}
-	},
+            if ( cb && cb.call ) {
+                cb( res );
+            }
+            else {
+                args.reply( res );
+            }
+        }
+    },
 
-	fetchDefinition : function ( term, definitionIndex, cb ) {
-		var self = this;
-		this.fetchData( term, gotData );
+    fetchDefinition : function ( term, definitionIndex, cb ) {
+        var self = this;
+        this.fetchData( term, gotData );
 
-		function gotData ( resp ) {
-			var query = resp.query,
-				pageid = query.pageids[ 0 ],
-				page = query.pages[ pageid ],
-				html = page.extract;
+        function gotData ( resp ) {
+            var query = resp.query,
+                pageid = query.pageids[ 0 ],
+                page = query.pages[ pageid ],
+                html = page.extract;
 
-			if ( pageid === '-1' ) {
-				cb({
-					pageid : -1
-				});
+            if ( pageid === '-1' ) {
+                cb({
+                    pageid : -1
+                });
 
-				return;
-			}
+                return;
+            }
 
-			var root = document.createElement( 'body' );
-			root.innerHTML = html; //forgive me...
-			var definitions = self.extractDefinitions( root ),
-				definition = definitions[0],
-				overflow = false;
+            var root = document.createElement( 'body' );
+            root.innerHTML = html; //forgive me...
+            var definitions = self.extractDefinitions( root ),
+                definition = definitions[0],
+                overflow = false;
 
-			bot.log( definitions, '/define got definitions' );
+            bot.log( definitions, '/define got definitions' );
 
-			// before fetching the actual definition, we first need to check for
-			//alternatives.
-			if ( definition.alternative ) {
-				bot.log( definition.alternative, '/define found alternative' );
-				self.fetchData( definition.alternative, gotData );
-				return;
-			}
+            // before fetching the actual definition, we first need to check for
+            //alternatives.
+            if ( definition.alternative ) {
+                bot.log( definition.alternative, '/define found alternative' );
+                self.fetchData( definition.alternative, gotData );
+                return;
+            }
 
-			definition = definitions[ definitionIndex ];
+            definition = definitions[ definitionIndex ];
 
-			if ( !definition ) {
-				definition = definitions[definitions.length - 1];
-				overflow = true;
-			}
+            if ( !definition ) {
+                definition = definitions[definitions.length - 1];
+                overflow = true;
+            }
 
-			cb({
-				name   : page.title,
-				text   : definition.text,
-				pageid : pageid,
-				overflow : overflow
-			});
-		}
-	},
+            cb({
+                name   : page.title,
+                text   : definition.text,
+                pageid : pageid,
+                overflow : overflow
+            });
+        }
+    },
 
-	extractDefinitions : function ( root ) {
-		/*
-		Result of 42:
-			<ol>
-				<li>The cardinal number forty-two.</li>
-			</ol>
+    extractDefinitions : function ( root ) {
+        /*
+        Result of 42:
+            <ol>
+                <li>The cardinal number forty-two.</li>
+            </ol>
 
-		Result of plugin:
-			<ol>
-				<li>
-					<span class="use-with-mention">
-						Alternative spelling of
-						<i class="Latn mention" lang="en" xml:lang="en">
-							<a href="/wiki/plug-in#English" title="plug-in">
-								plug-in
-							</a>
-						</i>
-					</span>
-					.
-				</li>
-			</ol>
+        Result of plugin:
+            <ol>
+                <li>
+                    <span class="use-with-mention">
+                        Alternative spelling of
+                        <i class="Latn mention" lang="en" xml:lang="en">
+                            <a href="/wiki/plug-in#English" title="plug-in">
+                                plug-in
+                            </a>
+                        </i>
+                    </span>
+                    .
+                </li>
+            </ol>
 
-		Result of puling:
-			<ol>
-				<li>
-					<span class="use-with-mention">
-						Present participle of
-						<i class="Latn mention" lang="en" xml:lang="en">
-							<a href="/wiki/pule#English" title="pule">
-								pule
-							</a>
-						</i>
-					</span>
-					.
-				</li>
-			</ol>
-		*/
-		var defList = root.getElementsByTagName( 'ol' )[ 0 ];
-		console.log( defList, '/define definition list' );
+        Result of puling:
+            <ol>
+                <li>
+                    <span class="use-with-mention">
+                        Present participle of
+                        <i class="Latn mention" lang="en" xml:lang="en">
+                            <a href="/wiki/pule#English" title="pule">
+                                pule
+                            </a>
+                        </i>
+                    </span>
+                    .
+                </li>
+            </ol>
+        */
+        var defList = root.getElementsByTagName( 'ol' )[ 0 ];
+        console.log( defList, '/define definition list' );
 
-		return Array.from( defList.children )
-			.map( this.extractSingleDefinition, this );
-	},
+        return Array.from( defList.children )
+            .map( this.extractSingleDefinition, this );
+    },
 
-	extractSingleDefinition : function ( root ) {
-		//before we start messing around with the element's innards, try and
-		// find if it's an alternative of something else.
-		var alternative = this.extractAlternative( root.textContent );
+    extractSingleDefinition : function ( root ) {
+        //before we start messing around with the element's innards, try and
+        // find if it's an alternative of something else.
+        var alternative = this.extractAlternative( root.textContent );
 
-		//remove any quotations
-		Array.from(root.children).forEach(function (child) {
-			if (child.tagName === 'UL') {
-				root.removeChild(child);
-			}
-		});
+        //remove any quotations
+        Array.from(root.children).forEach(function (child) {
+            if (child.tagName === 'UL') {
+                root.removeChild(child);
+            }
+        });
 
-		var links = root.getElementsByTagName( 'a' );
-		//be sure to replace links with formatted links.
-		while ( links.length ) {
-			replaceLink( links[0] );
-		}
+        var links = root.getElementsByTagName( 'a' );
+        //be sure to replace links with formatted links.
+        while ( links.length ) {
+            replaceLink( links[0] );
+        }
 
-		return {
-			alternative : alternative,
-			text : root.textContent
-		};
+        return {
+            alternative : alternative,
+            text : root.textContent
+        };
 
-		function replaceLink ( link ) {
-			var href = wikiUrl + link.getAttribute( 'href' ),
-				textLink = bot.adapter.link( link.textContent, href ),
+        function replaceLink ( link ) {
+            var href = wikiUrl + link.getAttribute( 'href' ),
+                textLink = bot.adapter.link( link.textContent, href ),
 
-				textNode = document.createTextNode( textLink );
+                textNode = document.createTextNode( textLink );
 
-			link.parentNode.replaceChild( textNode, link );
-		}
-	},
+            link.parentNode.replaceChild( textNode, link );
+        }
+    },
 
-	extractAlternative : function ( definitionText ) {
-		return ( alternativeRe.exec(definitionText) || [] ).pop();
-	},
+    extractAlternative : function ( definitionText ) {
+        return ( alternativeRe.exec(definitionText) || [] ).pop();
+    },
 
-	fetchData : function ( term, cb ) {
-		var self = this;
+    fetchData : function ( term, cb ) {
+        var self = this;
 
-		IO.jsonp({
-			url : 'http://en.wiktionary.org/w/api.php',
-			jsonpName : 'callback',
-			data : {
-				action : 'query',
-				titles : term,
-				format : 'json',
-				prop : 'extracts',
-				indexpageids : true
-			},
-			fun : function ( resp ) {
-				cb.call( self, resp );
-			}
-		});
-	}
+        IO.jsonp({
+            url : 'http://en.wiktionary.org/w/api.php',
+            jsonpName : 'callback',
+            data : {
+                action : 'query',
+                titles : term,
+                format : 'json',
+                prop : 'extracts',
+                indexpageids : true
+            },
+            fun : function ( resp ) {
+                cb.call( self, resp );
+            }
+        });
+    }
 };
 
 bot.addCommand({
-	name : 'define',
-	fun : define.command,
-	thisArg : define,
+    name : 'define',
+    fun : define.command,
+    thisArg : define,
 
-	permissions : {
-		del : 'NONE'
-	},
+    permissions : {
+        del : 'NONE'
+    },
 
-	description : 'Fetches definition for a given word. `/define something`',
-	async : true
+    description : 'Fetches definition for a given word. `/define something`',
+    async : true
 });
 }());
 
@@ -4442,52 +4443,52 @@ bot.addCommand({
 "use strict";
 
 var defaults = {
-	message: 'fail,user,pro',
-	spaces: [25,14,1],
-	jitter: 4,
-	words: ['so','very','such','much','many']
+    message: 'fail,user,pro',
+    spaces: [25,14,1],
+    jitter: 4,
+    words: ['so','very','such','much','many']
 };
 
 function padd(str, n) {
-	n += Math.random() * (defaults.jitter * 2 ) - defaults.jitter;
+    n += Math.random() * (defaults.jitter * 2 ) - defaults.jitter;
 
-	for( var i = 0; i < n; i++ ) {
-		str = ' ' + str;
-	}
-	return str;
+    for( var i = 0; i < n; i++ ) {
+        str = ' ' + str;
+    }
+    return str;
 }
 
 function out(line) {
-	return '    ' + line + '\r';
+    return '    ' + line + '\r';
 }
 
 function shuffle(arr) {
-	return arr.sort(function() {
-		return Math.random() - 0.5;
-	});
+    return arr.sort(function() {
+        return Math.random() - 0.5;
+    });
 }
 
 function doge(msg) {
 
-	var input = (msg.length > 0 ? msg.toString() : defaults.message).split(',');
+    var input = (msg.length > 0 ? msg.toString() : defaults.message).split(',');
 
-	var pre = shuffle(defaults.words.slice(0)),
-	output = out(padd('wow', 4 + Math.random() * 4 | 0));
+    var pre = shuffle(defaults.words.slice(0)),
+    output = out(padd('wow', 4 + Math.random() * 4 | 0));
 
-	while( input.length > pre.length ) {
-		pre = pre.concat(shuffle(defaults.words.slice(0))); // Don't hurt me Zirak... I'm sorry.
-	}
+    while( input.length > pre.length ) {
+        pre = pre.concat(shuffle(defaults.words.slice(0))); // Don't hurt me Zirak... I'm sorry.
+    }
 
-	while(input.length) {
-		var line = '';
-		if( pre.length ) {
-			line += pre.shift() + ' ';
-		}
-		line += input.shift();
-		output += out(padd(line, defaults.spaces[(input.length%3) - 1]));
-	}
+    while(input.length) {
+        var line = '';
+        if( pre.length ) {
+            line += pre.shift() + ' ';
+        }
+        line += input.shift();
+        output += out(padd(line, defaults.spaces[(input.length%3) - 1]));
+    }
 
-	msg.send(output + '\r    ');
+    msg.send(output + '\r    ');
 }
 
 bot.addCommand({
@@ -4498,8 +4499,8 @@ bot.addCommand({
     },
 
     description : 'so shibe, much doge, wow' +
-		' `/doge one,two,three[,nth]',
-	unTellable : true
+        ' `/doge one,two,three[,nth]',
+    unTellable : true
 });
 
 }());
@@ -4508,96 +4509,96 @@ bot.addCommand({
 //listener to help decide which Firefly episode to watch
 
 bot.listen( /(which |what |give me a )?firefly( episode)?/i, function ( msg ) {
-	var names = ["Serenity", "The Train Job", "Bushwhacked", "Shindig", "Safe", "Our Mrs. Reynolds", "Jaynestown", "Out of Gas", "Ariel", "War Stories", "Trash", "The Message", "Heart of Gold", "Objects in Space"];
+    var names = ["Serenity", "The Train Job", "Bushwhacked", "Shindig", "Safe", "Our Mrs. Reynolds", "Jaynestown", "Out of Gas", "Ariel", "War Stories", "Trash", "The Message", "Heart of Gold", "Objects in Space"];
 
-	//no mention of episode, 5% chance of getting the movie
-	if ( msg.indexOf('episode') === -1 && Math.random() < 0.05 ) {
-		return 'Serenity (movie)';
-	}
+    //no mention of episode, 5% chance of getting the movie
+    if ( msg.indexOf('episode') === -1 && Math.random() < 0.05 ) {
+        return 'Serenity (movie)';
+    }
 
-	var r = Math.floor(Math.random() * 14);
-	return 'Episode {0} - {1}'.supplant(r + 1, names[r]);
+    var r = Math.floor(Math.random() * 14);
+    return 'Episode {0} - {1}'.supplant(r + 1, names[r]);
 });
 
 ;
 (function () {
 
 var nulls = [
-	'The Google contains no such knowledge',
-	'There are no search results. Run.',
-	'My Google Fu has failed.' ];
+    'The Google contains no such knowledge',
+    'There are no search results. Run.',
+    'My Google Fu has failed.' ];
 
 var command = {
-	name : 'google',
+    name : 'google',
 
-	fun : function ( msg, cb ) {
-		var self = this;
+    fun : function ( msg, cb ) {
+        var self = this;
 
-		this.logic( msg, finishedLogic );
+        this.logic( msg, finishedLogic );
 
-		function finishedLogic ( obj ) {
-			var res = self.format( obj );
+        function finishedLogic ( obj ) {
+            var res = self.format( obj );
 
-			if ( cb && cb.call ) {
-				cb( res );
-			}
-			else {
-				msg.directreply( res );
-			}
-		}
-	},
+            if ( cb && cb.call ) {
+                cb( res );
+            }
+            else {
+                msg.directreply( res );
+            }
+        }
+    },
 
-	logic : function ( query, cb ) {
-		IO.jsonp.google( String(query) + ' -site:w3schools.com', finishCall );
+    logic : function ( query, cb ) {
+        IO.jsonp.google( String(query) + ' -site:w3schools.com', finishCall );
 
-		function finishCall ( resp ) {
-			bot.log( resp, '/google response' );
-			if ( resp.responseStatus !== 200 ) {
-				finish( 'My Google-Fu is on vacation; status ' +
-						resp.responseStatus );
-				return;
-			}
+        function finishCall ( resp ) {
+            bot.log( resp, '/google response' );
+            if ( resp.responseStatus !== 200 ) {
+                finish( 'My Google-Fu is on vacation; status ' +
+                        resp.responseStatus );
+                return;
+            }
 
-			//TODO: change hard limit to argument
-			var results = resp.responseData.results.slice( 0, 3 );
-			results.query = query;
-			bot.log( results, '/google results' );
+            //TODO: change hard limit to argument
+            var results = resp.responseData.results.slice( 0, 3 );
+            results.query = query;
+            bot.log( results, '/google results' );
 
-			cb( results );
-		}
-	},
+            cb( results );
+        }
+    },
 
-	format : function format ( results ) {
-		if ( !results.length ) {
-			return nulls.random();
-		}
+    format : function format ( results ) {
+        if ( !results.length ) {
+            return nulls.random();
+        }
 
-		var res = formatLink( results.query ) + ' ' +
-			results.map( formatResult ).join( ' ; ' );
+        var res = formatLink( results.query ) + ' ' +
+            results.map( formatResult ).join( ' ; ' );
 
-		if ( res.length > bot.adapter.maxLineLength ) {
-			res = results.pluck( 'unescapedUrl' ).join( ' ; ' );
-		}
+        if ( res.length > bot.adapter.maxLineLength ) {
+            res = results.pluck( 'unescapedUrl' ).join( ' ; ' );
+        }
 
-		return res;
+        return res;
 
-		function formatResult ( result ) {
-			var title = IO.decodehtmlEntities( result.titleNoFormatting );
-			return bot.adapter.link( title, result.unescapedUrl );
-		}
-		function formatLink ( query ) {
-			var link =
-				'http://google.com/search?q=' + encodeURIComponent( query );
+        function formatResult ( result ) {
+            var title = IO.decodehtmlEntities( result.titleNoFormatting );
+            return bot.adapter.link( title, result.unescapedUrl );
+        }
+        function formatLink ( query ) {
+            var link =
+                'http://google.com/search?q=' + encodeURIComponent( query );
 
-			return bot.adapter.link( '*', link );
-		}
-	},
+            return bot.adapter.link( '*', link );
+        }
+    },
 
-	permissions : {
-		del : 'NONE'
-	},
-	description : 'Search Google. `/google query`',
-	async : true
+    permissions : {
+        del : 'NONE'
+    },
+    description : 'Search Google. `/google query`',
+    async : true
 };
 
 bot.addCommand( command );
@@ -4608,197 +4609,197 @@ bot.addCommand( command );
 "use strict";
 
 var randomWord = function ( length, cb ) {
-	var url = 'http://sleepy-bastion-8674.herokuapp.com/';
+    var url = 'http://sleepy-bastion-8674.herokuapp.com/';
 
-	if ( Number(length) ) {
-		url += '?length=' + length;
-	}
+    if ( Number(length) ) {
+        url += '?length=' + length;
+    }
 
-	IO.jsonp({
-		url : url,
-		jsonpName : 'callback',
-		fun : complete //aaawwww yyeeaaahhhh
-	});
+    IO.jsonp({
+        url : url,
+        jsonpName : 'callback',
+        fun : complete //aaawwww yyeeaaahhhh
+    });
 
-	function complete ( resp ) {
-		cb( resp.word.toLowerCase().trim() );
-	}
+    function complete ( resp ) {
+        cb( resp.word.toLowerCase().trim() );
+    }
 };
 
 var game = {
-	//the dude is just a template to be filled with parts
-	//like a futuristic man. he has no shape. he has no identity. he's just a
-	// collection of mindless parts, to be assembled, for the greater good.
-	//pah! I mock your pathetic attempts at disowning man of his prowess! YOU
-	// SHALL NOT WIN! VIVE LA PENSÉE!!
-	dude : [
-		'  +---+' ,
-		'  |   |' ,
-		'  |  413',
-		'  |   2' ,
-		'  |  5 6',
-		'__+__'
-	].join( '\n' ),
+    //the dude is just a template to be filled with parts
+    //like a futuristic man. he has no shape. he has no identity. he's just a
+    // collection of mindless parts, to be assembled, for the greater good.
+    //pah! I mock your pathetic attempts at disowning man of his prowess! YOU
+    // SHALL NOT WIN! VIVE LA PENSÉE!!
+    dude : [
+        '  +---+' ,
+        '  |   |' ,
+        '  |  413',
+        '  |   2' ,
+        '  |  5 6',
+        '__+__'
+    ].join( '\n' ),
 
-	parts : [ '', 'O', '|', '/', '\\', '/', '\\' ],
+    parts : [ '', 'O', '|', '/', '\\', '/', '\\' ],
 
-	word : '',
-	revealed : '',
+    word : '',
+    revealed : '',
 
-	guesses : [],
-	guessNum : 0,
-	maxGuess : 6,
+    guesses : [],
+    guessNum : 0,
+    maxGuess : 6,
 
-	end : true,
-	msg : null,
+    end : true,
+    msg : null,
 
-	validGuessRegex : /^[a-zA-Z]+$/,
+    validGuessRegex : /^[a-zA-Z]+$/,
 
-	receiveMessage : function ( msg ) {
-		this.msg = msg;
+    receiveMessage : function ( msg ) {
+        this.msg = msg;
 
-		if ( this.end ) {
-			this.new( msg );
-		}
-		else {
-			return this.handleGuess( msg );
-		}
-	},
+        if ( this.end ) {
+            this.new( msg );
+        }
+        else {
+            return this.handleGuess( msg );
+        }
+    },
 
-	new : function ( msg ) {
-		var self = this;
-		randomWord( msg, finish );
+    new : function ( msg ) {
+        var self = this;
+        randomWord( msg, finish );
 
-		function finish ( word ) {
-			bot.log( word + ' /hang random' );
-			game.word = word;
-			self.revealed = new Array( word.length + 1 ).join( '-' );
-			self.guesses = [];
-			self.guessNum = 0;
+        function finish ( word ) {
+            bot.log( word + ' /hang random' );
+            game.word = word;
+            self.revealed = new Array( word.length + 1 ).join( '-' );
+            self.guesses = [];
+            self.guessNum = 0;
 
-			self.guessMade();
-			self.end = false;
+            self.guessMade();
+            self.end = false;
 
-			if ( msg.length && !Number(msg) ) {
-				self.receiveMessage( msg );
-			}
-		}
-	},
+            if ( msg.length && !Number(msg) ) {
+                self.receiveMessage( msg );
+            }
+        }
+    },
 
-	handleGuess : function ( msg ) {
-		var guess = msg.slice().toLowerCase();
-		bot.log( guess, 'handleGuess' );
+    handleGuess : function ( msg ) {
+        var guess = msg.slice().toLowerCase();
+        bot.log( guess, 'handleGuess' );
 
-		var err = this.checkGuess( guess );
-		if ( err ) {
-			return err;
-		}
+        var err = this.checkGuess( guess );
+        if ( err ) {
+            return err;
+        }
 
-		//replace all occurences of the guess within the hidden word with their
-		// actual characters
-		var indexes = this.word.indexesOf( guess );
-		indexes.forEach(function ( index ) {
-			this.uncoverPart( guess, index );
-		}, this);
+        //replace all occurences of the guess within the hidden word with their
+        // actual characters
+        var indexes = this.word.indexesOf( guess );
+        indexes.forEach(function ( index ) {
+            this.uncoverPart( guess, index );
+        }, this);
 
-		//not found in secret word, penalize the evil doers!
-		if ( !indexes.length ) {
-			this.guessNum++;
-		}
+        //not found in secret word, penalize the evil doers!
+        if ( !indexes.length ) {
+            this.guessNum++;
+        }
 
-		this.guesses.push( guess );
-		this.guessMade();
+        this.guesses.push( guess );
+        this.guessMade();
 
-		bot.log( guess, 'handleGuess handled' );
+        bot.log( guess, 'handleGuess handled' );
 
-		//plain vanilla lose-win checks. yum yum yum.
-		if ( this.loseCheck() ) {
-			return this.lose();
-		}
-		if ( this.winCheck() ) {
-			return this.win();
-		}
-	},
+        //plain vanilla lose-win checks. yum yum yum.
+        if ( this.loseCheck() ) {
+            return this.lose();
+        }
+        if ( this.winCheck() ) {
+            return this.win();
+        }
+    },
 
-	checkGuess : function ( guess ) {
-		if ( !guess.length || Number(guess) ) {
-			return 'We\'re already playing!';
-		}
+    checkGuess : function ( guess ) {
+        if ( !guess.length || Number(guess) ) {
+            return 'We\'re already playing!';
+        }
 
-		if ( !this.validGuessRegex.test(guess) ) {
-			return 'I will only accept alpha characters';
-		}
+        if ( !this.validGuessRegex.test(guess) ) {
+            return 'I will only accept alpha characters';
+        }
 
-		//check if it was already submitted
-		if ( this.guesses.indexOf(guess) > -1 ) {
-			return guess + ' was already submitted';
-		}
+        //check if it was already submitted
+        if ( this.guesses.indexOf(guess) > -1 ) {
+            return guess + ' was already submitted';
+        }
 
-		//or if it's the wrong length
-		if ( guess.length > this.word.length ) {
-			return bot.adapter.codify( guess ) + ' is too long to fit';
-		}
-	},
+        //or if it's the wrong length
+        if ( guess.length > this.word.length ) {
+            return bot.adapter.codify( guess ) + ' is too long to fit';
+        }
+    },
 
-	//unearth a portion of the secret word
-	uncoverPart : function ( guess, startIndex ) {
-		this.revealed =
-			this.revealed.slice( 0, startIndex ) +
-			guess +
-			this.revealed.slice( startIndex + guess.length );
-	},
+    //unearth a portion of the secret word
+    uncoverPart : function ( guess, startIndex ) {
+        this.revealed =
+            this.revealed.slice( 0, startIndex ) +
+            guess +
+            this.revealed.slice( startIndex + guess.length );
+    },
 
-	//attach the hangman drawing to the already guessed list and to the
-	// revealed portion of the secret word
-	preparePrint : function () {
-		if (this.end) {
-			return;
-		}
-		var self = this;
+    //attach the hangman drawing to the already guessed list and to the
+    // revealed portion of the secret word
+    preparePrint : function () {
+        if (this.end) {
+            return;
+        }
+        var self = this;
 
-		//replace the placeholders in the dude with body parts
-		var dude = this.dude.replace( /\d/g, function ( part ) {
-			return part > self.guessNum ? ' ' : self.parts[ part ];
-		});
+        //replace the placeholders in the dude with body parts
+        var dude = this.dude.replace( /\d/g, function ( part ) {
+            return part > self.guessNum ? ' ' : self.parts[ part ];
+        });
 
-		var belowDude = this.guesses.sort().join( ', ' ) +
-			'\n' + this.revealed;
-		var hangy = this.msg.codify( dude + '\n' + belowDude );
+        var belowDude = this.guesses.sort().join( ', ' ) +
+            '\n' + this.revealed;
+        var hangy = this.msg.codify( dude + '\n' + belowDude );
 
-		bot.log( hangy, this.msg );
-		this.msg.send( hangy );
-	},
+        bot.log( hangy, this.msg );
+        this.msg.send( hangy );
+    },
 
-	//win the game
-	win : function () {
-		this.end = true;
-		return 'Correct! The word is ' + this.word + '.';
-	},
+    //win the game
+    win : function () {
+        this.end = true;
+        return 'Correct! The word is ' + this.word + '.';
+    },
 
-	//lose the game. less bitter messages? maybe.
-	lose : function () {
-		this.end = true;
-		return 'You people suck. The word is ' + this.word;
-	},
+    //lose the game. less bitter messages? maybe.
+    lose : function () {
+        this.end = true;
+        return 'You people suck. The word is ' + this.word;
+    },
 
-	winCheck : function () {
-		return this.word === this.revealed;
-	},
+    winCheck : function () {
+        return this.word === this.revealed;
+    },
 
-	loseCheck : function () {
-		return this.guessNum >= this.maxGuess;
-	},
+    loseCheck : function () {
+        return this.guessNum >= this.maxGuess;
+    },
 
-	guessMade : function () {
-		clearTimeout( this.printTimeout );
-		this.printTimeout = setTimeout( this.preparePrint.bind(this), 2000 );
-	}
+    guessMade : function () {
+        clearTimeout( this.printTimeout );
+        this.printTimeout = setTimeout( this.preparePrint.bind(this), 2000 );
+    }
 };
 
 bot.addCommand({
-	name : 'hang',
-	fun : game.receiveMessage,
-	thisArg : game
+    name : 'hang',
+    fun : game.receiveMessage,
+    thisArg : game
 });
 }());
 
@@ -4870,80 +4871,80 @@ bot.addCommand({
 var baseURL = 'http://api.jquery.com/';
 
 function jquery ( args ) {
-	if ( !args.content ) {
-		return baseURL;
-	}
+    if ( !args.content ) {
+        return baseURL;
+    }
 
-	//check to see if more than one thing is requested
-	var parsed = args.parse( true );
-	if ( parsed.length > 1 ) {
-		return parsed.map( jquery ).join( ' ' );
-	}
+    //check to see if more than one thing is requested
+    var parsed = args.parse( true );
+    if ( parsed.length > 1 ) {
+        return parsed.map( jquery ).join( ' ' );
+    }
 
-	var props = args.trim().replace( /^\$/, 'jQuery' ),
+    var props = args.trim().replace( /^\$/, 'jQuery' ),
 
-	parts = props.split( '.' ), exists = false,
-	url = props, msg;
-	//parts will contain two likely components, depending on the input
-	// jQuery.fn.prop -  parts[0] = jQuery, parts[1] = prop
-	// jQuery.prop    -  parts[0] = jQuery, parts[1] = prop
-	// prop           -  parts[0] = prop
-	//
-	//jQuery API urls works like this:
-	// if it's on the jQuery object, then the url is /jQuery.property
-	// if it's on the proto, then the url is /property
-	//
-	//so, the mapping goes like this:
-	// jQuery.fn.prop => prop
-	// jQuery.prop    => jQuery.prop if it's on jQuery
-	// prop           => prop if it's on jQuery.prototype,
-	//                     jQuery.prop if it's on jQuery
+    parts = props.split( '.' ), exists = false,
+    url = props, msg;
+    //parts will contain two likely components, depending on the input
+    // jQuery.fn.prop -  parts[0] = jQuery, parts[1] = prop
+    // jQuery.prop    -  parts[0] = jQuery, parts[1] = prop
+    // prop           -  parts[0] = prop
+    //
+    //jQuery API urls works like this:
+    // if it's on the jQuery object, then the url is /jQuery.property
+    // if it's on the proto, then the url is /property
+    //
+    //so, the mapping goes like this:
+    // jQuery.fn.prop => prop
+    // jQuery.prop    => jQuery.prop if it's on jQuery
+    // prop           => prop if it's on jQuery.prototype,
+    //                     jQuery.prop if it's on jQuery
 
-	bot.log( props, parts, '/jquery input' );
+    bot.log( props, parts, '/jquery input' );
 
-	//user gave something like jQuery.fn.prop, turn that to just prop
-	// jQuery.fn.prop => prop
-	if ( parts.length === 3 ) {
-		parts = [ parts[2] ];
-	}
+    //user gave something like jQuery.fn.prop, turn that to just prop
+    // jQuery.fn.prop => prop
+    if ( parts.length === 3 ) {
+        parts = [ parts[2] ];
+    }
 
-	//check to see if it's a property on the jQuery object itself
-	// jQuery.prop => jQuery.prop
-	if ( parts[0] === 'jQuery' && jQuery[parts[1]] ) {
-		exists = true;
-	}
+    //check to see if it's a property on the jQuery object itself
+    // jQuery.prop => jQuery.prop
+    if ( parts[0] === 'jQuery' && jQuery[parts[1]] ) {
+        exists = true;
+    }
 
-	//user wants something on the prototype?
-	// prop => prop
-	else if ( parts.length === 1 && jQuery.prototype[parts[0]] ) {
-		url = parts[ 0 ];
-		exists = true;
-	}
+    //user wants something on the prototype?
+    // prop => prop
+    else if ( parts.length === 1 && jQuery.prototype[parts[0]] ) {
+        url = parts[ 0 ];
+        exists = true;
+    }
 
-	//user just wanted a property? maybe.
-	// prop => jQuery.prop
-	else if ( jQuery[parts[0]] ) {
-		url = 'jQuery.' + parts[0];
-		exists = true;
-	}
+    //user just wanted a property? maybe.
+    // prop => jQuery.prop
+    else if ( jQuery[parts[0]] ) {
+        url = 'jQuery.' + parts[0];
+        exists = true;
+    }
 
-	if ( exists ) {
-		msg = baseURL + url;
-	}
-	else {
-		msg = baseURL + '?s=' + encodeURIComponent( args );
-	}
-	bot.log( msg, '/jquery link' );
+    if ( exists ) {
+        msg = baseURL + url;
+    }
+    else {
+        msg = baseURL + '?s=' + encodeURIComponent( args );
+    }
+    bot.log( msg, '/jquery link' );
 
-	return msg;
+    return msg;
 }
 
 bot.addCommand({
-	name : 'jquery',
-	fun : jquery,
+    name : 'jquery',
+    fun : jquery,
 
-	permissions : { del : 'NONE', use : 'ALL' },
-	description : 'Fetches documentation link from jQuery API. `/jquery what`',
+    permissions : { del : 'NONE', use : 'ALL' },
+    description : 'Fetches documentation link from jQuery API. `/jquery what`',
 });
 
 })();
@@ -4954,200 +4955,200 @@ bot.addCommand({
 var storage = bot.memory.get( 'learn' );
 
 var replyPatterns = /^(<>|<user>|<msg>)/i,
-	onlyReply = new RegExp( replyPatterns.source + '$', 'i' );
+    onlyReply = new RegExp( replyPatterns.source + '$', 'i' );
 var mismatchErrMessage = 'Input not matching `{input}`. Help: {description}';
 
 function learn ( args ) {
-	bot.log( args, '/learn input' );
+    bot.log( args, '/learn input' );
 
-	var commandParts = args.parse();
-	var command = {
-		name   : commandParts[ 0 ],
-		output : commandParts[ 1 ],
-		input  : commandParts[ 2 ] || '.*',
-		//meta info
-		creator: args.get( 'user_name' ),
-		creatorID : args.get('user_id' ),
-		date   : new Date()
-	};
+    var commandParts = args.parse();
+    var command = {
+        name   : commandParts[ 0 ],
+        output : commandParts[ 1 ],
+        input  : commandParts[ 2 ] || '.*',
+        //meta info
+        creator: args.get( 'user_name' ),
+        creatorID : args.get('user_id' ),
+        date   : new Date()
+    };
 
-	// this needs to be lowercased before we check if it is valid, otherwise !!help can be overwritten with !!HELP (true for all commands)
-	command.name = command.name.toLowerCase();
+    // this needs to be lowercased before we check if it is valid, otherwise !!help can be overwritten with !!HELP (true for all commands)
+    command.name = command.name.toLowerCase();
 
-	//a truthy value, unintuitively, means it isn't valid, because it returns
-	// an error message
-	var errorMessage = checkCommand( command );
-	if ( errorMessage ) {
-		return errorMessage;
-	}
+    //a truthy value, unintuitively, means it isn't valid, because it returns
+    // an error message
+    var errorMessage = checkCommand( command );
+    if ( errorMessage ) {
+        return errorMessage;
+    }
 
-	
-	command.input = new RegExp( command.input );
-	command.description = [
-		'User-taught command:',
-		commandParts[3] || '',
-		args.codify( command.output )
-	].join( ' ' );
+    
+    command.input = new RegExp( command.input );
+    command.description = [
+        'User-taught command:',
+        commandParts[3] || '',
+        args.codify( command.output )
+    ].join( ' ' );
 
-	bot.log( command, '/learn parsed' );
+    bot.log( command, '/learn parsed' );
 
-	addCustomCommand( command );
-	saveCommand( command );
+    addCustomCommand( command );
+    saveCommand( command );
 
-	return 'Command ' + command.name + ' learned';
+    return 'Command ' + command.name + ' learned';
 }
 
 function addCustomCommand ( command ) {
-	var cmd = bot.Command({
-		//I hate this duplication
-		name : command.name,
+    var cmd = bot.Command({
+        //I hate this duplication
+        name : command.name,
 
-		description : command.description,
-		creator : command.creator,
-		date : command.date,
+        description : command.description,
+        creator : command.creator,
+        date : command.date,
 
-		fun : makeCustomCommand( command ),
-		permissions : {
-			use : 'ALL',
-			//to fix #171, command.creatorID was added. we need to retain BC
-			del : command.creatorID ? [ command.creatorID ] : 'OWNER'
-		}
-	});
-	cmd.learned = true;
+        fun : makeCustomCommand( command ),
+        permissions : {
+            use : 'ALL',
+            //to fix #171, command.creatorID was added. we need to retain BC
+            del : command.creatorID ? [ command.creatorID ] : 'OWNER'
+        }
+    });
+    cmd.learned = true;
 
-	cmd.del = (function ( old ) {
-		return function () {
-			deleteCommand( command.name );
-			old.call( cmd );
-		};
-	}( cmd.del ));
+    cmd.del = (function ( old ) {
+        return function () {
+            deleteCommand( command.name );
+            old.call( cmd );
+        };
+    }( cmd.del ));
 
-	bot.log( cmd, '/learn addCustomCommand' );
-	bot.addCommand( cmd );
+    bot.log( cmd, '/learn addCustomCommand' );
+    bot.addCommand( cmd );
 }
 function makeCustomCommand ( command ) {
-	var output = command.output.replace( replyPatterns, '' ).trim(),
-		replyMethod = extractPattern();
+    var output = command.output.replace( replyPatterns, '' ).trim(),
+        replyMethod = extractPattern();
 
-	bot.log( command, '/learn makeCustomCommand' );
+    bot.log( command, '/learn makeCustomCommand' );
 
-	return function userLearnedCommand ( args ) {
-		bot.log( args, command.name + ' input' );
+    return function userLearnedCommand ( args ) {
+        bot.log( args, command.name + ' input' );
 
-		var cmdArgs = bot.Message( output, args.get() ),
-			parts = command.input.exec( args );
+        var cmdArgs = bot.Message( output, args.get() ),
+            parts = command.input.exec( args );
 
-		//reply with the desc if there's incorrect usage (#102)
-		if ( !parts ) {
-			return mismatchErrMessage.supplant( command );
-		}
+        //reply with the desc if there's incorrect usage (#102)
+        if ( !parts ) {
+            return mismatchErrMessage.supplant( command );
+        }
 
-		var res = bot.parseMacro( cmdArgs, parts );
+        var res = bot.parseMacro( cmdArgs, parts );
 
-		switch ( replyMethod ) {
-		case '':
-			args.send( res );
-			break;
-		case 'msg':
-			args.directreply( res );
-			break;
-		default:
-			args.reply( res );
-		}
-	};
+        switch ( replyMethod ) {
+        case '':
+            args.send( res );
+            break;
+        case 'msg':
+            args.directreply( res );
+            break;
+        default:
+            args.reply( res );
+        }
+    };
 
-	function extractPattern () {
-		var matches = replyPatterns.exec( command.output ) || [ , 'user' ],
-			pattern =  matches[ 1 ];
+    function extractPattern () {
+        var matches = replyPatterns.exec( command.output ) || [ , 'user' ],
+            pattern =  matches[ 1 ];
 
-		return pattern.slice(1, -1);
-	}
+        return pattern.slice(1, -1);
+    }
 }
 
 //return a truthy value (an error message) if it's invalid, falsy if it's
 // valid
 function checkCommand ( cmd ) {
-	var somethingUndefined = Object.keys( cmd ).some(function ( key ) {
-		return !cmd[ key ];
-	}),
-		error;
+    var somethingUndefined = Object.keys( cmd ).some(function ( key ) {
+        return !cmd[ key ];
+    }),
+        error;
 
-	if ( somethingUndefined ) {
-		error = 'Illegal `/learn` object; see `/help learn`';
-	}
-	//not very possible, I know, but...uh...yes. definitely. I agree. spot on,
-	// Mr. Pips.
-	else if ( /\s/.test(cmd.name) ) {
-		error = 'Invalid command name';
-	}
-	else if ( !canWriteTo(cmd.name) ) {
-		error = 'Command ' + cmd.name + ' already exists';
-	}
-	else if ( onlyReply.test(cmd.output) ) {
-		error = 'Please enter some output';
-	}
+    if ( somethingUndefined ) {
+        error = 'Illegal `/learn` object; see `/help learn`';
+    }
+    //not very possible, I know, but...uh...yes. definitely. I agree. spot on,
+    // Mr. Pips.
+    else if ( /\s/.test(cmd.name) ) {
+        error = 'Invalid command name';
+    }
+    else if ( !canWriteTo(cmd.name) ) {
+        error = 'Command ' + cmd.name + ' already exists';
+    }
+    else if ( onlyReply.test(cmd.output) ) {
+        error = 'Please enter some output';
+    }
 
-	return error;
+    return error;
 
-	function canWriteTo ( name ) {
-		if ( !bot.commandExists(name) ) {
-			return true;
-		}
+    function canWriteTo ( name ) {
+        if ( !bot.commandExists(name) ) {
+            return true;
+        }
 
-		//if the command was learned up to 5 minutes ago, allow overwriting it
-		var alt = bot.getCommand( name );
-		return alt.learned &&
-			( alt.date.getTime() + 1000 * 60 * 5 ) > Date.now();
-	}
+        //if the command was learned up to 5 minutes ago, allow overwriting it
+        var alt = bot.getCommand( name );
+        return alt.learned &&
+            ( alt.date.getTime() + 1000 * 60 * 5 ) > Date.now();
+    }
 }
 
 function loadCommands () {
-	Object.iterate( storage, teach );
+    Object.iterate( storage, teach );
 
-	function teach ( key, cmd ) {
-		cmd = JSON.parse( cmd );
-		cmd.input = turnToRegexp( cmd.input );
-		cmd.date = new Date( Date.parse(cmd.date) );
+    function teach ( key, cmd ) {
+        cmd = JSON.parse( cmd );
+        cmd.input = turnToRegexp( cmd.input );
+        cmd.date = new Date( Date.parse(cmd.date) );
 
-		addCustomCommand( cmd );
-	}
+        addCustomCommand( cmd );
+    }
 
-	//input: strung regexp, e.g. /abc/i
-	//return: regexp
-	//algo: we split by /.
-	//  the first item is empty, the part before the first /
-	//  the second to second-before-last are the regexp body. there will be more
-	//    than one item in that range if the regexp contained escaped slashes,
-	//    like /abc\/def/
-	//  the last item is the flags (or the empty string, if no flags are set)
-	function turnToRegexp ( input ) {
-		var parts = input.toString().split( '/' );
-		return new RegExp(
-			parts.slice( 1, -1 ).join( '/' ), //to compensate for escaped /
-			parts[ parts.length-1 ]
-		);
-	}
+    //input: strung regexp, e.g. /abc/i
+    //return: regexp
+    //algo: we split by /.
+    //  the first item is empty, the part before the first /
+    //  the second to second-before-last are the regexp body. there will be more
+    //    than one item in that range if the regexp contained escaped slashes,
+    //    like /abc\/def/
+    //  the last item is the flags (or the empty string, if no flags are set)
+    function turnToRegexp ( input ) {
+        var parts = input.toString().split( '/' );
+        return new RegExp(
+            parts.slice( 1, -1 ).join( '/' ), //to compensate for escaped /
+            parts[ parts.length-1 ]
+        );
+    }
 }
 function saveCommand ( command ) {
-	//h4x in source/util.js defines RegExp.prototype.toJSON so we don't worry
-	// about the input regexp stringifying
-	storage[ command.name ] = JSON.stringify( command );
-	bot.memory.save( 'learn' );
+    //h4x in source/util.js defines RegExp.prototype.toJSON so we don't worry
+    // about the input regexp stringifying
+    storage[ command.name ] = JSON.stringify( command );
+    bot.memory.save( 'learn' );
 }
 function deleteCommand ( name ) {
-	delete storage[ name ];
-	bot.memory.save( 'learn' );
+    delete storage[ name ];
+    bot.memory.save( 'learn' );
 }
 
 bot.addCommand({
-	name : 'learn',
-	fun  : learn,
-	privileges : {
-		del : 'NONE'
-	},
+    name : 'learn',
+    fun  : learn,
+    privileges : {
+        del : 'NONE'
+    },
 
-	description : 'Teaches me a command. ' +
-		'`/learn cmdName outputPattern [inputRegex [description]]`'
+    description : 'Teaches me a command. ' +
+        '`/learn cmdName outputPattern [inputRegex [description]]`'
 });
 
 loadCommands();
@@ -5156,94 +5157,94 @@ loadCommands();
 
 ;
 bot.addCommand({
-	name : 'live',
-	fun : function () {
-		if ( !bot.stopped ) {
-			return 'I\'m not dead! Honest!';
-		}
-		bot.continue();
-		return 'And on this day, you shall paint eggs for a giant bunny.';
-	},
-	permissions : { del : 'NONE', use : 'OWNER' },
-	description : 'Resurrects me (:D) if I\'m down (D:)',
+    name : 'live',
+    fun : function () {
+        if ( !bot.stopped ) {
+            return 'I\'m not dead! Honest!';
+        }
+        bot.continue();
+        return 'And on this day, you shall paint eggs for a giant bunny.';
+    },
+    permissions : { del : 'NONE', use : 'OWNER' },
+    description : 'Resurrects me (:D) if I\'m down (D:)',
 });
 
 bot.addCommand(bot.CommunityCommand({
-	name : 'die',
-	fun : function () {
-		if ( bot.stopped ) {
-			return 'Kill me once, shame on you, kill me twice...';
-		}
+    name : 'die',
+    fun : function () {
+        if ( bot.stopped ) {
+            return 'Kill me once, shame on you, kill me twice...';
+        }
 
-		bot.stop();
+        bot.stop();
 
-		return 'You killed me!';
-	},
-	permissions : { del : 'NONE', use : 'OWNER' },
-	description : 'Kills me :(',
-	pendingMessage : 'I will shut up after {0} more invocations.'
+        return 'You killed me!';
+    },
+    permissions : { del : 'NONE', use : 'OWNER' },
+    description : 'Kills me :(',
+    pendingMessage : 'I will shut up after {0} more invocations.'
 }));
 
 ;
 (function () {
 
 function mdn ( args, cb ) {
-	var terms = args.toString().split(/,\s*/g);
-	var results = {
-		unescapedUrls : [],
-		formatted : []
-	};
+    var terms = args.toString().split(/,\s*/g);
+    var results = {
+        unescapedUrls : [],
+        formatted : []
+    };
 
-	terms.forEach(function ( term ) {
-		IO.jsonp.google(
-			term + ' site:developer.mozilla.org', finishCall );
-	});
+    terms.forEach(function ( term ) {
+        IO.jsonp.google(
+            term + ' site:developer.mozilla.org', finishCall );
+    });
 
-	function finishCall ( resp ) {
-		if ( resp.responseStatus !== 200 ) {
-			finish( 'Something went on fire; status ' + resp.responseStatus );
-			return;
-		}
+    function finishCall ( resp ) {
+        if ( resp.responseStatus !== 200 ) {
+            finish( 'Something went on fire; status ' + resp.responseStatus );
+            return;
+        }
 
-		var result = resp.responseData.results[ 0 ];
-		bot.log( result, '/mdn result' );
+        var result = resp.responseData.results[ 0 ];
+        bot.log( result, '/mdn result' );
 
-		var title = IO.decodehtmlEntities(
-			result.titleNoFormatting.split(' -')[0].trim()
-		);
+        var title = IO.decodehtmlEntities(
+            result.titleNoFormatting.split(' -')[0].trim()
+        );
 
-		results.formatted.push( bot.adapter.link(title, result.url) );
-		results.unescapedUrls.push( result.url );
+        results.formatted.push( bot.adapter.link(title, result.url) );
+        results.unescapedUrls.push( result.url );
 
-		if ( results.formatted.length === terms.length ) {
-			aggregatedResults();
-		}
-	}
-	function aggregatedResults () {
-		var msg = results.formatted.join( ', ' );
-		if ( msg.length > bot.adapter.maxLineLength ) {
-			msg = results.unescapedUrls.join( ', ' );
-		}
+        if ( results.formatted.length === terms.length ) {
+            aggregatedResults();
+        }
+    }
+    function aggregatedResults () {
+        var msg = results.formatted.join( ', ' );
+        if ( msg.length > bot.adapter.maxLineLength ) {
+            msg = results.unescapedUrls.join( ', ' );
+        }
 
-		finish( msg );
-	}
-	function finish ( res ) {
-		if ( cb && cb.call ) {
-			cb( res );
-		}
-		else {
-			args.reply( res );
-		}
-	}
+        finish( msg );
+    }
+    function finish ( res ) {
+        if ( cb && cb.call ) {
+            cb( res );
+        }
+        else {
+            args.reply( res );
+        }
+    }
 };
 
 bot.addCommand({
-	name : 'mdn',
-	fun : mdn,
+    name : 'mdn',
+    fun : mdn,
 
-	permissions : { del : 'NONE', use : 'ALL' },
-	description : 'Fetches mdn documentation. `/mdn what`',
-	async : true
+    permissions : { del : 'NONE', use : 'ALL' },
+    description : 'Fetches mdn documentation. `/mdn what`',
+    async : true
 });
 
 })();
@@ -5253,63 +5254,63 @@ bot.addCommand({
 // #151: Listen for meme image names and reply with that meme.
 
 var urlBase = 'http://cdn.alltheragefaces.com/img/faces/png/',
-	extension = 'png';
+    extension = 'png';
 
 var memes = {
-	deskflip : 'angry-desk-flip',
-	fuu : 'rage-classic',
-	iseewhatyoudidthere : 'happy-i-see-what-you-did-there-(clean)',
-	no : 'angry-no',
-	notbad : 'obama-not-bad',
-	ohyou : 'happy-oh-stop-it-you',
-	okay : 'okay-okay-clean',
-	troll : 'troll-troll-face',
-	trollface : 'troll-troll-face',
-	youdontsay : 'misc-you-dont-say',
+    deskflip : 'angry-desk-flip',
+    fuu : 'rage-classic',
+    iseewhatyoudidthere : 'happy-i-see-what-you-did-there-(clean)',
+    no : 'angry-no',
+    notbad : 'obama-not-bad',
+    ohyou : 'happy-oh-stop-it-you',
+    okay : 'okay-okay-clean',
+    troll : 'troll-troll-face',
+    trollface : 'troll-troll-face',
+    youdontsay : 'misc-you-dont-say',
 };
 
 // ^(deskflip|no|notbad|...)\.(jpe?g|png)$
 var re = new RegExp(
-	'^(' +
-		Object.keys( memes ).map( RegExp.escape ).join( '|' ) +
-	')\\.(jpe?g|png)$' );
+    '^(' +
+        Object.keys( memes ).map( RegExp.escape ).join( '|' ) +
+    ')\\.(jpe?g|png)$' );
 
 IO.register( 'input', function meme ( msgObj ) {
-	var msg = msgObj.content.toLowerCase(),
-		parts = re.exec( msg );
+    var msg = msgObj.content.toLowerCase(),
+        parts = re.exec( msg );
 
-	if ( !parts ) {
-		return;
-	}
+    if ( !parts ) {
+        return;
+    }
 
-	var reply = getMemeLink( parts[1] );
+    var reply = getMemeLink( parts[1] );
 
-	bot.adapter.out.add(
-		bot.adapter.directreply( msgObj.message_id ) + ' ' +
-			reply, msgObj.room_id );
+    bot.adapter.out.add(
+        bot.adapter.directreply( msgObj.message_id ) + ' ' +
+            reply, msgObj.room_id );
 });
 
 bot.addCommand({
-	name : 'meme',
-	fun : function ( args ) {
-		var name = args.replace( /\.\w+$/, '' );
+    name : 'meme',
+    fun : function ( args ) {
+        var name = args.replace( /\.\w+$/, '' );
 
-		if ( !name || name === 'list' ) {
-			return Object.keys( memes ).join( ', ' );
-		}
-		else if ( !memes.hasOwnProperty(name) ) {
-			return 'Sorry, I don\'t know that one.';
-		}
+        if ( !name || name === 'list' ) {
+            return Object.keys( memes ).join( ', ' );
+        }
+        else if ( !memes.hasOwnProperty(name) ) {
+            return 'Sorry, I don\'t know that one.';
+        }
 
-		args.directreply( getMemeLink(name) );
-	},
-	permissions : { del : 'NONE' },
-	description : 'Return a simple meme link. Pass no arguments or `list` to ' +
-		'get a list of known memes. `/meme [memeName]`.'
+        args.directreply( getMemeLink(name) );
+    },
+    permissions : { del : 'NONE' },
+    description : 'Return a simple meme link. Pass no arguments or `list` to ' +
+        'get a list of known memes. `/meme [memeName]`.'
 });
 
 function getMemeLink ( meme ) {
-	return urlBase + memes[ meme ] + '.' + extension;
+    return urlBase + memes[ meme ] + '.' + extension;
 }
 
 })();
@@ -5319,91 +5320,91 @@ function getMemeLink ( meme ) {
 "use strict";
 
 var unexisto = 'User {0} was not found in room {1} (sorry, mustache only ' +
-		'works there).';
+        'works there).';
 
 function mustachify ( args ) {
-	var props = parseArgs( args ),
-		usrid = props.usrid;
-	bot.log( props, '/mustache input' );
+    var props = parseArgs( args ),
+        usrid = props.usrid;
+    bot.log( props, '/mustache input' );
 
-	//check for url passing
-	if ( linkCheck(usrid) ) {
-		finish( encodeURIComponent(usrid) );
-		return;
-	}
+    //check for url passing
+    if ( linkCheck(usrid) ) {
+        finish( encodeURIComponent(usrid) );
+        return;
+    }
 
-	if ( !usrid ) {
-		usrid = args.get( 'user_id' );
-	}
-	else if ( /\D/.test(usrid) ) {
-		usrid = args.findUserId( usrid );
-	}
+    if ( !usrid ) {
+        usrid = args.get( 'user_id' );
+    }
+    else if ( /\D/.test(usrid) ) {
+        usrid = args.findUserId( usrid );
+    }
 
-	bot.log( usrid, '/mustache mapped' );
+    bot.log( usrid, '/mustache mapped' );
 
-	if ( !bot.users.hasOwnProperty(usrid) ) {
-		return unexisto.supplant( usrid, bot.adapter.roomid );
-	}
-	else if ( Number(usrid) === bot.adapter.user_id ) {
-		return [
-			'Nobody puts a mustache on me. Again.',
-			'Mustache me once, shame on you. Mustache me ---twice--- 9 times...'
-		].random();
-	}
+    if ( !bot.users.hasOwnProperty(usrid) ) {
+        return unexisto.supplant( usrid, bot.adapter.roomid );
+    }
+    else if ( Number(usrid) === bot.adapter.user_id ) {
+        return [
+            'Nobody puts a mustache on me. Again.',
+            'Mustache me once, shame on you. Mustache me ---twice--- 9 times...'
+        ].random();
+    }
 
-	var hash = bot.users[ usrid ].email_hash;
-	//SO now allows non-gravatar images. the email_hash will be a link to the
-	// image in that case, prepended with a ! for some reason
-	if ( hash[0] === '!' ) {
-		finish( encodeURIComponent(hash.slice(1)) + '#.png' );
-	}
-	else {
-		finish(
-			'http%3A%2F%2Fwww.gravatar.com%2Favatar%2F{0}%3Fs%3D256%26d%3Didenticon#.png'.supplant(hash) );
-	}
+    var hash = bot.users[ usrid ].email_hash;
+    //SO now allows non-gravatar images. the email_hash will be a link to the
+    // image in that case, prepended with a ! for some reason
+    if ( hash[0] === '!' ) {
+        finish( encodeURIComponent(hash.slice(1)) + '#.png' );
+    }
+    else {
+        finish(
+            'http%3A%2F%2Fwww.gravatar.com%2Favatar%2F{0}%3Fs%3D256%26d%3Didenticon#.png'.supplant(hash) );
+    }
 
-	function finish ( src ) {
-		bot.log( src, '/mustache finish' );
+    function finish ( src ) {
+        bot.log( src, '/mustache finish' );
 
-		args.directreply(
-			'http://mustachify.me/' + props.mustache + '?src=' + src );
-	}
+        args.directreply(
+            'http://mustachify.me/' + props.mustache + '?src=' + src );
+    }
 
-	function parseArgs ( args ) {
-		var parts = args.parse(),
-			last = parts.pop(),
-			ret = {};
+    function parseArgs ( args ) {
+        var parts = args.parse(),
+            last = parts.pop(),
+            ret = {};
 
-		// /mustache usrid mustache
-		// /mustache user-name mustache
-		//we've already `.pop`ed the mustache part, so we need to account for it
-		if ( parts.length > 0 && !(/\D/).test(last) ) {
-			ret.usrid = parts.join( ' ' );
-			ret.mustache = last;
-		}
-		// /mustache usrid
-		else {
-			ret.usrid = args.content;
-			ret.mustache = Math.rand(0, 5);
-		}
+        // /mustache usrid mustache
+        // /mustache user-name mustache
+        //we've already `.pop`ed the mustache part, so we need to account for it
+        if ( parts.length > 0 && !(/\D/).test(last) ) {
+            ret.usrid = parts.join( ' ' );
+            ret.mustache = last;
+        }
+        // /mustache usrid
+        else {
+            ret.usrid = args.content;
+            ret.mustache = Math.rand(0, 5);
+        }
 
-		return ret;
-	}
+        return ret;
+    }
 }
 
 function linkCheck ( suspect ) {
-	return suspect.startsWith( 'http' ) || suspect.startsWith( 'www' );
+    return suspect.startsWith( 'http' ) || suspect.startsWith( 'www' );
 }
 
 var cmd = {
-	name : 'mustache',
-	fun : mustachify,
-	privileges : {
-		del : 'NONE'
-	},
+    name : 'mustache',
+    fun : mustachify,
+    privileges : {
+        del : 'NONE'
+    },
 
-	description : 'Mustachifies a user. ' +
-		'`/mustache [link|usrid|username] [mustache=rand(0,5)]`'
+    description : 'Mustachifies a user. ' +
+        '`/mustache [link|usrid|username] [mustache=rand(0,5)]`'
 };
 
 bot.addCommand( cmd );
@@ -5420,64 +5421,64 @@ bot.addCommand( moustache );
 //collection of nudges; msgObj, time left and the message itself
 var nudges = [],
     id = 0,
-	interval = 100 * 60;
+    interval = 100 * 60;
 
 function update () {
-	var now = Date.now();
-	nudges = nudges.filter(function ( nudge ) {
-		nudge.time -= interval;
+    var now = Date.now();
+    nudges = nudges.filter(function ( nudge ) {
+        nudge.time -= interval;
 
-		if ( nudge.time <= 0 ) {
-			sendNudge( nudge );
-			return false;
-		}
-		return true;
-	});
+        if ( nudge.time <= 0 ) {
+            sendNudge( nudge );
+            return false;
+        }
+        return true;
+    });
 
-	setTimeout( update, interval );
+    setTimeout( update, interval );
 }
 function sendNudge ( nudge ) {
-	bot.log( nudge, 'nudge fire' );
-	//check to see if the nudge was sent after a bigger delay than expected
-	//TODO: that ^
-	nudge.msg.reply( nudge.message );
+    bot.log( nudge, 'nudge fire' );
+    //check to see if the nudge was sent after a bigger delay than expected
+    //TODO: that ^
+    nudge.msg.reply( nudge.message );
 }
 setTimeout( update, interval );
 
 //now for the command itself
 function addNudge ( delay, message, msgObj ) {
-	var inMS;
-	bot.log( delay, message, '/nudge input' );
+    var inMS;
+    bot.log( delay, message, '/nudge input' );
 
-	//interval will be one of these (where n is a number):
-	// nm  =>  n minutes
-	// n   =>  n minutes
-	//so erm...yeah. just parse the bitch
-	delay = parseFloat( delay );
-	//minsInMs = mins * 60 * 1000
-	//TODO: allow more than just minutes
-	//TODO: upper cap
-	inMS = delay * 60000;
+    //interval will be one of these (where n is a number):
+    // nm  =>  n minutes
+    // n   =>  n minutes
+    //so erm...yeah. just parse the bitch
+    delay = parseFloat( delay );
+    //minsInMs = mins * 60 * 1000
+    //TODO: allow more than just minutes
+    //TODO: upper cap
+    inMS = delay * 60000;
 
-	if ( isNaN(inMS) ) {
-		return 'Many things can be labeled Not a Number; a delay should not' +
-			' be one of them.';
-	}
+    if ( isNaN(inMS) ) {
+        return 'Many things can be labeled Not a Number; a delay should not' +
+            ' be one of them.';
+    }
 
-	//let's put an arbitrary comment here
+    //let's put an arbitrary comment here
 
     id += 1;
-	var nudge = {
-		msg     : msgObj,
-		message : '*nudge* ' + message,
-		register: Date.now(),
-		time    : inMS,
+    var nudge = {
+        msg     : msgObj,
+        message : '*nudge* ' + message,
+        register: Date.now(),
+        time    : inMS,
         id : id
-	};
-	nudges.push( nudge );
-	bot.log( nudge, nudges, '/nudge register' );
+    };
+    nudges.push( nudge );
+    bot.log( nudge, nudges, '/nudge register' );
 
-	return 'Nudge #' + id + ' registered.';
+    return 'Nudge #' + id + ' registered.';
 }
 function removeNudge ( id, msgObj ) {
     var matching, index;
@@ -5508,35 +5509,35 @@ function removeNudge ( id, msgObj ) {
 }
 
 bot.addCommand({
-	name : 'nudge',
-	fun  : nudgeCommand,
-	permissions : {
-		del : 'NONE'
-	},
+    name : 'nudge',
+    fun  : nudgeCommand,
+    permissions : {
+        del : 'NONE'
+    },
 
-	description : 'Register a nudge after an interval. ' +
-		'`/nudge intervalInMinutes message`, `/nudge remove id` to remove, ' +
+    description : 'Register a nudge after an interval. ' +
+        '`/nudge intervalInMinutes message`, `/nudge remove id` to remove, ' +
         'or the listener, ' +
-		'`nudge|remind|poke me? in? intervalInMinutes message`',
-	unTellable : true
+        '`nudge|remind|poke me? in? intervalInMinutes message`',
+    unTellable : true
 });
 
 bot.listen(/(?:nudge|remind|poke)\s(?:me\s)?(?:in\s)?(\d+m?)\s?(.*)$/,
-	nudgeListener
+    nudgeListener
 );
 
 function nudgeCommand ( args ) {
-	var props = args.parse(),
+    var props = args.parse(),
         lead = props[ 0 ],
         rest = props.slice( 1 ).join( ' ' );
 
     if ( lead === 'remove' ) {
         return removeNudge( Number(props[1]), args );
     }
-	return addNudge( lead, rest, args );
+    return addNudge( lead, rest, args );
 }
 function nudgeListener ( args ) {
-	return addNudge( args.matches[1], args.matches[2], args );
+    return addNudge( args.matches[1], args.matches[2], args );
 }
 
 }());
@@ -5548,32 +5549,32 @@ specParts = [{"section":"introduction","name":"Introduction"},{"section":"x1","n
 
 
 function spec ( args ) {
-	var lookup = args.content.toLowerCase(), matches;
+    var lookup = args.content.toLowerCase(), matches;
 
-	matches = specParts.filter( hasLookup ).map( mapLink );
+    matches = specParts.filter( hasLookup ).map( mapLink );
 
-	bot.log( matches, '/spec done' );
-	if ( !matches.length ) {
-		return args + ' not found in spec';
-	}
-	return matches.join( ', ' );
+    bot.log( matches, '/spec done' );
+    if ( !matches.length ) {
+        return args + ' not found in spec';
+    }
+    return matches.join( ', ' );
 
-	function hasLookup ( obj ) {
-		return obj.name.toLowerCase().indexOf( lookup ) > -1;
-	}
-	function mapLink ( obj ) {
-		var name = args.escape( obj.name );
-		return '[' + name + '](http://es5.github.com/#' + obj.section + ')';
-	}
+    function hasLookup ( obj ) {
+        return obj.name.toLowerCase().indexOf( lookup ) > -1;
+    }
+    function mapLink ( obj ) {
+        var name = args.escape( obj.name );
+        return '[' + name + '](http://es5.github.com/#' + obj.section + ')';
+    }
 }
 
 bot.addCommand({
-	name : 'spec',
-	fun : spec,
-	permissions : {
-		del : 'NONE'
-	},
-	description : 'Find a section in the ES5 spec'
+    name : 'spec',
+    fun : spec,
+    permissions : {
+        del : 'NONE'
+    },
+    description : 'Find a section in the ES5 spec'
 });
 }());
 
@@ -5593,31 +5594,31 @@ episodes = {"SG1":{"Season 1":["Children of the Gods","The Enemy Within","Emanci
 
 
 var selectStargateEpisode = function ( msg ) {
-	//no mention of episode, 5% chance of getting the movie
-	if ( msg.indexOf('episode') === -1 && Math.random() < 0.05 ) {
-		return 'Stargate (movie)';
-	}
+    //no mention of episode, 5% chance of getting the movie
+    if ( msg.indexOf('episode') === -1 && Math.random() < 0.05 ) {
+        return 'Stargate (movie)';
+    }
 
-	var select = function ( arr ) {
-		var i = Math.rand( arr.length - 1 );
+    var select = function ( arr ) {
+        var i = Math.rand( arr.length - 1 );
 
-		return {
-			value : arr[i],
-			index : i
-		};
-	};
+        return {
+            value : arr[i],
+            index : i
+        };
+    };
 
-	var season  = select( Object.keys(episodes.SG1) ),
-		episode = select( episodes.SG1[season.value] );
+    var season  = select( Object.keys(episodes.SG1) ),
+        episode = select( episodes.SG1[season.value] );
 
-	var data = {
-		season  : season.value,
-		index   : episode.index + 1,
-		episode : episode.value
-	};
+    var data = {
+        season  : season.value,
+        index   : episode.index + 1,
+        episode : episode.value
+    };
 
 
-	return '{season} episode #{index} - {episode}'.supplant( data );
+    return '{season} episode #{index} - {episode}'.supplant( data );
 };
 
 bot.listen( re, selectStargateEpisode );
@@ -5665,147 +5666,147 @@ bot.listen( re, selectStargateEpisode );
 
 
 var template = '{display_name} ({link}) '            +
-		'{indicative} {reputation} reputation, '     +
-		'earned {reputation_change_day} rep today, ' +
-		'asked {question_count} questions, '         +
-		'gave {answer_count} answers, '              +
-		'for a q:a ratio of {ratio}.\n'              +
-		'avg. rep/post: {avg_rep_post}. Badges: '    +
-		'{gold}g {silver}s {bronze}b ';
+        '{indicative} {reputation} reputation, '     +
+        'earned {reputation_change_day} rep today, ' +
+        'asked {question_count} questions, '         +
+        'gave {answer_count} answers, '              +
+        'for a q:a ratio of {ratio}.\n'              +
+        'avg. rep/post: {avg_rep_post}. Badges: '    +
+        '{gold}g {silver}s {bronze}b ';
 
 function stat ( msg, cb ) {
-	var args = msg.parse(),
-		id = args[ 0 ];
+    var args = msg.parse(),
+        id = args[ 0 ];
 
-	if ( !id ) {
-		id = msg.get( 'user_id' );
-	}
-	else if ( !/^\d+$/.test(id) ) {
-		id = msg.findUserId( args.length > 1 ? id : args.join(' ') );
-	}
+    if ( !id ) {
+        id = msg.get( 'user_id' );
+    }
+    else if ( !/^\d+$/.test(id) ) {
+        id = msg.findUserId( args.length > 1 ? id : args.join(' ') );
+    }
 
-	if ( id < 0 ) {
-		return 'User Elusio proved elusive.';
-	}
+    if ( id < 0 ) {
+        return 'User Elusio proved elusive.';
+    }
 
-	//~10% chance
-	if ( Math.random() <= 0.1 ) {
-		finish( 'That dude sucks' );
-		return;
-	}
+    //~10% chance
+    if ( Math.random() <= 0.1 ) {
+        finish( 'That dude sucks' );
+        return;
+    }
 
-	IO.jsonp({
-		url : 'https://api.stackexchange.com/2.2/users/' + id,
-		data : {
-			site   : bot.adapter.site,
-			//see top of file.
-			filter :  '!P)usXx8OGi3Eq5LdDJke7ybvCSm_vuVGrSDZs3)UmEI'
-		},
-		fun : done
-	});
+    IO.jsonp({
+        url : 'https://api.stackexchange.com/2.2/users/' + id,
+        data : {
+            site   : bot.adapter.site,
+            //see top of file.
+            filter :  '!P)usXx8OGi3Eq5LdDJke7ybvCSm_vuVGrSDZs3)UmEI'
+        },
+        fun : done
+    });
 
-	function done ( resp ) {
-		if ( resp.error_message ) {
-			finish( resp.error_message );
-			return;
-		}
+    function done ( resp ) {
+        if ( resp.error_message ) {
+            finish( resp.error_message );
+            return;
+        }
 
-		var user = resp.items[ 0 ], res;
-		if ( !user ) {
-			res = 'User ' + id + ' not found';
-		}
-		else {
-			res = handle_user_object( user, msg );
-		}
+        var user = resp.items[ 0 ], res;
+        if ( !user ) {
+            res = 'User ' + id + ' not found';
+        }
+        else {
+            res = handle_user_object( user, msg );
+        }
 
-		finish( res );
-	}
+        finish( res );
+    }
 
-	function finish ( res ) {
-		if ( cb ) {
-			cb( res );
-		}
-		else {
-			msg.reply( res );
-		}
-	}
+    function finish ( res ) {
+        if ( cb ) {
+            cb( res );
+        }
+        else {
+            msg.reply( res );
+        }
+    }
 }
 
 function handle_user_object ( user, msg ) {
-	user = normalize_stats( user );
+    user = normalize_stats( user );
 
-	//#177: Decode html entities in user names, and special-case a user asking
-	// about themselves.
-	if ( user.user_id === msg.get('user_id') ) {
-		// You (link) have ...
-		user.display_name = 'You';
-		user.indicative = 'have';
-	}
-	else {
-		// Bob (link) has ...
-		user.display_name = IO.decodehtmlEntities( user.display_name );
-		user.indicative = 'has';
-	}
+    //#177: Decode html entities in user names, and special-case a user asking
+    // about themselves.
+    if ( user.user_id === msg.get('user_id') ) {
+        // You (link) have ...
+        user.display_name = 'You';
+        user.indicative = 'have';
+    }
+    else {
+        // Bob (link) has ...
+        user.display_name = IO.decodehtmlEntities( user.display_name );
+        user.indicative = 'has';
+    }
 
-	return template.supplant( user );
+    return template.supplant( user );
 }
 
 function normalize_stats ( stats ) {
-	stats = Object.merge({
-			question_count        : 0,
-			answer_count          : 0,
-			reputation_change_day : 0
-		}, stats.badge_counts, stats );
+    stats = Object.merge({
+            question_count        : 0,
+            answer_count          : 0,
+            reputation_change_day : 0
+        }, stats.badge_counts, stats );
 
-	stats = Object.merge( stats.badge_counts, stats );
+    stats = Object.merge( stats.badge_counts, stats );
 
-	//avg = rep / (questions + answers)
-	stats.avg_rep_post = (
-		stats.reputation / ( stats.question_count + stats.answer_count )
-	).maxDecimal( 2 );
+    //avg = rep / (questions + answers)
+    stats.avg_rep_post = (
+        stats.reputation / ( stats.question_count + stats.answer_count )
+    ).maxDecimal( 2 );
 
-	//1 / 0 === Infinity
-	if ( stats.avg_rep_post === Infinity ) {
-		stats.avg_rep_post = 'T͎͍̘͙̖̤̉̌̇̅ͯ͋͢͜͝H̖͙̗̗̺͚̱͕̒́͟E̫̺̯͖͎̗̒͑̅̈ ̈ͮ̽ͯ̆̋́͏͙͓͓͇̹<̩̟̳̫̪̇ͩ̑̆͗̽̇͆́ͅC̬͎ͪͩ̓̑͊ͮͪ̄̚̕Ě̯̰̤̗̜̗͓͛͝N̶̴̞͇̟̲̪̅̓ͯͅT͍̯̰͓̬͚̅͆̄E̠͇͇̬̬͕͖ͨ̔̓͞R͚̠̻̲̗̹̀>̇̏ͣ҉̳̖̟̫͕ ̧̛͈͙͇͂̓̚͡C͈̞̻̩̯̠̻ͥ̆͐̄ͦ́̀͟A̛̪̫͙̺̱̥̞̙ͦͧ̽͛̈́ͯ̅̍N̦̭͕̹̤͓͙̲̑͋̾͊ͣŅ̜̝͌͟O̡̝͍͚̲̝ͣ̔́͝Ť͈͢ ̪̘̳͔̂̒̋ͭ͆̽͠H̢͈̤͚̬̪̭͗ͧͬ̈́̈̀͌͒͡Ơ̮͍͇̝̰͍͚͖̿ͮ̀̍́L͐̆ͨ̏̎͡҉̧̱̯̤̹͓̗̻̭ͅḐ̲̰͙͑̂̒̐́̊';
-	}
+    //1 / 0 === Infinity
+    if ( stats.avg_rep_post === Infinity ) {
+        stats.avg_rep_post = 'T͎͍̘͙̖̤̉̌̇̅ͯ͋͢͜͝H̖͙̗̗̺͚̱͕̒́͟E̫̺̯͖͎̗̒͑̅̈ ̈ͮ̽ͯ̆̋́͏͙͓͓͇̹<̩̟̳̫̪̇ͩ̑̆͗̽̇͆́ͅC̬͎ͪͩ̓̑͊ͮͪ̄̚̕Ě̯̰̤̗̜̗͓͛͝N̶̴̞͇̟̲̪̅̓ͯͅT͍̯̰͓̬͚̅͆̄E̠͇͇̬̬͕͖ͨ̔̓͞R͚̠̻̲̗̹̀>̇̏ͣ҉̳̖̟̫͕ ̧̛͈͙͇͂̓̚͡C͈̞̻̩̯̠̻ͥ̆͐̄ͦ́̀͟A̛̪̫͙̺̱̥̞̙ͦͧ̽͛̈́ͯ̅̍N̦̭͕̹̤͓͙̲̑͋̾͊ͣŅ̜̝͌͟O̡̝͍͚̲̝ͣ̔́͝Ť͈͢ ̪̘̳͔̂̒̋ͭ͆̽͠H̢͈̤͚̬̪̭͗ͧͬ̈́̈̀͌͒͡Ơ̮͍͇̝̰͍͚͖̿ͮ̀̍́L͐̆ͨ̏̎͡҉̧̱̯̤̹͓̗̻̭ͅḐ̲̰͙͑̂̒̐́̊';
+    }
 
-	stats.ratio = calc_qa_ratio( stats.question_count, stats.answer_count );
+    stats.ratio = calc_qa_ratio( stats.question_count, stats.answer_count );
 
-	bot.log( stats, '/stat normalized' );
-	return stats;
+    bot.log( stats, '/stat normalized' );
+    return stats;
 }
 
 function calc_qa_ratio ( questions, answers ) {
-	//for teh lulz
-	if ( !questions && answers ) {
-		return "H̸̡̪̯ͨ͊̽̅̾̎Ȩ̬̩̾͛ͪ̈́̀́͘ ̶̧̨̱̹̭̯ͧ̾ͬC̷̙̲̝͖ͭ̏ͥͮ͟Oͮ͏̮̪̝͍M̲̖͊̒ͪͩͬ̚̚͜Ȇ̴̟̟͙̞ͩ͌͝S̨̥̫͎̭ͯ̿̔̀ͅ";
-	}
-	else if ( !answers && questions ) {
-		return "TO͇̹̺ͅƝ̴ȳ̳ TH̘Ë͖́̉ ͠P̯͍̭O̚​N̐Y̡";
-	}
-	else if ( !answers && !questions ) {
-		return 'http://i.imgur.com/F79hP.png';
-	}
+    //for teh lulz
+    if ( !questions && answers ) {
+        return "H̸̡̪̯ͨ͊̽̅̾̎Ȩ̬̩̾͛ͪ̈́̀́͘ ̶̧̨̱̹̭̯ͧ̾ͬC̷̙̲̝͖ͭ̏ͥͮ͟Oͮ͏̮̪̝͍M̲̖͊̒ͪͩͬ̚̚͜Ȇ̴̟̟͙̞ͩ͌͝S̨̥̫͎̭ͯ̿̔̀ͅ";
+    }
+    else if ( !answers && questions ) {
+        return "TO͇̹̺ͅƝ̴ȳ̳ TH̘Ë͖́̉ ͠P̯͍̭O̚​N̐Y̡";
+    }
+    else if ( !answers && !questions ) {
+        return 'http://i.imgur.com/F79hP.png';
+    }
 
-	// #196:
-	// 1. GCD of 1.
-	// 2. Either the antecedent or the consequent are 1
-	//(in A:B, A is the antecedent, B is the consequent)
-	var gcd = Math.gcd( questions, answers );
+    // #196:
+    // 1. GCD of 1.
+    // 2. Either the antecedent or the consequent are 1
+    //(in A:B, A is the antecedent, B is the consequent)
+    var gcd = Math.gcd( questions, answers );
 
-	return Math.ratio( questions, answers );
+    return Math.ratio( questions, answers );
 }
 
 var cmd = {
-	name : 'stat',
-	fun : stat,
-	permissions : {
-		del : 'NONE'
-	},
+    name : 'stat',
+    fun : stat,
+    permissions : {
+        del : 'NONE'
+    },
 
-	description : 'Gives useless stats on a user. ' +
-		'`/stat usrid|usrname [extended]`',
-	async : true
+    description : 'Gives useless stats on a user. ' +
+        '`/stat usrid|usrname [extended]`',
+    async : true
 };
 
 bot.addCommand( cmd );
@@ -5851,112 +5852,112 @@ var sub = /^\s*s(\/|\|)((?:(?:\\\1)|[^\1])*?)\1((?:(?:\\\1)|[^\1])*?)\1(g?i?)(?:
 bot.listen( sub, substitute );
 
 function substitute ( msg ) {
-	var re = RegExp( msg.matches[2], msg.matches[4] ),
-		replacement = msg.matches[ 3 ];
+    var re = RegExp( msg.matches[2], msg.matches[4] ),
+        replacement = msg.matches[ 3 ];
 
-	if ( !msg.matches[2] ) {
-		return 'Empty regex is empty';
-	}
+    if ( !msg.matches[2] ) {
+        return 'Empty regex is empty';
+    }
 
-	var messages;
-	if ( msg.matches[5] ) {
-		messages = Array.from(
-			document.querySelectorAll('#message-' + msg.matches[5] + ' .content')
-		);
-	}
-	else {
-		messages = Array.from(
-			document.getElementsByClassName('content')
-		).reverse();
-	}
+    var messages;
+    if ( msg.matches[5] ) {
+        messages = Array.from(
+            document.querySelectorAll('#message-' + msg.matches[5] + ' .content')
+        );
+    }
+    else {
+        messages = Array.from(
+            document.getElementsByClassName('content')
+        ).reverse();
+    }
 
-	getMatchingMessage( re, messages, msg.get('message_id'), function ( err, message ) {
-		if ( err ) {
-			msg.reply( err );
-			return;
-		}
+    getMatchingMessage( re, messages, msg.get('message_id'), function ( err, message ) {
+        if ( err ) {
+            msg.reply( err );
+            return;
+        }
 
-		if ( !message ) {
-			msg.reply(
-				'No matching message (are you sure we\'re in the right room?)'
-			);
-			return;
-		}
-		bot.log( message, 'substitution found message' );
+        if ( !message ) {
+            msg.reply(
+                'No matching message (are you sure we\'re in the right room?)'
+            );
+            return;
+        }
+        bot.log( message, 'substitution found message' );
 
-		var link = getMessageLink( message );
+        var link = getMessageLink( message );
 
-		// #159, check if the message is a partial, has a "(see full text)" link.
-		if ( message.getElementsByClassName('partial').length ) {
-			retrieveFullText( message, finish );
-		}
-		else {
-			finish( message.textContent );
-		}
+        // #159, check if the message is a partial, has a "(see full text)" link.
+        if ( message.getElementsByClassName('partial').length ) {
+            retrieveFullText( message, finish );
+        }
+        else {
+            finish( message.textContent );
+        }
 
-		function finish ( text ) {
-			var reply = text.replace( re, replacement ) + ' ' +
-				msg.link( '(source)', link );
+        function finish ( text ) {
+            var reply = text.replace( re, replacement ) + ' ' +
+                msg.link( '(source)', link );
 
-			msg.reply( reply );
-		}
-	});
+            msg.reply( reply );
+        }
+    });
 }
 
 function getMatchingMessage ( re, messages, onlyBefore, cb ) {
-	bot.log( re, messages, onlyBefore, 'substitution getMatchingMessage args' );
-	var arg = {
-		maxId : onlyBefore,
-		pattern : re,
-		messages : messages.map(function ( el ) {
-			return {
-				id	 : Number( el.parentElement.id.match(/\d+/)[0] ),
-				text : el.textContent
-			};
-		})
-	};
+    bot.log( re, messages, onlyBefore, 'substitution getMatchingMessage args' );
+    var arg = {
+        maxId : onlyBefore,
+        pattern : re,
+        messages : messages.map(function ( el ) {
+            return {
+                id   : Number( el.parentElement.id.match(/\d+/)[0] ),
+                text : el.textContent
+            };
+        })
+    };
 
-	// the following function is passed to bot.eval, which means it will run in
-	//a different context. the only variable we get is ~arg~, because we pass it
-	//to bot.eval
-	// we do the skip and jump through bot.eval to avoid a ReDoS (#217).
-	var matcher = function () {
-		var arg = arguments[1],
-			matchIndex = null;
+    // the following function is passed to bot.eval, which means it will run in
+    //a different context. the only variable we get is ~arg~, because we pass it
+    //to bot.eval
+    // we do the skip and jump through bot.eval to avoid a ReDoS (#217).
+    var matcher = function () {
+        var arg = arguments[1],
+            matchIndex = null;
 
-		arg.messages.some(function ( msg, idx ) {
-			if ( msg.id < arg.maxId && arg.pattern.test(msg.text) ) {
-				matchIndex = idx;
-				return true;
-			}
+        arg.messages.some(function ( msg, idx ) {
+            if ( msg.id < arg.maxId && arg.pattern.test(msg.text) ) {
+                matchIndex = idx;
+                return true;
+            }
 
-			return false;
-		});
+            return false;
+        });
 
-		// remember we're inside bot.eval, final expression is the result.
-		// so it'll work well with minification, we have to create an expression
-		//which won't be removed
-		(function () {
-			return matchIndex;
-		})();
-	};
+        // remember we're inside bot.eval, final expression is the result.
+        // so it'll work well with minification, we have to create an expression
+        //which won't be removed
+        (function () {
+            return matchIndex;
+        })();
+    };
 
-	bot.eval( matcher.stringContents(), arg, function ( err, resp ) {
-		bot.log( err, resp, 'substitution matcher response' );
+    bot.eval( matcher.stringContents(), arg, function ( err, resp ) {
+        bot.log( err, resp, 'substitution matcher response' );
 
-		// meh
-		if ( err ) {
-			cb( err );
-			return;
-		}
+        // meh
+        if ( err ) {
+            cb( err );
+            return;
+        }
 
-		var index = JSON.parse( resp.answer );
-		if ( Number(index) !== index ) {
-			return;
-		}
+        var index = JSON.parse( resp.answer );
+        if ( Number(index) !== index ) {
+            return;
+        }
 
-		cb( null, messages[index] );
-	});
+        cb( null, messages[index] );
+    });
 }
 
 // <a class="action-link" href="/transcript/message/msgid#msgid>...</a>
@@ -5964,29 +5965,29 @@ function getMatchingMessage ( re, messages, onlyBefore, cb ) {
 //if the message was a reply, there'd be another element between them:
 // <a class="reply-info" href="/transcript/message/repliedMsgId#repliedMsgId>
 function getMessageLink ( message ) {
-	var node = message;
+    var node = message;
 
-	while ( !node.classList.contains('action-link') ) {
-		node = node.previousElementSibling;
-	}
+    while ( !node.classList.contains('action-link') ) {
+        node = node.previousElementSibling;
+    }
 
-	return node.href;
+    return node.href;
 }
 
 // <div class="content">
-//	<div class="partial"> ... </div>
-//	<a class="more-data" href="what we want">(see full text)</a>
+//  <div class="partial"> ... </div>
+//  <a class="more-data" href="what we want">(see full text)</a>
 // </div>
 function retrieveFullText ( message, cb ) {
-	var href = message.children[ 1 ].href;
-	bot.log( href, 'substitution expanding message' );
+    var href = message.children[ 1 ].href;
+    bot.log( href, 'substitution expanding message' );
 
-	IO.xhr({
-		method : 'GET',
-		url : href,
-		data : { plain : true },
-		complete : cb
-	});
+    IO.xhr({
+        method : 'GET',
+        url : href,
+        data : { plain : true },
+        complete : cb
+    });
 }
 
 }());
@@ -5996,62 +5997,62 @@ function retrieveFullText ( message, cb ) {
 "use strict";
 
 var summon = function ( args ) {
-	var room = Number( args );
+    var room = Number( args );
 
-	if ( !room ) {
-		return 'That aint no room I ever heard of! ' +
-			'`/help summon` for usage info';
-	}
+    if ( !room ) {
+        return 'That aint no room I ever heard of! ' +
+            '`/help summon` for usage info';
+    }
 
-	bot.adapter.in.init( room );
+    bot.adapter.in.init( room );
 };
 
 var unsummon = function ( args, cb ) {
-	var room = args.content ? Number( args ) : args.get( 'room_id' );
+    var room = args.content ? Number( args ) : args.get( 'room_id' );
 
-	if ( !room ) {
-		return 'That aint no room I ever heard of! ' +
-			'`/help unsummon` for usage info';
-	}
+    if ( !room ) {
+        return 'That aint no room I ever heard of! ' +
+            '`/help unsummon` for usage info';
+    }
 
-	bot.adapter.in.leaveRoom( room, function ( err ) {
-		if ( err === 'base_room' ) {
-			finish( 'I can\'t leave my home!' );
-		}
-	});
+    bot.adapter.in.leaveRoom( room, function ( err ) {
+        if ( err === 'base_room' ) {
+            finish( 'I can\'t leave my home!' );
+        }
+    });
 
-	function finish ( res ) {
-		if ( cb && cb.call ) {
-			cb( res );
-		}
-		else {
-			args.reply( res );
-		}
-	}
+    function finish ( res ) {
+        if ( cb && cb.call ) {
+            cb( res );
+        }
+        else {
+            args.reply( res );
+        }
+    }
 };
 
 bot.addCommand( bot.CommunityCommand({
-	name : 'summon',
-	fun : summon,
-	permissions : {
-		del : 'NONE',
-		use : 'OWNER'
-	},
-	description : 'Say boopidi bee and in the room I shall be. '+
-		'`/summon roomid`',
-	pendingMessage: 'I will appear in that room after {0} more invocation(s)'
+    name : 'summon',
+    fun : summon,
+    permissions : {
+        del : 'NONE',
+        use : 'OWNER'
+    },
+    description : 'Say boopidi bee and in the room I shall be. '+
+        '`/summon roomid`',
+    pendingMessage: 'I will appear in that room after {0} more invocation(s)'
 }));
 
 bot.addCommand( bot.CommunityCommand({
-	name : 'unsummon',
-	fun : unsummon,
-	permissions : {
-		del : 'NONE',
-		use : 'OWNER'
-	},
-	description : 'Chant zippidi lepat and from the room I shall depart. ' +
-		'`/unsummon [roomid=your_roomid]`',
-	pendingMessage: 'I will leave this room after {0} more invocation(s)'
+    name : 'unsummon',
+    fun : unsummon,
+    permissions : {
+        del : 'NONE',
+        use : 'OWNER'
+    },
+    description : 'Chant zippidi lepat and from the room I shall depart. ' +
+        '`/unsummon [roomid=your_roomid]`',
+    pendingMessage: 'I will leave this room after {0} more invocation(s)'
 }));
 
 })();
@@ -6059,151 +6060,151 @@ bot.addCommand( bot.CommunityCommand({
 ;
 (function () {
 var undo = {
-	ids : [],
+    ids : [],
 
-	command : function ( args, cb ) {
-		bot.log( args, '/undo input' );
+    command : function ( args, cb ) {
+        bot.log( args, '/undo input' );
 
-		// /undo id0 id1 id2
-		if ( args.indexOf(' ') > -1 ) {
-			this.removeMultiple( args.split(' '), finish );
-			return;
-		}
+        // /undo id0 id1 id2
+        if ( args.indexOf(' ') > -1 ) {
+            this.removeMultiple( args.split(' '), finish );
+            return;
+        }
 
-		//yucky
-		if ( args[0] === '~' ) {
-			this.byLookback( args.slice(1), finish );
-		}
-		else if ( args[0] === '*' || args[0] === 'x' ) {
-			this.byPrevious( args.slice(1), finish );
-		}
-		else if ( /^:?\d+$/.test(args) ) {
-			this.remove( args.replace(/^:/, ''), finish );
-		}
-		else if ( !args.content ) {
-			if ( this.ids.length ) {
-				this.remove( this.ids[this.ids.length-1], finish );
-			}
-			else {
-				finish( 'I haven\'t said a thing!' );
-			}
-		}
-		else {
-			finish( 'I\'m not sure how to handle that, see `/help undo`' );
-		}
+        //yucky
+        if ( args[0] === '~' ) {
+            this.byLookback( args.slice(1), finish );
+        }
+        else if ( args[0] === '*' || args[0] === 'x' ) {
+            this.byPrevious( args.slice(1), finish );
+        }
+        else if ( /^:?\d+$/.test(args) ) {
+            this.remove( args.replace(/^:/, ''), finish );
+        }
+        else if ( !args.content ) {
+            if ( this.ids.length ) {
+                this.remove( this.ids[this.ids.length-1], finish );
+            }
+            else {
+                finish( 'I haven\'t said a thing!' );
+            }
+        }
+        else {
+            finish( 'I\'m not sure how to handle that, see `/help undo`' );
+        }
 
-		function finish ( ans ) {
-			if ( cb ) {
-				cb( ans );
-			}
-			else {
-				args.reply( ans );
-			}
-		}
-	},
+        function finish ( ans ) {
+            if ( cb ) {
+                cb( ans );
+            }
+            else {
+                args.reply( ans );
+            }
+        }
+    },
 
-	removeMultiple : function ( ids, cb ) {
-		ids.forEach(function ( id ) {
-			this.remove( id, cb );
-		}, this );
-	},
+    removeMultiple : function ( ids, cb ) {
+        ids.forEach(function ( id ) {
+            this.remove( id, cb );
+        }, this );
+    },
 
-	byLookback : function ( input, cb ) {
-		var amount = Number( input.replace('~', '') );
+    byLookback : function ( input, cb ) {
+        var amount = Number( input.replace('~', '') );
 
-		bot.log( input, amount, this.ids.length - amount, '/undo byLookback' );
-		if ( !amount || amount > this.ids.length ) {
-			cb( 'I can\'t quite see that far back without my glasses' );
-			return;
-		}
+        bot.log( input, amount, this.ids.length - amount, '/undo byLookback' );
+        if ( !amount || amount > this.ids.length ) {
+            cb( 'I can\'t quite see that far back without my glasses' );
+            return;
+        }
 
-		this.remove( this.ids[this.ids.length - amount], cb );
-	},
+        this.remove( this.ids[this.ids.length - amount], cb );
+    },
 
-	byPrevious : function ( input, cb ) {
-		var amount = Number( input );
+    byPrevious : function ( input, cb ) {
+        var amount = Number( input );
 
-		if ( !amount ) {
-			cb( 'Yeah, no' );
-			return;
-		}
+        if ( !amount ) {
+            cb( 'Yeah, no' );
+            return;
+        }
 
-		return this.removeMultiple( this.ids.slice(-input), cb );
-	},
+        return this.removeMultiple( this.ids.slice(-input), cb );
+    },
 
-	remove : function ( id, cb ) {
-		console.log( id, '/undo remove' );
+    remove : function ( id, cb ) {
+        console.log( id, '/undo remove' );
 
-		//yes, this is quite terrible.
-		var index = this.ids.indexOf(id);
-		if (index > -1) {
-			this.ids.splice(index, 1);
-		}
+        //yes, this is quite terrible.
+        var index = this.ids.indexOf(id);
+        if (index > -1) {
+            this.ids.splice(index, 1);
+        }
 
-		IO.xhr({
-			url   : '/messages/' + id + '/delete',
-			data   : fkey(),
-			method  : 'POST',
-			complete : finish
-		});
+        IO.xhr({
+            url   : '/messages/' + id + '/delete',
+            data   : fkey(),
+            method  : 'POST',
+            complete : finish
+        });
 
-		function finish ( resp, xhr ) {
-			if ( xhr.status === 409 ) {
-				bot.log( xhr, '/undo remove finish 409' );
-				undo.retry( id, cb, resp );
-				return;
-			}
-			var msg;
+        function finish ( resp, xhr ) {
+            if ( xhr.status === 409 ) {
+                bot.log( xhr, '/undo remove finish 409' );
+                undo.retry( id, cb, resp );
+                return;
+            }
+            var msg;
 
-			if ( resp === '"ok"' ) {
-				//nothing to see here
-				return;
-			}
-			else if ( /it is too late/i.test(resp) ) {
-				msg = 'TimeError: Could not reach 88mph';
-			}
-			else if ( /only delete your own/i.test(resp) ) {
-				//...I can't think of anything clever
-				msg = 'I can only delete my own messages';
-			}
-			else {
-				msg = 'I have no idea what happened: ' + resp;
-			}
+            if ( resp === '"ok"' ) {
+                //nothing to see here
+                return;
+            }
+            else if ( /it is too late/i.test(resp) ) {
+                msg = 'TimeError: Could not reach 88mph';
+            }
+            else if ( /only delete your own/i.test(resp) ) {
+                //...I can't think of anything clever
+                msg = 'I can only delete my own messages';
+            }
+            else {
+                msg = 'I have no idea what happened: ' + resp;
+            }
 
-			cb( msg );
-		}
-	},
-	retry : function ( id, cb, resp ) {
-		//the response will be something like:
-		// You can perform this action again in 4 seconds
-		var match = /(\d+) seconds\s*$/i.exec( resp ),
-			secs  = 4;
+            cb( msg );
+        }
+    },
+    retry : function ( id, cb, resp ) {
+        //the response will be something like:
+        // You can perform this action again in 4 seconds
+        var match = /(\d+) seconds\s*$/i.exec( resp ),
+            secs  = 4;
 
-		if ( match && match[1] ) {
-			secs = Number( match[1] );
-		}
+        if ( match && match[1] ) {
+            secs = Number( match[1] );
+        }
 
-		setTimeout( this.remove.bind(this, id, cb), secs * 1000 );
-	},
+        setTimeout( this.remove.bind(this, id, cb), secs * 1000 );
+    },
 
-	update_id : function ( xhr ) {
-		this.ids.push( JSON.parse(xhr.responseText).id );
-	}
+    update_id : function ( xhr ) {
+        this.ids.push( JSON.parse(xhr.responseText).id );
+    }
 };
 
 IO.register( 'sendoutput', undo.update_id, undo );
 bot.addCommand({
-	name : 'undo',
-	fun  : undo.command,
-	thisArg : undo,
-	permissions : {
-		del : 'NONE',
-		use : 'OWNER'
-	},
-	description : 'Undo (delete) specified or last message. ' +
-		'`/undo [msgid0, msgid1, ...]` (omit for last message); ' +
-		'`/undo xN` for last N; ' +
-		'`/undo ~N` for the Nth message from the end'
+    name : 'undo',
+    fun  : undo.command,
+    thisArg : undo,
+    permissions : {
+        del : 'NONE',
+        use : 'OWNER'
+    },
+    description : 'Undo (delete) specified or last message. ' +
+        '`/undo [msgid0, msgid1, ...]` (omit for last message); ' +
+        '`/undo xN` for last N; ' +
+        '`/undo ~N` for the Nth message from the end'
 });
 
 }());
@@ -6213,109 +6214,109 @@ bot.addCommand({
 
 //only activate for SO room 17; TODO consider changing if well accepted
 if (bot.adapter.site !== 'stackoverflow' || bot.adapter.roomid !== 17) {
-	bot.log('Not activating unformatted code checking; not in right room/site');
-	return;
+    bot.log('Not activating unformatted code checking; not in right room/site');
+    return;
 }
 
 var badMessages = new Map();
 
 IO.register( 'rawinput', function checkUnformattedCode (msgObj) {
-	var msgid = msgObj.message_id;
+    var msgid = msgObj.message_id;
 
-	//only handle new messages and edits
-	if (msgObj.event_type !== 1 && msgObj.event_type !== 2) {
-		return;
-	}
+    //only handle new messages and edits
+    if (msgObj.event_type !== 1 && msgObj.event_type !== 2) {
+        return;
+    }
 
-	//so far it should only apply to the js room
-	if ( msgObj.room_id !== 17 ) {
-		return;
-	}
+    //so far it should only apply to the js room
+    if ( msgObj.room_id !== 17 ) {
+        return;
+    }
 
-	//don't bother with owners
-	if ( bot.isOwner(msgObj.user_id) ) {
-		return;
-	}
+    //don't bother with owners
+    if ( bot.isOwner(msgObj.user_id) ) {
+        return;
+    }
 
-	//and only look at multiline messages
-	if ( !msgObj.content.startsWith('<div class=\'full\'>') ) {
-		potentiallyUnlecture();
-		return;
-	}
+    //and only look at multiline messages
+    if ( !msgObj.content.startsWith('<div class=\'full\'>') ) {
+        potentiallyUnlecture();
+        return;
+    }
 
-	var content = bot.adapter.in.breakMultilineMessage( msgObj.content )
-			.map(function (line) {
-				//for some reason, chat adds a space prefix for every line...
-				return line.replace(/^ /, '');
-			}).join( '\n' );
-	content = IO.decodehtmlEntities(content);
+    var content = bot.adapter.in.breakMultilineMessage( msgObj.content )
+            .map(function (line) {
+                //for some reason, chat adds a space prefix for every line...
+                return line.replace(/^ /, '');
+            }).join( '\n' );
+    content = IO.decodehtmlEntities(content);
 
-	//and messages which aren't code blocks
-	if ( content.startsWith('<pre class=\'full\'>') ) {
-		potentiallyUnlecture();
-		return;
-	}
+    //and messages which aren't code blocks
+    if ( content.startsWith('<pre class=\'full\'>') ) {
+        potentiallyUnlecture();
+        return;
+    }
 
-	var isANaughtyMessage = hasUnformattedCode( content );
+    var isANaughtyMessage = hasUnformattedCode( content );
 
-	if ( !isANaughtyMessage ) {
-		potentiallyUnlecture();
-		return;
-	}
+    if ( !isANaughtyMessage ) {
+        potentiallyUnlecture();
+        return;
+    }
 
-	bot.log( '[formatting] Message {0} is a naughty one'.supplant(msgid) );
-	var lectureTimeout = setTimeout( lectureUser, 10000, msgObj, content );
-	badMessages.set( msgid, lectureTimeout );
+    bot.log( '[formatting] Message {0} is a naughty one'.supplant(msgid) );
+    var lectureTimeout = setTimeout( lectureUser, 10000, msgObj, content );
+    badMessages.set( msgid, lectureTimeout );
 
-	function potentiallyUnlecture () {
-		if ( badMessages.has(msgid) ) {
-			bot.log( '[formatting] Message {0} was fixed'.supplant(msgid) );
-			clearTimeout( badMessages.get(msgid) );
-			badMessages.delete( msgid );
-		}
-	}
+    function potentiallyUnlecture () {
+        if ( badMessages.has(msgid) ) {
+            bot.log( '[formatting] Message {0} was fixed'.supplant(msgid) );
+            clearTimeout( badMessages.get(msgid) );
+            badMessages.delete( msgid );
+        }
+    }
 });
 
 function lectureUser ( msgObj, content ) {
-	var user = bot.users[ msgObj.user_id ],
-		msgid = msgObj.message_id;
+    var user = bot.users[ msgObj.user_id ],
+        msgid = msgObj.message_id;
 
-	bot.log( '[formatting] Lecturing user ' + msgObj.user_name );
-	bot.adapter.out.add(
-		bot.adapter.reply( msgObj.user_name ) + ' ' + createLecture( content )
-	);
+    bot.log( '[formatting] Lecturing user ' + msgObj.user_name );
+    bot.adapter.out.add(
+        bot.adapter.reply( msgObj.user_name ) + ' ' + createLecture( content )
+    );
 
-	if ( user && user.reputation < 2000 ) {
-		bot.log( '[formatting] Binning offending message' );
-		bot.adapter.moveMessage( msgid, msgObj.room_id, 23262 );
-	}
+    if ( user && user.reputation < 2000 ) {
+        bot.log( '[formatting] Binning offending message' );
+        bot.adapter.moveMessage( msgid, msgObj.room_id, 23262 );
+    }
 }
 
 function createLecture ( content ) {
-	var lineCount = content.split('\n').length;
+    var lineCount = content.split('\n').length;
 
-	var lecture = (
-		'Please don\'t post unformatted code - ' +
-		'hit Ctrl+K before sending, use up-arrow to edit messages, ' +
-		'and see the {0}.'
-	).supplant( bot.adapter.link('faq', '/faq') );
+    var lecture = (
+        'Please don\'t post unformatted code - ' +
+        'hit Ctrl+K before sending, use up-arrow to edit messages, ' +
+        'and see the {0}.'
+    ).supplant( bot.adapter.link('faq', '/faq') );
 
-	if ( lineCount >= 10 ) {
-		lecture += ' For posting large code blocks, use a paste site like ' +
-			'https://gist.github.com, http://hastebin.com or http://pastie.org';
-	}
+    if ( lineCount >= 10 ) {
+        lecture += ' For posting large code blocks, use a paste site like ' +
+            'https://gist.github.com, http://hastebin.com or http://pastie.org';
+    }
 
-	return lecture;
+    return lecture;
 }
 
 function hasUnformattedCode ( text ) {
-	var lines = text.split( '\n' );
-	if ( lines.length < 4 ) {
-		return false;
-	}
+    var lines = text.split( '\n' );
+    if ( lines.length < 4 ) {
+        return false;
+    }
 
-	var codeyLine = /^\}|^<\//;
-	return lines.some( / /.test.bind(codeyLine) );
+    var codeyLine = /^\}|^<\//;
+    return lines.some( / /.test.bind(codeyLine) );
 }
 
 })();
@@ -6325,116 +6326,116 @@ function hasUnformattedCode ( text ) {
 "use strict";
 
 var memoryKey = 'unonebox-state',
-	unboxInterval = 90 * 1000; //1.5 minutes
+    unboxInterval = 90 * 1000; //1.5 minutes
 
 var unonebox = {
-	// because people are bad at reading instructions, accept a wide range of
-	// values for the command
-	enablers  : Object.TruthMap( ['yes','on','true','start','1','enable'] ),
-	disablers : Object.TruthMap( ['no','off','false','stop','0','disable'] ),
+    // because people are bad at reading instructions, accept a wide range of
+    // values for the command
+    enablers  : Object.TruthMap( ['yes','on','true','start','1','enable'] ),
+    disablers : Object.TruthMap( ['no','off','false','stop','0','disable'] ),
 
-	command : function unoneboxCommand ( args ) {
-		var state = args.toLowerCase(),
-			save = false,
-			reply;
+    command : function unoneboxCommand ( args ) {
+        var state = args.toLowerCase(),
+            save = false,
+            reply;
 
-		if ( !state ) {
-			bot.log( '/unonebox getting state' );
-			reply = 'Functionality is ' +
-				bot.memory.get( memoryKey, 'disabled' );
-		}
-		else if ( this.enablers[state] ) {
-			bot.log( '/unonebox enabling' );
-			this.enable();
-			reply = 'un-onebox enabled';
-			save = true;
-		}
-		else if ( this.disablers[state] ) {
-			bot.log( '/unonebox disabling' );
-			this.disable();
-			reply = 'un-onebox disabled';
-			save = true;
-		}
-		else {
-			bot.log( '/unonebox invalid input' );
-			reply = 'That didn\'t make much sense. Please use `on` or `off` ' +
-				'to toggle the command';
-		}
+        if ( !state ) {
+            bot.log( '/unonebox getting state' );
+            reply = 'Functionality is ' +
+                bot.memory.get( memoryKey, 'disabled' );
+        }
+        else if ( this.enablers[state] ) {
+            bot.log( '/unonebox enabling' );
+            this.enable();
+            reply = 'un-onebox enabled';
+            save = true;
+        }
+        else if ( this.disablers[state] ) {
+            bot.log( '/unonebox disabling' );
+            this.disable();
+            reply = 'un-onebox disabled';
+            save = true;
+        }
+        else {
+            bot.log( '/unonebox invalid input' );
+            reply = 'That didn\'t make much sense. Please use `on` or `off` ' +
+                'to toggle the command';
+        }
 
-		if ( save ) {
-			bot.memory.save( memoryKey );
-		}
+        if ( save ) {
+            bot.memory.save( memoryKey );
+        }
 
-		args.reply( reply );
-	},
+        args.reply( reply );
+    },
 
-	enable : function () {
-		IO.register( 'input', this.unbox );
-		bot.memory.set( memoryKey, 'enabled' );
-	},
+    enable : function () {
+        IO.register( 'input', this.unbox );
+        bot.memory.set( memoryKey, 'enabled' );
+    },
 
-	disable : function () {
-		IO.unregister( 'input', this.unbox );
-		bot.memory.set( memoryKey, 'disabled' );
-	},
+    disable : function () {
+        IO.unregister( 'input', this.unbox );
+        bot.memory.set( memoryKey, 'disabled' );
+    },
 
-	unbox : function ( msgObj ) {
-		// We only operate on our own messages.
-		if ( msgObj.user_id !== bot.adapter.user_id ) {
-			return;
-		}
+    unbox : function ( msgObj ) {
+        // We only operate on our own messages.
+        if ( msgObj.user_id !== bot.adapter.user_id ) {
+            return;
+        }
 
-		var frag = document.createElement( 'div' );
-		frag.innerHTML = msgObj.content;
-		// do not un-onebox youtube videos and quotes 
-		var link = frag.querySelector( '.onebox:not(.ob-youtube):not(.ob-message):not(.ob-wikipedia) a' );
+        var frag = document.createElement( 'div' );
+        frag.innerHTML = msgObj.content;
+        // do not un-onebox youtube videos and quotes 
+        var link = frag.querySelector( '.onebox:not(.ob-youtube):not(.ob-message):not(.ob-wikipedia) a' );
 
-		// No onebox, no un-oneboxing.
-		// ugly fix for quoted messages as well.
-		// TODO - think of a better solution for this.
-		if ( !link || link.parentNode.parentNode.classList.contains('quote') ) {
-			return;
-		}
+        // No onebox, no un-oneboxing.
+        // ugly fix for quoted messages as well.
+        // TODO - think of a better solution for this.
+        if ( !link || link.parentNode.parentNode.classList.contains('quote') ) {
+            return;
+        }
 
-		bot.log( msgObj, '/unonebox found matching message' );
+        bot.log( msgObj, '/unonebox found matching message' );
 
-		setTimeout(function () {
-			unonebox.actuallyUnbox( msgObj.message_id, link.href );
-		}, unboxInterval );
-	},
+        setTimeout(function () {
+            unonebox.actuallyUnbox( msgObj.message_id, link.href );
+        }, unboxInterval );
+    },
 
-	actuallyUnbox : function ( msgId, href ) {
-		IO.xhr({
-			url: '/messages/' + msgId,
-			data: fkey({
-				text: href + ' ... '
-			}),
-			method: 'POST',
+    actuallyUnbox : function ( msgId, href ) {
+        IO.xhr({
+            url: '/messages/' + msgId,
+            data: fkey({
+                text: href + ' ... '
+            }),
+            method: 'POST',
 
-			complete : function (resp, xhr) {
-				bot.log( xhr, '/unonebox done unboxing' );
-				// TODO
-				// error checking
-			}
-		});
-	}
+            complete : function (resp, xhr) {
+                bot.log( xhr, '/unonebox done unboxing' );
+                // TODO
+                // error checking
+            }
+        });
+    }
 };
 
 if ( bot.memory.get(memoryKey, 'disabled') === 'enabled' ) {
-	bot.log( 'enabling unonebox' );
-	unonebox.enable();
+    bot.log( 'enabling unonebox' );
+    unonebox.enable();
 }
 
 bot.addCommand({
-	name: 'unonebox',
-	fun: unonebox.command,
-	thisArg : unonebox,
+    name: 'unonebox',
+    fun: unonebox.command,
+    thisArg : unonebox,
 
-	permissions: {
-		del: 'NONE'
-	},
-	description: 'Get/toggle the unonebox listener. ' +
-		'`/unonebox [on|off]x`'
+    permissions: {
+        del: 'NONE'
+    },
+    description: 'Get/toggle the unonebox listener. ' +
+        '`/unonebox [on|off]x`'
 });
 
 }());
@@ -6445,119 +6446,119 @@ bot.addCommand({
 var cache = {};
 
 function urban ( args, cb ) {
-	if ( cache[args] ) {
-		return finish( cache[args] );
-	}
+    if ( cache[args] ) {
+        return finish( cache[args] );
+    }
 
-	var parts = args.parse(),
-		query, resultIndex;
+    var parts = args.parse(),
+        query, resultIndex;
 
-	if ( !parts.length ) {
-		return 'Y U NO PROVIDE ARGUMENTS!?';
-	}
+    if ( !parts.length ) {
+        return 'Y U NO PROVIDE ARGUMENTS!?';
+    }
 
-	// /urban query in several words
-	if ( isNaN(parts[1]) ) {
-		bot.log( '/urban input isNaN' );
-		query = args.toString();
-		resultIndex = 0;
-	}
-	// /urban query index
-	else {
-		bot.log( '/urban input isn\'t NaN' );
-		query = parts[ 0 ];
-		resultIndex = Number( parts[1] );
-	}
+    // /urban query in several words
+    if ( isNaN(parts[1]) ) {
+        bot.log( '/urban input isNaN' );
+        query = args.toString();
+        resultIndex = 0;
+    }
+    // /urban query index
+    else {
+        bot.log( '/urban input isn\'t NaN' );
+        query = parts[ 0 ];
+        resultIndex = Number( parts[1] );
+    }
 
-	bot.log( query, resultIndex, '/urban input' );
+    bot.log( query, resultIndex, '/urban input' );
 
-	IO.jsonp({
-		url : 'http://api.urbandictionary.com/v0/define',
-		data : {
-			term : query
-		},
-		jsonpName : 'callback',
-		fun : complete
-	});
+    IO.jsonp({
+        url : 'http://api.urbandictionary.com/v0/define',
+        data : {
+            term : query
+        },
+        jsonpName : 'callback',
+        fun : complete
+    });
 
-	function complete ( resp ) {
-		var msg;
+    function complete ( resp ) {
+        var msg;
 
-		if ( resp.result_type === 'no_results' ) {
-			msg = 'No definition found for ' + query;
-		}
-		else if ( resultIndex > resp.list.length ) {
-			msg = 'Nothing in that index. The last one is:\n' +
-				formatTop( resp.list.pop() );
-		}
-		else {
-			msg = formatTop( resp.list[resultIndex] );
-		}
+        if ( resp.result_type === 'no_results' ) {
+            msg = 'No definition found for ' + query;
+        }
+        else if ( resultIndex > resp.list.length ) {
+            msg = 'Nothing in that index. The last one is:\n' +
+                formatTop( resp.list.pop() );
+        }
+        else {
+            msg = formatTop( resp.list[resultIndex] );
+        }
 
-		//truncate the message if it's too long. yes, this creates a problem
-		// with formatted messages. yes, we take extra leeway. shut up.
-		if ( msg.length > 500 ) {
-			msg = msg.slice( 0, 450 ) + '(snip)';
-		}
-		cache[ args ] = msg;
+        //truncate the message if it's too long. yes, this creates a problem
+        // with formatted messages. yes, we take extra leeway. shut up.
+        if ( msg.length > 500 ) {
+            msg = msg.slice( 0, 450 ) + '(snip)';
+        }
+        cache[ args ] = msg;
 
-		finish( msg );
-	}
+        finish( msg );
+    }
 
-	function finish ( def ) {
-		if ( cb && cb.call ) {
-			cb( def );
-		}
-		else {
-			args.reply( def );
-		}
-	}
+    function finish ( def ) {
+        if ( cb && cb.call ) {
+            cb( def );
+        }
+        else {
+            args.reply( def );
+        }
+    }
 
-	function formatTop ( top ) {
-		//replace [tag] in definition with links
-		var def = top.definition.replace( /\[([^\]]+)\]/g, formatTag );
+    function formatTop ( top ) {
+        //replace [tag] in definition with links
+        var def = top.definition.replace( /\[([^\]]+)\]/g, formatTag );
 
-		return args.link( top.word, top.permalink ) + ' ' + def;
-	}
-	function formatTag ( $0, $1 ) {
-		var href =
-			'http://urbandictionary.com/define.php?term=' +
-			encodeURIComponent( $1 );
+        return args.link( top.word, top.permalink ) + ' ' + def;
+    }
+    function formatTag ( $0, $1 ) {
+        var href =
+            'http://urbandictionary.com/define.php?term=' +
+            encodeURIComponent( $1 );
 
-		return args.link( $0, href );
-	}
+        return args.link( $0, href );
+    }
 }
 
 bot.addCommand({
-	name : 'urban',
-	fun : urban,
+    name : 'urban',
+    fun : urban,
 
-	permissions : { del : 'NONE', use : 'ALL' },
+    permissions : { del : 'NONE', use : 'ALL' },
 
-	description : 'Fetches UrbanDictionary definition. ' +
-		'`/urban query [resultIndex=0]`',
-	async : true
+    description : 'Fetches UrbanDictionary definition. ' +
+        '`/urban query [resultIndex=0]`',
+    async : true
 });
 
 })();
 
 ;
 bot.addCommand({
-	name : 'user',
-	fun : function () {
-		return 'Command deprecated. If you want it to stay, ping Zirak.';
-	},
-	permissions : { del : 'NONE', use : 'ALL' },
-	description : 'Fetches user-link for specified user. ' +
-		'`/user usr_id|usr_name`',
+    name : 'user',
+    fun : function () {
+        return 'Command deprecated. If you want it to stay, ping Zirak.';
+    },
+    permissions : { del : 'NONE', use : 'ALL' },
+    description : 'Fetches user-link for specified user. ' +
+        '`/user usr_id|usr_name`',
 });
 
 ;
 IO.register( 'input', function ( msgObj ) {
-	if ( msgObj.user_id === 1386886 && Math.random() < 0.005 ) {
-		bot.adapter.out.add(
-			bot.adapter.reply(msgObj.user_name) + ' The Game' );
-	}
+    if ( msgObj.user_id === 1386886 && Math.random() < 0.005 ) {
+        bot.adapter.out.add(
+            bot.adapter.reply(msgObj.user_name) + ' The Game' );
+    }
 });
 
 ;
@@ -6570,21 +6571,21 @@ IO.register( 'input', function ( msgObj ) {
 // => yes or no
 
 var chooseRe = /^\s*(choose|should)?.*\sor\s[^$]/i,
-	questionRe = new RegExp('\\b(' +[
-		"am", "are", "can", "could", "did", "do", "does", "is", "may", "might",
-		"shall", "should", "will", "would"
-	].map(RegExp.escape).join('|') + ')\\b', 'i');
+    questionRe = new RegExp('\\b(' +[
+        "am", "are", "can", "could", "did", "do", "does", "is", "may", "might",
+        "shall", "should", "will", "would"
+    ].map(RegExp.escape).join('|') + ')\\b', 'i');
 
 //personal pronouns to capitalize and their mapping
 //TODO: add possessives (should my cat => your cat should)
 var capitalize = {
-	he  : 'He',
-	i   : 'You',
-	it  : 'It',
-	she : 'She',
-	they: 'They',
-	we  : 'You',
-	you : 'I'
+    he  : 'He',
+    i   : 'You',
+    it  : 'It',
+    she : 'She',
+    they: 'They',
+    we  : 'You',
+    you : 'I'
 };
 
 //will be filled in the build
@@ -6600,96 +6601,96 @@ answers=["QWJzb2x1dGVseSBub3Q=","QWJzb2x1dGVseSBub3Q=","QWJzb2x1dGVseSBub3Q=","Q
 
 
 bot.listen(chooseRe, function chooseListener ( msg ) {
-	var parts = msg
-		//remove the choose prefix
-		.replace( /^\s*choose\s/i, '' )
-		//also remove the trailing question mark
-		.replace( /\?$/, '' )
-		.split( /\s*\bor\b\s*/i )
-		//remove whatever empty items there may be
-		.filter( Boolean );
+    var parts = msg
+        //remove the choose prefix
+        .replace( /^\s*choose\s/i, '' )
+        //also remove the trailing question mark
+        .replace( /\?$/, '' )
+        .split( /\s*\bor\b\s*/i )
+        //remove whatever empty items there may be
+        .filter( Boolean );
 
-	var len = parts.length;
+    var len = parts.length;
 
-	//check to see whether there's only 1 thing asked to choose about, e.g.
-	// choose a or a or a
-	// choose a
-	for ( var i = 1, same = true; i < len; i++ ) {
-		if ( parts[i] !== parts[i-1] ) {
-			same = false;
-			break;
-		}
-	}
+    //check to see whether there's only 1 thing asked to choose about, e.g.
+    // choose a or a or a
+    // choose a
+    for ( var i = 1, same = true; i < len; i++ ) {
+        if ( parts[i] !== parts[i-1] ) {
+            same = false;
+            break;
+        }
+    }
 
-	if ( same ) {
-		return sameness.random();
-	}
+    if ( same ) {
+        return sameness.random();
+    }
 
-	//all of them (1%)
-	if ( Math.random() < 0.01 ) {
-		return len === 2 ? 'Both!' : 'All of them!';
-	}
-	//none of them (1%)
-	if ( Math.random() < 0.01 ) {
-		return len === 2 ? 'Neither' : 'None of them!';
-	}
-	//I don't know (1%)
-	if ( Math.random() < 0.01 ) {
-		return undecided.random();
-	}
+    //all of them (1%)
+    if ( Math.random() < 0.01 ) {
+        return len === 2 ? 'Both!' : 'All of them!';
+    }
+    //none of them (1%)
+    if ( Math.random() < 0.01 ) {
+        return len === 2 ? 'Neither' : 'None of them!';
+    }
+    //I don't know (1%)
+    if ( Math.random() < 0.01 ) {
+        return undecided.random();
+    }
 
-	//choose!
-	var choice = parts.random();
+    //choose!
+    var choice = parts.random();
 
-	//bots can be fickley too
-	if ( Math.random() < 0.01 ) {
-		bot.log( 'weasel decision mind change jedi nun-chuck' );
-		setTimeout( changeMind, 10000 );
-	}
+    //bots can be fickley too
+    if ( Math.random() < 0.01 ) {
+        bot.log( 'weasel decision mind change jedi nun-chuck' );
+        setTimeout( changeMind, 10000 );
+    }
 
-	return format( choice );
+    return format( choice );
 
-	function changeMind () {
-		var second;
-		//this won't be an infinite loop as we guruantee there will be at least
-		// 2 distinct results
-		//possible blocking point for large N. but there won't be a
-		// sufficiently large N, so this is probably not a problem
-		do {
-			second = parts.random();
-		} while ( second === choice );
+    function changeMind () {
+        var second;
+        //this won't be an infinite loop as we guruantee there will be at least
+        // 2 distinct results
+        //possible blocking point for large N. but there won't be a
+        // sufficiently large N, so this is probably not a problem
+        do {
+            second = parts.random();
+        } while ( second === choice );
 
-		msg.reply( 'Wait, I changed my mind! ' + format(second) );
-	}
+        msg.reply( 'Wait, I changed my mind! ' + format(second) );
+    }
 
-	function format ( ans ) {
-		return ans.replace( /(should(?:n'?t)?) (\S+)/, subject );
-	}
+    function format ( ans ) {
+        return ans.replace( /(should(?:n'?t)?) (\S+)/, subject );
+    }
 
-	//convert:
-	// "should I" => "you should"
-	// "should you" => "I should"
-	//anything else just switch the order
-	function subject ( $0, $1, $2 ) {
-		var sub = $2.toLowerCase(),
-			conv;
+    //convert:
+    // "should I" => "you should"
+    // "should you" => "I should"
+    //anything else just switch the order
+    function subject ( $0, $1, $2 ) {
+        var sub = $2.toLowerCase(),
+            conv;
 
-		//if we recognize this word, map it properly
-		if ( capitalize.hasOwnProperty(sub) ) {
-			conv = capitalize[ sub ];
-		}
-		//otherwise, use the original spelling
-		else {
-			conv = $2;
-		}
+        //if we recognize this word, map it properly
+        if ( capitalize.hasOwnProperty(sub) ) {
+            conv = capitalize[ sub ];
+        }
+        //otherwise, use the original spelling
+        else {
+            conv = $2;
+        }
 
-		return conv + ' ' + $1;
-	}
+        return conv + ' ' + $1;
+    }
 });
 
 bot.listen(questionRe, function questionListener () {
-	//TODO: same question => same mapping (negative/positive, not specific)
-	return answers.random();
+    //TODO: same question => same mapping (negative/positive, not specific)
+    return answers.random();
 });
 
 }());
@@ -6699,139 +6700,139 @@ bot.listen(questionRe, function questionListener () {
 "use strict";
 
 var fahrenheitCountries = Object.TruthMap([
-	//the API returns US in a variety of forms...
-	'US', 'United States of America', 'United States',
-	//other than the US, it's used in Belize, Bahamas and and Cayman Islands
-	'BZ', 'Belize', // http://www.hydromet.gov.bz/
-	'BS', 'Bahamas', // http://archive.is/RTD4
-	'KY', 'Cayam Islands' // http://www.weather.ky/forecast/index.htm
+    //the API returns US in a variety of forms...
+    'US', 'United States of America', 'United States',
+    //other than the US, it's used in Belize, Bahamas and and Cayman Islands
+    'BZ', 'Belize', // http://www.hydromet.gov.bz/
+    'BS', 'Bahamas', // http://archive.is/RTD4
+    'KY', 'Cayam Islands' // http://www.weather.ky/forecast/index.htm
 ]);
 
 var weather = {
-	latlon : function ( lat, lon, cb ) {
-		var nlat = Number( lat ),
-			nlon = Number( lon );
+    latlon : function ( lat, lon, cb ) {
+        var nlat = Number( lat ),
+            nlon = Number( lon );
 
-		var errs = [];
-		if ( nlat < -180 || nlat > 180 ) {
-			errs.push( 'Latitude must be between -180 and 180' );
-		}
-		if ( nlon < -180 || nlon > 180 ) {
-			errs.push( 'Longitude must be between -180 and 180' );
-		}
+        var errs = [];
+        if ( nlat < -180 || nlat > 180 ) {
+            errs.push( 'Latitude must be between -180 and 180' );
+        }
+        if ( nlon < -180 || nlon > 180 ) {
+            errs.push( 'Longitude must be between -180 and 180' );
+        }
 
-		if ( errs.length ) {
-			cb( errs.join('; ') );
-			return;
-		}
+        if ( errs.length ) {
+            cb( errs.join('; ') );
+            return;
+        }
 
-		IO.jsonp({
-			url : 'http://api.openweathermap.org/data/2.5/weather',
-			jsonpName : 'callback',
-			data : {
-				lat : lat,
-				lon : lon,
-				cnt : 1, //limit to 1 result
-				type : 'json'
-			},
+        IO.jsonp({
+            url : 'http://api.openweathermap.org/data/2.5/weather',
+            jsonpName : 'callback',
+            data : {
+                lat : lat,
+                lon : lon,
+                cnt : 1, //limit to 1 result
+                type : 'json'
+            },
 
-			fun : this.finishCb( cb ),
-			error : this.errorCb( cb )
-		});
-	},
+            fun : this.finishCb( cb ),
+            error : this.errorCb( cb )
+        });
+    },
 
-	city : function ( city, cb ) {
-		IO.jsonp({
-			url : 'http://api.openweathermap.org/data/2.5/weather',
-			jsonpName : 'callback',
-			data : {
-				q : city,
-				type : 'json'
-			},
+    city : function ( city, cb ) {
+        IO.jsonp({
+            url : 'http://api.openweathermap.org/data/2.5/weather',
+            jsonpName : 'callback',
+            data : {
+                q : city,
+                type : 'json'
+            },
 
-			fun : this.finishCb( cb ),
-			error : this.errorCb( cb )
-		});
-	},
+            fun : this.finishCb( cb ),
+            error : this.errorCb( cb )
+        });
+    },
 
-	finishCb : function ( cb ) {
-		var self = this;
+    finishCb : function ( cb ) {
+        var self = this;
 
-		return function ( resp ) {
-			cb( self.format(resp) );
-		};
-	},
-	errorCb : function ( cb ) {
-		return cb;
-	},
+        return function ( resp ) {
+            cb( self.format(resp) );
+        };
+    },
+    errorCb : function ( cb ) {
+        return cb;
+    },
 
-	format : function ( resp ) {
-		var main = resp.main;
+    format : function ( resp ) {
+        var main = resp.main;
 
-		if ( !main ) {
-			console.error( resp );
-			return 'Sorry, I couldn\'t get the data: ' + resp.message;
-		}
+        if ( !main ) {
+            console.error( resp );
+            return 'Sorry, I couldn\'t get the data: ' + resp.message;
+        }
 
-		return this.formatter( resp );
-	},
-	formatter : function ( data ) {
-		var temps = data.main,
-			ret;
+        return this.formatter( resp );
+    },
+    formatter : function ( data ) {
+        var temps = data.main,
+            ret;
 
-		temps.celsius = ( temps.temp - 273.15 ).maxDecimal( 4 );
+        temps.celsius = ( temps.temp - 273.15 ).maxDecimal( 4 );
 
-		ret =
-			bot.adapter.link(
-				data.name, 'http://openweathermap.org/city/' + data.id
-			) + ': ';
+        ret =
+            bot.adapter.link(
+                data.name, 'http://openweathermap.org/city/' + data.id
+            ) + ': ';
 
-		//to help our dear American friends, also include fahrenheit
-		if ( fahrenheitCountries[data.sys.country] ) {
-			temps.fahrenheit = ( temps.temp * 9/5 - 459.67 ).maxDecimal( 4 );
-			ret += '{fahrenheit}F ({celsius}C, {temp}K)'.supplant( temps );
-		}
-		//and to those of us with one less insanity
-		else {
-			ret += '{celsius}C ({temp}K)'.supplant( temps );
-		}
+        //to help our dear American friends, also include fahrenheit
+        if ( fahrenheitCountries[data.sys.country] ) {
+            temps.fahrenheit = ( temps.temp * 9/5 - 459.67 ).maxDecimal( 4 );
+            ret += '{fahrenheit}F ({celsius}C, {temp}K)'.supplant( temps );
+        }
+        //and to those of us with one less insanity
+        else {
+            ret += '{celsius}C ({temp}K)'.supplant( temps );
+        }
 
-		var descs = ( data.weather || [] ).map(function ( w ) {
-			return w.description;
-		}).join( ', ' );
+        var descs = ( data.weather || [] ).map(function ( w ) {
+            return w.description;
+        }).join( ', ' );
 
-		if ( descs ) {
-			ret += ', ' + descs;
-		}
+        if ( descs ) {
+            ret += ', ' + descs;
+        }
 
-		return ret;
-	}
+        return ret;
+    }
 };
 
 var latlon = /\((-?\d+\.?\d*),\s*(-?\d+\.?\d*)\)/;
 function weatherCommand ( args ) {
-	var parts = latlon.exec( args );
-	if ( parts ) {
-		weather.latlon( parts[1], parts[2], args.reply.bind(args) );
-	}
-	else if ( args.content ) {
-		weather.city( args.content, args.reply.bind(args) );
-	}
-	else {
-		return 'See `/help weather` for usage info';
-	}
+    var parts = latlon.exec( args );
+    if ( parts ) {
+        weather.latlon( parts[1], parts[2], args.reply.bind(args) );
+    }
+    else if ( args.content ) {
+        weather.city( args.content, args.reply.bind(args) );
+    }
+    else {
+        return 'See `/help weather` for usage info';
+    }
 }
 
 bot.addCommand({
-	name : 'weather',
-	fun : weatherCommand,
-	permissions : {
-		del : 'NONE'
-	},
-	async : true,
+    name : 'weather',
+    fun : weatherCommand,
+    permissions : {
+        del : 'NONE'
+    },
+    async : true,
 
-	description : 'Gets current weather: ' +
-		'`/weather (lan, lon)` or `/weather city`'
+    description : 'Gets current weather: ' +
+        '`/weather (lan, lon)` or `/weather city`'
 });
 }());
 
@@ -6841,97 +6842,97 @@ bot.addCommand({
 //welcomes new users with a link to the room rules and a short message.
 
 var seen = bot.memory.get( 'users' ),
-	//hardcoded for some (in)sanity. Change accordingly.
-	ownerRoom = 17;
+    //hardcoded for some (in)sanity. Change accordingly.
+    ownerRoom = 17;
 
 var message = "Welcome to the JavaScript chat! Please review the " +
-		bot.adapter.link(
-			"room pseudo-rules",
-			"http://rlemon.github.com/so-chat-javascript-rules/"
-		) +
-		". Please don't ask if you can ask or if anyone's around; just ask " +
-		"your question, and if anyone's free and interested they'll help.";
+        bot.adapter.link(
+            "room pseudo-rules",
+            "http://rlemon.github.com/so-chat-javascript-rules/"
+        ) +
+        ". Please don't ask if you can ask or if anyone's around; just ask " +
+        "your question, and if anyone's free and interested they'll help.";
 
 function welcome ( name, room ) {
-	bot.adapter.out.add( bot.adapter.reply(name) + " " + message, room );
+    bot.adapter.out.add( bot.adapter.reply(name) + " " + message, room );
 }
 
 IO.register( 'input', function welcomeListener ( msgObj ) {
-	var uid = msgObj.user_id,
-	    user = bot.users[ uid ],
-		room = msgObj.room_id;
+    var uid = msgObj.user_id,
+        user = bot.users[ uid ],
+        room = msgObj.room_id;
 
-	var semiLegitUser = user && isSemiLegitUser( user );
-	if ( Number(room) !== ownerRoom || semiLegitUser  || seen[uid] ) {
-		if ( semiLegitUser ) {
+    var semiLegitUser = user && isSemiLegitUser( user );
+    if ( Number(room) !== ownerRoom || semiLegitUser  || seen[uid] ) {
+        if ( semiLegitUser ) {
             delete seen[ uid ];
-			finish();
-		}
-		return;
-	}
+            finish();
+        }
+        return;
+    }
 
     seen[ uid ] = true;
 
-	IO.xhr({
-		method : 'GET',
-		url : '/users/' + uid,
+    IO.xhr({
+        method : 'GET',
+        url : '/users/' + uid,
 
-		document : true,
-		complete : complete
-	});
+        document : true,
+        complete : complete
+    });
 
-	function complete ( doc ) {
-		//<div id='room-17'>
-		// ...
-		// <div class='room-message-count' title='72279 all time messages (by Zirak)
-		//    ...
-		// </div>
-		// ...
-		//</div>
-		var messageCount = doc.querySelector(
-			'#room-' + ownerRoom + ' .room-message-count'
-		),
-			newUser;
+    function complete ( doc ) {
+        //<div id='room-17'>
+        // ...
+        // <div class='room-message-count' title='72279 all time messages (by Zirak)
+        //    ...
+        // </div>
+        // ...
+        //</div>
+        var messageCount = doc.querySelector(
+            '#room-' + ownerRoom + ' .room-message-count'
+        ),
+            newUser;
 
-		if ( messageCount ) {
-			newUser = Number( /^\d+/.exec(messageCount.title) ) < 2;
-		}
-		else {
-			newUser = true;
-		}
+        if ( messageCount ) {
+            newUser = Number( /^\d+/.exec(messageCount.title) ) < 2;
+        }
+        else {
+            newUser = true;
+        }
 
-		if ( newUser ) {
-			welcome( user.name, room );
-		}
+        if ( newUser ) {
+            welcome( user.name, room );
+        }
 
         seen[ uid ] = true;
-		finish();
-	}
+        finish();
+    }
 
-	function finish () {
-		bot.memory.save( 'users' );
-	}
+    function finish () {
+        bot.memory.save( 'users' );
+    }
 
-	function isSemiLegitUser ( user ) {
-		return bot.isOwner( user.id ) ||
-			user.reputation > 1000 ||
-			user.reputation < 20;
-	}
+    function isSemiLegitUser ( user ) {
+        return bot.isOwner( user.id ) ||
+            user.reputation > 1000 ||
+            user.reputation < 20;
+    }
 });
 
 bot.addCommand({
-	name : 'welcome',
-	fun : function ( args ) {
-		if (!args.length) {
-			return message;
-		}
+    name : 'welcome',
+    fun : function ( args ) {
+        if (!args.length) {
+            return message;
+        }
 
-		welcome( args, args.get('room_id') );
-	},
-	permission : {
-		del : 'NONE'
-	},
-	description : 'Welcomes a user. `/welcome user`'
+        welcome( args, args.get('room_id') );
+    },
+    permission : {
+        del : 'NONE'
+    },
+    description : 'Welcomes a user. `/welcome user`'
 });
 }());
 
@@ -6940,56 +6941,56 @@ bot.addCommand({
 "use strict";
 
 function command ( args, cb ) {
-	IO.jsonp({
-		url : 'http://en.wikipedia.org/w/api.php',
-		jsonpName : 'callback',
-		data : {
-			action : 'opensearch',
-			search : args.toString(),
-			limit : 1,
-			format : 'json'
-		},
-		fun : finish
-	});
+    IO.jsonp({
+        url : 'http://en.wikipedia.org/w/api.php',
+        jsonpName : 'callback',
+        data : {
+            action : 'opensearch',
+            search : args.toString(),
+            limit : 1,
+            format : 'json'
+        },
+        fun : finish
+    });
 
-	function finish ( resp ) {
-		//the result will look like this:
-		// [search_term, [title0], [description0], [link0]]
-		//we only asked for one result, so the inner arrays will have only 1 item each
-		var res = resp[ 3 ][ 0 ],
-			base = 'http://en.wikipedia.org/wiki/',
-			found = true;
+    function finish ( resp ) {
+        //the result will look like this:
+        // [search_term, [title0], [description0], [link0]]
+        //we only asked for one result, so the inner arrays will have only 1 item each
+        var res = resp[ 3 ][ 0 ],
+            base = 'http://en.wikipedia.org/wiki/',
+            found = true;
 
-		if ( !res ) {
-			found = false;
-			res = [
-				'No result found',
-				'The Wikipedia contains no knowledge of such a thing',
-				'The Gods of Wikipedia did not bless us'
-			].random();
-		}
+        if ( !res ) {
+            found = false;
+            res = [
+                'No result found',
+                'The Wikipedia contains no knowledge of such a thing',
+                'The Gods of Wikipedia did not bless us'
+            ].random();
+        }
 
-		if ( cb && cb.call ) {
-			cb( res );
-		}
-		else if ( found ){
-			args.directreply( res );
-		}
-		else {
-			args.reply( res );
-		}
-	}
+        if ( cb && cb.call ) {
+            cb( res );
+        }
+        else if ( found ){
+            args.directreply( res );
+        }
+        else {
+            args.reply( res );
+        }
+    }
 }
 
 bot.addCommand({
-	name : 'wiki',
-	fun : command,
-	permissions : {
-		del : 'NONE'
-	},
+    name : 'wiki',
+    fun : command,
+    permissions : {
+        del : 'NONE'
+    },
 
-	description : 'Search Wikipedia. `/wiki term`',
-	async : true
+    description : 'Search Wikipedia. `/wiki term`',
+    async : true
 });
 })();
 
@@ -7000,47 +7001,47 @@ bot.addCommand({
 //*sniffle*
 
 function getXKCD( args, cb ) {
-	var prop = ( args.parse()[0] || '' ).toLowerCase(),
-		linkBase = 'http://xkcd.com/';
+    var prop = ( args.parse()[0] || '' ).toLowerCase(),
+        linkBase = 'http://xkcd.com/';
 
-	//they want a specifix xkcd
-	if ( /^\d+$/.test(prop) ) {
+    //they want a specifix xkcd
+    if ( /^\d+$/.test(prop) ) {
         bot.log( '/xkcd specific', prop );
-		finish( linkBase + prop );
-		return;
-	}
-	//they want to search for a certain comic
-	else if ( prop && prop !== 'new' ) {
+        finish( linkBase + prop );
+        return;
+    }
+    //they want to search for a certain comic
+    else if ( prop && prop !== 'new' ) {
         bot.log( '/xkcd search', args.toString() );
-		IO.jsonp.google(
+        IO.jsonp.google(
             args.toString() + ' site:xkcd.com -forums.xkcd -m.xkcd -fora.xkcd',
             finishGoogleQuery );
-		return;
-	}
+        return;
+    }
 
     bot.log( '/xkcd random/latest', prop );
-	//they want a random XKCD, or the latest
-	IO.jsonp({
-		url : 'http://dynamic.xkcd.com/api-0/jsonp/comic',
-		jsonpName : 'callback',
-		fun : finishXKCD
-	});
+    //they want a random XKCD, or the latest
+    IO.jsonp({
+        url : 'http://dynamic.xkcd.com/api-0/jsonp/comic',
+        jsonpName : 'callback',
+        fun : finishXKCD
+    });
 
-	function finishXKCD ( resp ) {
-		var maxID = resp.num;
+    function finishXKCD ( resp ) {
+        var maxID = resp.num;
 
-		if ( !prop ) {
-			finish( linkBase + Math.rand(1, maxID) );
-		}
-		else if ( prop === 'new' ) {
-			finish( linkBase + maxID );
-		}
-	}
+        if ( !prop ) {
+            finish( linkBase + Math.rand(1, maxID) );
+        }
+        else if ( prop === 'new' ) {
+            finish( linkBase + maxID );
+        }
+    }
     function finishGoogleQuery ( resp ) {
         if ( resp.responseStatus !== 200 ) {
-			finish( 'Something went on fire; status ' + resp.responseStatus );
-			return;
-		}
+            finish( 'Something went on fire; status ' + resp.responseStatus );
+            return;
+        }
 
         var results = resp.responseData.results;
         if ( !results.length ) {
@@ -7048,7 +7049,7 @@ function getXKCD( args, cb ) {
             return;
         }
 
-		var result = results[ 0 ],
+        var result = results[ 0 ],
             answer = result.url,
             matches = /xkcd.com\/(\d+)/.exec( answer );
 
@@ -7059,30 +7060,30 @@ function getXKCD( args, cb ) {
         finish( answer );
     }
 
-	function finish( res ) {
-		bot.log( res, '/xkcd finish' );
+    function finish( res ) {
+        bot.log( res, '/xkcd finish' );
 
-		// because chat does not onebox https xkcd links
-		res = res.replace( /^https:/, 'http:' );
+        // because chat does not onebox https xkcd links
+        res = res.replace( /^https:/, 'http:' );
 
-		if ( cb && cb.call ) {
-			cb( res );
-		}
-		else {
-			args.directreply( res );
-		}
-	}
+        if ( cb && cb.call ) {
+            cb( res );
+        }
+        else {
+            args.directreply( res );
+        }
+    }
 }
 
 bot.addCommand({
-	name : 'xkcd',
-	fun : getXKCD,
-	permissions : {
-		del : 'NONE'
-	},
-	description : 'Returns an XKCD. Call with no args for random, ' +
-		'`new` for latest, or a number for a specific one.',
-	async : true
+    name : 'xkcd',
+    fun : getXKCD,
+    permissions : {
+        del : 'NONE'
+    },
+    description : 'Returns an XKCD. Call with no args for random, ' +
+        '`new` for latest, or a number for a specific one.',
+    async : true
 });
 
 })();
@@ -7090,135 +7091,135 @@ bot.addCommand({
 ;
 (function () {
 var nulls = [
-	'Video not found (rule 35?)',
-	'I could not find such a video',
-	'The Lords of YouTube did not find your query favorable' ];
+    'Video not found (rule 35?)',
+    'I could not find such a video',
+    'The Lords of YouTube did not find your query favorable' ];
 function youtube ( args, cb ) {
-	IO.jsonp.google(
-		args.toString() + ' site:youtube.com/watch', finishCall );
+    IO.jsonp.google(
+        args.toString() + ' site:youtube.com/watch', finishCall );
 
-	function finishCall ( resp ) {
-		if ( resp.responseStatus !== 200 ) {
-			finish( 'Something went on fire; status ' + resp.responseStatus );
-			return;
-		}
+    function finishCall ( resp ) {
+        if ( resp.responseStatus !== 200 ) {
+            finish( 'Something went on fire; status ' + resp.responseStatus );
+            return;
+        }
 
-		var result = resp.responseData.results[ 0 ];
-		bot.log( result, '/youtube result' );
+        var result = resp.responseData.results[ 0 ];
+        bot.log( result, '/youtube result' );
 
-		if ( !result ) {
-			finish( nulls.random() );
-		}
-		else {
-			finish( decodeURIComponent(result.url) );
-		}
-	}
+        if ( !result ) {
+            finish( nulls.random() );
+        }
+        else {
+            finish( decodeURIComponent(result.url) );
+        }
+    }
 
-	function finish ( res ) {
-		if ( cb && cb.call ) {
-			cb( res );
-		}
-		else {
-			args.directreply( res );
-		}
-	}
+    function finish ( res ) {
+        if ( cb && cb.call ) {
+            cb( res );
+        }
+        else {
+            args.directreply( res );
+        }
+    }
 }
 
 bot.addCommand({
-	name : 'youtube',
-	fun : youtube,
-	permissions : {
-		del : 'NONE'
-	},
-	description : 'Search Youtube. `/youtube query`',
-	async : true
+    name : 'youtube',
+    fun : youtube,
+    permissions : {
+        del : 'NONE'
+    },
+    description : 'Search Youtube. `/youtube query`',
+    async : true
 });
 }());
 
 ;
 /* jshint ignore:start */
 ;(function(/* <[^>]> the b̗o̴̻̰̼͙̭̹̩i̛̫͍̻̗̻͈͉d̗̺̮̺͇̜ who s̯̯̜͙̪e̦͖̮͇͕͓e͙̱͚̯̫s̠̮̬͈͔̠̀ ̬̰̼͞a̶̼̩̻̘̦̟͈l̷͉̙͚̰̬̥l͞....*/) {// zIRAK IS gOING TOkILL ME KEHEHEHEHEH
-	var zalgo = function ( args ) {var ZALGO=function(ZA_LGO) {				return Math.floor(Math.random() * ZA_LGO);
+    var zalgo = function ( args ) {var ZALGO=function(ZA_LGO) {             return Math.floor(Math.random() * ZA_LGO);
 }/*<([a-z]+) *[^/]*?>*/
-		var NO_ZALGO_MESSAGE = args.split('');
-		var _var_;var _var;var var_; // It's a `var`ty in here!
-		var ZALGO_UP,ZALGO_DOWN,ZALGO_LEFT,ZALGO_RIGHT,ZALGO_MID;
-		var NOHOPEONLYZALGO = function() {return NOHOPEONLYZALGO()};;;;;;;;;;/*;;;;*/;;;;;
-		// H̸̡̪̯ͨ͊̽̅̾̎Ȩ̬̩̾͛ͪ̈́̀́͘ ̶̧̨̱̹̭̯ͧ̾ͬC̷̙̲̝͖ͭ̏ͥͮ͟Oͮ͏̮̪̝͍M̲̖͊̒ͪͩͬ̚̚͜Ȇ̴̟̟͙̞ͩ͌͝S̨̥̫͎̭ͯ̿̔̀ͅ
-		var ZALGO_LEVEL = [0,1,2].random();
-	var zalgo_up = [
-		'\u030d','\u030e','\u0304','\u0305',
-		'\u033f','\u0311','\u0306','\u0310',
-		'\u0352','\u0357','\u0351','\u0307',
-		'\u0308','\u030a','\u0342','\u0343',
-		'\u0344','\u034a','\u034b','\u034c',
-		'\u0303','\u0302','\u030c','\u0350',
-		'\u0300','\u0301','\u030b','\u030f',
-		'\u0312','\u0313','\u0314','\u033d',
-		'\u0309','\u0363','\u0364','\u0365',
-		'\u0366','\u0367','\u0368','\u0369',
-		'\u036a','\u036b','\u036c','\u036d',
-		'\u036e','\u036f','\u033e','\u035b',
-		'\u0346','\u031a'
-	];var zalgo_down = [
-		'\u0316','\u0317','\u0318','\u0319',
-		'\u031c','\u031d','\u031e','\u031f',
-		'\u0320','\u0324','\u0325','\u0326',
-		'\u0329','\u032a','\u032b','\u032c',
-		'\u032d','\u032e','\u032f','\u0330',
-		'\u0331','\u0332','\u0333','\u0339',
-		'\u033a','\u033b','\u033c','\u0345',
-		'\u0347','\u0348','\u0349','\u034d',
-		'\u034e','\u0353','\u0354','\u0355',
-		'\u0356','\u0359','\u035a','\u0323'
-	];var zalgo_mid = [
-		'\u0315','\u031b','\u0340','\u0341',
-		'\u0358','\u0321','\u0322','\u0327',
-		'\u0328','\u0334','\u0335','\u0336',
-		'\u034f','\u035c','\u035d','\u035e',
-		'\u035f','\u0360','\u0362','\u0338',
-		'\u0337','\u0361','\u0489'
-	];
-		var ZALGO_RESPONSE = /*Z̶̿̄ͮ̅̎̽Ą͖̺͇̫̮̯̓͌̒̓ͬL͚ͩ́͞G͍̻ͣ̋̾ͥͦ̍ͦO̭̭̪͔̣̒͒̏̔̋̔̚ ̙̻̖̱̈́̍ͫ̓̄̃͞I͉̻̽ͧͣͅS̶̺̦͖ͤ͗͆̊͛̓ ͩ̎̂͋̅͆̚͝C̄̀ͥ͋̔҉̞̥Ȍ̠̤̳͉̺͒̽̓̄̓͝ͅM̓͑̾̐I͎͉̥̤̱͓ͦ̑̋̓͆̽N̙̥͖̯͔̯G̲̹͓̣͙̾̑͊̆ͭ̀̌*/'',PENANCE=0,SUFFERING='A̪̗̐̿̄̔̉̏̾L̹͓̲̈́ͮL̜̼͓͉̞̘̩̇̊';
-		/*
-		if (!center.hold) {
-			while(1) {
-				; ;console.log('Ź̙̬͙̤͙̞͔ͦͪͭ͗̒ͅA̻̟̗̩͑ͦ̔͋̔̑̒L͇͔͑ͥͭ̓͊͋ͤG̩̳ͫ̓̍̎̏ͥ̏O̘̰̬͖̥̳̯͗̉̓̂ͩ͋'); ;
-			}*/var ZALGO_PENANCE = NO_ZALGO_MESSAGE.length;/*
-		}
-		*/if(ZALGO_LEVEL==1) {ZALGO_UP=ZALGO(16)/2+1;ZALGO_DOWN=ZALGO(16)/2+1;ZALGO_MID=ZALGO(6)/2};
+        var NO_ZALGO_MESSAGE = args.split('');
+        var _var_;var _var;var var_; // It's a `var`ty in here!
+        var ZALGO_UP,ZALGO_DOWN,ZALGO_LEFT,ZALGO_RIGHT,ZALGO_MID;
+        var NOHOPEONLYZALGO = function() {return NOHOPEONLYZALGO()};;;;;;;;;;/*;;;;*/;;;;;
+        // H̸̡̪̯ͨ͊̽̅̾̎Ȩ̬̩̾͛ͪ̈́̀́͘ ̶̧̨̱̹̭̯ͧ̾ͬC̷̙̲̝͖ͭ̏ͥͮ͟Oͮ͏̮̪̝͍M̲̖͊̒ͪͩͬ̚̚͜Ȇ̴̟̟͙̞ͩ͌͝S̨̥̫͎̭ͯ̿̔̀ͅ
+        var ZALGO_LEVEL = [0,1,2].random();
+    var zalgo_up = [
+        '\u030d','\u030e','\u0304','\u0305',
+        '\u033f','\u0311','\u0306','\u0310',
+        '\u0352','\u0357','\u0351','\u0307',
+        '\u0308','\u030a','\u0342','\u0343',
+        '\u0344','\u034a','\u034b','\u034c',
+        '\u0303','\u0302','\u030c','\u0350',
+        '\u0300','\u0301','\u030b','\u030f',
+        '\u0312','\u0313','\u0314','\u033d',
+        '\u0309','\u0363','\u0364','\u0365',
+        '\u0366','\u0367','\u0368','\u0369',
+        '\u036a','\u036b','\u036c','\u036d',
+        '\u036e','\u036f','\u033e','\u035b',
+        '\u0346','\u031a'
+    ];var zalgo_down = [
+        '\u0316','\u0317','\u0318','\u0319',
+        '\u031c','\u031d','\u031e','\u031f',
+        '\u0320','\u0324','\u0325','\u0326',
+        '\u0329','\u032a','\u032b','\u032c',
+        '\u032d','\u032e','\u032f','\u0330',
+        '\u0331','\u0332','\u0333','\u0339',
+        '\u033a','\u033b','\u033c','\u0345',
+        '\u0347','\u0348','\u0349','\u034d',
+        '\u034e','\u0353','\u0354','\u0355',
+        '\u0356','\u0359','\u035a','\u0323'
+    ];var zalgo_mid = [
+        '\u0315','\u031b','\u0340','\u0341',
+        '\u0358','\u0321','\u0322','\u0327',
+        '\u0328','\u0334','\u0335','\u0336',
+        '\u034f','\u035c','\u035d','\u035e',
+        '\u035f','\u0360','\u0362','\u0338',
+        '\u0337','\u0361','\u0489'
+    ];
+        var ZALGO_RESPONSE = /*Z̶̿̄ͮ̅̎̽Ą͖̺͇̫̮̯̓͌̒̓ͬL͚ͩ́͞G͍̻ͣ̋̾ͥͦ̍ͦO̭̭̪͔̣̒͒̏̔̋̔̚ ̙̻̖̱̈́̍ͫ̓̄̃͞I͉̻̽ͧͣͅS̶̺̦͖ͤ͗͆̊͛̓ ͩ̎̂͋̅͆̚͝C̄̀ͥ͋̔҉̞̥Ȍ̠̤̳͉̺͒̽̓̄̓͝ͅM̓͑̾̐I͎͉̥̤̱͓ͦ̑̋̓͆̽N̙̥͖̯͔̯G̲̹͓̣͙̾̑͊̆ͭ̀̌*/'',PENANCE=0,SUFFERING='A̪̗̐̿̄̔̉̏̾L̹͓̲̈́ͮL̜̼͓͉̞̘̩̇̊';
+        /*
+        if (!center.hold) {
+            while(1) {
+                ; ;console.log('Ź̙̬͙̤͙̞͔ͦͪͭ͗̒ͅA̻̟̗̩͑ͦ̔͋̔̑̒L͇͔͑ͥͭ̓͊͋ͤG̩̳ͫ̓̍̎̏ͥ̏O̘̰̬͖̥̳̯͗̉̓̂ͩ͋'); ;
+            }*/var ZALGO_PENANCE = NO_ZALGO_MESSAGE.length;/*
+        }
+        */if(ZALGO_LEVEL==1) {ZALGO_UP=ZALGO(16)/2+1;ZALGO_DOWN=ZALGO(16)/2+1;ZALGO_MID=ZALGO(6)/2};
 var TONY;
 /*-*/
-TONY	=	  'T̷̂͒̃̽H̸͒̿̒̚̕͜E͋ͥ̋̈̉̏̏̔̔͞ ̏ͥ̊͠P̷̑̌̀O̵̔̑̇̐͌̓̀̚Ǹ͌̍̾̈҉Y͛̈́̉҉͘'
-		for(
-			var PENANCE = 0;
-				/*Q*/PENANCE<ZALGO_PENANCE;/*<([a-z]+) *[^/]*?>*/
-					PENANCE++
-						) {
-			ZALGO_RESPONSE += NO_ZALGO_MESSAGE[PENANCE];
-		SUFFERING++;
+TONY    =     'T̷̂͒̃̽H̸͒̿̒̚̕͜E͋ͥ̋̈̉̏̏̔̔͞ ̏ͥ̊͠P̷̑̌̀O̵̔̑̇̐͌̓̀̚Ǹ͌̍̾̈҉Y͛̈́̉҉͘'
+        for(
+            var PENANCE = 0;
+                /*Q*/PENANCE<ZALGO_PENANCE;/*<([a-z]+) *[^/]*?>*/
+                    PENANCE++
+                        ) {
+            ZALGO_RESPONSE += NO_ZALGO_MESSAGE[PENANCE];
+        SUFFERING++;
 if (!ZALGO_LEVEL) {
-			ZALGO_UP   =ZALGO(8);
-			ZALGO_DOWN	=  ZALGO(8);/*\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/*/
-			ZALGO_MID	 =	 ZALGO(6);////////////////////////////////////////////////////////////////////////////////////
-		}if(ZALGO_LEVEL==1) {ZALGO_UP=ZALGO(16)/2+1;ZALGO_DOWN=ZALGO(16)/2+1;/*ZALGO_MID=ZALGO(123)/9999*/ZALGO_MID=ZALGO(6)/2};
-	if(ZALGO_LEVEL==2) {ZALGO_UP=ZALGO(64)/4+3;/*var createDialog = function(text , title) {
+            ZALGO_UP   =ZALGO(8);
+            ZALGO_DOWN  =  ZALGO(8);/*\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/*/
+            ZALGO_MID    =   ZALGO(6);////////////////////////////////////////////////////////////////////////////////////
+        }if(ZALGO_LEVEL==1) {ZALGO_UP=ZALGO(16)/2+1;ZALGO_DOWN=ZALGO(16)/2+1;/*ZALGO_MID=ZALGO(123)/9999*/ZALGO_MID=ZALGO(6)/2};
+    if(ZALGO_LEVEL==2) {ZALGO_UP=ZALGO(64)/4+3;/*var createDialog = function(text , title) {
 var dialog =  "<div id=dialog <h1>" + text + "</h1></div>";
 $('body').append(dialog);
 $('#dialog').prop('title' , title);
 $('#dialog').dialog();
 }*//**/ZALGO_DOWN=ZALGO(64)/4+3;/**/ZALGO_MID=ZALGO(16)/4+1};
 //ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO ZALGO
-						for(var j=0; j<ZALGO_UP; j++)
-							ZALGO_RESPONSE /*<([a-z]+) *[^/]*?>*/+= zalgo_up.random();
-								for(var j=0; j<ZALGO_MID; j++)
-									/* o̦̪̮̦̗̘̬͇͗̈ͩ͂̐͊̌ͩ̈t̖̩̹̺̯͖̬͛ͮͮͫ.̮̦͙̺̖͈͇̾ͬ͌ͯ́̎ͥ͋a͎͎̬̪̗͕̱͌́ͅd̼̞͎̜ͯ̈͌̚d̹͙̲̺͖̠̎̊ͮ̈́̈ͪͧͥ̄C͕̝̲͖̱̑ȏ̹͎̣̲͕̳̥̤̙̓̂m̙̯ͮ̔ͪ̃̏̏m̯͓̙̞̖ͫͩ̾ͦͅa̪̠͉͖͉̟̙͓̩̅̇n̰̗͋ͩ̇̄ͣͩ̚d͉ͥͧ̇́(͕͕̺̝̺̩͈͇͌͆̿͆{͙͓ͯ̆̏͑ͯ	̲̬̺̭̜ͫͭ̎ͮn͚͍̹̘͎̝̥͐̅̉ͥ̀̑̐̉ä̳̖͇̖̰̪́ͨ͗ͪͧ̔̅m͈̖̲̋͋e͉͇̭̭̱̅̈ ̥͎̟͒ͤͤ͊̀̿:̘̻̘̭̓̽̾̍̊ ̬͔͎͐̉̔ͩ̋̽͋'͈̞̻̫̪̼͎͊̽̇̍̍ͭͪͥl͖͉̿̈̿ͩ̚i͉͉̤̝̓͊ͦ̈́́̒̃n̰̤̣͓̹͖ͮ̈́k̺̻͕͍͙͇̒̏̂̓̈́̒'͚̱̟̺̺̦̒̈́̈̇ͅ,̝̼̮̪̖̪̜̑̅̾	͕͙̬̱͍̜̂ͥͪ͐̎ͮ̅͂̚f̞̲̺͔̭͇͇ͫ͐͛ͪ̾ͮ̎u̦̤̝̳̍ͩ̓̐ͦ̃ͪn̗̱͖͙̙̱ͧ̑̓̈ͣ̔͛͆ ̝̥̼̭̭̠͇̉:͈̥̟̺̂̄̿̄ͣ͌ ͕̆͒̔ͦͯ̿ͨͨs̯̠͎͈̻̘͉͑̈̔̑ͥͯ͗͂ͅe̬̟͉̬̞̍̒͋̀ͩ̔͗͐n̮̼̠̓̂̅ͭ̌͐ḓ̰̦̭͔̾̓ͨ̍Ḽ̪̯͍̪͐ͭ͑̂i̞̮͆̋ͥ͆ͣn͚̟͇ͩͤͩ̔k̖̤̥ͪ̐ͤͅ,̲̯͎̼̖̠̹̄ͮͦ̈́̆̍̿ͯ̃	̥̖̩̘͎͂͐̋̉̊p͇̦̯͕̂ͩ̎͆e̜͋̈́̀̉͊͆̋ͧr̞̃͊ͭ̎͊͋ͭ̈́̊m̖͇̠̝̬͖̩̅ͣ̎ͪ̈́ͥ̍ḭ̝̯͚͓̲̎̐͒ͭ̋͗̐̒ͤs̠̬͕̬̺̰ͥ̄̈̊ͬ̑̓s̝͚̝͖ͯ̽̅ͨ̾͐í̭̬͖̮͚̀͊ͬͨ̾͌ͧ̚o̲͕̟͔̗̊̿͆͂̂͆̂̌̄n̤̬̏̇ͦͅŝ̻͈̖͚ ̭̝́ͨ͂ͫͬ̎̀̚:̜̠̰ͣͮ͌͑̐̎̑ ̥̭̈́ͨͨ͌ͩ̆{͉̻̤̺͊̀̋ͭͨ͛ͅ	̠̘̯̩̀̅͌̄͛͌	͎̬̞͇̜̻͚͗͗ͧ̑̎ͅď̦̪̫ͦ͂ė͙ͤͣ͛̉̑̅̒̚l̹̩̟̬̤̞͚ͫ̈̓̒̀ ̟̖̰̣̳̂ͦ̏̄ͤ̊̒̚:͎͉̅ ̠̘̣̪̫̗ͦ͛̀̓̂ͭͭ'͕̻̗̦ͯ͗ͯ̓ͭ͗͛Ṉ̩̖̗̯̀̒ͧ̓ͮͨ̏̚O̼̘̟̩͙ͤͦ̈́̓ͩN̝̲͎̖͔͖ͥ̏͋ͯ̈̂̋̓̆ͅE͔͎̟͚͓̺͚ͨ͒ͥ̈́'̥̼̠̲̳͖̼͗ͥ͑	͈͕ͪ̊̿̍ͯͮ̃̊}͕͉̝̜̦͖̰̻̜̓͛̀ */
-								ZALGO_RESPONSE += zalgo_mid.random();
-							for(var j=0; j<ZALGO_DOWN; j++)
-						ZALGO_RESPONSE += zalgo_down.random();
-					/*
-					J̨͜͡S ̕҉ŗo̧͟͢o͝m ͡é͢ń͝c̨̕ǫu̴͠
-					r͏͢a͡g͟͝es̨̨͡ ̷p̷̷͏e͘҉ǫ̷̀p̴ļ̸é͞ ͝t͢o̵͝ ̛͘͞c̷̀͘o͢͏̀m̷̀e̶ ͜ą́ǹ̨d͏ ̵̧͞a͘͠͠s͢͠͡k ̴q͞u̶̡͠ę̸͞s͠͡҉t̸į̵o̢ns͘ ̶t̵h̵̨̀à͢t̴ ̵͏a͘r̷e̛͝ ̵͟t͞o̧͝o͠ ͢s̸͢m̴a̷͝ll̴̴/̡bą͟͝d́l̶̨y͏ ́pu͘͝t̸͏͢ ͏̧f͏or͏ ̧m͠͏aį͢ņ͝.̴̶͝
+                        for(var j=0; j<ZALGO_UP; j++)
+                            ZALGO_RESPONSE /*<([a-z]+) *[^/]*?>*/+= zalgo_up.random();
+                                for(var j=0; j<ZALGO_MID; j++)
+                                    /* o̦̪̮̦̗̘̬͇͗̈ͩ͂̐͊̌ͩ̈t̖̩̹̺̯͖̬͛ͮͮͫ.̮̦͙̺̖͈͇̾ͬ͌ͯ́̎ͥ͋a͎͎̬̪̗͕̱͌́ͅd̼̞͎̜ͯ̈͌̚d̹͙̲̺͖̠̎̊ͮ̈́̈ͪͧͥ̄C͕̝̲͖̱̑ȏ̹͎̣̲͕̳̥̤̙̓̂m̙̯ͮ̔ͪ̃̏̏m̯͓̙̞̖ͫͩ̾ͦͅa̪̠͉͖͉̟̙͓̩̅̇n̰̗͋ͩ̇̄ͣͩ̚d͉ͥͧ̇́(͕͕̺̝̺̩͈͇͌͆̿͆{͙͓ͯ̆̏͑ͯ  ̲̬̺̭̜ͫͭ̎ͮn͚͍̹̘͎̝̥͐̅̉ͥ̀̑̐̉ä̳̖͇̖̰̪́ͨ͗ͪͧ̔̅m͈̖̲̋͋e͉͇̭̭̱̅̈ ̥͎̟͒ͤͤ͊̀̿:̘̻̘̭̓̽̾̍̊ ̬͔͎͐̉̔ͩ̋̽͋'͈̞̻̫̪̼͎͊̽̇̍̍ͭͪͥl͖͉̿̈̿ͩ̚i͉͉̤̝̓͊ͦ̈́́̒̃n̰̤̣͓̹͖ͮ̈́k̺̻͕͍͙͇̒̏̂̓̈́̒'͚̱̟̺̺̦̒̈́̈̇ͅ,̝̼̮̪̖̪̜̑̅̾    ͕͙̬̱͍̜̂ͥͪ͐̎ͮ̅͂̚f̞̲̺͔̭͇͇ͫ͐͛ͪ̾ͮ̎u̦̤̝̳̍ͩ̓̐ͦ̃ͪn̗̱͖͙̙̱ͧ̑̓̈ͣ̔͛͆ ̝̥̼̭̭̠͇̉:͈̥̟̺̂̄̿̄ͣ͌ ͕̆͒̔ͦͯ̿ͨͨs̯̠͎͈̻̘͉͑̈̔̑ͥͯ͗͂ͅe̬̟͉̬̞̍̒͋̀ͩ̔͗͐n̮̼̠̓̂̅ͭ̌͐ḓ̰̦̭͔̾̓ͨ̍Ḽ̪̯͍̪͐ͭ͑̂i̞̮͆̋ͥ͆ͣn͚̟͇ͩͤͩ̔k̖̤̥ͪ̐ͤͅ,̲̯͎̼̖̠̹̄ͮͦ̈́̆̍̿ͯ̃ ̥̖̩̘͎͂͐̋̉̊p͇̦̯͕̂ͩ̎͆e̜͋̈́̀̉͊͆̋ͧr̞̃͊ͭ̎͊͋ͭ̈́̊m̖͇̠̝̬͖̩̅ͣ̎ͪ̈́ͥ̍ḭ̝̯͚͓̲̎̐͒ͭ̋͗̐̒ͤs̠̬͕̬̺̰ͥ̄̈̊ͬ̑̓s̝͚̝͖ͯ̽̅ͨ̾͐í̭̬͖̮͚̀͊ͬͨ̾͌ͧ̚o̲͕̟͔̗̊̿͆͂̂͆̂̌̄n̤̬̏̇ͦͅŝ̻͈̖͚ ̭̝́ͨ͂ͫͬ̎̀̚:̜̠̰ͣͮ͌͑̐̎̑ ̥̭̈́ͨͨ͌ͩ̆{͉̻̤̺͊̀̋ͭͨ͛ͅ   ̠̘̯̩̀̅͌̄͛͌    ͎̬̞͇̜̻͚͗͗ͧ̑̎ͅď̦̪̫ͦ͂ė͙ͤͣ͛̉̑̅̒̚l̹̩̟̬̤̞͚ͫ̈̓̒̀ ̟̖̰̣̳̂ͦ̏̄ͤ̊̒̚:͎͉̅ ̠̘̣̪̫̗ͦ͛̀̓̂ͭͭ'͕̻̗̦ͯ͗ͯ̓ͭ͗͛Ṉ̩̖̗̯̀̒ͧ̓ͮͨ̏̚O̼̘̟̩͙ͤͦ̈́̓ͩN̝̲͎̖͔͖ͥ̏͋ͯ̈̂̋̓̆ͅE͔͎̟͚͓̺͚ͨ͒ͥ̈́'̥̼̠̲̳͖̼͗ͥ͑  ͈͕ͪ̊̿̍ͯͮ̃̊}͕͉̝̜̦͖̰̻̜̓͛̀ */
+                                ZALGO_RESPONSE += zalgo_mid.random();
+                            for(var j=0; j<ZALGO_DOWN; j++)
+                        ZALGO_RESPONSE += zalgo_down.random();
+                    /*
+                    J̨͜͡S ̕҉ŗo̧͟͢o͝m ͡é͢ń͝c̨̕ǫu̴͠
+                    r͏͢a͡g͟͝es̨̨͡ ̷p̷̷͏e͘҉ǫ̷̀p̴ļ̸é͞ ͝t͢o̵͝ ̛͘͞c̷̀͘o͢͏̀m̷̀e̶ ͜ą́ǹ̨d͏ ̵̧͞a͘͠͠s͢͠͡k ̴q͞u̶̡͠ę̸͞s͠͡҉t̸į̵o̢ns͘ ̶t̵h̵̨̀à͢t̴ ̵͏a͘r̷e̛͝ ̵͟t͞o̧͝o͠ ͢s̸͢m̴a̷͝ll̴̴/̡bą͟͝d́l̶̨y͏ ́pu͘͝t̸͏͢ ͏̧f͏or͏ ̧m͠͏aį͢ņ͝.̴̶͝
 ̛́T̸h́͠͞e ̷̕r͏̴͜oo͜m̕ ̀͘e̵͏̴n͟͟҉c͜͜o͠҉҉u͏rá̴g̷è͠s̢͢ ͟͟p̀͠e̴͞
 ̛́T̸h́͠͞e ̷̕r͏̴͜oo͜m̕ ̀͘e̵͏̴n͟͟҉c͜͜o͠҉҉u͏rá̴g̷è͠s̢͢ ͟͟p̀͠e̴͞O
 ̛́T̸h́͠͞e ̷̕r͏̴͜oo͜m̕ ̀͘e̵͏̴n͟͟҉c͜͜o͠҉҉u͏rá̴g̷è͠s̢͢ ͟͟p̀͠e̴͞0P
@@ -7226,9 +7227,9 @@ $('#dialog').dialog();
 ̛́T̸h́͠͞e ̷̕r͏̴͜oo͜m̕ ̀͘e̵͏̴n͟͟҉c͜͜o͠҉҉u͏rá̴g̷è͠s̢͢ ͟͟p̀͠e̴͞
 ̛́T̸h́͠͞e ̷̕r͏̴͜oo͜m̕ ̀͘e̵͏̴n͟͟҉c͜͜o͠҉҉u͏
 ̛́T̸h́͠͞e ̷̕r͏̴͜oo͜m̕ ̀͘e̵͏̴n͟͟҉c͜͜o͠҉҉u͏rá̴g̷è͠s̢͢ ͟͟p̀͠e̴͞B̥̺̣̯̹̐̍͒̓ͥ̾e̹̳n͙̜j̼ͯͩ̄͑͆a͎̼̯̥̣m̖͓̖̀̋́ͮͦ̂i̪̥͉̬ͭ̔͌̓̐̿̋n̻̥̜͍͛̒ͨ̄̀ ̦͔͈͕̘̫G̝̞͓͙̖ͨͫͅr̘͛̓͗̅̈́̓̃u̐ͮ̐̒ẽ̝̩͇͚͎͐ṅ̥̮͓̩̰ͯ̆̽͒b͔̟͓ã̐̀̀̚uͣ̐̌͒̚ṁ͕͆̈̏ ̺̄͒̑̄͒̍H̫̐̃Ã͓L̞͍ͩ͒ͦ́P̳̖̺͍ͤͨ
-					 */
-		}
-		return ZALGO_RESPONSE || /<([a-z]+) *[^\/]*?>/;
+                     */
+        }
+        return ZALGO_RESPONSE || /<([a-z]+) *[^\/]*?>/;
 
 
 
@@ -7237,30 +7238,30 @@ $('#dialog').dialog();
 
 
 
-	};
+    };
 
-	bot.addCommand(/*
-											d̟̬̮o͎̪̻̘̘̫n̕'͙̬̜͍̜t̹̳̰̗̝̰͜ ̢̠̰̘͚͔l̩e҉̘̼̙ͅa̗̣̩v̞̝͍͝e͎͚̹͕͕̠͠ m̰̱͔̭̣͔e̶̻̱̭̜̗̙
-											*/
+    bot.addCommand(/*
+                                            d̟̬̮o͎̪̻̘̘̫n̕'͙̬̜͍̜t̹̳̰̗̝̰͜ ̢̠̰̘͚͔l̩e҉̘̼̙ͅa̗̣̩v̞̝͍͝e͎͚̹͕͕̠͠ m̰̱͔̭̣͔e̶̻̱̭̜̗̙
+                                            */
 
 
 {
-		name : 'zalgo',
-		/*ZALGO*/
-			fun : zalgo,
-				permissions : {
-					del : 'NONE'/*ṇ̯̝̀v̝̘̦̺o͍̦̤͝k͎̺͕͇̗̼e̤̱ ̙̼͚ț̵̫̥̘̟͖h͕̯e̢ hi͚̣̲̘͇̻̗͘v̟e̺͉̙̰-̲m̛͈̩̝i̪̬̤n̼̣̼͈̟d̘̯̮̲̲̟ ͓̗r̨̬̜̘͕ͅͅe̹͓̱̯͓p̬̠r̠̪͉ḙ̱̭̻̗͔́ś̗̤̰͕̫̥è̖̫̹͙n̯̞̯̣̘̖t̷͓͕͖͖̰in̲̤̥͕͉̘͝g̹̜̭̩̯̯̝ ̰͎c͓͕̞͕̯h̩a̟̘͇̮̺̭̦o̭̣̺͠s̻ͅ.̱͙̥̭̙
+        name : 'zalgo',
+        /*ZALGO*/
+            fun : zalgo,
+                permissions : {
+                    del : 'NONE'/*ṇ̯̝̀v̝̘̦̺o͍̦̤͝k͎̺͕͇̗̼e̤̱ ̙̼͚ț̵̫̥̘̟͖h͕̯e̢ hi͚̣̲̘͇̻̗͘v̟e̺͉̙̰-̲m̛͈̩̝i̪̬̤n̼̣̼͈̟d̘̯̮̲̲̟ ͓̗r̨̬̜̘͕ͅͅe̹͓̱̯͓p̬̠r̠̪͉ḙ̱̭̻̗͔́ś̗̤̰͕̫̥è̖̫̹͙n̯̞̯̣̘̖t̷͓͕͖͖̰in̲̤̥͕͉̘͝g̹̜̭̩̯̯̝ ̰͎c͓͕̞͕̯h̩a̟̘͇̮̺̭̦o̭̣̺͠s̻ͅ.̱͙̥̭̙
 ̧͖̠̙I҉͕̗̝̝n̘̹v̞̣̝͔͍ọ̦̳̯͞k͖̫i͔n͇̟g̡͓ ̹̩the ͚̺͚̫̦f͕͕͔̜̼̞̀e̠͔̖̜͓̭̥e͏͙͈̦lin͎͉̭̮̫̹̝g͍̹͖ ̦͈̬̼̠͖óf̳̣̼͜ͅ ̨͎̼͇ͅc̦͞h̞̘̠̹̹̤ͅa̢̯o̫̱̼͉s̩͙͔͇̳̬̦.͏̞̫͇
 ̱͕̯̝̺̜W̢̘̹i͞t̬͔̬h̹̞̗̞ ͓͍̬́o̮͇͎̬u̲t̲͉̞̹̖̯̘ ̮̠͇o̘̪͙͜r̷̞̱͔d͍͢e҉̠͚r̫͙ͅ.̴̣
 Th͎̯̠͚̥e̜̞͇͔̣ ̼̰͚̱̜̬͡ͅN̢̳̞͔e̴̩̠̖͎̤̬z̧̺̘͎̮̣ṕ͍̳̼̥͍e̝̟̻̳͕̱͍r̢̞̝̲̻d̶̫͉̮̙̯͔i̵̼͎̰̘̙̰*/
-						},
-							description : 'H̸̡̪̯ͨ͊̽̅̾̎Ȩ̬̩̾͛ͪ̈́̀́͘ ̶̧̨̱̹̭̯ͧ̾ͬC̷̙̲̝͖ͭ̏ͥͮ͟Oͮ͏̮̪̝͍M̲̖͊̒ͪͩͬ̚̚͜Ȇ̴̟̟͙̞ͩ͌͝S̨̥̫͎̭ͯ̿̔̀ͅ http://stackoverflow.com/a/1732454/1216976'
-						}
-					)
-		;
-		}
-		)
-		(
-		)
-		;//t͕̥́h̡̠͔͕̳̳e҉̱͓̱̦è̟n̢̗͖̜̳d̺̖
+                        },
+                            description : 'H̸̡̪̯ͨ͊̽̅̾̎Ȩ̬̩̾͛ͪ̈́̀́͘ ̶̧̨̱̹̭̯ͧ̾ͬC̷̙̲̝͖ͭ̏ͥͮ͟Oͮ͏̮̪̝͍M̲̖͊̒ͪͩͬ̚̚͜Ȇ̴̟̟͙̞ͩ͌͝S̨̥̫͎̭ͯ̿̔̀ͅ http://stackoverflow.com/a/1732454/1216976'
+                        }
+                    )
+        ;
+        }
+        )
+        (
+        )
+        ;//t͕̥́h̡̠͔͕̳̳e҉̱͓̱̦è̟n̢̗͖̜̳d̺̖
 /* jshint ignore:end */

@@ -32,112 +32,112 @@ var sub = /^\s*s(\/|\|)((?:(?:\\\1)|[^\1])*?)\1((?:(?:\\\1)|[^\1])*?)\1(g?i?)(?:
 bot.listen( sub, substitute );
 
 function substitute ( msg ) {
-	var re = RegExp( msg.matches[2], msg.matches[4] ),
-		replacement = msg.matches[ 3 ];
+    var re = RegExp( msg.matches[2], msg.matches[4] ),
+        replacement = msg.matches[ 3 ];
 
-	if ( !msg.matches[2] ) {
-		return 'Empty regex is empty';
-	}
+    if ( !msg.matches[2] ) {
+        return 'Empty regex is empty';
+    }
 
-	var messages;
-	if ( msg.matches[5] ) {
-		messages = Array.from(
-			document.querySelectorAll('#message-' + msg.matches[5] + ' .content')
-		);
-	}
-	else {
-		messages = Array.from(
-			document.getElementsByClassName('content')
-		).reverse();
-	}
+    var messages;
+    if ( msg.matches[5] ) {
+        messages = Array.from(
+            document.querySelectorAll('#message-' + msg.matches[5] + ' .content')
+        );
+    }
+    else {
+        messages = Array.from(
+            document.getElementsByClassName('content')
+        ).reverse();
+    }
 
-	getMatchingMessage( re, messages, msg.get('message_id'), function ( err, message ) {
-		if ( err ) {
-			msg.reply( err );
-			return;
-		}
+    getMatchingMessage( re, messages, msg.get('message_id'), function ( err, message ) {
+        if ( err ) {
+            msg.reply( err );
+            return;
+        }
 
-		if ( !message ) {
-			msg.reply(
-				'No matching message (are you sure we\'re in the right room?)'
-			);
-			return;
-		}
-		bot.log( message, 'substitution found message' );
+        if ( !message ) {
+            msg.reply(
+                'No matching message (are you sure we\'re in the right room?)'
+            );
+            return;
+        }
+        bot.log( message, 'substitution found message' );
 
-		var link = getMessageLink( message );
+        var link = getMessageLink( message );
 
-		// #159, check if the message is a partial, has a "(see full text)" link.
-		if ( message.getElementsByClassName('partial').length ) {
-			retrieveFullText( message, finish );
-		}
-		else {
-			finish( message.textContent );
-		}
+        // #159, check if the message is a partial, has a "(see full text)" link.
+        if ( message.getElementsByClassName('partial').length ) {
+            retrieveFullText( message, finish );
+        }
+        else {
+            finish( message.textContent );
+        }
 
-		function finish ( text ) {
-			var reply = text.replace( re, replacement ) + ' ' +
-				msg.link( '(source)', link );
+        function finish ( text ) {
+            var reply = text.replace( re, replacement ) + ' ' +
+                msg.link( '(source)', link );
 
-			msg.reply( reply );
-		}
-	});
+            msg.reply( reply );
+        }
+    });
 }
 
 function getMatchingMessage ( re, messages, onlyBefore, cb ) {
-	bot.log( re, messages, onlyBefore, 'substitution getMatchingMessage args' );
-	var arg = {
-		maxId : onlyBefore,
-		pattern : re,
-		messages : messages.map(function ( el ) {
-			return {
-				id	 : Number( el.parentElement.id.match(/\d+/)[0] ),
-				text : el.textContent
-			};
-		})
-	};
+    bot.log( re, messages, onlyBefore, 'substitution getMatchingMessage args' );
+    var arg = {
+        maxId : onlyBefore,
+        pattern : re,
+        messages : messages.map(function ( el ) {
+            return {
+                id   : Number( el.parentElement.id.match(/\d+/)[0] ),
+                text : el.textContent
+            };
+        })
+    };
 
-	// the following function is passed to bot.eval, which means it will run in
-	//a different context. the only variable we get is ~arg~, because we pass it
-	//to bot.eval
-	// we do the skip and jump through bot.eval to avoid a ReDoS (#217).
-	var matcher = function () {
-		var arg = arguments[1],
-			matchIndex = null;
+    // the following function is passed to bot.eval, which means it will run in
+    //a different context. the only variable we get is ~arg~, because we pass it
+    //to bot.eval
+    // we do the skip and jump through bot.eval to avoid a ReDoS (#217).
+    var matcher = function () {
+        var arg = arguments[1],
+            matchIndex = null;
 
-		arg.messages.some(function ( msg, idx ) {
-			if ( msg.id < arg.maxId && arg.pattern.test(msg.text) ) {
-				matchIndex = idx;
-				return true;
-			}
+        arg.messages.some(function ( msg, idx ) {
+            if ( msg.id < arg.maxId && arg.pattern.test(msg.text) ) {
+                matchIndex = idx;
+                return true;
+            }
 
-			return false;
-		});
+            return false;
+        });
 
-		// remember we're inside bot.eval, final expression is the result.
-		// so it'll work well with minification, we have to create an expression
-		//which won't be removed
-		(function () {
-			return matchIndex;
-		})();
-	};
+        // remember we're inside bot.eval, final expression is the result.
+        // so it'll work well with minification, we have to create an expression
+        //which won't be removed
+        (function () {
+            return matchIndex;
+        })();
+    };
 
-	bot.eval( matcher.stringContents(), arg, function ( err, resp ) {
-		bot.log( err, resp, 'substitution matcher response' );
+    bot.eval( matcher.stringContents(), arg, function ( err, resp ) {
+        bot.log( err, resp, 'substitution matcher response' );
 
-		// meh
-		if ( err ) {
-			cb( err );
-			return;
-		}
+        // meh
+        if ( err ) {
+            cb( err );
+            return;
+        }
 
-		var index = JSON.parse( resp.answer );
-		if ( Number(index) !== index ) {
-			return;
-		}
+        var index = JSON.parse( resp.answer );
+        if ( Number(index) !== index ) {
+            return;
+        }
 
-		cb( null, messages[index] );
-	});
+        cb( null, messages[index] );
+    });
 }
 
 // <a class="action-link" href="/transcript/message/msgid#msgid>...</a>
@@ -145,29 +145,29 @@ function getMatchingMessage ( re, messages, onlyBefore, cb ) {
 //if the message was a reply, there'd be another element between them:
 // <a class="reply-info" href="/transcript/message/repliedMsgId#repliedMsgId>
 function getMessageLink ( message ) {
-	var node = message;
+    var node = message;
 
-	while ( !node.classList.contains('action-link') ) {
-		node = node.previousElementSibling;
-	}
+    while ( !node.classList.contains('action-link') ) {
+        node = node.previousElementSibling;
+    }
 
-	return node.href;
+    return node.href;
 }
 
 // <div class="content">
-//	<div class="partial"> ... </div>
-//	<a class="more-data" href="what we want">(see full text)</a>
+//  <div class="partial"> ... </div>
+//  <a class="more-data" href="what we want">(see full text)</a>
 // </div>
 function retrieveFullText ( message, cb ) {
-	var href = message.children[ 1 ].href;
-	bot.log( href, 'substitution expanding message' );
+    var href = message.children[ 1 ].href;
+    bot.log( href, 'substitution expanding message' );
 
-	IO.xhr({
-		method : 'GET',
-		url : href,
-		data : { plain : true },
-		complete : cb
-	});
+    IO.xhr({
+        method : 'GET',
+        url : href,
+        data : { plain : true },
+        complete : cb
+    });
 }
 
 }());

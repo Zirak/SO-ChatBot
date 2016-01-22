@@ -1,105 +1,105 @@
 var IO = window.IO = {
-	//event handling
-	events : {},
-	preventDefault : false,
+    //event handling
+    events : {},
+    preventDefault : false,
 
-	//register for an event
-	register : function ( name, fun, thisArg ) {
-		if ( !this.events[name] ) {
-			this.events[ name ] = [];
-		}
-		this.events[ name ].push({
-			fun : fun,
-			thisArg : thisArg,
-			args : Array.prototype.slice.call( arguments, 3 )
-		});
+    //register for an event
+    register : function ( name, fun, thisArg ) {
+        if ( !this.events[name] ) {
+            this.events[ name ] = [];
+        }
+        this.events[ name ].push({
+            fun : fun,
+            thisArg : thisArg,
+            args : Array.prototype.slice.call( arguments, 3 )
+        });
 
-		return this;
-	},
+        return this;
+    },
 
-	unregister : function ( name, fun ) {
-		if ( !this.events[name] ) {
-			return this;
-		}
+    unregister : function ( name, fun ) {
+        if ( !this.events[name] ) {
+            return this;
+        }
 
-		this.events[ name ] = this.events[ name ].filter(function ( obj ) {
-			return obj.fun !== fun;
-		});
+        this.events[ name ] = this.events[ name ].filter(function ( obj ) {
+            return obj.fun !== fun;
+        });
 
-		return this;
-	},
+        return this;
+    },
 
-	//fire event!
-	fire : function ( name ) {
-		this.preventDefault = false;
+    //fire event!
+    fire : function ( name ) {
+        this.preventDefault = false;
 
-		if ( !this.events[name] ) {
-			return;
-		}
+        if ( !this.events[name] ) {
+            return;
+        }
 
-		var args = Array.prototype.slice.call( arguments, 1 ),
-			that = this;
-		this.events[ name ].forEach( fireEvent );
+        var args = Array.prototype.slice.call( arguments, 1 ),
+            that = this;
+        this.events[ name ].forEach( fireEvent );
 
-		function fireEvent( evt ) {
-			var call = evt.fun.apply( evt.thisArg, evt.args.concat(args) );
+        function fireEvent( evt ) {
+            var call = evt.fun.apply( evt.thisArg, evt.args.concat(args) );
 
-			that.preventDefault = call === false;
-		}
-	},
+            that.preventDefault = call === false;
+        }
+    },
 
-	urlstringify : (function () {
-		//simple types, for which toString does the job
-		//used in singularStringify
-		var simplies = { number : true, string : true, boolean : true };
+    urlstringify : (function () {
+        //simple types, for which toString does the job
+        //used in singularStringify
+        var simplies = { number : true, string : true, boolean : true };
 
-		var singularStringify = function ( thing ) {
-			if ( typeof thing in simplies ) {
-				return encodeURIComponent( thing.toString() );
-			}
-			return '';
-		};
+        var singularStringify = function ( thing ) {
+            if ( typeof thing in simplies ) {
+                return encodeURIComponent( thing.toString() );
+            }
+            return '';
+        };
 
-		var arrayStringify = function ( key, array ) {
-			key = singularStringify( key );
+        var arrayStringify = function ( key, array ) {
+            key = singularStringify( key );
 
-			return array.map(function ( val ) {
-				return pair( key, val, true );
-			}).join( '&' );
-		};
+            return array.map(function ( val ) {
+                return pair( key, val, true );
+            }).join( '&' );
+        };
 
-		//returns a key=value pair. pass in dontStringifyKey so that, well, the
-		// key won't be stringified (used in arrayStringify)
-		var pair = function ( key, val, dontStringifyKey ) {
-			if ( !dontStringifyKey ) {
-				key = singularStringify( key );
-			}
+        //returns a key=value pair. pass in dontStringifyKey so that, well, the
+        // key won't be stringified (used in arrayStringify)
+        var pair = function ( key, val, dontStringifyKey ) {
+            if ( !dontStringifyKey ) {
+                key = singularStringify( key );
+            }
 
-			return key + '=' + singularStringify( val );
-		};
+            return key + '=' + singularStringify( val );
+        };
 
-		return function ( obj ) {
+        return function ( obj ) {
 
-			return Object.keys( obj ).map(function ( key ) {
-				var val = obj[ key ];
+            return Object.keys( obj ).map(function ( key ) {
+                var val = obj[ key ];
 
-				if ( Array.isArray(val) ) {
-					return arrayStringify( key, val );
-				}
-				else {
-					return pair( key, val );
-				}
-			}).join( '&' );
-		};
-	}()),
+                if ( Array.isArray(val) ) {
+                    return arrayStringify( key, val );
+                }
+                else {
+                    return pair( key, val );
+                }
+            }).join( '&' );
+        };
+    }()),
 
-	loadScript : function ( url, cb ) {
-		var script = document.createElement( 'script' );
-		script.src = url;
-		script.onload = cb;
+    loadScript : function ( url, cb ) {
+        var script = document.createElement( 'script' );
+        script.src = url;
+        script.onload = cb;
 
-		document.head.appendChild( script );
-	}
+        document.head.appendChild( script );
+    }
 };
 
 //turns some html tags into markdown. a major assumption is that the input is
@@ -109,38 +109,38 @@ IO.htmlToMarkdown = (function () {
 
 // A string value is the delimiter (what replaces the tag)
 var markdown = {
-	i : '*',
-	b : '**',
-	strike : '---',
-	code : '`',
+    i : '*',
+    b : '**',
+    strike : '---',
+    code : '`',
 
-	a : function ( $0, $1, text ) {
-		var href = /href="([^"]+?)"/.exec( $0 );
+    a : function ( $0, $1, text ) {
+        var href = /href="([^"]+?)"/.exec( $0 );
 
-		if ( !href ) {
-			return $0;
-		}
-		return '[' + text + '](' + href[1] + ')';
-	},
+        if ( !href ) {
+            return $0;
+        }
+        return '[' + text + '](' + href[1] + ')';
+    },
 };
 var htmlRe = /<(\S+)[^\>]*>([^<]+)<\/\1>/g;
 
 return function ( html ) {
-	var delim;
+    var delim;
 
-	return html.replace( htmlRe, decodeHtml );
+    return html.replace( htmlRe, decodeHtml );
 
-	function decodeHtml ( $0, tag, text ) {
-		if ( !markdown.hasOwnProperty(tag) ) {
-			return $0;
-		}
+    function decodeHtml ( $0, tag, text ) {
+        if ( !markdown.hasOwnProperty(tag) ) {
+            return $0;
+        }
 
-		delim = markdown[ tag ];
+        delim = markdown[ tag ];
 
-		return delim.apply ?
-			markdown[ tag ].apply( markdown, arguments ) :
-			delim + text + delim;
-	}
+        return delim.apply ?
+            markdown[ tag ].apply( markdown, arguments ) :
+            delim + text + delim;
+    }
 };
 }());
 
@@ -160,196 +160,196 @@ var entities; //will be filled in the following line
 */
 var entityRegex = /&(#x?)?[\w;]+?;/g;
 var replaceEntities = function ( entities ) {
-	//remove the & and split into each separate entity
-	return entities.slice( 1 ).split( ';' ).map( decodeEntity ).join( '' );
+    //remove the & and split into each separate entity
+    return entities.slice( 1 ).split( ';' ).map( decodeEntity ).join( '' );
 };
 var decodeEntity = function ( entity ) {
-	if ( !entity ) {
-		return '';
-	}
+    if ( !entity ) {
+        return '';
+    }
 
-	//starts with a #, it's charcode
-	if ( entity[0] === '#' ) {
-		return decodeCharcodeEntity( entity );
-	}
+    //starts with a #, it's charcode
+    if ( entity[0] === '#' ) {
+        return decodeCharcodeEntity( entity );
+    }
 
-	if ( !entities.hasOwnProperty(entity) ) {
-		//I hate this so. so. so much. it's just wrong.
-		return '&' + entity +';';
-	}
-	return entities[ entity ];
+    if ( !entities.hasOwnProperty(entity) ) {
+        //I hate this so. so. so much. it's just wrong.
+        return '&' + entity +';';
+    }
+    return entities[ entity ];
 };
 var decodeCharcodeEntity = function ( entity ) {
-	//remove the # prefix
-	entity = entity.slice( 1 );
+    //remove the # prefix
+    entity = entity.slice( 1 );
 
-	var cc;
-	//hex entities
-	if ( entity[0] === 'x' ) {
-		cc = parseInt( entity.slice(1), 16 );
-	}
-	//decimal entities
-	else {
-		cc = parseInt( entity, 10 );
-	}
+    var cc;
+    //hex entities
+    if ( entity[0] === 'x' ) {
+        cc = parseInt( entity.slice(1), 16 );
+    }
+    //decimal entities
+    else {
+        cc = parseInt( entity, 10 );
+    }
 
-	return String.fromCharCode( cc );
+    return String.fromCharCode( cc );
 };
 
 return function ( html ) {
-	return html.replace( entityRegex, replaceEntities );
+    return html.replace( entityRegex, replaceEntities );
 };
 }());
 
 //build IO.in and IO.out
 [ 'in', 'out' ].forEach(function ( dir ) {
-	var fullName = dir + 'put';
+    var fullName = dir + 'put';
 
-	IO[ dir ] = {
-		buffer : [],
+    IO[ dir ] = {
+        buffer : [],
 
-		receive : function ( obj ) {
-			IO.fire( 'receive' + fullName, obj );
+        receive : function ( obj ) {
+            IO.fire( 'receive' + fullName, obj );
 
-			if ( IO.preventDefault ) {
-				return this;
-			}
+            if ( IO.preventDefault ) {
+                return this;
+            }
 
-			this.buffer.push( obj );
+            this.buffer.push( obj );
 
-			return this;
-		},
+            return this;
+        },
 
-		//unload the next item in the buffer
-		tick : function () {
-			if ( this.buffer.length ) {
-				IO.fire( fullName, this.buffer.shift() );
-			}
+        //unload the next item in the buffer
+        tick : function () {
+            if ( this.buffer.length ) {
+                IO.fire( fullName, this.buffer.shift() );
+            }
 
-			return this;
-		},
+            return this;
+        },
 
-		//unload everything in the buffer
-		flush : function () {
-			IO.fire( 'before' + fullName );
+        //unload everything in the buffer
+        flush : function () {
+            IO.fire( 'before' + fullName );
 
-			if ( !this.buffer.length ) {
-				return this;
-			}
+            if ( !this.buffer.length ) {
+                return this;
+            }
 
-			var i = this.buffer.length;
-			while( i --> 0 ) {
-				this.tick();
-			}
+            var i = this.buffer.length;
+            while( i --> 0 ) {
+                this.tick();
+            }
 
-			IO.fire( 'after' + fullName );
+            IO.fire( 'after' + fullName );
 
-			this.buffer = [];
-			return this;
-		}
-	};
+            this.buffer = [];
+            return this;
+        }
+    };
 });
 
 IO.relativeUrlToAbsolute = function ( url ) {
-	//the anchor's href *property* will always be absolute, unlike the href
-	// *attribute*
-	var a = document.createElement( 'a' );
-	a.setAttribute( 'href', url );
+    //the anchor's href *property* will always be absolute, unlike the href
+    // *attribute*
+    var a = document.createElement( 'a' );
+    a.setAttribute( 'href', url );
 
-	return a.href;
+    return a.href;
 };
 
 IO.injectScript = function ( url ) {
-	var script = document.createElement( 'script' );
-	script.src = url;
+    var script = document.createElement( 'script' );
+    script.src = url;
 
-	document.head.appendChild( script );
-	return script;
+    document.head.appendChild( script );
+    return script;
 };
 
 IO.xhr = function ( params ) {
-	//merge in the defaults
-	params = Object.merge({
-		method   : 'GET',
-		headers  : {},
-		complete : function (){}
-	}, params );
+    //merge in the defaults
+    params = Object.merge({
+        method   : 'GET',
+        headers  : {},
+        complete : function (){}
+    }, params );
 
-	params.headers = Object.merge({
-		'Content-Type' : 'application/x-www-form-urlencoded'
-	}, params.headers );
+    params.headers = Object.merge({
+        'Content-Type' : 'application/x-www-form-urlencoded'
+    }, params.headers );
 
-	//if the data is an object, and not a fakey String object, dress it up
-	if ( typeof params.data === 'object' && !params.data.charAt ) {
-		params.data = IO.urlstringify( params.data );
-	}
+    //if the data is an object, and not a fakey String object, dress it up
+    if ( typeof params.data === 'object' && !params.data.charAt ) {
+        params.data = IO.urlstringify( params.data );
+    }
 
-	var xhr = new XMLHttpRequest();
-	xhr.open( params.method, params.url );
+    var xhr = new XMLHttpRequest();
+    xhr.open( params.method, params.url );
 
-	if ( params.document ) {
-		xhr.responseType = 'document';
-	}
+    if ( params.document ) {
+        xhr.responseType = 'document';
+    }
 
-	xhr.addEventListener( 'load', function () {
-		params.complete.call(
-			params.thisArg, xhr.response, xhr
-		);
-	});
+    xhr.addEventListener( 'load', function () {
+        params.complete.call(
+            params.thisArg, xhr.response, xhr
+        );
+    });
 
-	Object.iterate( params.headers, xhr.setRequestHeader.bind(xhr) );
+    Object.iterate( params.headers, xhr.setRequestHeader.bind(xhr) );
 
-	xhr.send( params.data );
+    xhr.send( params.data );
 
-	return xhr;
+    return xhr;
 };
 
 IO.jsonp = function ( opts ) {
-	opts.data = opts.data || {};
-	opts.jsonpName = opts.jsonpName || 'jsonp';
+    opts.data = opts.data || {};
+    opts.jsonpName = opts.jsonpName || 'jsonp';
 
-	var script = document.createElement( 'script' ),
-		semiRandom;
+    var script = document.createElement( 'script' ),
+        semiRandom;
 
-	do {
-		semiRandom = 'IO' + ( Date.now() * Math.ceil(Math.random()) );
-	} while ( window[semiRandom] );
+    do {
+        semiRandom = 'IO' + ( Date.now() * Math.ceil(Math.random()) );
+    } while ( window[semiRandom] );
 
-	//this is the callback function, called from the "jsonp file"
-	window[ semiRandom ] = function () {
-		opts.fun.apply( opts.thisArg, arguments );
+    //this is the callback function, called from the "jsonp file"
+    window[ semiRandom ] = function () {
+        opts.fun.apply( opts.thisArg, arguments );
 
-		//cleanup
-		delete window[ semiRandom ];
-		script.parentNode.removeChild( script );
-	};
+        //cleanup
+        delete window[ semiRandom ];
+        script.parentNode.removeChild( script );
+    };
 
-	//add the jsonp parameter to the data we're sending
-	opts.data[ opts.jsonpName ] = semiRandom;
+    //add the jsonp parameter to the data we're sending
+    opts.data[ opts.jsonpName ] = semiRandom;
 
-	//start preparing the url to be sent
-	if ( opts.url.indexOf('?') === -1 ) {
-		opts.url += '?';
-	}
+    //start preparing the url to be sent
+    if ( opts.url.indexOf('?') === -1 ) {
+        opts.url += '?';
+    }
 
-	//append the data to be sent, in string form, to the url
-	opts.url += '&' + this.urlstringify( opts.data );
+    //append the data to be sent, in string form, to the url
+    opts.url += '&' + this.urlstringify( opts.data );
 
-	script.onerror = opts.error;
+    script.onerror = opts.error;
 
-	script.src = opts.url;
-	document.head.appendChild( script );
+    script.src = opts.url;
+    document.head.appendChild( script );
 };
 
 //generic, pre-made call to be used inside commands
 IO.jsonp.google = function ( query, cb ) {
-	IO.jsonp({
-		url : 'http://ajax.googleapis.com/ajax/services/search/web',
-		jsonpName : 'callback',
-		data : {
-			v : '1.0',
-			q : query
-		},
-		fun : cb
-	});
+    IO.jsonp({
+        url : 'http://ajax.googleapis.com/ajax/services/search/web',
+        jsonpName : 'callback',
+        data : {
+            v : '1.0',
+            q : query
+        },
+        fun : cb
+    });
 };
