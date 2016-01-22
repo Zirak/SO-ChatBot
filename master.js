@@ -6858,18 +6858,19 @@ function welcome ( name, room ) {
 
 IO.register( 'input', function welcomeListener ( msgObj ) {
 	var uid = msgObj.user_id,
-	    user = bot.users[ msgObj.user_id ],
+	    user = bot.users[ uid ],
 		room = msgObj.room_id;
 
 	var semiLegitUser = user && isSemiLegitUser( user );
-	if (
-		Number( room ) !== ownerRoom || semiLegitUser  || seen[ msgObj.user_id ]
-	) {
+	if ( Number(room) !== ownerRoom || semiLegitUser  || seen[uid] ) {
 		if ( semiLegitUser ) {
-			finish( true );
+            delete seen[ uid ];
+			finish();
 		}
 		return;
 	}
+
+    seen[ uid ] = true;
 
 	IO.xhr({
 		method : 'GET',
@@ -6902,16 +6903,12 @@ IO.register( 'input', function welcomeListener ( msgObj ) {
 		if ( newUser ) {
 			welcome( user.name, room );
 		}
+
+        seen[ uid ] = true;
 		finish();
 	}
 
-	function finish ( unsee ) {
-		if ( unsee ) {
-			delete seen[ uid ];
-		}
-		else {
-			seen[ uid ] = true;
-		}
+	function finish () {
 		bot.memory.save( 'users' );
 	}
 
