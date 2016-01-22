@@ -464,6 +464,24 @@ Object.defineProperty( Array.prototype, 'random', {
     writable : true
 });
 
+Object.defineProperty( Array.prototype, 'groupBy', {
+    value : function ( classifier ) {
+        return this.reduce(function ( ret, item ) {
+            var key = classifier( item );
+
+            if ( !ret[key] ) {
+                ret[ key ] = [];
+            }
+            ret[ key ].push( item );
+
+            return ret;
+        }, {});
+    },
+
+    configurable : true,
+    writable : true
+});
+
 //define generic array methods on Array, like FF does
 [ 'forEach', 'map', 'filter', 'reduce' ].forEach(function ( name ) {
     var fun = [][ name ]; //teehee
@@ -695,7 +713,7 @@ Date.timeSince = function ( d0, d1 ) {
     ];
 
     while ( delays.length ) {
-        delay = delays.shift()
+        delay = delays.shift();
 
         if ( ms >= delay.delta ) {
             return format( ms / delay.delta, delay.suffix );
@@ -2123,7 +2141,7 @@ var commands = {
 };
 
 commands.listcommands = (function () {
-var partition = function ( list, maxSize ) {
+function partition ( list, maxSize ) {
     var size = 0, last = [];
 
     var ret = list.reduce(function partition ( ret, item ) {
@@ -2145,10 +2163,29 @@ var partition = function ( list, maxSize ) {
     }
 
     return ret;
-};
+}
+
+function getSortedCommands() {
+    //well, sort of sorted. we want to sort the commands, but have the built-ins
+    // be in front, with help as the first one. #153
+    var commandNames = Object.keys( bot.commands );
+
+    var commandGroups = commandNames.groupBy(function ( cmdName ) {
+        return bot.commands[ cmdName ].learned ? 'learned' : 'builtin';
+    });
+
+    var sortedCommands = commandGroups.builtin.sort().concat(
+        commandGroups.learned.sort()
+    );
+
+    var helpIndex = sortedCommands.indexOf('help');
+    sortedCommands.unshift( sortedCommands.splice(helpIndex, 1)[ 0 ] );
+
+    return sortedCommands;
+}
 
 return function ( args ) {
-    var commands = Object.keys( bot.commands ),
+    var commands = getSortedCommands(),
         //500 is the max, compensate for user reply
         maxSize = 499 - bot.adapter.reply( args.get('user_name') ).length,
         //TODO: only call this when commands were learned/forgotten since last
@@ -3164,8 +3201,6 @@ bot.listen(
     /(I('m| am))?\s*sorry/i,
     bot.personality.apologize, bot.personality );
 bot.listen( /^bitch/i, bot.personality.bitch, bot.personality );
-
-;
 
 ;
 (function () {

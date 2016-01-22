@@ -106,6 +106,24 @@ Object.defineProperty( Array.prototype, 'random', {
     writable : true
 });
 
+Object.defineProperty( Array.prototype, 'groupBy', {
+    value : function ( classifier ) {
+        return this.reduce(function ( ret, item ) {
+            var key = classifier( item );
+
+            if ( !ret[key] ) {
+                ret[ key ] = [];
+            }
+            ret[ key ].push( item );
+
+            return ret;
+        }, {});
+    },
+
+    configurable : true,
+    writable : true
+});
+
 //define generic array methods on Array, like FF does
 [ 'forEach', 'map', 'filter', 'reduce' ].forEach(function ( name ) {
     var fun = [][ name ]; //teehee
@@ -337,7 +355,7 @@ Date.timeSince = function ( d0, d1 ) {
     ];
 
     while ( delays.length ) {
-        delay = delays.shift()
+        delay = delays.shift();
 
         if ( ms >= delay.delta ) {
             return format( ms / delay.delta, delay.suffix );
