@@ -1971,7 +1971,11 @@ bot.config = Object.merge(
         ).supplant(bot.adapter.link(
             "room rules",
             "http://rlemon.github.com/so-chat-javascript-rules/"
-        ))
+        )),
+
+        //this is some test key taken from the OpenWeatherMap site
+        //it'll work, probably. but replace it with your own, m'kay?
+        weatherKey: '44db6a862fba0b067b1930da0d769e98'
     },
     bot.memory.get('config', {})
 );
@@ -6773,7 +6777,8 @@ var weather = {
             data : {
                 lat : lat,
                 lon : lon,
-                cnt : 1, //limit to 1 result
+                cnt : 1, //limit to 1 result,
+                appid: bot.config.weatherKey,
                 type : 'json'
             },
 
@@ -6788,6 +6793,7 @@ var weather = {
             jsonpName : 'callback',
             data : {
                 q : city,
+                appid: bot.config.weatherKey,
                 type : 'json'
             },
 
@@ -6821,7 +6827,7 @@ var weather = {
         var temps = data.main,
             ret;
 
-        temps.celsius = ( temps.temp - 273.15 ).maxDecimal( 4 );
+        temps.celsius = ( temps.temp - 273.15 ).maxDecimal( 2 );
 
         ret =
             bot.adapter.link(
@@ -6830,7 +6836,7 @@ var weather = {
 
         //to help our dear American friends, also include fahrenheit
         if ( fahrenheitCountries[data.sys.country] ) {
-            temps.fahrenheit = ( temps.temp * 9/5 - 459.67 ).maxDecimal( 4 );
+            temps.fahrenheit = ( temps.temp * 9/5 - 459.67 ).maxDecimal( 2 );
             ret += '{fahrenheit}F ({celsius}C, {temp}K)'.supplant( temps );
         }
         //and to those of us with one less insanity
@@ -6887,7 +6893,6 @@ var seen = bot.memory.get( 'users' ),
     ownerRoom = 17;
 
 var message = bot.config.welcomeMessage;
-debugger;
 
 function welcome ( name, room ) {
     bot.adapter.out.add( bot.adapter.reply(name) + " " + message, room );
