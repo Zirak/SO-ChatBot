@@ -2,10 +2,8 @@
 "use strict";
 
 var bot = window.bot = {
-    invocationPattern : '!!',
-
     commands : {}, //will be filled as needed
-    commandDictionary : null, //it's null at this point, won't be for long
+    commandDictionary : null, //defined in suggestionDict.js
     listeners : [],
     info : {
         invoked   : 0,
@@ -13,7 +11,8 @@ var bot = window.bot = {
         forgotten : 0,
         start     : new Date()
     },
-    users : {}, //will be filled in build
+    users : {}, //defined in users.js
+    config: {}, //defined in config.js
 
     parseMessage : function ( msgObj ) {
         if ( !this.validateMessage(msgObj) ) {
@@ -143,7 +142,7 @@ var bot = window.bot = {
         msg = msg.replace( /\u200b|\u200c/g, '' );
 
         return this.Message(
-            msg.slice( this.invocationPattern.length ).trim(),
+            msg.slice( this.config.pattern.length ).trim(),
             msgObj );
     },
 
@@ -151,7 +150,7 @@ var bot = window.bot = {
         var msg = msgObj.content.trim();
 
         //a bit js bot specific...make sure it isn't just !!! all round. #139
-        if ( this.invocationPattern === '!!' && (/^!!!+$/).test(msg) ) {
+        if ( this.config.pattern === '!!' && (/^!!!+$/).test(msg) ) {
             console.log('special skip');
             return false;
         }
@@ -160,8 +159,8 @@ var bot = window.bot = {
         return msgObj.user_id !== bot.adapter.user_id &&
             //make sure we don't process Feeds
             msgObj.user_id > 0 &&
-            //and the message begins with the invocationPattern
-            msg.startsWith( this.invocationPattern );
+            //and the message begins with the invocation pattern
+            msg.startsWith( this.config.pattern );
     },
 
     addCommand : function ( cmd ) {
@@ -237,6 +236,11 @@ var bot = window.bot = {
         return this.listeners.some( callListener );
     },
 
+    isOwner: function ( usrid ) {
+        var user = this.users[ usrid ];
+        return user && ( user.is_owner || user.is_moderator );
+    },
+
     stoplog : false,
     log : function () {
         if ( !this.stoplog ) {
@@ -254,292 +258,31 @@ var bot = window.bot = {
     devMode : false,
     activateDevMode : function ( pattern ) {
         this.devMode = true;
-        this.invocationPattern = pattern || 'beer!';
+        this.config.pattern = pattern || 'beer!';
         IO.events.userjoin.length = 0;
         this.validateMessage = function ( msgObj ) {
-            return msgObj.content.trim().startsWith( this.invocationPattern );
+            return msgObj.content.trim().startsWith( this.config.pattern );
         };
     }
 };
 
-//a place to hang your coat and remember the past. provides an abstraction over
-// localStorage or whatever data-storage will be used in the future.
-bot.memory = {
-    saveInterval : 900000, //15(min) * 60(sec/min) * 1000(ms/sec) = 900000(ms)
+//#build Command.js
+//#build Message.js
 
-    data : {},
-
-    get : function ( name, defaultVal ) {
-        if ( !this.data[name] ) {
-            this.set( name, defaultVal || {} );
-        }
-
-        return this.data[ name ];
-    },
-
-    set : function ( name, val ) {
-        this.data[ name ] = val;
-    },
-
-    loadAll : function () {
-        var self = this;
-
-        Object.iterate( localStorage, function ( key, val ) {
-            if ( key.startsWith('bot_') ) {
-                console.log( key, val );
-                self.set( key.replace(/^bot_/, ''), JSON.parse(val) );
-            }
-        });
-    },
-
-    save : function ( name ) {
-        if ( name ) {
-            localStorage[ 'bot_' + name ] = JSON.stringify( this.data[name] );
-            return;
-        }
-
-        var self = this;
-        Object.keys( this.data ).forEach(function ( name ) {
-            self.save( name );
-        });
-
-        this.saveLoop();
-    },
-
-    saveLoop : function () {
-        clearTimeout( this.saveIntervalId );
-        setTimeout( this.saveLoop.bind(this), this.saveInterval );
-    }
-};
-
-bot.memory.loadAll();
-window.addEventListener( 'beforeunload', function () { bot.memory.save(); } );
-bot.memory.saveLoop();
-
-bot.banlist = bot.memory.get( 'ban' );
-bot.banlist.contains = function ( id ) {
-    return this.hasOwnProperty( id );
-};
-bot.banlist.add = function ( id ) {
-    this[ id ] = { told : false };
-    bot.memory.save( 'ban' );
-};
-bot.banlist.remove = function ( id ) {
-    if ( this.contains(id) ) {
-        delete this[ id ];
-        bot.memory.save( 'ban' );
-    }
-};
-
-//some sort of pseudo constructor
-bot.Command = function ( cmd ) {
-    cmd.name = cmd.name.toLowerCase();
-    cmd.thisArg = cmd.thisArg || cmd;
-
-    cmd.permissions = cmd.permissions || {};
-    cmd.permissions.use = cmd.permissions.use || 'ALL';
-    cmd.permissions.del = cmd.permissions.del || 'NONE';
-
-    cmd.description = cmd.description || '';
-    cmd.creator = cmd.creator || 'God';
-
-    //make canUse and canDel
-    [ 'Use', 'Del' ].forEach(function ( perm ) {
-        var low = perm.toLowerCase();
-
-        cmd[ 'can' + perm ] = function ( usrid ) {
-            var canDo = this.permissions[ low ];
-
-            if ( canDo === 'ALL' ) {
-                return true;
-            }
-            else if ( canDo === 'NONE' ) {
-                return false;
-            }
-            else if ( bot.isOwner(usrid) ) {
-                return true;
-            }
-
-            return canDo.indexOf( usrid ) > -1;
-        };
-    });
-
-    cmd.exec = function () {
-        return this.fun.apply( this.thisArg, arguments );
-    };
-
-    cmd.del = function () {
-        bot.info.forgotten += 1;
-        delete bot.commands[ cmd.name ];
-        bot.commandDictionary.trie.del(cmd.name);
-    };
-
-    return cmd;
-};
-
-//a normally priviliged command which can be executed if enough people use it
-bot.CommunityCommand = function ( command, req ) {
-    var cmd = this.Command( command ),
-        used = {},
-        old_execute = cmd.exec,
-        old_canUse  = cmd.canUse;
-
-    var pendingMessage = command.pendingMessage ||
-            'Already registered; still need {0} more';
-    console.log( command.pendingMessage, pendingMessage );
-    req = req || 2;
-
-    cmd.canUse = function () {
-        return true;
-    };
-    cmd.exec = function ( msg ) {
-        var err = register( msg.get('user_id') );
-        if ( err ) {
-            bot.log( err );
-            return err;
-        }
-
-        used = {};
-
-        return old_execute.apply( cmd, arguments );
-    };
-
-    return cmd;
-
-    //once again, a switched return statement: truthy means a message, falsy
-    // means to go on ahead
-    function register ( usrid ) {
-        if ( old_canUse.call(cmd, usrid) ) {
-            return false;
-        }
-
-        clean();
-        var count = Object.keys( used ).length,
-            needed = req - count;
-        bot.log( used, count, req );
-
-        if ( usrid in used ) {
-            return 'Already registered; still need {0} more'.supplant( needed );
-        }
-
-        used[ usrid ] = new Date();
-        needed -= 1;
-
-        if ( needed > 0 ) {
-            return pendingMessage.supplant( needed );
-        }
-
-        bot.log( 'should execute' );
-        return false; //huzzah!
-    }
-
-    function clean () {
-        var tenMinsAgo = new Date();
-        tenMinsAgo.setMinutes( tenMinsAgo.getMinutes() - 10 );
-
-        Object.keys( used ).reduce( rm, used );
-        function rm ( ret, key ) {
-            if ( ret[key] < tenMinsAgo ) {
-                delete ret[ key ];
-            }
-            return ret;
-        }
-    }
-};
-
-bot.Message = function ( text, msgObj ) {
-    //"casting" to object so that it can be extended with cool stuff and
-    // still be treated like a string
-    var ret = Object( text );
-    ret.content = text;
-
-    var rawSend = function ( text ) {
-        bot.adapter.out.add( text, msgObj.room_id );
-    };
-    var deliciousObject = {
-        send : rawSend,
-
-        reply : function ( resp, user_name ) {
-            var prefix = bot.adapter.reply( user_name || msgObj.user_name );
-            rawSend( prefix + ' ' + resp );
-        },
-        directreply : function ( resp ) {
-            var prefix = bot.adapter.directreply( msgObj.message_id );
-            rawSend( prefix + ' ' + resp );
-        },
-
-        //parse() parses the original message
-        //parse( true ) also turns every match result to a Message
-        //parse( msgToParse ) parses msgToParse
-        //parse( msgToParse, true ) combination of the above
-        parse : function ( msg, map ) {
-            // parse( true )
-            if ( Boolean(msg) === msg ) {
-                map = msg;
-                msg = text;
-            }
-            var parsed = bot.parseCommandArgs( msg || text );
-
-            // parse( msgToParse )
-            if ( !map ) {
-                return parsed;
-            }
-
-            // parse( msgToParse, true )
-            return parsed.map(function ( part ) {
-                return bot.Message( part, msgObj );
-            });
-        },
-
-        //execute a regexp against the text, saving it inside the object
-        exec : function ( regexp ) {
-            var match = regexp.exec( text );
-            this.matches = match || [];
-
-            return match;
-        },
-
-        findUserId   : bot.users.findUserId,
-        findUsername : bot.users.findUsername,
-
-        codify : bot.adapter.codify.bind( bot.adapter ),
-        escape : bot.adapter.escape.bind( bot.adapter ),
-        link   : bot.adapter.link.bind( bot.adapter ),
-
-        //retrieve a value from the original message object, or if no argument
-        // provided, the msgObj itself
-        get : function ( what ) {
-            if ( !what ) {
-                return msgObj;
-            }
-            return msgObj[ what ];
-        },
-        set : function ( what, val ) {
-            msgObj[ what ] = val;
-            return msgObj[ what ];
-        }
-    };
-
-    Object.iterate( deliciousObject, function ( key, prop ) {
-        ret[ key ] = prop;
-    });
-
-    return ret;
-};
-
-bot.isOwner = function ( usrid ) {
-    var user = this.users[ usrid ];
-    return user && ( user.is_owner || user.is_moderator );
-};
-
-IO.register( 'input', bot.parseMessage, bot );
+//#build adapter.js
+//#build users.js
+//#build memory.js
+//#build banlist.js
+//#build config.js
 
 //#build eval.js
-
 //#build parseCommandArgs.js
 //#build parseMacro.js
 //#build suggestionDict.js
+//#build personality.js
 
 //#build commands.js
 //#build listeners.js
+
+IO.register( 'input', bot.parseMessage, bot );
 }());

@@ -63,7 +63,7 @@ var unonebox = {
 
         var frag = document.createElement( 'div' );
         frag.innerHTML = msgObj.content;
-        // do not un-onebox youtube videos and quotes 
+        // do not un-onebox youtube videos and quotes
         var link = frag.querySelector( '.onebox:not(.ob-youtube):not(.ob-message):not(.ob-wikipedia) a' );
 
         // No onebox, no un-oneboxing.

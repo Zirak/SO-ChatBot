@@ -28,6 +28,7 @@ Object.iterate = function ( obj, cb, thisArg ) {
 };
 
 //takes an array, and turns it into the truth map (item[i] => true)
+//TODO: replace with Set
 Object.TruthMap = function ( props ) {
     return ( props || [] ).reduce( assignTrue, Object.create(null) );
 

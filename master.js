@@ -386,6 +386,7 @@ Object.iterate = function ( obj, cb, thisArg ) {
 };
 
 //takes an array, and turns it into the truth map (item[i] => true)
+//TODO: replace with Set
 Object.TruthMap = function ( props ) {
     return ( props || [] ).reduce( assignTrue, Object.create(null) );
 
@@ -734,10 +735,8 @@ Date.timeSince = function ( d0, d1 ) {
 "use strict";
 
 var bot = window.bot = {
-    invocationPattern : '!!',
-
     commands : {}, //will be filled as needed
-    commandDictionary : null, //it's null at this point, won't be for long
+    commandDictionary : null, //defined in suggestionDict.js
     listeners : [],
     info : {
         invoked   : 0,
@@ -745,7 +744,8 @@ var bot = window.bot = {
         forgotten : 0,
         start     : new Date()
     },
-    users : {}, //will be filled in build
+    users : {}, //defined in users.js
+    config: {}, //defined in config.js
 
     parseMessage : function ( msgObj ) {
         if ( !this.validateMessage(msgObj) ) {
@@ -875,7 +875,7 @@ var bot = window.bot = {
         msg = msg.replace( /\u200b|\u200c/g, '' );
 
         return this.Message(
-            msg.slice( this.invocationPattern.length ).trim(),
+            msg.slice( this.config.pattern.length ).trim(),
             msgObj );
     },
 
@@ -883,7 +883,7 @@ var bot = window.bot = {
         var msg = msgObj.content.trim();
 
         //a bit js bot specific...make sure it isn't just !!! all round. #139
-        if ( this.invocationPattern === '!!' && (/^!!!+$/).test(msg) ) {
+        if ( this.config.pattern === '!!' && (/^!!!+$/).test(msg) ) {
             console.log('special skip');
             return false;
         }
@@ -892,8 +892,8 @@ var bot = window.bot = {
         return msgObj.user_id !== bot.adapter.user_id &&
             //make sure we don't process Feeds
             msgObj.user_id > 0 &&
-            //and the message begins with the invocationPattern
-            msg.startsWith( this.invocationPattern );
+            //and the message begins with the invocation pattern
+            msg.startsWith( this.config.pattern );
     },
 
     addCommand : function ( cmd ) {
@@ -969,6 +969,11 @@ var bot = window.bot = {
         return this.listeners.some( callListener );
     },
 
+    isOwner: function ( usrid ) {
+        var user = this.users[ usrid ];
+        return user && ( user.is_owner || user.is_moderator );
+    },
+
     stoplog : false,
     log : function () {
         if ( !this.stoplog ) {
@@ -986,80 +991,11 @@ var bot = window.bot = {
     devMode : false,
     activateDevMode : function ( pattern ) {
         this.devMode = true;
-        this.invocationPattern = pattern || 'beer!';
+        this.config.pattern = pattern || 'beer!';
         IO.events.userjoin.length = 0;
         this.validateMessage = function ( msgObj ) {
-            return msgObj.content.trim().startsWith( this.invocationPattern );
+            return msgObj.content.trim().startsWith( this.config.pattern );
         };
-    }
-};
-
-//a place to hang your coat and remember the past. provides an abstraction over
-// localStorage or whatever data-storage will be used in the future.
-bot.memory = {
-    saveInterval : 900000, //15(min) * 60(sec/min) * 1000(ms/sec) = 900000(ms)
-
-    data : {},
-
-    get : function ( name, defaultVal ) {
-        if ( !this.data[name] ) {
-            this.set( name, defaultVal || {} );
-        }
-
-        return this.data[ name ];
-    },
-
-    set : function ( name, val ) {
-        this.data[ name ] = val;
-    },
-
-    loadAll : function () {
-        var self = this;
-
-        Object.iterate( localStorage, function ( key, val ) {
-            if ( key.startsWith('bot_') ) {
-                console.log( key, val );
-                self.set( key.replace(/^bot_/, ''), JSON.parse(val) );
-            }
-        });
-    },
-
-    save : function ( name ) {
-        if ( name ) {
-            localStorage[ 'bot_' + name ] = JSON.stringify( this.data[name] );
-            return;
-        }
-
-        var self = this;
-        Object.keys( this.data ).forEach(function ( name ) {
-            self.save( name );
-        });
-
-        this.saveLoop();
-    },
-
-    saveLoop : function () {
-        clearTimeout( this.saveIntervalId );
-        setTimeout( this.saveLoop.bind(this), this.saveInterval );
-    }
-};
-
-bot.memory.loadAll();
-window.addEventListener( 'beforeunload', function () { bot.memory.save(); } );
-bot.memory.saveLoop();
-
-bot.banlist = bot.memory.get( 'ban' );
-bot.banlist.contains = function ( id ) {
-    return this.hasOwnProperty( id );
-};
-bot.banlist.add = function ( id ) {
-    this[ id ] = { told : false };
-    bot.memory.save( 'ban' );
-};
-bot.banlist.remove = function ( id ) {
-    if ( this.contains(id) ) {
-        delete this[ id ];
-        bot.memory.save( 'ban' );
     }
 };
 
@@ -1259,1151 +1195,7 @@ bot.Message = function ( text, msgObj ) {
     return ret;
 };
 
-bot.isOwner = function ( usrid ) {
-    var user = this.users[ usrid ];
-    return user && ( user.is_owner || user.is_moderator );
-};
 
-IO.register( 'input', bot.parseMessage, bot );
-
-//load up coffeescript if we're not in dev mdoe
-setTimeout(function () {
-    if (bot.devMode) {
-        return;
-    }
-
-    IO.injectScript( 'https://rawgithub.com/jashkenas/coffee-script/master/extras/coffee-script.js' );
-}, 1000);
-
-//execute arbitrary js code in a relatively safe environment
-bot.eval = (function () {
-
-var workerCode = function () {
-var global = this;
-
-/*most extra functions could be possibly unsafe*/
-var whitey = {
-    'Array'              : 1,
-    'Boolean'            : 1,
-    'Date'               : 1,
-    'Error'              : 1,
-    'EvalError'          : 1,
-    'Function'           : 1,
-    'Infinity'           : 1,
-    'JSON'               : 1,
-    'Map'                : 1,
-    'Math'               : 1,
-    'NaN'                : 1,
-    'Number'             : 1,
-    'Object'             : 1,
-    'Promise'            : 1,
-    'Proxy'              : 1,
-    'RangeError'         : 1,
-    'ReferenceError'     : 1,
-    'RegExp'             : 1,
-    'Set'                : 1,
-    'String'             : 1,
-    'SyntaxError'        : 1,
-    'TypeError'          : 1,
-    'URIError'           : 1,
-    'WeakMap'            : 1,
-    'WeakSet'            : 1,
-    'atob'               : 1,
-    'btoa'               : 1,
-    'console'            : 1,
-    'decodeURI'          : 1,
-    'decodeURIComponent' : 1,
-    'encodeURI'          : 1,
-    'encodeURIComponent' : 1,
-    'eval'               : 1,
-    'exec'               : 1, /* our own function */
-    'global'             : 1,
-    'isFinite'           : 1,
-    'isNaN'              : 1,
-    'onmessage'          : 1,
-    'parseFloat'         : 1,
-    'parseInt'           : 1,
-    'postMessage'        : 1,
-    'self'               : 1,
-    'undefined'          : 1,
-    'whitey'             : 1,
-
-    /* typed arrays and shit */
-    'ArrayBuffer'       : 1,
-    'Blob'              : 1,
-    'Float32Array'      : 1,
-    'Float64Array'      : 1,
-    'Int8Array'         : 1,
-    'Int16Array'        : 1,
-    'Int32Array'        : 1,
-    'Uint8Array'        : 1,
-    'Uint16Array'       : 1,
-    'Uint32Array'       : 1,
-    'Uint8ClampedArray' : 1,
-
-    /*
-     these properties allow FF to function. without them, a fuckfest of
-     inexplicable errors enuses. took me about 4 hours to track these fuckers
-     down.
-     fuck hell it isn't future-proof, but the errors thrown are uncatchable
-     and untracable. so a heads-up. enjoy, future-me!
-     */
-    'DOMException'      : 1,
-    'Event'             : 1,
-    'MessageEvent'      : 1,
-    'WorkerMessageEvent': 1
-};
-
-/**
- * DOM specification doesn't define an enumerable `fetch` function object on the global object
- * so we add the property here, and the following code will blacklist it.
- * (`fetch` descends from `GlobalFetch`, and is thus present in worker code as well)
- * Just in case someone runs the bot on some old browser where `fetch` is not defined anyways,
- * this will have no effect.
- * Reason for blacklisting fetch: well, same as XHR.
- */
-global.fetch = undefined;
-
-[ global, Object.getPrototypeOf(global) ].forEach(function ( obj ) {
-    Object.getOwnPropertyNames( obj ).forEach(function( prop ) {
-        if( whitey.hasOwnProperty(prop) ) {
-            return;
-        }
-
-        try {
-            Object.defineProperty( obj, prop, {
-                get : function () {
-                    /* TEE HEE */
-                    throw new ReferenceError( prop + ' is not defined' );
-                },
-                configurable : false,
-                enumerable : false
-            });
-        }
-        catch ( e ) {
-            delete obj[ prop ];
-
-            if ( obj[ prop ] !== undefined ) {
-                obj[ prop ] = null;
-            }
-        }
-    });
-});
-
-Object.defineProperty( Array.prototype, 'join', {
-    writable: false,
-    configurable: false,
-    enumrable: false,
-
-    value: (function ( old ) {
-        return function ( arg ) {
-            if ( this.length > 500 || (arg && arg.length > 500) ) {
-                throw 'Exception: too many items';
-            }
-
-            return old.apply( this, arguments );
-        };
-    }( Array.prototype.join ))
-});
-
-
-/* we define it outside so it'll not be in strict mode */
-var exec = function ( code, arg ) {
-    return eval( 'undefined;\n' + code );
-};
-var console = {
-    _items : [],
-    log : function() {
-        console._items.push.apply( console._items, arguments );
-    }
-};
-console.error = console.info = console.debug = console.log;
-
-(function() {
-    "use strict";
-
-    global.onmessage = function ( event ) {
-        global.postMessage({
-            event : 'start'
-        });
-
-        var jsonStringify = JSON.stringify, /*backup*/
-            result,
-
-            originalSetTimeout = setTimeout,
-            timeoutCounter = 0;
-
-        var sendResult = function ( result ) {
-            global.postMessage({
-                answer : jsonStringify( result, reviver ),
-                log    : jsonStringify( console._items, reviver ).slice( 1, -1 )
-            });
-        };
-        var done = function ( result ) {
-            if ( timeoutCounter < 1 ) {
-                sendResult( result );
-            }
-        };
-
-        var reviver = function ( key, value ) {
-            var output;
-
-            if ( shouldString(value) ) {
-                output = '' + value;
-            }
-            else {
-                output = value;
-            }
-
-            return output;
-        };
-
-        /*JSON does not like any of the following*/
-        var strung = {
-            Function  : true, Error  : true,
-            Undefined : true, RegExp : true
-        };
-        var shouldString = function ( value ) {
-            var type = ( {} ).toString.call( value ).slice( 8, -1 );
-
-            if ( type in strung ) {
-                return true;
-            }
-            /*neither does it feel compassionate about NaN or Infinity*/
-            return value !== value || !Number.isFinite(value);
-        };
-
-        self.setTimeout = function (cb) {
-            /*because of SomeKittens*/
-            if (!cb) {
-                return;
-            }
-
-            var args = [].slice.call( arguments );
-            args[ 0 ] = wrapper;
-            timeoutCounter += 1;
-
-            originalSetTimeout.apply( self, args );
-
-            function wrapper () {
-                timeoutCounter -= 1;
-                cb.apply( self, arguments );
-
-                done();
-            }
-        };
-
-        try {
-            result = exec( event.data.code, event.data.arg );
-        }
-        catch ( e ) {
-            result = e.toString();
-        }
-
-        /*handle promises appropriately*/
-        if ( result && result.then && result.catch ) {
-            result.then( done ).catch( done );
-        }
-        else {
-            done( result );
-        }
-    };
-})();
-
-}.stringContents();
-
-var blob = new Blob( [workerCode], { type : 'application/javascript' } ),
-    codeUrl = window.URL.createObjectURL( blob );
-
-return function ( code, arg, cb ) {
-    if ( arguments.length === 2 ) {
-        cb  = arg;
-        arg = null;
-    }
-
-    var worker = new Worker( codeUrl ),
-        timeout;
-
-    worker.onmessage = function ( evt ) {
-        bot.log( evt, 'eval worker.onmessage' );
-
-        var type = evt.data.event;
-
-        if ( type === 'start' ) {
-            start();
-        }
-        else {
-            finish( null, evt.data );
-        }
-    };
-
-    worker.onerror = function ( error ) {
-        bot.log( error, 'eval worker.onerror' );
-        finish( error.message );
-    };
-
-    //and it all boils down to this...
-    worker.postMessage({
-        code : code,
-        arg  : arg
-    });
-    //so fucking cool.
-
-    function start () {
-        if ( timeout ) {
-            return;
-        }
-
-        timeout = window.setTimeout(function () {
-            finish( 'Maximum execution time exceeded' );
-        }, 500 );
-    }
-
-    function finish ( err, result ) {
-        clearTimeout( timeout );
-        worker.terminate();
-
-        if ( cb && cb.call ) {
-            cb( err, result );
-        }
-        else {
-            console.warn( 'eval did not get callback' );
-        }
-    }
-};
-
-}());
-
-bot.prettyEval = function ( code, arg, cb ) {
-    if ( arguments.length === 2 ) {
-        cb  = arg;
-        arg = null;
-    }
-
-    if ( code[0] === 'c' ) {
-        code = CoffeeScript.compile( code.replace(/^c>/, ''), {bare:1} );
-    }
-    else {
-        code = code.replace( /^>/, '' );
-    }
-
-    return bot.eval( code, arg, finish );
-
-    function finish ( err, answerObj ) {
-        if ( err ) {
-            cb( err );
-        }
-        else {
-            cb( dressUpAnswer(answerObj) );
-        }
-    }
-
-    function dressUpAnswer ( answerObj ) {
-        bot.log( answerObj, 'eval answerObj' );
-        var answer = answerObj.answer,
-            log = answerObj.log,
-            result;
-
-        if ( answer === undefined ) {
-            return 'Malformed output from web-worker. If you weren\'t just ' +
-                'fooling around trying to break me, raise an issue or contact ' +
-                'Zirak';
-        }
-
-        result = snipAndCodify( answer );
-
-        if ( log && log.length ) {
-            result += ' Logged: ' + snipAndCodify( log );
-        }
-
-        return result;
-    }
-
-    function snipAndCodify ( str ) {
-        var ret;
-
-        if ( str.length > 400 ) {
-            ret = '`' + str.slice(0, 400) + '` (snip)';
-        }
-        else {
-            ret = '`' + str +'`';
-        }
-
-        return ret;
-    }
-};
-
-
-(function () {
-"use strict";
-
-var argParser = {
-    create : function () {
-        var ret = Object.create(this);
-
-        ret.separator = ' ';
-        ret.escape = '\\';
-        ret.quote = '"';
-
-        return ret;
-    },
-
-    parse : function (source) {
-        this.source = source;
-        this.pos = 0;
-
-        var ret = [];
-
-        while (!this.done()) {
-            ret.push(this.nextArg());
-        }
-
-        return ret;
-    },
-
-    nextArg : function () {
-        var endChar = this.separator;
-
-        if (this.peek() === this.quote) {
-            this.nextChar();
-            endChar = this.quote;
-        }
-
-        return this.consumeUntil(endChar);
-    },
-
-    consumeUntil : function (endChar) {
-        var char = this.nextChar(),
-            escape = false,
-            ret = '';
-
-        while (char && char !== endChar) {
-            if (char === this.escape && !escape) {
-                escape = true;
-            }
-            else {
-                ret += char;
-            }
-
-            char = this.nextChar();
-        }
-
-        return ret;
-    },
-
-    nextChar : function () {
-        var ret = this.source[this.pos];
-        this.pos += 1;
-        return ret;
-    },
-
-    peek : function () {
-        return this.source[this.pos];
-    },
-
-    done : function () {
-        return this.pos >= this.source.length;
-    }
-};
-
-
-var parser = bot.commandArgsParser = argParser.create();
-bot.parseCommandArgs = parser.parse.bind(parser);
-
-}());
-
-(function () {
-"use strict";
-
-var macros = {
-    who : function ( msgObj ) {
-        return msgObj.get( 'user_name' );
-    },
-
-    someone : function () {
-        var presentUsers = document.getElementById( 'sidebar' )
-            .getElementsByClassName( 'present-user' );
-
-        //the chat keeps a low opacity for users who remained silent for long,
-        // and high opacity for those who recently talked
-        var user = Array.filter( presentUsers, function ( user ) {
-            return Number( user.style.opacity ) >= 0.5;
-        }).random();
-
-        if ( !user ) {
-            return 'Nobody';
-        }
-
-        return user.getElementsByTagName( 'img' )[ 0 ].title;
-    },
-
-    digit : function () {
-        return Math.floor( Math.random() * 10 );
-    },
-
-    encode : function ( msgObj, string ) {
-        return encodeURIComponent( string );
-    },
-
-    //random number, min <= n <= max
-    //treats non-numeric inputs like they don't exist
-    rand : function ( msgObj, min, max ) {
-        // rand() === rand( 0, 10 )
-        if ( !min ) {
-            min = 0;
-            max = 10;
-        }
-        // rand( max ) === rand( 0, max )
-        else if ( !max ) {
-            max = min;
-            min = 0;
-        }
-        else {
-            min = Number( min );
-            max = Number( max );
-        }
-
-        return Math.rand( min, max );
-    }
-};
-var macroRegex = /(?:.|^)\$(\w+)(?:\((.*?)\))?/g;
-
-bot.parseMacro = function parse ( source, extraVars ) {
-    return source.replace( macroRegex, replaceMacro );
-
-    function replaceMacro ( $0, filler, fillerArgs ) {
-        //$$ makes a literal $
-        if ( $0.startsWith('$$') ) {
-            return $0.slice( 1 );
-        }
-
-        //include the character that was matched in the $$ check, unless
-        // it's a $
-        var ret = '';
-        if ( $0[0] !== '$' ) {
-            ret = $0[ 0 ];
-        }
-
-        var macro = findMacro( filler );
-
-        //not found? bummer.
-        if ( !macro ) {
-            return filler;
-        }
-
-        bot.log( macro, filler, fillerArgs, '/parse replaceMacro' );
-        //when the macro is a function
-        if ( macro.apply ) {
-            ret += macro.apply( null, parseMacroArgs(fillerArgs) );
-        }
-        //when the macro is simply a substitution
-        else {
-            ret += macro;
-        }
-        return ret;
-    }
-
-    function parseMacroArgs ( macroArgs ) {
-        bot.log( macroArgs, '/parse parseMacroArgs' );
-        if ( !macroArgs ) {
-            return [ source ];
-        }
-
-        //parse the arguments, split them into individual arguments,
-        // and trim'em (to cover the case of "arg,arg" and "arg, arg")
-        var parsedArgs = parse( macroArgs, extraVars );
-        return [ source ].concat( parsedArgs.split(',').invoke('trim') );
-        //this is not good code
-    }
-
-    function findMacro ( macro ) {
-        var container = [ macros, extraVars ].first( hasMacro );
-
-        return ( container || {} )[ macro ];
-
-        function hasMacro ( obj ) {
-            return obj && obj.hasOwnProperty( macro );
-        }
-    }
-};
-
-
-})();
-
-//a Trie suggestion dictionary, made by Esailija (small fixes by God)
-// http://stackoverflow.com/users/995876/esailija
-//used in the "command not found" message to show you closest commands
-var SuggestionDictionary = (function () {
-
-function TrieNode() {
-    this.word = null;
-    this.children = {};
-}
-
-TrieNode.prototype.add = function( word ) {
-    var node = this, char, i = 0;
-
-    while( char = word.charAt(i++) ) {
-        if( !(char in node.children) ) {
-            node.children[ char ] = new TrieNode();
-        }
-
-        node = node.children[ char ];
-    }
-
-    node.word = word;
-};
-
-TrieNode.prototype.del = function(word, i) {
-    i = i || 0;
-    var node = this;
-    var char = word[i++];
-
-    // recursively delete all trie nodes that are left empty after removing the command from the leaf
-    if (node.children[char]) {
-        node.children[char].del(word, i);
-        if (Object.keys(node.children[char].children).length === 0 && node.children[char].word === null) {
-            delete node.children[char];
-        }
-    }
-    
-    if (node.word === word) {
-        node.word = null;
-    }
-}
-
-//Having a small maxCost will increase performance greatly, experiment with
-//values of 1-3
-function SuggestionDictionary ( maxCost ) {
-    if( !(this instanceof SuggestionDictionary) ) {
-        throw new TypeError( "Illegal function call" );
-    }
-
-    maxCost = Number( maxCost );
-
-    if( isNaN( maxCost ) || maxCost < 1 ) {
-        throw new TypeError( "maxCost must be an integer > 1 " );
-    }
-
-    this.maxCost = maxCost;
-    this.trie = new TrieNode();
-}
-
-SuggestionDictionary.prototype = {
-    constructor: SuggestionDictionary,
-
-    build : function ( words ) {
-        if( !Array.isArray( words ) ) {
-            throw new TypeError( "Cannot build a dictionary from "+words );
-        }
-
-        this.trie = new TrieNode();
-
-        words.forEach(function ( word ) {
-            this.trie.add( word );
-        }, this);
-    },
-
-    __sortfn : function ( a, b ) {
-        return a[1] - b[1];
-    },
-
-    search : function ( word ) {
-        word = word.valueOf();
-        var r;
-
-        if( typeof word !== "string" ) {
-            throw new TypeError( "Cannot search " + word );
-        }
-        if( this.trie === undefined ) {
-            throw new TypeError( "Cannot search, dictionary isn't built yet" );
-        }
-
-        r = search( word, this.maxCost, this.trie );
-        //r will be array of arrays:
-        //["word", cost], ["word2", cost2], ["word3", cost3] , ..
-
-        r.sort( this.__sortfn ); //Sort the results in order of least cost
-
-
-        return r.map(function ( subarr ) {
-            return subarr[ 0 ];
-        });
-    }
-};
-
-function range ( x, y ) {
-    var r = [], i, l, start;
-
-    if( y === undefined ) {
-        start = 0;
-        l = x;
-    }
-    else {
-        start = x;
-        l = y-start;
-    }
-
-    for( i = 0; i < l; ++i ) {
-        r[i] = start++;
-    }
-
-    return r;
-
-}
-
-function search ( word, maxCost, trie ) {
-    var results = [],
-    currentRow = range( word.length + 1 );
-
-
-    Object.keys( trie.children ).forEach(function ( letter ) {
-        searchRecursive(
-            trie.children[letter], letter, word,
-            currentRow, results, maxCost );
-    });
-
-    return results;
-}
-
-
-function searchRecursive ( node, letter, word, previousRow, results, maxCost ) {
-    var columns = word.length + 1,
-        currentRow = [ previousRow[0] + 1 ],
-        i, insertCost, deleteCost, replaceCost, last;
-
-    for( i = 1; i < columns; ++i ) {
-
-        insertCost = currentRow[ i-1 ] + 1;
-        deleteCost = previousRow[ i ] + 1;
-
-        if( word.charAt(i-1) !== letter ) {
-            replaceCost = previousRow[ i-1 ]+1;
-
-        }
-        else {
-            replaceCost = previousRow[ i-1 ];
-        }
-
-        currentRow.push( Math.min(insertCost, deleteCost, replaceCost) );
-    }
-
-    last = currentRow[ currentRow.length-1 ];
-    if( last <= maxCost && node.word !== null ) {
-        results.push( [node.word, last] );
-    }
-
-    if( Math.min.apply(Math, currentRow) <= maxCost ) {
-        Object.keys( node.children ).forEach(function ( letter ) {
-            searchRecursive(
-                node.children[letter], letter, word,
-                currentRow, results, maxCost );
-        });
-    }
-}
-
-return SuggestionDictionary;
-}());
-
-bot.commandDictionary = new SuggestionDictionary( 3 );
-
-
-(function () {
-"use strict";
-
-var commands = {
-    help : function ( args ) {
-        if ( args && args.length ) {
-
-            var cmd = bot.getCommand( args.toLowerCase() );
-            if ( cmd.error ) {
-                return cmd.error;
-            }
-
-            var desc = cmd.description || 'No info is available';
-
-            return args + ': ' + desc;
-        }
-
-        return 'Information on interacting with me can be found at ' +
-            '[this page](https://github.com/Zirak/SO-ChatBot/' +
-            'wiki/Interacting-with-the-bot)';
-    },
-
-    listen : function ( msg ) {
-        var ret = bot.callListeners( msg );
-        if ( !ret ) {
-            return bot.giveUpMessage();
-        }
-    },
-
-    eval : function ( msg, cb ) {
-        cb = cb || msg.directreply.bind( msg );
-
-        return bot.prettyEval( msg, cb );
-    },
-    coffee : function ( msg, cb ) {
-        //yes, this is a bit yucky
-        var arg = bot.Message( 'c> ' + msg, msg.get() );
-        return commands.eval( arg, cb );
-    },
-
-    refresh : function() {
-        window.location.reload();
-    },
-
-    forget : function ( args ) {
-        var name = args.toLowerCase(),
-            cmd = bot.getCommand( name );
-
-        if ( cmd.error ) {
-            return cmd.error;
-        }
-
-        if ( !cmd.canDel(args.get('user_id')) ) {
-            return 'You are not authorized to delete the command ' + args;
-        }
-
-        cmd.del();
-        return 'Command ' + name + ' forgotten.';
-    },
-
-    //a lesson on semi-bad practices and laziness
-    //chapter III
-    info : function ( args ) {
-        if ( args.content ) {
-            return commandFormat( args.content );
-        }
-
-        var info = bot.info;
-        return timeFormat() + ', ' + statsFormat();
-
-        function commandFormat ( commandName ) {
-            var cmd = bot.getCommand( commandName );
-
-            if ( cmd.error ) {
-                return cmd.error;
-            }
-            var ret =  'Command {name}, created by {creator}'.supplant( cmd );
-
-            if ( cmd.date ) {
-                ret += ' on ' + cmd.date.toUTCString();
-            }
-
-            return ret;
-        }
-
-        function timeFormat () {
-            var format = 'I awoke on {0} (that\'s about {1} ago)',
-
-                awoke = info.start.toUTCString(),
-                ago = Date.timeSince( info.start );
-
-            return format.supplant( awoke, ago );
-        }
-
-        function statsFormat () {
-            var ret = [],
-                but = ''; //you'll see in a few lines
-
-            if ( info.invoked ) {
-                ret.push( 'got invoked ' + info.invoked + ' times' );
-            }
-            if ( info.learned ) {
-                but = 'but ';
-                ret.push( 'learned ' + info.learned + ' commands' );
-            }
-            if ( info.forgotten ) {
-                ret.push( but + 'forgotten ' + info.forgotten + ' commands' );
-            }
-            if ( Math.random() < 0.15 ) {
-                ret.push( 'teleported ' + Math.rand(100) + ' goats' );
-            }
-
-            return ret.join( ', ' ) || 'haven\'t done anything yet!';
-        }
-    }
-};
-
-commands.listcommands = (function () {
-function partition ( list, maxSize ) {
-    var size = 0, last = [];
-
-    var ret = list.reduce(function partition ( ret, item ) {
-        var len = item.length + 2; //+1 for comma, +1 for space
-
-        if ( size + len > maxSize ) {
-            ret.push( last );
-            last = [];
-            size = 0;
-        }
-        last.push( item );
-        size += len;
-
-        return ret;
-    }, []);
-
-    if ( last.length ) {
-        ret.push( last );
-    }
-
-    return ret;
-}
-
-function getSortedCommands() {
-    //well, sort of sorted. we want to sort the commands, but have the built-ins
-    // be in front, with help as the first one. #153
-    var commandNames = Object.keys( bot.commands );
-
-    var commandGroups = commandNames.groupBy(function ( cmdName ) {
-        return bot.commands[ cmdName ].learned ? 'learned' : 'builtin';
-    });
-
-    var sortedCommands = commandGroups.builtin.sort().concat(
-        commandGroups.learned.sort()
-    );
-
-    var helpIndex = sortedCommands.indexOf('help');
-    sortedCommands.unshift( sortedCommands.splice(helpIndex, 1)[ 0 ] );
-
-    return sortedCommands;
-}
-
-return function ( args ) {
-    var commands = getSortedCommands(),
-        //500 is the max, compensate for user reply
-        maxSize = 499 - bot.adapter.reply( args.get('user_name') ).length,
-        //TODO: only call this when commands were learned/forgotten since last
-        partitioned = partition( commands, maxSize );
-
-    return partitioned.invoke( 'join', ', ' ).join( '\n' );
-};
-})();
-
-commands.eval.async = commands.coffee.async = true;
-
-commands.tell = function ( args ) {
-    var parts = args.split( ' ' );
-    bot.log( args.valueOf(), parts, '/tell input' );
-
-    var replyTo = parts[ 0 ],
-        cmdName = parts[ 1 ],
-        cmd;
-
-    if ( !replyTo || !cmdName ) {
-        return 'Invalid /tell arguments. Use /help for usage info';
-    }
-
-    cmdName = cmdName.toLowerCase();
-    cmd = bot.getCommand( cmdName );
-    if ( cmd.error ) {
-        return cmd.error +
-            ' (note that /tell works on commands, it\'s not an echo.)';
-    }
-
-    if ( cmd.unTellable ) {
-        return 'Command ' + cmdName + ' cannot be used in `/tell`.';
-    }
-
-    if ( !cmd.canUse(args.get('user_id')) ) {
-        return 'You do not have permission to use command ' + cmdName;
-    }
-
-    //check if the user's being a fag
-    if ( /^@/.test(replyTo) ) {
-        return 'Don\'t be annoying, drop the @, nobody likes a double-ping.';
-    }
-
-    //check if the user wants to reply to a message
-    var direct = false,
-        extended = {};
-    if ( /^:?\d+$/.test(replyTo) ) {
-        extended.message_id = replyTo.replace( /^:/, '' );
-        direct = true;
-    }
-    else {
-        extended.user_name = replyTo;
-    }
-
-    var msgObj = Object.merge( args.get(), extended ),
-        cmdArgs = bot.Message( parts.slice(2).join(' '), msgObj );
-
-    //this is an ugly, but functional thing, much like your high-school prom
-    // date to make sure a command's output goes through us, we simply override
-    // the standard ways to do output
-    var reply = cmdArgs.reply.bind( cmdArgs ),
-        directreply = cmdArgs.directreply.bind( cmdArgs );
-
-    cmdArgs.reply = cmdArgs.directreply = cmdArgs.send = callFinished;
-
-    bot.log( cmdArgs, '/tell calling ' + cmdName );
-
-    //if the command is async, it'll accept a callback
-    if ( cmd.async ) {
-        cmd.exec( cmdArgs, callFinished );
-    }
-    else {
-        callFinished( cmd.exec(cmdArgs) );
-    }
-
-    function callFinished ( res ) {
-        if ( !res ) {
-            return;
-        }
-
-        if ( direct ) {
-            directreply( res );
-        }
-        else {
-            reply( res );
-        }
-    }
-};
-
-var descriptions = {
-    eval : 'Forwards message to javascript code-eval',
-    coffee : 'Forwards message to coffeescript code-eval',
-    forget : 'Forgets a given command. `/forget cmdName`',
-    help : 'Fetches documentation for given command, or general help article.' +
-        ' `/help [cmdName]`',
-    info : 'Grabs some stats on my current instance or a command.' +
-        ' `/info [cmdName]`',
-    listcommands : 'Lists commands. `/listcommands`',
-    listen : 'Forwards the message to my ears (as if called without the /)',
-    refresh : 'Reloads the browser window I live in',
-    tell : 'Redirect command result to user/message.' +
-        ' /tell `msg_id|usr_name cmdName [cmdArgs]`'
-};
-
-//only allow owners to use certain commands
-var privilegedCommands = {
-    die : true, live  : true,
-    ban : true, unban : true,
-    refresh : true
-};
-//voting-based commands for unpriviledged users
-var communal = {
-    die : true, ban : true
-};
-//commands which can't be used with /tell
-var unTellable = {
-    tell : true, forget : true
-};
-
-Object.iterate( commands, function ( cmdName, fun ) {
-    var cmd = {
-        name : cmdName,
-        fun  : fun,
-        permissions : {
-            del : 'NONE',
-            use : privilegedCommands[ cmdName ] ? 'OWNER' : 'ALL'
-        },
-        description : descriptions[ cmdName ],
-        pendingMessage: fun.pendingMessage,
-        unTellable : unTellable[ cmdName ],
-        async : fun.async
-    };
-
-    if ( communal[cmdName] ) {
-        cmd = bot.CommunityCommand( cmd, fun.invokeReq );
-    }
-    bot.addCommand( cmd );
-});
-
-}());
-
-(function () {
-bot.listen( /^help(?: (\S+))?/, function ( msg ) {
-    return bot.getCommand( 'help' ).exec( msg.matches[1] );
-});
-
-var laws = [
-    'A robot may not injure a human being or, through inaction, ' +
-        'allow a human being to come to harm.',
-
-    'A robot must obey the orders given to it by human beings, ' +
-        'except where such orders would conflict with the First Law.',
-
-    'A robot must protect its own existence as long as such ' +
-        'protection does not conflict with the First or Second Laws.'
-].map(function ( law, idx ) {
-    return idx + '. ' + law;
-}).join( '\n' );
-
-bot.listen( /^tell (me (your|the) )?(rule|law)s/, function ( msg ) {
-    return laws;
-});
-
-bot.listen( /^give (.+?) a lick/, function ( msg ) {
-    var target = msg.matches[ 1 ], conjugation;
-
-    //give me => you taste
-    if ( target === 'me' ) {
-        target = 'you';
-        conjugation = '';
-    }
-    //give yourself => I taste
-    else if ( target === 'yourself' ) {
-        target = 'I';
-        conjugation = '';
-    }
-    else {
-        conjugation = 's';
-    }
-    //otherwise, use what the user gave us, plus a plural `s`
-
-    return 'Mmmm! ' + target + ' taste' + conjugation + ' just like raisin';
-});
-
-
-var dictionaries = [
-    //what's a squid?
-    //what is a squid?
-    //what're squids?
-    //what are squids?
-    //what is an animal?
-    //and all those above without a ?
-    //explanation in the post-mortem
-    /^what(?:'s|'re)?\s(?:(?:is|are)\s)?(?:(?:an|a)\s)?([\w\s\-]+)\??/,
-
-    //define squid
-    //define a squid
-    //define an animal
-    /^define\s(?:(?:an|a)\s)?([\w\s\-]+)/
-];
-
-bot.listen( dictionaries, function ( msg ) {
-    var what = msg.matches[ 1 ],
-        define = bot.getCommand( 'define' );
-
-    define.exec( what, function ( def ) {
-        def = def.replace( what + ':', '' );
-
-        msg.reply( def );
-    });
-});
-/*
-what              #simply the word what
-(?:'s|'re)?       #optional suffix (what's, what're)
-\s
-(?:
-    (?:is|are)    #is|are
-\s                #you need a whitespace after a word
-)?                #make the is|are optional
-(?:
-    (?:an|a)      #an|a
-\s                #once again, option chosen - need a whitespace
-)?                #make it optional
-(
-    [\w\s\-]+     #match the word the user's after, all we really care about
-)
-\??               #optional ?
-*/
-}());
-
-}());
-
-;
 //follows is an explanation of how SO's chat does things. you may want to skip
 // this gigantuous comment.
 /*
@@ -2982,7 +1774,6 @@ IO.register( 'output', output.send, output );
 bot.adapter.init();
 }());
 
-;
 (function () {
 "use strict";
 
@@ -3100,7 +1891,834 @@ function loadUsers () {
 loadUsers();
 }());
 
-;
+//a place to hang your coat and remember the past. provides an abstraction over
+// localStorage or whatever data-storage will be used in the future.
+bot.memory = {
+    saveInterval : 900000, //15(min) * 60(sec/min) * 1000(ms/sec) = 900000(ms)
+
+    data : {},
+
+    get : function ( name, defaultVal ) {
+        if ( !this.data[name] ) {
+            this.set( name, defaultVal || {} );
+        }
+
+        return this.data[ name ];
+    },
+
+    set : function ( name, val ) {
+        this.data[ name ] = val;
+    },
+
+    loadAll : function () {
+        var self = this;
+
+        Object.iterate( localStorage, function ( key, val ) {
+            if ( key.startsWith('bot_') ) {
+                console.log( key, val );
+                self.set( key.replace(/^bot_/, ''), JSON.parse(val) );
+            }
+        });
+    },
+
+    save : function ( name ) {
+        if ( name ) {
+            localStorage[ 'bot_' + name ] = JSON.stringify( this.data[name] );
+            return;
+        }
+
+        var self = this;
+        Object.keys( this.data ).forEach(function ( name ) {
+            self.save( name );
+        });
+
+        this.saveLoop();
+    },
+
+    saveLoop : function () {
+        clearTimeout( this.saveIntervalId );
+        //XXX this makes no sense
+        setTimeout( this.saveLoop.bind(this), this.saveInterval );
+    }
+};
+
+bot.memory.loadAll();
+window.addEventListener( 'beforeunload', function () { bot.memory.save(); } );
+bot.memory.saveLoop();
+
+bot.banlist = bot.memory.get( 'ban' );
+bot.banlist.contains = function ( id ) {
+    return this.hasOwnProperty( id );
+};
+bot.banlist.add = function ( id ) {
+    this[ id ] = { told : false };
+    bot.memory.save( 'ban' );
+};
+bot.banlist.remove = function ( id ) {
+    if ( this.contains(id) ) {
+        delete this[ id ];
+        bot.memory.save( 'ban' );
+    }
+};
+
+bot.config = Object.merge(
+    {
+        pattern: '!!',
+        welcomeMessage: (
+            "Welcome to the JavaScript chat! Please review the {0}. Please don't"
+                + "ask if you can ask or if anyone's around; just ask your "
+                + "question, and if anyone's free and interested they'll help."
+        ).supplant(bot.adapter.link(
+            "room rules",
+            "http://rlemon.github.com/so-chat-javascript-rules/"
+        ))
+    },
+    bot.memory.get('config', {})
+);
+bot.memory.set('config', bot.config);
+bot.memory.save('config');
+
+
+//load up coffeescript if we're not in dev mdoe
+setTimeout(function () {
+    if (bot.devMode) {
+        return;
+    }
+
+    IO.injectScript( 'https://rawgithub.com/jashkenas/coffee-script/master/extras/coffee-script.js' );
+}, 1000);
+
+//execute arbitrary js code in a relatively safe environment
+bot.eval = (function () {
+
+var workerCode = function () {
+var global = this;
+
+/*most extra functions could be possibly unsafe*/
+var whitey = {
+    'Array'              : 1,
+    'Boolean'            : 1,
+    'Date'               : 1,
+    'Error'              : 1,
+    'EvalError'          : 1,
+    'Function'           : 1,
+    'Infinity'           : 1,
+    'JSON'               : 1,
+    'Map'                : 1,
+    'Math'               : 1,
+    'NaN'                : 1,
+    'Number'             : 1,
+    'Object'             : 1,
+    'Promise'            : 1,
+    'Proxy'              : 1,
+    'RangeError'         : 1,
+    'ReferenceError'     : 1,
+    'RegExp'             : 1,
+    'Set'                : 1,
+    'String'             : 1,
+    'SyntaxError'        : 1,
+    'TypeError'          : 1,
+    'URIError'           : 1,
+    'WeakMap'            : 1,
+    'WeakSet'            : 1,
+    'atob'               : 1,
+    'btoa'               : 1,
+    'console'            : 1,
+    'decodeURI'          : 1,
+    'decodeURIComponent' : 1,
+    'encodeURI'          : 1,
+    'encodeURIComponent' : 1,
+    'eval'               : 1,
+    'exec'               : 1, /* our own function */
+    'global'             : 1,
+    'isFinite'           : 1,
+    'isNaN'              : 1,
+    'onmessage'          : 1,
+    'parseFloat'         : 1,
+    'parseInt'           : 1,
+    'postMessage'        : 1,
+    'self'               : 1,
+    'undefined'          : 1,
+    'whitey'             : 1,
+
+    /* typed arrays and shit */
+    'ArrayBuffer'       : 1,
+    'Blob'              : 1,
+    'Float32Array'      : 1,
+    'Float64Array'      : 1,
+    'Int8Array'         : 1,
+    'Int16Array'        : 1,
+    'Int32Array'        : 1,
+    'Uint8Array'        : 1,
+    'Uint16Array'       : 1,
+    'Uint32Array'       : 1,
+    'Uint8ClampedArray' : 1,
+
+    /*
+     these properties allow FF to function. without them, a fuckfest of
+     inexplicable errors enuses. took me about 4 hours to track these fuckers
+     down.
+     fuck hell it isn't future-proof, but the errors thrown are uncatchable
+     and untracable. so a heads-up. enjoy, future-me!
+     */
+    'DOMException'      : 1,
+    'Event'             : 1,
+    'MessageEvent'      : 1,
+    'WorkerMessageEvent': 1
+};
+
+/**
+ * DOM specification doesn't define an enumerable `fetch` function object on the global object
+ * so we add the property here, and the following code will blacklist it.
+ * (`fetch` descends from `GlobalFetch`, and is thus present in worker code as well)
+ * Just in case someone runs the bot on some old browser where `fetch` is not defined anyways,
+ * this will have no effect.
+ * Reason for blacklisting fetch: well, same as XHR.
+ */
+global.fetch = undefined;
+
+[ global, Object.getPrototypeOf(global) ].forEach(function ( obj ) {
+    Object.getOwnPropertyNames( obj ).forEach(function( prop ) {
+        if( whitey.hasOwnProperty(prop) ) {
+            return;
+        }
+
+        try {
+            Object.defineProperty( obj, prop, {
+                get : function () {
+                    /* TEE HEE */
+                    throw new ReferenceError( prop + ' is not defined' );
+                },
+                configurable : false,
+                enumerable : false
+            });
+        }
+        catch ( e ) {
+            delete obj[ prop ];
+
+            if ( obj[ prop ] !== undefined ) {
+                obj[ prop ] = null;
+            }
+        }
+    });
+});
+
+Object.defineProperty( Array.prototype, 'join', {
+    writable: false,
+    configurable: false,
+    enumrable: false,
+
+    value: (function ( old ) {
+        return function ( arg ) {
+            if ( this.length > 500 || (arg && arg.length > 500) ) {
+                throw 'Exception: too many items';
+            }
+
+            return old.apply( this, arguments );
+        };
+    }( Array.prototype.join ))
+});
+
+
+/* we define it outside so it'll not be in strict mode */
+var exec = function ( code, arg ) {
+    return eval( 'undefined;\n' + code );
+};
+var console = {
+    _items : [],
+    log : function() {
+        console._items.push.apply( console._items, arguments );
+    }
+};
+console.error = console.info = console.debug = console.log;
+
+(function() {
+    "use strict";
+
+    global.onmessage = function ( event ) {
+        global.postMessage({
+            event : 'start'
+        });
+
+        var jsonStringify = JSON.stringify, /*backup*/
+            result,
+
+            originalSetTimeout = setTimeout,
+            timeoutCounter = 0;
+
+        var sendResult = function ( result ) {
+            global.postMessage({
+                answer : jsonStringify( result, reviver ),
+                log    : jsonStringify( console._items, reviver ).slice( 1, -1 )
+            });
+        };
+        var done = function ( result ) {
+            if ( timeoutCounter < 1 ) {
+                sendResult( result );
+            }
+        };
+
+        var reviver = function ( key, value ) {
+            var output;
+
+            if ( shouldString(value) ) {
+                output = '' + value;
+            }
+            else {
+                output = value;
+            }
+
+            return output;
+        };
+
+        /*JSON does not like any of the following*/
+        var strung = {
+            Function  : true, Error  : true,
+            Undefined : true, RegExp : true
+        };
+        var shouldString = function ( value ) {
+            var type = ( {} ).toString.call( value ).slice( 8, -1 );
+
+            if ( type in strung ) {
+                return true;
+            }
+            /*neither does it feel compassionate about NaN or Infinity*/
+            return value !== value || !Number.isFinite(value);
+        };
+
+        self.setTimeout = function (cb) {
+            /*because of SomeKittens*/
+            if (!cb) {
+                return;
+            }
+
+            var args = [].slice.call( arguments );
+            args[ 0 ] = wrapper;
+            timeoutCounter += 1;
+
+            originalSetTimeout.apply( self, args );
+
+            function wrapper () {
+                timeoutCounter -= 1;
+                cb.apply( self, arguments );
+
+                done();
+            }
+        };
+
+        try {
+            result = exec( event.data.code, event.data.arg );
+        }
+        catch ( e ) {
+            result = e.toString();
+        }
+
+        /*handle promises appropriately*/
+        if ( result && result.then && result.catch ) {
+            result.then( done ).catch( done );
+        }
+        else {
+            done( result );
+        }
+    };
+})();
+
+}.stringContents();
+
+var blob = new Blob( [workerCode], { type : 'application/javascript' } ),
+    codeUrl = window.URL.createObjectURL( blob );
+
+return function ( code, arg, cb ) {
+    if ( arguments.length === 2 ) {
+        cb  = arg;
+        arg = null;
+    }
+
+    var worker = new Worker( codeUrl ),
+        timeout;
+
+    worker.onmessage = function ( evt ) {
+        bot.log( evt, 'eval worker.onmessage' );
+
+        var type = evt.data.event;
+
+        if ( type === 'start' ) {
+            start();
+        }
+        else {
+            finish( null, evt.data );
+        }
+    };
+
+    worker.onerror = function ( error ) {
+        bot.log( error, 'eval worker.onerror' );
+        finish( error.message );
+    };
+
+    //and it all boils down to this...
+    worker.postMessage({
+        code : code,
+        arg  : arg
+    });
+    //so fucking cool.
+
+    function start () {
+        if ( timeout ) {
+            return;
+        }
+
+        timeout = window.setTimeout(function () {
+            finish( 'Maximum execution time exceeded' );
+        }, 500 );
+    }
+
+    function finish ( err, result ) {
+        clearTimeout( timeout );
+        worker.terminate();
+
+        if ( cb && cb.call ) {
+            cb( err, result );
+        }
+        else {
+            console.warn( 'eval did not get callback' );
+        }
+    }
+};
+
+}());
+
+bot.prettyEval = function ( code, arg, cb ) {
+    if ( arguments.length === 2 ) {
+        cb  = arg;
+        arg = null;
+    }
+
+    if ( code[0] === 'c' ) {
+        code = CoffeeScript.compile( code.replace(/^c>/, ''), {bare:1} );
+    }
+    else {
+        code = code.replace( /^>/, '' );
+    }
+
+    return bot.eval( code, arg, finish );
+
+    function finish ( err, answerObj ) {
+        if ( err ) {
+            cb( err );
+        }
+        else {
+            cb( dressUpAnswer(answerObj) );
+        }
+    }
+
+    function dressUpAnswer ( answerObj ) {
+        bot.log( answerObj, 'eval answerObj' );
+        var answer = answerObj.answer,
+            log = answerObj.log,
+            result;
+
+        if ( answer === undefined ) {
+            return 'Malformed output from web-worker. If you weren\'t just ' +
+                'fooling around trying to break me, raise an issue or contact ' +
+                'Zirak';
+        }
+
+        result = snipAndCodify( answer );
+
+        if ( log && log.length ) {
+            result += ' Logged: ' + snipAndCodify( log );
+        }
+
+        return result;
+    }
+
+    function snipAndCodify ( str ) {
+        var ret;
+
+        if ( str.length > 400 ) {
+            ret = '`' + str.slice(0, 400) + '` (snip)';
+        }
+        else {
+            ret = '`' + str +'`';
+        }
+
+        return ret;
+    }
+};
+
+(function () {
+"use strict";
+
+var argParser = {
+    create : function () {
+        var ret = Object.create(this);
+
+        ret.separator = ' ';
+        ret.escape = '\\';
+        ret.quote = '"';
+
+        return ret;
+    },
+
+    parse : function (source) {
+        this.source = source;
+        this.pos = 0;
+
+        var ret = [];
+
+        while (!this.done()) {
+            ret.push(this.nextArg());
+        }
+
+        return ret;
+    },
+
+    nextArg : function () {
+        var endChar = this.separator;
+
+        if (this.peek() === this.quote) {
+            this.nextChar();
+            endChar = this.quote;
+        }
+
+        return this.consumeUntil(endChar);
+    },
+
+    consumeUntil : function (endChar) {
+        var char = this.nextChar(),
+            escape = false,
+            ret = '';
+
+        while (char && char !== endChar) {
+            if (char === this.escape && !escape) {
+                escape = true;
+            }
+            else {
+                ret += char;
+            }
+
+            char = this.nextChar();
+        }
+
+        return ret;
+    },
+
+    nextChar : function () {
+        var ret = this.source[this.pos];
+        this.pos += 1;
+        return ret;
+    },
+
+    peek : function () {
+        return this.source[this.pos];
+    },
+
+    done : function () {
+        return this.pos >= this.source.length;
+    }
+};
+
+
+var parser = bot.commandArgsParser = argParser.create();
+bot.parseCommandArgs = parser.parse.bind(parser);
+
+}());
+
+(function () {
+"use strict";
+
+var macros = {
+    who : function ( msgObj ) {
+        return msgObj.get( 'user_name' );
+    },
+
+    someone : function () {
+        var presentUsers = document.getElementById( 'sidebar' )
+            .getElementsByClassName( 'present-user' );
+
+        //the chat keeps a low opacity for users who remained silent for long,
+        // and high opacity for those who recently talked
+        var user = Array.filter( presentUsers, function ( user ) {
+            return Number( user.style.opacity ) >= 0.5;
+        }).random();
+
+        if ( !user ) {
+            return 'Nobody';
+        }
+
+        return user.getElementsByTagName( 'img' )[ 0 ].title;
+    },
+
+    digit : function () {
+        return Math.floor( Math.random() * 10 );
+    },
+
+    encode : function ( msgObj, string ) {
+        return encodeURIComponent( string );
+    },
+
+    //random number, min <= n <= max
+    //treats non-numeric inputs like they don't exist
+    rand : function ( msgObj, min, max ) {
+        // rand() === rand( 0, 10 )
+        if ( !min ) {
+            min = 0;
+            max = 10;
+        }
+        // rand( max ) === rand( 0, max )
+        else if ( !max ) {
+            max = min;
+            min = 0;
+        }
+        else {
+            min = Number( min );
+            max = Number( max );
+        }
+
+        return Math.rand( min, max );
+    }
+};
+var macroRegex = /(?:.|^)\$(\w+)(?:\((.*?)\))?/g;
+
+bot.parseMacro = function parse ( source, extraVars ) {
+    return source.replace( macroRegex, replaceMacro );
+
+    function replaceMacro ( $0, filler, fillerArgs ) {
+        //$$ makes a literal $
+        if ( $0.startsWith('$$') ) {
+            return $0.slice( 1 );
+        }
+
+        //include the character that was matched in the $$ check, unless
+        // it's a $
+        var ret = '';
+        if ( $0[0] !== '$' ) {
+            ret = $0[ 0 ];
+        }
+
+        var macro = findMacro( filler );
+
+        //not found? bummer.
+        if ( !macro ) {
+            return filler;
+        }
+
+        bot.log( macro, filler, fillerArgs, '/parse replaceMacro' );
+        //when the macro is a function
+        if ( macro.apply ) {
+            ret += macro.apply( null, parseMacroArgs(fillerArgs) );
+        }
+        //when the macro is simply a substitution
+        else {
+            ret += macro;
+        }
+        return ret;
+    }
+
+    function parseMacroArgs ( macroArgs ) {
+        bot.log( macroArgs, '/parse parseMacroArgs' );
+        if ( !macroArgs ) {
+            return [ source ];
+        }
+
+        //parse the arguments, split them into individual arguments,
+        // and trim'em (to cover the case of "arg,arg" and "arg, arg")
+        var parsedArgs = parse( macroArgs, extraVars );
+        return [ source ].concat( parsedArgs.split(',').invoke('trim') );
+        //this is not good code
+    }
+
+    function findMacro ( macro ) {
+        var container = [ macros, extraVars ].first( hasMacro );
+
+        return ( container || {} )[ macro ];
+
+        function hasMacro ( obj ) {
+            return obj && obj.hasOwnProperty( macro );
+        }
+    }
+};
+
+
+})();
+
+//a Trie suggestion dictionary, made by Esailija (small fixes by God)
+// http://stackoverflow.com/users/995876/esailija
+//used in the "command not found" message to show you closest commands
+var SuggestionDictionary = (function () {
+
+function TrieNode() {
+    this.word = null;
+    this.children = {};
+}
+
+TrieNode.prototype.add = function( word ) {
+    var node = this, char, i = 0;
+
+    while( char = word.charAt(i++) ) {
+        if( !(char in node.children) ) {
+            node.children[ char ] = new TrieNode();
+        }
+
+        node = node.children[ char ];
+    }
+
+    node.word = word;
+};
+
+TrieNode.prototype.del = function(word, i) {
+    i = i || 0;
+    var node = this;
+    var char = word[i++];
+
+    // recursively delete all trie nodes that are left empty after removing the command from the leaf
+    if (node.children[char]) {
+        node.children[char].del(word, i);
+        if (Object.keys(node.children[char].children).length === 0 && node.children[char].word === null) {
+            delete node.children[char];
+        }
+    }
+    
+    if (node.word === word) {
+        node.word = null;
+    }
+}
+
+//Having a small maxCost will increase performance greatly, experiment with
+//values of 1-3
+function SuggestionDictionary ( maxCost ) {
+    if( !(this instanceof SuggestionDictionary) ) {
+        throw new TypeError( "Illegal function call" );
+    }
+
+    maxCost = Number( maxCost );
+
+    if( isNaN( maxCost ) || maxCost < 1 ) {
+        throw new TypeError( "maxCost must be an integer > 1 " );
+    }
+
+    this.maxCost = maxCost;
+    this.trie = new TrieNode();
+}
+
+SuggestionDictionary.prototype = {
+    constructor: SuggestionDictionary,
+
+    build : function ( words ) {
+        if( !Array.isArray( words ) ) {
+            throw new TypeError( "Cannot build a dictionary from "+words );
+        }
+
+        this.trie = new TrieNode();
+
+        words.forEach(function ( word ) {
+            this.trie.add( word );
+        }, this);
+    },
+
+    __sortfn : function ( a, b ) {
+        return a[1] - b[1];
+    },
+
+    search : function ( word ) {
+        word = word.valueOf();
+        var r;
+
+        if( typeof word !== "string" ) {
+            throw new TypeError( "Cannot search " + word );
+        }
+        if( this.trie === undefined ) {
+            throw new TypeError( "Cannot search, dictionary isn't built yet" );
+        }
+
+        r = search( word, this.maxCost, this.trie );
+        //r will be array of arrays:
+        //["word", cost], ["word2", cost2], ["word3", cost3] , ..
+
+        r.sort( this.__sortfn ); //Sort the results in order of least cost
+
+
+        return r.map(function ( subarr ) {
+            return subarr[ 0 ];
+        });
+    }
+};
+
+function range ( x, y ) {
+    var r = [], i, l, start;
+
+    if( y === undefined ) {
+        start = 0;
+        l = x;
+    }
+    else {
+        start = x;
+        l = y-start;
+    }
+
+    for( i = 0; i < l; ++i ) {
+        r[i] = start++;
+    }
+
+    return r;
+
+}
+
+function search ( word, maxCost, trie ) {
+    var results = [],
+    currentRow = range( word.length + 1 );
+
+
+    Object.keys( trie.children ).forEach(function ( letter ) {
+        searchRecursive(
+            trie.children[letter], letter, word,
+            currentRow, results, maxCost );
+    });
+
+    return results;
+}
+
+
+function searchRecursive ( node, letter, word, previousRow, results, maxCost ) {
+    var columns = word.length + 1,
+        currentRow = [ previousRow[0] + 1 ],
+        i, insertCost, deleteCost, replaceCost, last;
+
+    for( i = 1; i < columns; ++i ) {
+
+        insertCost = currentRow[ i-1 ] + 1;
+        deleteCost = previousRow[ i ] + 1;
+
+        if( word.charAt(i-1) !== letter ) {
+            replaceCost = previousRow[ i-1 ]+1;
+
+        }
+        else {
+            replaceCost = previousRow[ i-1 ];
+        }
+
+        currentRow.push( Math.min(insertCost, deleteCost, replaceCost) );
+    }
+
+    last = currentRow[ currentRow.length-1 ];
+    if( last <= maxCost && node.word !== null ) {
+        results.push( [node.word, last] );
+    }
+
+    if( Math.min.apply(Math, currentRow) <= maxCost ) {
+        Object.keys( node.children ).forEach(function ( letter ) {
+            searchRecursive(
+                node.children[letter], letter, word,
+                currentRow, results, maxCost );
+        });
+    }
+}
+
+return SuggestionDictionary;
+}());
+
+bot.commandDictionary = new SuggestionDictionary( 3 );
+
 //warning: if you have more than 7 points of super-sentitive feminist delicacy,
 // don't read this file. treat it as a nice black box.
 
@@ -3186,6 +2804,404 @@ bot.listen(
     /(I('m| am))?\s*sorry/i,
     bot.personality.apologize, bot.personality );
 bot.listen( /^bitch/i, bot.personality.bitch, bot.personality );
+
+
+(function () {
+"use strict";
+
+var commands = {
+    help : function ( args ) {
+        if ( args && args.length ) {
+
+            var cmd = bot.getCommand( args.toLowerCase() );
+            if ( cmd.error ) {
+                return cmd.error;
+            }
+
+            var desc = cmd.description || 'No info is available';
+
+            return args + ': ' + desc;
+        }
+
+        return 'Information on interacting with me can be found at ' +
+            '[this page](https://github.com/Zirak/SO-ChatBot/' +
+            'wiki/Interacting-with-the-bot)';
+    },
+
+    listen : function ( msg ) {
+        var ret = bot.callListeners( msg );
+        if ( !ret ) {
+            return bot.giveUpMessage();
+        }
+    },
+
+    eval : function ( msg, cb ) {
+        cb = cb || msg.directreply.bind( msg );
+
+        return bot.prettyEval( msg, cb );
+    },
+    coffee : function ( msg, cb ) {
+        //yes, this is a bit yucky
+        var arg = bot.Message( 'c> ' + msg, msg.get() );
+        return commands.eval( arg, cb );
+    },
+
+    refresh : function() {
+        window.location.reload();
+    },
+
+    forget : function ( args ) {
+        var name = args.toLowerCase(),
+            cmd = bot.getCommand( name );
+
+        if ( cmd.error ) {
+            return cmd.error;
+        }
+
+        if ( !cmd.canDel(args.get('user_id')) ) {
+            return 'You are not authorized to delete the command ' + args;
+        }
+
+        cmd.del();
+        return 'Command ' + name + ' forgotten.';
+    },
+
+    //a lesson on semi-bad practices and laziness
+    //chapter III
+    info : function ( args ) {
+        if ( args.content ) {
+            return commandFormat( args.content );
+        }
+
+        var info = bot.info;
+        return timeFormat() + ', ' + statsFormat();
+
+        function commandFormat ( commandName ) {
+            var cmd = bot.getCommand( commandName );
+
+            if ( cmd.error ) {
+                return cmd.error;
+            }
+            var ret =  'Command {name}, created by {creator}'.supplant( cmd );
+
+            if ( cmd.date ) {
+                ret += ' on ' + cmd.date.toUTCString();
+            }
+
+            return ret;
+        }
+
+        function timeFormat () {
+            var format = 'I awoke on {0} (that\'s about {1} ago)',
+
+                awoke = info.start.toUTCString(),
+                ago = Date.timeSince( info.start );
+
+            return format.supplant( awoke, ago );
+        }
+
+        function statsFormat () {
+            var ret = [],
+                but = ''; //you'll see in a few lines
+
+            if ( info.invoked ) {
+                ret.push( 'got invoked ' + info.invoked + ' times' );
+            }
+            if ( info.learned ) {
+                but = 'but ';
+                ret.push( 'learned ' + info.learned + ' commands' );
+            }
+            if ( info.forgotten ) {
+                ret.push( but + 'forgotten ' + info.forgotten + ' commands' );
+            }
+            if ( Math.random() < 0.15 ) {
+                ret.push( 'teleported ' + Math.rand(100) + ' goats' );
+            }
+
+            return ret.join( ', ' ) || 'haven\'t done anything yet!';
+        }
+    }
+};
+
+commands.listcommands = (function () {
+function partition ( list, maxSize ) {
+    var size = 0, last = [];
+
+    var ret = list.reduce(function partition ( ret, item ) {
+        var len = item.length + 2; //+1 for comma, +1 for space
+
+        if ( size + len > maxSize ) {
+            ret.push( last );
+            last = [];
+            size = 0;
+        }
+        last.push( item );
+        size += len;
+
+        return ret;
+    }, []);
+
+    if ( last.length ) {
+        ret.push( last );
+    }
+
+    return ret;
+}
+
+function getSortedCommands() {
+    //well, sort of sorted. we want to sort the commands, but have the built-ins
+    // be in front, with help as the first one. #153
+    var commandNames = Object.keys( bot.commands );
+
+    var commandGroups = commandNames.groupBy(function ( cmdName ) {
+        return bot.commands[ cmdName ].learned ? 'learned' : 'builtin';
+    });
+
+    var sortedCommands = commandGroups.builtin.sort().concat(
+        commandGroups.learned.sort()
+    );
+
+    var helpIndex = sortedCommands.indexOf('help');
+    sortedCommands.unshift( sortedCommands.splice(helpIndex, 1)[ 0 ] );
+
+    return sortedCommands;
+}
+
+return function ( args ) {
+    var commands = getSortedCommands(),
+        //500 is the max, compensate for user reply
+        maxSize = 499 - bot.adapter.reply( args.get('user_name') ).length,
+        //TODO: only call this when commands were learned/forgotten since last
+        partitioned = partition( commands, maxSize );
+
+    return partitioned.invoke( 'join', ', ' ).join( '\n' );
+};
+})();
+
+commands.eval.async = commands.coffee.async = true;
+
+commands.tell = function ( args ) {
+    var parts = args.split( ' ' );
+    bot.log( args.valueOf(), parts, '/tell input' );
+
+    var replyTo = parts[ 0 ],
+        cmdName = parts[ 1 ],
+        cmd;
+
+    if ( !replyTo || !cmdName ) {
+        return 'Invalid /tell arguments. Use /help for usage info';
+    }
+
+    cmdName = cmdName.toLowerCase();
+    cmd = bot.getCommand( cmdName );
+    if ( cmd.error ) {
+        return cmd.error +
+            ' (note that /tell works on commands, it\'s not an echo.)';
+    }
+
+    if ( cmd.unTellable ) {
+        return 'Command ' + cmdName + ' cannot be used in `/tell`.';
+    }
+
+    if ( !cmd.canUse(args.get('user_id')) ) {
+        return 'You do not have permission to use command ' + cmdName;
+    }
+
+    //check if the user's being a fag
+    if ( /^@/.test(replyTo) ) {
+        return 'Don\'t be annoying, drop the @, nobody likes a double-ping.';
+    }
+
+    //check if the user wants to reply to a message
+    var direct = false,
+        extended = {};
+    if ( /^:?\d+$/.test(replyTo) ) {
+        extended.message_id = replyTo.replace( /^:/, '' );
+        direct = true;
+    }
+    else {
+        extended.user_name = replyTo;
+    }
+
+    var msgObj = Object.merge( args.get(), extended ),
+        cmdArgs = bot.Message( parts.slice(2).join(' '), msgObj );
+
+    //this is an ugly, but functional thing, much like your high-school prom
+    // date to make sure a command's output goes through us, we simply override
+    // the standard ways to do output
+    var reply = cmdArgs.reply.bind( cmdArgs ),
+        directreply = cmdArgs.directreply.bind( cmdArgs );
+
+    cmdArgs.reply = cmdArgs.directreply = cmdArgs.send = callFinished;
+
+    bot.log( cmdArgs, '/tell calling ' + cmdName );
+
+    //if the command is async, it'll accept a callback
+    if ( cmd.async ) {
+        cmd.exec( cmdArgs, callFinished );
+    }
+    else {
+        callFinished( cmd.exec(cmdArgs) );
+    }
+
+    function callFinished ( res ) {
+        if ( !res ) {
+            return;
+        }
+
+        if ( direct ) {
+            directreply( res );
+        }
+        else {
+            reply( res );
+        }
+    }
+};
+
+var descriptions = {
+    eval : 'Forwards message to javascript code-eval',
+    coffee : 'Forwards message to coffeescript code-eval',
+    forget : 'Forgets a given command. `/forget cmdName`',
+    help : 'Fetches documentation for given command, or general help article.' +
+        ' `/help [cmdName]`',
+    info : 'Grabs some stats on my current instance or a command.' +
+        ' `/info [cmdName]`',
+    listcommands : 'Lists commands. `/listcommands`',
+    listen : 'Forwards the message to my ears (as if called without the /)',
+    refresh : 'Reloads the browser window I live in',
+    tell : 'Redirect command result to user/message.' +
+        ' /tell `msg_id|usr_name cmdName [cmdArgs]`'
+};
+
+//only allow owners to use certain commands
+var privilegedCommands = {
+    die : true, live  : true,
+    ban : true, unban : true,
+    refresh : true
+};
+//voting-based commands for unpriviledged users
+var communal = {
+    die : true, ban : true
+};
+//commands which can't be used with /tell
+var unTellable = {
+    tell : true, forget : true
+};
+
+Object.iterate( commands, function ( cmdName, fun ) {
+    var cmd = {
+        name : cmdName,
+        fun  : fun,
+        permissions : {
+            del : 'NONE',
+            use : privilegedCommands[ cmdName ] ? 'OWNER' : 'ALL'
+        },
+        description : descriptions[ cmdName ],
+        pendingMessage: fun.pendingMessage,
+        unTellable : unTellable[ cmdName ],
+        async : fun.async
+    };
+
+    if ( communal[cmdName] ) {
+        cmd = bot.CommunityCommand( cmd, fun.invokeReq );
+    }
+    bot.addCommand( cmd );
+});
+
+}());
+
+(function () {
+bot.listen( /^help(?: (\S+))?/, function ( msg ) {
+    return bot.getCommand( 'help' ).exec( msg.matches[1] );
+});
+
+var laws = [
+    'A robot may not injure a human being or, through inaction, ' +
+        'allow a human being to come to harm.',
+
+    'A robot must obey the orders given to it by human beings, ' +
+        'except where such orders would conflict with the First Law.',
+
+    'A robot must protect its own existence as long as such ' +
+        'protection does not conflict with the First or Second Laws.'
+].map(function ( law, idx ) {
+    return idx + '. ' + law;
+}).join( '\n' );
+
+bot.listen( /^tell (me (your|the) )?(rule|law)s/, function ( msg ) {
+    return laws;
+});
+
+bot.listen( /^give (.+?) a lick/, function ( msg ) {
+    var target = msg.matches[ 1 ], conjugation;
+
+    //give me => you taste
+    if ( target === 'me' ) {
+        target = 'you';
+        conjugation = '';
+    }
+    //give yourself => I taste
+    else if ( target === 'yourself' ) {
+        target = 'I';
+        conjugation = '';
+    }
+    else {
+        conjugation = 's';
+    }
+    //otherwise, use what the user gave us, plus a plural `s`
+
+    return 'Mmmm! ' + target + ' taste' + conjugation + ' just like raisin';
+});
+
+
+var dictionaries = [
+    //what's a squid?
+    //what is a squid?
+    //what're squids?
+    //what are squids?
+    //what is an animal?
+    //and all those above without a ?
+    //explanation in the post-mortem
+    /^what(?:'s|'re)?\s(?:(?:is|are)\s)?(?:(?:an|a)\s)?([\w\s\-]+)\??/,
+
+    //define squid
+    //define a squid
+    //define an animal
+    /^define\s(?:(?:an|a)\s)?([\w\s\-]+)/
+];
+
+bot.listen( dictionaries, function ( msg ) {
+    var what = msg.matches[ 1 ],
+        define = bot.getCommand( 'define' );
+
+    define.exec( what, function ( def ) {
+        def = def.replace( what + ':', '' );
+
+        msg.reply( def );
+    });
+});
+/*
+what              #simply the word what
+(?:'s|'re)?       #optional suffix (what's, what're)
+\s
+(?:
+    (?:is|are)    #is|are
+\s                #you need a whitespace after a word
+)?                #make the is|are optional
+(?:
+    (?:an|a)      #an|a
+\s                #once again, option chosen - need a whitespace
+)?                #make it optional
+(
+    [\w\s\-]+     #match the word the user's after, all we really care about
+)
+\??               #optional ?
+*/
+}());
+
+
+IO.register( 'input', bot.parseMessage, bot );
+}());
 
 ;
 
@@ -3426,7 +3442,7 @@ IO.register( 'input', function afkInputListener ( msgObj ) {
         // however, to prevent activating it twice, we need to check whether
         // they're calling the bot's afk command already.
         var invokeRe = new RegExp(
-            '^' + RegExp.escape( bot.invocationPattern ) + '\\s*\/?\\s*AFK' );
+            '^' + RegExp.escape( bot.config.pattern ) + '\\s*\/?\\s*AFK' );
 
         return demAFKs.hasOwnProperty( userName ) &&
                 !invokeRe.test( body ) &&
@@ -6412,7 +6428,7 @@ var unonebox = {
 
         var frag = document.createElement( 'div' );
         frag.innerHTML = msgObj.content;
-        // do not un-onebox youtube videos and quotes 
+        // do not un-onebox youtube videos and quotes
         var link = frag.querySelector( '.onebox:not(.ob-youtube):not(.ob-message):not(.ob-wikipedia) a' );
 
         // No onebox, no un-oneboxing.
@@ -6870,13 +6886,8 @@ var seen = bot.memory.get( 'users' ),
     //hardcoded for some (in)sanity. Change accordingly.
     ownerRoom = 17;
 
-var message = "Welcome to the JavaScript chat! Please review the " +
-        bot.adapter.link(
-            "room pseudo-rules",
-            "http://rlemon.github.com/so-chat-javascript-rules/"
-        ) +
-        ". Please don't ask if you can ask or if anyone's around; just ask " +
-        "your question, and if anyone's free and interested they'll help.";
+var message = bot.config.welcomeMessage;
+debugger;
 
 function welcome ( name, room ) {
     bot.adapter.out.add( bot.adapter.reply(name) + " " + message, room );

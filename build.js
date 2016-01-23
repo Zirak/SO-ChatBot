@@ -370,9 +370,6 @@ var files = [
     './source/IO.js',
     './source/util.js',
     './source/bot.js',
-    './source/adapter.js',
-    './source/users.js',
-    './source/personality.js',
     './source/plugins/'
 ];
 function filter ( fileName ) {

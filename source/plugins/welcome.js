@@ -6,13 +6,7 @@ var seen = bot.memory.get( 'users' ),
     //hardcoded for some (in)sanity. Change accordingly.
     ownerRoom = 17;
 
-var message = "Welcome to the JavaScript chat! Please review the " +
-        bot.adapter.link(
-            "room pseudo-rules",
-            "http://rlemon.github.com/so-chat-javascript-rules/"
-        ) +
-        ". Please don't ask if you can ask or if anyone's around; just ask " +
-        "your question, and if anyone's free and interested they'll help.";
+var message = bot.config.welcomeMessage;
 
 function welcome ( name, room ) {
     bot.adapter.out.add( bot.adapter.reply(name) + " " + message, room );
