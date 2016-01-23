@@ -1,4 +1,4 @@
-(function () {
+module.exports = function (bot) {
 var undo = {
     ids : [],
 
@@ -81,7 +81,7 @@ var undo = {
             this.ids.splice(index, 1);
         }
 
-        IO.xhr({
+        bot.IO.xhr({
             url   : '/messages/' + id + '/delete',
             data   : fkey(),
             method  : 'POST',
@@ -132,7 +132,7 @@ var undo = {
     }
 };
 
-IO.register( 'sendoutput', undo.update_id, undo );
+bot.IO.register( 'sendoutput', undo.update_id, undo );
 bot.addCommand({
     name : 'undo',
     fun  : undo.command,
@@ -147,4 +147,4 @@ bot.addCommand({
         '`/undo ~N` for the Nth message from the end'
 });
 
-}());
+};

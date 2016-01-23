@@ -1,4 +1,4 @@
-var cowsay = (function () {
+module.exports = function (bot) {
 "use strict";
 
 var cowsay = {
@@ -144,10 +144,6 @@ function rightPad ( str, len, padder ) {
     return ( str + Array(len).join(padder) ).slice( 0, len );
 }
 
-
-return cowsay;
-}());
-
 bot.listen(
     /cow(think|say)\s(?:([eT])=(.{0,2})\s)?(?:([eT])=(.{0,2})\s)?(.+)/,
 
@@ -178,3 +174,5 @@ bot.listen(
         }
     }
 );
+
+};

@@ -1,4 +1,4 @@
-(function () {
+module.exports = function (bot) {
 //meet Winded Weasel. he helps you make decisions and he answers questions.
 //x or y [or z ...]
 // => one of x, y, z, ...
@@ -24,9 +24,7 @@ var capitalize = {
     you : 'I'
 };
 
-//will be filled in the build
-var answers, undecided, sameness;
-//#build ../static/weaselReplies.js
+var replies = require('static/weaselReplies.js');
 
 bot.listen(chooseRe, function chooseListener ( msg ) {
     var parts = msg
@@ -51,7 +49,7 @@ bot.listen(chooseRe, function chooseListener ( msg ) {
     }
 
     if ( same ) {
-        return sameness.random();
+        return replies.sameness.random();
     }
 
     //all of them (1%)
@@ -64,7 +62,7 @@ bot.listen(chooseRe, function chooseListener ( msg ) {
     }
     //I don't know (1%)
     if ( Math.random() < 0.01 ) {
-        return undecided.random();
+        return replies.undecided.random();
     }
 
     //choose!
@@ -118,7 +116,7 @@ bot.listen(chooseRe, function chooseListener ( msg ) {
 
 bot.listen(questionRe, function questionListener () {
     //TODO: same question => same mapping (negative/positive, not specific)
-    return answers.random();
+    return replies.answers.random();
 });
 
-}());
+};

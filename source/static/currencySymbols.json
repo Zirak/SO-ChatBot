@@ -1,0 +1,25 @@
+{
+    //euro €
+    "\u20ac" : "EUR",
+
+    //pound sterling £
+    "\u00a3" : "GBP",
+    //pound sterling ₤
+    "\u20a4" : "GBP",
+
+    //indian rupee ₨
+    "\u20a8" : "INR",
+    //indian rupee ₹
+    "\u20b9" : "INR",
+
+    //yen ¥
+    '\u00a5' : "JPY",
+    //double-width yen ￥
+    '\uffe5' : "JPY",
+
+    //israeli shekels ₪
+    "\u20aa" : "ILS",
+
+    //united states dollar $
+    "\u0024" : "USD",
+}

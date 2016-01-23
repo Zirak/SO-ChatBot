@@ -1,4 +1,5 @@
-(function () {
+//TODO why do we have this?
+module.exports = function (bot) {
 
 function imdb ( args, cb ) {
    var terms = args.toString().split(/,\s*/g);
@@ -8,7 +9,7 @@ function imdb ( args, cb ) {
    };
 
    terms.forEach(function ( term ) {
-      IO.jsonp.google(
+      bot.IO.jsonp.google(
          term + ' site:imdb.com', finishCall );
    });
 
@@ -21,7 +22,7 @@ function imdb ( args, cb ) {
       var result = resp.responseData.results[ 0 ];
       bot.log( result, '/imdb result' );
 
-      var title = IO.decodehtmlEntities(
+      var title = bot.IO.decodehtmlEntities(
          result.titleNoFormatting.split(' -')[0].trim()
       );
 
@@ -48,7 +49,7 @@ function imdb ( args, cb ) {
          args.reply( res );
       }
    }
-};
+}
 
 bot.addCommand({
    name : 'imdb',
@@ -59,4 +60,4 @@ bot.addCommand({
    async : true
 });
 
-})();
+};

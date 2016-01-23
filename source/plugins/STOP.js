@@ -1,4 +1,6 @@
-(function () {
+module.exports = function (bot) {
+"use strict";
+
 var hammers = {
     STOP  : 'HAMMERTIME!',
     STAHP : 'HAMMAHTIME!',
@@ -11,9 +13,9 @@ var hammers = {
 var re = new RegExp(
     '(' +
         Object.keys(hammers).map(RegExp.escape).join('|') +
-    ')[\\.!?]?$' );
+        ')[\\.!?]?$' );
 
-IO.register( 'input', function STOP ( msgObj ) {
+bot.IO.register( 'input', function STOP ( msgObj ) {
     var sentence = msgObj.content.toUpperCase(),
         res = re.exec( sentence );
 
@@ -22,4 +24,4 @@ IO.register( 'input', function STOP ( msgObj ) {
     }
 });
 
-})();
+};

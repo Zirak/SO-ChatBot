@@ -1,4 +1,3 @@
-(function () {
 "use strict";
 
 var argParser = {
@@ -70,8 +69,6 @@ var argParser = {
     }
 };
 
-
-var parser = bot.commandArgsParser = argParser.create();
-bot.parseCommandArgs = parser.parse.bind(parser);
-
-}());
+module.exports = function () {
+    return argParser.create();
+};

@@ -1,4 +1,4 @@
-(function () {
+module.exports = function (bot) {
 "use strict";
 
 var summon = function ( args ) {
@@ -60,4 +60,4 @@ bot.addCommand( bot.CommunityCommand({
     pendingMessage: 'I will leave this room after {0} more invocation(s)'
 }));
 
-})();
+};

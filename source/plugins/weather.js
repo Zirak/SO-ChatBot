@@ -1,4 +1,4 @@
-(function () {
+module.exports = function (bot) {
 "use strict";
 
 var fahrenheitCountries = Object.TruthMap([
@@ -28,7 +28,7 @@ var weather = {
             return;
         }
 
-        IO.jsonp({
+        bot.IO.jsonp({
             url : 'http://api.openweathermap.org/data/2.5/weather',
             jsonpName : 'callback',
             data : {
@@ -45,7 +45,7 @@ var weather = {
     },
 
     city : function ( city, cb ) {
-        IO.jsonp({
+        bot.IO.jsonp({
             url : 'http://api.openweathermap.org/data/2.5/weather',
             jsonpName : 'callback',
             data : {
@@ -138,4 +138,4 @@ bot.addCommand({
     description : 'Gets current weather: ' +
         '`/weather (lan, lon)` or `/weather city`'
 });
-}());
+};

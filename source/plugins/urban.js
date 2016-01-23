@@ -1,4 +1,4 @@
-(function () {
+module.exports = function (bot) {
 
 var cache = {};
 
@@ -29,7 +29,7 @@ function urban ( args, cb ) {
 
     bot.log( query, resultIndex, '/urban input' );
 
-    IO.jsonp({
+    bot.IO.jsonp({
         url : 'http://api.urbandictionary.com/v0/define',
         data : {
             term : query
@@ -97,4 +97,4 @@ bot.addCommand({
     async : true
 });
 
-})();
+};

@@ -1,4 +1,7 @@
-(function () {
+"use strict";
+//TODO something a bit more legit...break this file apart
+module.exports = function (bot) {
+
 bot.listen( /^help(?: (\S+))?/, function ( msg ) {
     return bot.getCommand( 'help' ).exec( msg.matches[1] );
 });
@@ -85,4 +88,4 @@ what              #simply the word what
 )
 \??               #optional ?
 */
-}());
+};

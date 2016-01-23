@@ -1,4 +1,4 @@
-(function () {
+module.exports = function (bot) {
 "use strict";
 
 var unexisto = 'User {0} was not found in room {1} (sorry, mustache only ' +
@@ -95,4 +95,4 @@ bot.addCommand( cmd );
 var moustache = Object.merge( cmd, { name : 'moustache' });
 bot.addCommand( moustache );
 
-}());
+};

@@ -1,9 +1,4 @@
-/* acquired by going to google.com/finance/converter and running
-JSON.stringify([].reduce.call(f.from.options, function (r, e) { return (r[e.value] = true, r); }, {}), null, 4)
-for some reason, NIS (New Israeli Shekel) does not appear there, only ILS,
-despite Google accepting both. it was added manually
-*/
-currencies = {
+{
     "AED": true,
     "ANG": true,
     "ARS": true,
@@ -98,29 +93,4 @@ currencies = {
     "YER": true,
     "ZAR": true,
     "ZMK": true
-};
-symbols = {
-    //euro €
-    "\u20ac" : "EUR",
-
-    //pound sterling £
-    "\u00a3" : "GBP",
-    //pound sterling ₤
-    "\u20a4" : "GBP",
-
-    //indian rupee ₨
-    "\u20a8" : "INR",
-    //indian rupee ₹
-    "\u20b9" : "INR",
-
-    //yen ¥
-    '\u00a5' : "JPY",
-    //double-width yen ￥
-    '\uffe5' : "JPY",
-
-    //israeli shekels ₪
-    "\u20aa" : "ILS",
-
-    //united states dollar $
-    "\u0024" : "USD",
-};
+}

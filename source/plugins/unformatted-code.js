@@ -1,4 +1,4 @@
-(function () {
+module.exports = function (bot) {
 
 //only activate for SO room 17; TODO consider changing if well accepted
 if (bot.adapter.site !== 'stackoverflow' || bot.adapter.roomid !== 17) {
@@ -8,7 +8,7 @@ if (bot.adapter.site !== 'stackoverflow' || bot.adapter.roomid !== 17) {
 
 var badMessages = new Map();
 
-IO.register( 'rawinput', function checkUnformattedCode (msgObj) {
+bot.IO.register( 'rawinput', function checkUnformattedCode (msgObj) {
     var msgid = msgObj.message_id;
 
     //only handle new messages and edits
@@ -107,4 +107,4 @@ function hasUnformattedCode ( text ) {
     return lines.some( / /.test.bind(codeyLine) );
 }
 
-})();
+};

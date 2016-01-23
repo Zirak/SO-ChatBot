@@ -1,4 +1,4 @@
-(function () {
+module.exports = function (bot) {
 "use strict";
 
 //how an API response looks like:
@@ -68,7 +68,7 @@ function stat ( msg, cb ) {
         return;
     }
 
-    IO.jsonp({
+    bot.IO.jsonp({
         url : 'https://api.stackexchange.com/2.2/users/' + id,
         data : {
             site   : bot.adapter.site,
@@ -117,7 +117,7 @@ function handle_user_object ( user, msg ) {
     }
     else {
         // Bob (link) has ...
-        user.display_name = IO.decodehtmlEntities( user.display_name );
+        user.display_name = bot.IO.decodehtmlEntities( user.display_name );
         user.indicative = 'has';
     }
 
@@ -188,4 +188,4 @@ bot.addCommand( cmd );
 var statsCmd = Object.merge( cmd, { name : 'stats'} );
 bot.addCommand( statsCmd );
 
-}());
+};

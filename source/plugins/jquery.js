@@ -1,4 +1,4 @@
-(function () {
+module.exports = function (bot) {
 var baseURL = 'http://api.jquery.com/';
 
 function jquery ( args ) {
@@ -75,7 +75,7 @@ bot.addCommand({
     fun : jquery,
 
     permissions : { del : 'NONE', use : 'ALL' },
-    description : 'Fetches documentation link from jQuery API. `/jquery what`',
+    description : 'Fetches documentation link from jQuery API. `/jquery what`'
 });
 
-})();
+};

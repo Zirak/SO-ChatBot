@@ -1,4 +1,4 @@
-(function () {
+module.exports = function (bot) {
 "use strict";
 
 var memoryKey = 'unonebox-state',
@@ -46,12 +46,12 @@ var unonebox = {
     },
 
     enable : function () {
-        IO.register( 'input', this.unbox );
+        bot.IO.register( 'input', this.unbox );
         bot.memory.set( memoryKey, 'enabled' );
     },
 
     disable : function () {
-        IO.unregister( 'input', this.unbox );
+        bot.IO.unregister( 'input', this.unbox );
         bot.memory.set( memoryKey, 'disabled' );
     },
 
@@ -81,7 +81,7 @@ var unonebox = {
     },
 
     actuallyUnbox : function ( msgId, href ) {
-        IO.xhr({
+        bot.IO.xhr({
             url: '/messages/' + msgId,
             data: fkey({
                 text: href + ' ... '
@@ -114,4 +114,4 @@ bot.addCommand({
         '`/unonebox [on|off]x`'
 });
 
-}());
+};

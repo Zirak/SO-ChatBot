@@ -1,5 +1,5 @@
 //solves #86, mostly written by @Shmiddty
-(function () {
+module.exports = function (bot) {
 "use strict";
 
 /*
@@ -166,7 +166,7 @@ bot.addCommand({
     unTellable : true
 });
 
-IO.register( 'input', function afkInputListener ( msgObj ) {
+bot.IO.register( 'input', function afkInputListener ( msgObj ) {
     var body = msgObj.content.toUpperCase(),
         msg = bot.prepareMessage( msgObj ),
 
@@ -215,4 +215,4 @@ IO.register( 'input', function afkInputListener ( msgObj ) {
     }
 });
 
-})();
+};

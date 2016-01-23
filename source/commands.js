@@ -1,5 +1,6 @@
-(function () {
 "use strict";
+//TODO something a bit more legit...break this file apart
+module.exports = function (bot) {
 
 var commands = {
     help : function ( args ) {
@@ -31,11 +32,6 @@ var commands = {
         cb = cb || msg.directreply.bind( msg );
 
         return bot.prettyEval( msg, cb );
-    },
-    coffee : function ( msg, cb ) {
-        //yes, this is a bit yucky
-        var arg = bot.Message( 'c> ' + msg, msg.get() );
-        return commands.eval( arg, cb );
     },
 
     refresh : function() {
@@ -170,7 +166,7 @@ return function ( args ) {
 };
 })();
 
-commands.eval.async = commands.coffee.async = true;
+commands.eval.async = true;
 
 commands.tell = function ( args ) {
     var parts = args.split( ' ' );
@@ -252,7 +248,6 @@ commands.tell = function ( args ) {
 
 var descriptions = {
     eval : 'Forwards message to javascript code-eval',
-    coffee : 'Forwards message to coffeescript code-eval',
     forget : 'Forgets a given command. `/forget cmdName`',
     help : 'Fetches documentation for given command, or general help article.' +
         ' `/help [cmdName]`',
@@ -300,4 +295,4 @@ Object.iterate( commands, function ( cmdName, fun ) {
     bot.addCommand( cmd );
 });
 
-}());
+};

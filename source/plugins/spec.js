@@ -1,6 +1,5 @@
-(function () {
-var specParts;
-//#build ../static/specParts.js
+module.exports = function (bot) {
+var specParts = require('static/specParts.json');
 
 function spec ( args ) {
     var lookup = args.content.toLowerCase(), matches;
@@ -30,4 +29,4 @@ bot.addCommand({
     },
     description : 'Find a section in the ES5 spec'
 });
-}());
+};

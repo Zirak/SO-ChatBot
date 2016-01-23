@@ -1,6 +1,10 @@
 //a place to hang your coat and remember the past. provides an abstraction over
 // localStorage or whatever data-storage will be used in the future.
-bot.memory = {
+
+/*global localStorage, setTimeout, clearTimeout*/
+/*global require, module*/
+
+module.exports = {
     saveInterval : 900000, //15(min) * 60(sec/min) * 1000(ms/sec) = 900000(ms)
 
     data : {},
@@ -48,7 +52,3 @@ bot.memory = {
         setTimeout( this.saveLoop.bind(this), this.saveInterval );
     }
 };
-
-bot.memory.loadAll();
-window.addEventListener( 'beforeunload', function () { bot.memory.save(); } );
-bot.memory.saveLoop();

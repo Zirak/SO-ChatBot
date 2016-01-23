@@ -113,12 +113,15 @@ Response:
 And...that's it. Pretty simple. Most of the requests endpoints are like that.
 */
 
-(function () {
+/*global location, WebSocket, setTimeout, module, require*/
+/*global fkey, CHAT*/
 "use strict";
+
+var IO = require('./IO');
 
 var linkTemplate = '[{text}]({url})';
 
-bot.adapter = {
+var adapter = {
     //the following two only used in the adapter; you can change & drop at will
     roomid  : null,
     fkey    : null,
@@ -219,7 +222,7 @@ bot.adapter = {
             method : 'POST',
             url : '/admin/movePosts/' + fromRoom,
             data : {
-                fkey: bot.adapter.fkey,
+                fkey: adapter.fkey,
                 to: toRoom,
                 ids: msgid
             },
@@ -230,7 +233,7 @@ bot.adapter = {
 
 //the input is not used by the bot directly, so you can implement it however
 // you like
-var polling = bot.adapter.in = {
+var input = {
     //used in the SO chat requests, dunno exactly what for, but guessing it's
     // the latest id or something like that. could also be the time last
     // sent, which is why I called it times at the beginning. or something.
@@ -243,7 +246,7 @@ var polling = bot.adapter.in = {
     init : function ( roomid ) {
         var that = this,
             providedRoomid = ( roomid !== undefined );
-        roomid = roomid || bot.adapter.roomid;
+        roomid = roomid || adapter.roomid;
 
         IO.xhr({
             url : '/ws-auth',
@@ -256,15 +259,15 @@ var polling = bot.adapter.in = {
 
         function finish ( resp ) {
             resp = JSON.parse( resp );
-            bot.log( resp );
+            console.log( resp );
 
             that.openSocket( resp.url, providedRoomid );
         }
     },
 
     initialPoll : function () {
-        bot.log( 'adapter: initial poll' );
-        var roomid = bot.adapter.roomid,
+        console.log( 'adapter: initial poll' );
+        var roomid = adapter.roomid,
             that = this;
 
         IO.xhr({
@@ -280,7 +283,7 @@ var polling = bot.adapter.in = {
 
         function finish ( resp ) {
             resp = JSON.parse( resp );
-            bot.log( resp );
+            console.log( resp );
 
             that.times[ 'r' + roomid ] = resp.time;
             that.firstPoll = false;
@@ -446,7 +449,7 @@ var polling = bot.adapter.in = {
     },
 
     leaveRoom : function ( roomid, cb ) {
-        if ( roomid === bot.adapter.roomid ) {
+        if ( roomid === adapter.roomid ) {
             cb( 'base_room' );
             return;
         }
@@ -464,7 +467,7 @@ var polling = bot.adapter.in = {
     },
 
     socketFail : function () {
-        bot.log( 'adapter: socket failed', this );
+        console.log( 'adapter: socket failed', this );
         this.socket.close();
         this.socket = null;
         this.loopage();
@@ -485,10 +488,10 @@ var polling = bot.adapter.in = {
 
 //the output is expected to have only one method: add, which receives a message
 // and the room_id. everything else is up to the implementation.
-var output = bot.adapter.out = {
+var output = {
     '409' : 0, //count the number of conflicts
     total : 0, //number of messages sent
-    interval : polling.interval + 500,
+    interval : input.interval + 500,
     flushWait : 500,
 
     init : function () {},
@@ -497,7 +500,7 @@ var output = bot.adapter.out = {
     add : function ( msg, roomid ) {
         IO.out.receive({
             text : msg + '\n',
-            room : roomid || bot.adapter.roomid
+            room : roomid || adapter.roomid
         });
         IO.out.flush();
     },
@@ -510,7 +513,7 @@ var output = bot.adapter.out = {
         //unless the bot's stopped. in which case, it should shut the fudge up
         // the freezer and never let it out. not until it can talk again. what
         // was I intending to say?
-        if ( bot.stopped ) {
+        if ( this.stopped ) {
             //ah fuck it
             return;
         }
@@ -535,7 +538,7 @@ var output = bot.adapter.out = {
         });
 
         function complete ( resp, xhr ) {
-            bot.log( xhr.status );
+            console.log( xhr.status );
 
             //conflict, wait for next round to send message
             if ( xhr.status === 409 ) {
@@ -561,6 +564,8 @@ var output = bot.adapter.out = {
             }
         }
 
+        //what's orange and sounds like a parrot?
+        //a carrot
         function delayAdd () {
             setTimeout(function delayedAdd () {
                 output.add( text, roomid );
@@ -568,10 +573,10 @@ var output = bot.adapter.out = {
         }
     }
 };
-//what's orange and sounds like a parrot?
-//a carrot
-IO.register( 'output', output.send, output );
 
 //two guys walk into a bar. the bartender asks them "is this some kind of joke?"
-bot.adapter.init();
-}());
+
+adapter.in  = input;
+adapter.out = output;
+
+module.exports = adapter;

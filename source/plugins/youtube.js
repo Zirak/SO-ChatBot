@@ -1,10 +1,10 @@
-(function () {
+module.exports = function (bot) {
 var nulls = [
     'Video not found (rule 35?)',
     'I could not find such a video',
     'The Lords of YouTube did not find your query favorable' ];
 function youtube ( args, cb ) {
-    IO.jsonp.google(
+    bot.IO.jsonp.google(
         args.toString() + ' site:youtube.com/watch', finishCall );
 
     function finishCall ( resp ) {
@@ -43,4 +43,4 @@ bot.addCommand({
     description : 'Search Youtube. `/youtube query`',
     async : true
 });
-}());
+};

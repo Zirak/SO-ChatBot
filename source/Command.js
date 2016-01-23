@@ -1,5 +1,9 @@
+/*global exports*/
+
 //some sort of pseudo constructor
-bot.Command = function ( cmd ) {
+exports.Command = function ( cmd ) {
+    var bot = this;
+
     cmd.name = cmd.name.toLowerCase();
     cmd.thisArg = cmd.thisArg || cmd;
 
@@ -45,7 +49,9 @@ bot.Command = function ( cmd ) {
 };
 
 //a normally priviliged command which can be executed if enough people use it
-bot.CommunityCommand = function ( command, req ) {
+exports.CommunityCommand = function ( command, req ) {
+    var bot = this;
+
     var cmd = this.Command( command ),
         used = {},
         old_execute = cmd.exec,

@@ -1,4 +1,4 @@
-(function () {
+module.exports = function (bot) {
 "use strict";
 
 var defaults = {
@@ -62,4 +62,4 @@ bot.addCommand({
     unTellable : true
 });
 
-}());
+};

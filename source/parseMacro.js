@@ -1,4 +1,3 @@
-(function () {
 "use strict";
 
 var macros = {
@@ -54,7 +53,7 @@ var macros = {
 };
 var macroRegex = /(?:.|^)\$(\w+)(?:\((.*?)\))?/g;
 
-bot.parseMacro = function parse ( source, extraVars ) {
+exports.parseMacro = function parse ( source, extraVars ) {
     return source.replace( macroRegex, replaceMacro );
 
     function replaceMacro ( $0, filler, fillerArgs ) {
@@ -77,7 +76,7 @@ bot.parseMacro = function parse ( source, extraVars ) {
             return filler;
         }
 
-        bot.log( macro, filler, fillerArgs, '/parse replaceMacro' );
+        console.log( macro, filler, fillerArgs, '/parse replaceMacro' );
         //when the macro is a function
         if ( macro.apply ) {
             ret += macro.apply( null, parseMacroArgs(fillerArgs) );
@@ -90,7 +89,7 @@ bot.parseMacro = function parse ( source, extraVars ) {
     }
 
     function parseMacroArgs ( macroArgs ) {
-        bot.log( macroArgs, '/parse parseMacroArgs' );
+        console.log( macroArgs, '/parse parseMacroArgs' );
         if ( !macroArgs ) {
             return [ source ];
         }
@@ -112,6 +111,3 @@ bot.parseMacro = function parse ( source, extraVars ) {
         }
     }
 };
-
-
-})();

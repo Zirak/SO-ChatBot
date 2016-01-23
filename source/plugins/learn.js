@@ -1,4 +1,4 @@
-(function () {
+module.exports = function (bot) {
 "use strict";
 var storage = bot.memory.get( 'learn' );
 
@@ -204,4 +204,4 @@ bot.addCommand({
 
 loadCommands();
 
-}());
+};

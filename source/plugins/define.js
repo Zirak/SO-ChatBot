@@ -1,4 +1,4 @@
-(function () {
+module.exports = function (bot) {
 "use strict";
 //this and the history.js file are nearly identical, as they both manually have
 // to grab and parse from the wikimedia API
@@ -197,7 +197,7 @@ var define = {
     fetchData : function ( term, cb ) {
         var self = this;
 
-        IO.jsonp({
+        bot.IO.jsonp({
             url : 'http://en.wiktionary.org/w/api.php',
             jsonpName : 'callback',
             data : {
@@ -226,4 +226,4 @@ bot.addCommand({
     description : 'Fetches definition for a given word. `/define something`',
     async : true
 });
-}());
+};

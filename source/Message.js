@@ -1,4 +1,8 @@
-bot.Message = function ( text, msgObj ) {
+/*global exports*/
+
+exports.Message = function ( text, msgObj ) {
+    var bot = this;
+
     //"casting" to object so that it can be extended with cool stuff and
     // still be treated like a string
     var ret = Object( text );

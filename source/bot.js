@@ -1,9 +1,18 @@
-(function () {
+/*global require*/
 "use strict";
 
+var SuggestionDictionary = require('./suggestionDict').SuggestionDictionary;
+var IO = require('./IO');
+
 var bot = window.bot = {
+    IO : IO,
+
+    Command : require('./Command').Command,
+    CommunityCommand : require('./Command').CommunityCommand,
+    Message : require('./Message').Message,
+
     commands : {}, //will be filled as needed
-    commandDictionary : null, //defined in suggestionDict.js
+    commandDictionary: new SuggestionDictionary( 3 ),
     listeners : [],
     info : {
         invoked   : 0,
@@ -231,6 +240,7 @@ var bot = window.bot = {
                 }
                 return resp !== false;
             }
+            return false;
         }
 
         return this.listeners.some( callListener );
@@ -241,15 +251,10 @@ var bot = window.bot = {
         return user && ( user.is_owner || user.is_moderator );
     },
 
-    stoplog : false,
-    log : function () {
-        if ( !this.stoplog ) {
-            console.log.apply( console, arguments );
-        }
-    },
+    log: console.log.bind(console),
 
     stop : function () {
-        this.stopped = true;
+        this.stopped = this.adapter.out.stopped = true;
     },
     continue : function () {
         this.stopped = false;
@@ -259,30 +264,42 @@ var bot = window.bot = {
     activateDevMode : function ( pattern ) {
         this.devMode = true;
         this.config.pattern = pattern || 'beer!';
-        IO.events.userjoin.length = 0;
+        if ( IO.events.userjoin ) {
+            IO.events.userjoin.length = 0;
+        }
         this.validateMessage = function ( msgObj ) {
             return msgObj.content.trim().startsWith( this.config.pattern );
         };
     }
 };
 
-//#build Command.js
-//#build Message.js
+bot.adapter = require('./adapter');
+bot.adapter.init();
+IO.register( 'output', bot.adapter.out.send, bot.adapter.out );
 
-//#build adapter.js
-//#build users.js
-//#build memory.js
-//#build banlist.js
-//#build config.js
+bot.users = require('./users')(bot);
+bot.users.loadUsers();
 
-//#build eval.js
-//#build parseCommandArgs.js
-//#build parseMacro.js
-//#build suggestionDict.js
-//#build personality.js
+bot.memory = require('./memory');
+bot.memory.loadAll();
+window.addEventListener( 'beforeunload', function () { bot.memory.save(); } );
 
-//#build commands.js
-//#build listeners.js
+bot.config = require('./config')(bot);
+
+bot.banlist = require('./banlist')(bot);
+
+var argParser = require('./parseCommandArgs')();
+bot.parseCommandArgs = argParser.parse.bind(argParser);
+
+bot.parseMacro = require('./parseMacro').parseMacro;
+bot.personality = require('./personality')(bot);
+
+bot.eval = require('./eval').eval;
+bot.prettyEval = require('./eval').prettyEval;
+
+require('./commands')(bot);
+require('./listeners')(bot);
+
+require('./_plugin-loader')(bot);
 
 IO.register( 'input', bot.parseMessage, bot );
-}());

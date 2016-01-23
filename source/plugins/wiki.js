@@ -1,8 +1,8 @@
-(function () {
+module.exports = function (bot) {
 "use strict";
 
 function command ( args, cb ) {
-    IO.jsonp({
+    bot.IO.jsonp({
         url : 'http://en.wikipedia.org/w/api.php',
         jsonpName : 'callback',
         data : {
@@ -53,4 +53,4 @@ bot.addCommand({
     description : 'Search Wikipedia. `/wiki term`',
     async : true
 });
-})();
+};

@@ -1,4 +1,4 @@
-(function () {
+module.exports = function (bot) {
 "use strict";
 
 //status codes for (un)ban.
@@ -66,8 +66,8 @@ var ban = {
     //res is either an array of userids, or a success/error code with the userid
     format : function ( res ) {
         if ( Array.isArray(res) ) {
-            return res.map( this.formatUser ).join( ', ' )
-                || 'Nothing to show.';
+            return res.map( this.formatUser ).join( ', ' ) ||
+                'Nothing to show.';
         }
 
         return codes[ res.code ].supplant( res.usrid );
@@ -128,4 +128,4 @@ var unban = {
 bot.addCommand( bot.CommunityCommand(ban) );
 bot.addCommand( unban );
 
-})();
+};

@@ -1,4 +1,4 @@
-(function () {
+module.exports = function (bot) {
 
 function mdn ( args, cb ) {
     var terms = args.toString().split(/,\s*/g);
@@ -8,7 +8,7 @@ function mdn ( args, cb ) {
     };
 
     terms.forEach(function ( term ) {
-        IO.jsonp.google(
+        bot.IO.jsonp.google(
             term + ' site:developer.mozilla.org', finishCall );
     });
 
@@ -21,7 +21,7 @@ function mdn ( args, cb ) {
         var result = resp.responseData.results[ 0 ];
         bot.log( result, '/mdn result' );
 
-        var title = IO.decodehtmlEntities(
+        var title = bot.IO.decodehtmlEntities(
             result.titleNoFormatting.split(' -')[0].trim()
         );
 
@@ -48,7 +48,7 @@ function mdn ( args, cb ) {
             args.reply( res );
         }
     }
-};
+}
 
 bot.addCommand({
     name : 'mdn',
@@ -59,4 +59,4 @@ bot.addCommand({
     async : true
 });
 
-})();
+};

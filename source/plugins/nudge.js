@@ -1,4 +1,4 @@
-(function () {
+module.exports = function (bot) {
 
 //collection of nudges; msgObj, time left and the message itself
 var nudges = [],
@@ -122,4 +122,4 @@ function nudgeListener ( args ) {
     return addNudge( args.matches[1], args.matches[2], args );
 }
 
-}());
+};

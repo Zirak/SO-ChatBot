@@ -322,7 +322,7 @@ RegExp.escape = function ( str ) {
 //not the most efficient thing, but who cares. formats the difference between
 // two dates
 Date.timeSince = function ( d0, d1 ) {
-    d1 = d1 || (new Date);
+    d1 = d1 || new Date();
 
     var ms = d1 - d0,
         delay;

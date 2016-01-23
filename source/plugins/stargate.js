@@ -1,8 +1,7 @@
-(function () {
+module.exports = function (bot) {
 var re = /(which |what |give me a )?stargate|sg1( episode)?/i;
 
-var episodes; //will be filled in next line.
-//#build ../static/stargate.js
+var episodes = require('static/stargate.json');
 
 var selectStargateEpisode = function ( msg ) {
     //no mention of episode, 5% chance of getting the movie
@@ -33,4 +32,4 @@ var selectStargateEpisode = function ( msg ) {
 };
 
 bot.listen( re, selectStargateEpisode );
-})();
+};

@@ -1,4 +1,6 @@
-var IO = window.IO = {
+/*global module, require*/
+
+var IO = window.IO = module.exports = {
     //event handling
     events : {},
     preventDefault : false,
@@ -121,7 +123,7 @@ var markdown = {
             return $0;
         }
         return '[' + text + '](' + href[1] + ')';
-    },
+    }
 };
 var htmlRe = /<(\S+)[^\>]*>([^<]+)<\/\1>/g;
 
@@ -145,8 +147,7 @@ return function ( html ) {
 }());
 
 IO.decodehtmlEntities = (function () {
-var entities; //will be filled in the following line
-//#build static/htmlEntities.js
+var entities = require('static/htmlEntities.json');
 
 /*
   &       -all entities start with &

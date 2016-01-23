@@ -1,4 +1,4 @@
-(function () {
+module.exports = function (bot) {
 // #151: Listen for meme image names and reply with that meme.
 
 var urlBase = 'http://cdn.alltheragefaces.com/img/faces/png/',
@@ -23,7 +23,7 @@ var re = new RegExp(
         Object.keys( memes ).map( RegExp.escape ).join( '|' ) +
     ')\\.(jpe?g|png)$' );
 
-IO.register( 'input', function meme ( msgObj ) {
+bot.IO.register( 'input', function meme ( msgObj ) {
     var msg = msgObj.content.toLowerCase(),
         parts = re.exec( msg );
 
@@ -61,4 +61,4 @@ function getMemeLink ( meme ) {
     return urlBase + memes[ meme ] + '.' + extension;
 }
 
-})();
+};

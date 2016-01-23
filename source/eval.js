@@ -1,18 +1,11 @@
-//load up coffeescript if we're not in dev mdoe
-setTimeout(function () {
-    if (bot.devMode) {
-        return;
-    }
-
-    IO.injectScript( 'https://rawgithub.com/jashkenas/coffee-script/master/extras/coffee-script.js' );
-}, 1000);
-
 //execute arbitrary js code in a relatively safe environment
-bot.eval = (function () {
 
-var workerCode = function () {
-//#build codeWorker.js
-}.stringContents();
+/*global require, exports*/
+/*global Blob, Worker, setTimeout, clearTimeout*/
+
+var workerCode = require('./codeWorker');
+
+exports.eval = (function () {
 
 var blob = new Blob( [workerCode], { type : 'application/javascript' } ),
     codeUrl = window.URL.createObjectURL( blob );
@@ -27,7 +20,7 @@ return function ( code, arg, cb ) {
         timeout;
 
     worker.onmessage = function ( evt ) {
-        bot.log( evt, 'eval worker.onmessage' );
+        console.log( evt, 'eval worker.onmessage' );
 
         var type = evt.data.event;
 
@@ -40,7 +33,7 @@ return function ( code, arg, cb ) {
     };
 
     worker.onerror = function ( error ) {
-        bot.log( error, 'eval worker.onerror' );
+        console.warn( error, 'eval worker.onerror' );
         finish( error.message );
     };
 
@@ -76,20 +69,15 @@ return function ( code, arg, cb ) {
 
 }());
 
-bot.prettyEval = function ( code, arg, cb ) {
+exports.prettyEval = function ( code, arg, cb ) {
     if ( arguments.length === 2 ) {
         cb  = arg;
         arg = null;
     }
 
-    if ( code[0] === 'c' ) {
-        code = CoffeeScript.compile( code.replace(/^c>/, ''), {bare:1} );
-    }
-    else {
-        code = code.replace( /^>/, '' );
-    }
+    code = code.replace( /^>/, '' );
 
-    return bot.eval( code, arg, finish );
+    return exports.eval( code, arg, finish );
 
     function finish ( err, answerObj ) {
         if ( err ) {
@@ -101,7 +89,7 @@ bot.prettyEval = function ( code, arg, cb ) {
     }
 
     function dressUpAnswer ( answerObj ) {
-        bot.log( answerObj, 'eval answerObj' );
+        console.log( answerObj, 'eval answerObj' );
         var answer = answerObj.answer,
             log = answerObj.log,
             result;

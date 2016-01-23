@@ -1,7 +1,9 @@
 //a Trie suggestion dictionary, made by Esailija (small fixes by God)
 // http://stackoverflow.com/users/995876/esailija
 //used in the "command not found" message to show you closest commands
-var SuggestionDictionary = (function () {
+/*global exports*/
+
+exports.SuggestionDictionary = (function () {
 
 function TrieNode() {
     this.word = null;
@@ -34,11 +36,11 @@ TrieNode.prototype.del = function(word, i) {
             delete node.children[char];
         }
     }
-    
+
     if (node.word === word) {
         node.word = null;
     }
-}
+};
 
 //Having a small maxCost will increase performance greatly, experiment with
 //values of 1-3
@@ -172,5 +174,3 @@ function searchRecursive ( node, letter, word, previousRow, results, maxCost ) {
 
 return SuggestionDictionary;
 }());
-
-bot.commandDictionary = new SuggestionDictionary( 3 );

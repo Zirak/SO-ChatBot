@@ -1,4 +1,4 @@
-(function () {
+module.exports = function (bot) {
 
 var nulls = [
     'The Google contains no such knowledge',
@@ -26,7 +26,7 @@ var command = {
     },
 
     logic : function ( query, cb ) {
-        IO.jsonp.google( String(query) + ' -site:w3schools.com', finishCall );
+        bot.IO.jsonp.google( String(query) + ' -site:w3schools.com', finishCall );
 
         function finishCall ( resp ) {
             bot.log( resp, '/google response' );
@@ -60,7 +60,7 @@ var command = {
         return res;
 
         function formatResult ( result ) {
-            var title = IO.decodehtmlEntities( result.titleNoFormatting );
+            var title = bot.IO.decodehtmlEntities( result.titleNoFormatting );
             return bot.adapter.link( title, result.unescapedUrl );
         }
         function formatLink ( query ) {
@@ -79,4 +79,4 @@ var command = {
 };
 
 bot.addCommand( command );
-}());
+};

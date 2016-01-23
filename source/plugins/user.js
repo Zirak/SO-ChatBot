@@ -1,3 +1,4 @@
+module.exports = function (bot) {
 bot.addCommand({
     name : 'user',
     fun : function () {
@@ -7,3 +8,4 @@ bot.addCommand({
     description : 'Fetches user-link for specified user. ' +
         '`/user usr_id|usr_name`',
 });
+};
