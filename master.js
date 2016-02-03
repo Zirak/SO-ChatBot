@@ -1994,6 +1994,7 @@ commands.tell = function ( args ) {
             return;
         }
 
+<<<<<<< HEAD
         if ( direct ) {
             directreply( res );
         }
@@ -2002,6 +2003,14 @@ commands.tell = function ( args ) {
         }
     }
 };
+=======
+            if ( type in strung ) {
+                return true;
+            }
+            /*neither does it feel compassionate about NaN or Infinity*/
+            return value !== value || Math.abs(value) === Infinity;
+        };
+>>>>>>> master
 
 var descriptions = {
     eval : 'Forwards message to javascript code-eval',
@@ -3341,10 +3350,22 @@ var moneyConverter = {
                 obj.time - now <= 18e6
         );
 
+<<<<<<< HEAD
         console.log( this.ratesCache, exists );
 
         return exists ? obj.rate : false;
     },
+=======
+;
+(function () {
+var hammers = {
+    STOP  : 'HAMMERTIME!',
+    STAHP : 'HAMMAHTIME!',
+    HALT  : 'HAMMERZEIT!',
+    STOY  : 'ZABIVAT\' VREMYA!',
+    SISTITE: 'MALLEUS TEMPUS!'
+};
+>>>>>>> master
 
     errorMessage : function () {
         if ( !this.to ) {

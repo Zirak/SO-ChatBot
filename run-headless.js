@@ -5,7 +5,7 @@ var hound = new Nightmare({
 	cookiesFile: 'cookies.jar'
 });
 
-var config = require('run-headless.config.json');
+var config = require('./run-headless.config.json');
 
 function once (fn) {
 	var called = false, res;
