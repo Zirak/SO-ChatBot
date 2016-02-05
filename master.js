@@ -566,7 +566,6 @@ exports.Message = function ( text, msgObj ) {
 
 },{}],4:[function(require,module,exports){
 module.exports = function (bot) {
-require("plugins/STOP.js")(bot);
 require("plugins/afk.js")(bot);
 require("plugins/ban.js")(bot);
 require("plugins/converter.js")(bot);
@@ -587,6 +586,7 @@ require("plugins/nudge.js")(bot);
 require("plugins/spec.js")(bot);
 require("plugins/stargate.js")(bot);
 require("plugins/stat.js")(bot);
+require("plugins/STOP.js")(bot);
 require("plugins/substitution.js")(bot);
 require("plugins/summon.js")(bot);
 require("plugins/undo.js")(bot);
@@ -1713,7 +1713,7 @@ console.error = console.info = console.debug = console.log;
                 return true;
             }
             /*neither does it feel compassionate about NaN or Infinity*/
-            return value !== value || !Number.isFinite(value);
+            return value !== value || Math.abs(value) === Infinity;
         };
 
         self.setTimeout = function (cb) {
@@ -1994,7 +1994,6 @@ commands.tell = function ( args ) {
             return;
         }
 
-<<<<<<< HEAD
         if ( direct ) {
             directreply( res );
         }
@@ -2003,14 +2002,6 @@ commands.tell = function ( args ) {
         }
     }
 };
-=======
-            if ( type in strung ) {
-                return true;
-            }
-            /*neither does it feel compassionate about NaN or Infinity*/
-            return value !== value || Math.abs(value) === Infinity;
-        };
->>>>>>> master
 
 var descriptions = {
     eval : 'Forwards message to javascript code-eval',
@@ -3350,22 +3341,10 @@ var moneyConverter = {
                 obj.time - now <= 18e6
         );
 
-<<<<<<< HEAD
         console.log( this.ratesCache, exists );
 
         return exists ? obj.rate : false;
     },
-=======
-;
-(function () {
-var hammers = {
-    STOP  : 'HAMMERTIME!',
-    STAHP : 'HAMMAHTIME!',
-    HALT  : 'HAMMERZEIT!',
-    STOY  : 'ZABIVAT\' VREMYA!',
-    SISTITE: 'MALLEUS TEMPUS!'
-};
->>>>>>> master
 
     errorMessage : function () {
         if ( !this.to ) {
