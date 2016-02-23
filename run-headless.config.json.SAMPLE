@@ -3,5 +3,12 @@
 	"password": "what these are",
 
 	"siteUrl": "https://stackoverflow.com",
-	"roomUrl": "https://chat.stackoverflow.com/rooms/1"
+	"roomUrl": "https://chat.stackoverflow.com/rooms/1",
+    "loginUrl": "https://stackexchange.com/users/login",
+	
+    "driverOptions": {
+        "desiredCapabilities": {
+            "browserName": "phantomjs"
+        }
+    }
 }
