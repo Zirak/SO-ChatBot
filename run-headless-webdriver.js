@@ -39,7 +39,7 @@ for (var signal in signals) {
     });
 }
 process.on('uncaughtException', function(err) {
-    console.err(err);
+    console.error(err);
     cleanupAndExit(1);
 });
 
