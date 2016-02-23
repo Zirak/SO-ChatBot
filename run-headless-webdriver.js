@@ -100,17 +100,16 @@ client
     .then(function(url) {
         console.log('Loaded chatroom ' + url);
     })
-    .execute(function() {
+    .execute(function(scriptUrl) {
         var script = document.createElement('script');
-        //script.src = 'http://localhost/master.js';
-        script.src = 'http://localhost:8080/TestMimeMap/master.js';
+        script.src = scriptUrl;
         script.onload = function() {
             //bot.activateDevMode();
             console.log('Loaded bot');
             bot.adapter.out.add('I have just been restarted! This happens daily automatically, or when my owner restarts me. Ready for commands.');
         };
         document.head.appendChild(script);
-    })
+    }, config.scriptUrl)
     .then(function() {
         console.log('Chatbot injected');
     })

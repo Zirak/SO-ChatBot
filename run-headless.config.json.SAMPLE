@@ -5,6 +5,8 @@
 	"siteUrl": "https://stackoverflow.com",
 	"roomUrl": "https://chat.stackoverflow.com/rooms/1",
     "loginUrl": "https://stackexchange.com/users/login",
+    
+    "scriptUrl": "http://localhost/master.js",
 	
     "driverOptions": {
         "desiredCapabilities": {
