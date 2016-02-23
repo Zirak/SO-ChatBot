@@ -73,21 +73,27 @@ client
     .getUrl()
     .then(function(url) {
         console.log('Loaded ' + url);
+    })
+    .getText('=log in')
+    .then(function() {
         console.log('Logging in...');
-    })
-    .execute(function() {
-        openid.signin('stack_exchange');
-    })
-    .waitForExist('#affiliate-signin-iframe', 10000)
-    .frame('affiliate-signin-iframe')
-    .waitForExist('#email', 10000)
-    .setValue('#email', config.email)
-    .setValue('#password', config.password)
-    .submitForm('.login-form form')
-    .frame()
-    .getUrl()
-    .then(function(url) {
-        console.log('Login submitted; loaded ' + url);
+        return client
+            .execute(function() {
+                openid.signin('stack_exchange');
+            })
+            .waitForExist('#affiliate-signin-iframe', 10000)
+            .frame('affiliate-signin-iframe')
+            .waitForExist('#email', 10000)
+            .setValue('#email', config.email)
+            .setValue('#password', config.password)
+            .submitForm('.login-form form')
+            .frame()
+            .getUrl()
+            .then(function(url) {
+                console.log('Login submitted; loaded ' + url);
+            });
+    }, function(err) {
+        console.log('Already logged in; skipping login');
     })
     .url(config.roomUrl)
     .getUrl()
