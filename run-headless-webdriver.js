@@ -126,10 +126,8 @@ client
 
         console.log('You are now in a REPL with the remote page. Have fun!');
         
-        var ready = true;
         repl.on('line', function(data) {
             console.log('Attempting to run "' + data + '"');
-            ready = false;
             client.executeAsync(function(code) {
                 return eval(code);
             }, data).then(function(ret) {
