@@ -566,6 +566,7 @@ exports.Message = function ( text, msgObj ) {
 
 },{}],4:[function(require,module,exports){
 module.exports = function (bot) {
+require("plugins/STOP.js")(bot);
 require("plugins/afk.js")(bot);
 require("plugins/ban.js")(bot);
 require("plugins/converter.js")(bot);
@@ -586,7 +587,6 @@ require("plugins/nudge.js")(bot);
 require("plugins/spec.js")(bot);
 require("plugins/stargate.js")(bot);
 require("plugins/stat.js")(bot);
-require("plugins/STOP.js")(bot);
 require("plugins/substitution.js")(bot);
 require("plugins/summon.js")(bot);
 require("plugins/undo.js")(bot);
@@ -1903,7 +1903,7 @@ function getSortedCommands() {
     });
 
     var sortedCommands = commandGroups.builtin.sort().concat(
-        commandGroups.learned.sort()
+        (commandGroups.learned || []).sort()
     );
 
     var helpIndex = sortedCommands.indexOf('help');

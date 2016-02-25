@@ -146,7 +146,7 @@ function getSortedCommands() {
     });
 
     var sortedCommands = commandGroups.builtin.sort().concat(
-        commandGroups.learned.sort()
+        (commandGroups.learned || []).sort()
     );
 
     var helpIndex = sortedCommands.indexOf('help');
