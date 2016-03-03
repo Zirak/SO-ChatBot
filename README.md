@@ -6,10 +6,15 @@ The bot is currently a big dangle-on script running in your browser. **Run `book
 
 If you wish, you can also run it headlessly on top of phantomjs and node:
 
-* Install [phantomjs 2](http://phantomjs.org/) (yes, it has to be 2 and above). Differs from platform to platform.
-* Install nightmare: `npm install nightmare`
-* Edit your credentials into `run-headless.js`
-* Hit the road: `env DEBUG=nightmare node run-headless.js`
+1. Install [phantomjs 2](http://phantomjs.org/) (yes, it has to be 2 and above). Differs from platform to platform.
+2. Install webdriverio: `npm install webdriverio@3.4.0` (4.x is broken)
+3. Copy `run-headless.config.json.SAMPLE` into `run-headless.config.json` (update if necessary), and edit your credentials into it.
+4. Hit the road:
+
+ ```sh
+screen -mdS pjs-server phantomjs --webdriver=4444
+screen -mdS bot node run-headless-webdriver.js
+```
 
 ###Building###
 
