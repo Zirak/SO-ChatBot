@@ -3,7 +3,7 @@ module.exports = function (bot) {
     {
         pattern: '!!',
         welcomeMessage: (
-            "Welcome to the JavaScript chat! Please review the {0}. Please" +
+            "Welcome to the JavaScript chat! Please review the {0}. Please " +
             "don't ask if you can ask or if anyone's around; just ask your " +
             "question, and if anyone's free and interested they'll help."
         ).supplant(bot.adapter.link(
