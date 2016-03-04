@@ -40,7 +40,7 @@ module.exports = function (bot) {
 
 var template = '{display_name} ({link}) '            +
         '{indicative} {reputation} reputation, '     +
-        'earned {reputation_change_day} rep today, ' +
+        '{verb} {reputation_change_day} rep today, ' +
         'asked {question_count} questions, '         +
         'gave {answer_count} answers, '              +
         'for a q:a ratio of {ratio}.\n'              +
@@ -119,6 +119,14 @@ function handle_user_object ( user, msg ) {
         // Bob (link) has ...
         user.display_name = bot.IO.decodehtmlEntities( user.display_name );
         user.indicative = 'has';
+    }
+
+    if ( user.reputation_change_day < 0 ) {
+        user.verb = 'lost';
+        user.reputation_change_day = Math.abs(user.reputation_change_day);
+    }
+    else {
+        user.verb = 'earned';
     }
 
     return template.supplant( user );
