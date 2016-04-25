@@ -1,4 +1,5 @@
 module.exports = function (bot) {
+/*global fkey*/
 var undo = {
     ids : [],
 

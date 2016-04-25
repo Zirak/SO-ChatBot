@@ -1,4 +1,5 @@
 module.exports = function (bot) {
+/*global jQuery*/
 var baseURL = 'http://api.jquery.com/';
 
 function jquery ( args ) {

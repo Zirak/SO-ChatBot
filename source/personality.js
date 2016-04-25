@@ -49,7 +49,7 @@ module.exports = function (bot) {
         unbitch : function ( map, delta ) {
             var resp = this.getResp( map );
 
-            this.bitchiness -= ( delta || this.bitchiness );
+            this.bitchiness -= delta || this.bitchiness;
             return resp;
         },
         getResp : function ( map ) {

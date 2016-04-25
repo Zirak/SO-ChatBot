@@ -6,7 +6,6 @@ var nudges = [],
     interval = 100 * 60;
 
 function update () {
-    var now = Date.now();
     nudges = nudges.filter(function ( nudge ) {
         nudge.time -= interval;
 
@@ -63,15 +62,11 @@ function addNudge ( delay, message, msgObj ) {
     return 'Nudge #' + id + ' registered.';
 }
 function removeNudge ( id, msgObj ) {
-    var matching, index;
-
-    nudges.some(function ( nudge, idx ) {
-        if (nudge.id === id) {
-            matching = nudge;
-            index = idx;
-            return true;
-        }
+    var matching = nudges.find(function ( nudge ) {
+        return nudge.id === id;
     });
+
+    var index = nudges.indexOf( matching );
 
     if ( !matching ) {
         return [

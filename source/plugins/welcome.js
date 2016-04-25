@@ -12,7 +12,7 @@ function welcome ( name, room ) {
     bot.adapter.out.add( bot.adapter.reply(name) + " " + message, room );
 }
 
-IO.register( 'input', function welcomeListener ( msgObj ) {
+bot.IO.register( 'input', function welcomeListener ( msgObj ) {
     var uid = msgObj.user_id,
         user = bot.users[ uid ],
         room = msgObj.room_id;

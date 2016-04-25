@@ -160,7 +160,7 @@ var bot = window.bot = {
 
         //a bit js bot specific...make sure it isn't just !!! all round. #139
         if ( this.config.pattern === '!!' && (/^!!!+$/).test(msg) ) {
-            console.log('special skip');
+            bot.log('special skip');
             return false;
         }
 

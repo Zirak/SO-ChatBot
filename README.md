@@ -14,27 +14,26 @@ If you wish, you can also run it headlessly on top of phantomjs and node:
 ###Building###
 
 ```sh
-#one must first get the repo
+# one must first get the repo
 $ git clone https://github.com/Zirak/SO-ChatBot.git
 $ cd SO-ChatBot
+
+# linting
+npm run lint
+
+# building
+$ node build.js
+# or
+$ npm run build
 ```
+
+The result will be in `master.js` and `master.min.js`
 
 The provided `publi.sh` automagically does building, adds all changed items to commit and publishes for you:
 
 ```sh
 $ ./publi.sh commit-message
 ```
-
-To build manually:
-
-```sh
-$ node build.js
-#to skip minification
-$ node build.js no-min
-```
-The result will be in `master.js` and `master.min.js`
-
-Minifying will run [closure-compiler.jar](https://developers.google.com/closure/compiler/docs/gettingstarted_app) if java is installed, and then try to run [uglify-js2](https://github.com/mishoo/UglifyJS2).
 
 ###The Bot API###
 (, a very short explanation of a limited subset of)

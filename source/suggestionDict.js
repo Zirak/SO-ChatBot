@@ -11,10 +11,11 @@ function TrieNode() {
 }
 
 TrieNode.prototype.add = function( word ) {
-    var node = this, char, i = 0;
+    var node = this, char;
 
-    while( char = word.charAt(i++) ) {
-        if( !(char in node.children) ) {
+    for (var i = 0; i < word.length; i += 1) {
+        char = word.charAt(i++);
+        if ( !(char in node.children) ) {
             node.children[ char ] = new TrieNode();
         }
 

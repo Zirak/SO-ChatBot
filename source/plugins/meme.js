@@ -14,7 +14,7 @@ var memes = {
     okay : 'okay-okay-clean',
     troll : 'troll-troll-face',
     trollface : 'troll-troll-face',
-    youdontsay : 'misc-you-dont-say',
+    youdontsay : 'misc-you-dont-say'
 };
 
 // ^(deskflip|no|notbad|...)\.(jpe?g|png)$

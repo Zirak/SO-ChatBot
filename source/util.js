@@ -51,7 +51,7 @@ Object.defineProperty( Array.prototype, 'invoke', {
 
         return this.map( invoke );
 
-        function invoke ( item, index ) {
+        function invoke ( item ) {
             var res = item;
 
             if ( item[funName] && item[funName].apply ) {
@@ -70,7 +70,7 @@ Object.defineProperty( Array.prototype, 'pluck', {
     value : function ( propName ) {
         return this.map( pluck );
 
-        function pluck ( item, index, arr ) {
+        function pluck ( item ) {
             //protection aganst null/undefined.
             try {
                 return item[ propName ];
@@ -152,9 +152,7 @@ String.prototype.indexesOf = function ( str, fromIndex ) {
 //Crockford's supplant
 String.prototype.supplant = function ( arg ) {
     //if it's an object, use that. otherwise, use the arguments list.
-    var obj = (
-        Object(arg) === arg ?
-            arg : arguments );
+    var obj = Object( arg ) === arg ? arg : arguments;
     return this.replace( /\{([^\}]+)\}/g, replace );
 
     function replace ( $0, $1 ) {

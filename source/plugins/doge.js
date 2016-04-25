@@ -44,7 +44,7 @@ function doge(msg) {
             line += pre.shift() + ' ';
         }
         line += input.shift();
-        output += out(padd(line, defaults.spaces[(input.length%3) - 1]));
+        output += out(padd(line, defaults.spaces[input.length%3 - 1]));
     }
 
     msg.send(output + '\r    ');

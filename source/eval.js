@@ -7,7 +7,7 @@ var workerCode = require('./codeWorker');
 
 exports.eval = (function () {
 
-var blob = new Blob( [workerCode], { type : 'application/javascript' } ),
+var blob = new Blob( [workerCode.stringContents()], { type : 'application/javascript' } ),
     codeUrl = window.URL.createObjectURL( blob );
 
 return function ( code, arg, cb ) {

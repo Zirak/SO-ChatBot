@@ -19,7 +19,6 @@ function command ( args, cb ) {
         // [search_term, [title0], [description0], [link0]]
         //we only asked for one result, so the inner arrays will have only 1 item each
         var res = resp[ 3 ][ 0 ],
-            base = 'http://en.wikipedia.org/wiki/',
             found = true;
 
         if ( !res ) {

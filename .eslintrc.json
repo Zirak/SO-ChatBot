@@ -1,0 +1,23 @@
+{
+    "parserOptions": {
+        "ecmaVersion": 5,
+        "sourceType": "module"
+    },
+    "env": {
+        "browser": true,
+        "commonjs": true
+    },
+
+    "extends": "eslint:recommended",
+
+    "rules": {
+        "no-console": 0,
+
+        "semi": ["error", "always"],
+
+        "array-callback-return": 2,
+        "curly": ["error", "all"],
+        "eqeqeq": ["error", "allow-null"],
+        "dot-notation": 2
+    }
+}

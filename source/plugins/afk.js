@@ -120,7 +120,7 @@ var goAFK = function ( name, msg, returnMsg ) {
         afkSince : Date.now(),
         lastPing : {},
         msg : msg.trim(),
-        returnMsg : returnMsg,
+        returnMsg : returnMsg
     };
 
     if ( noReturn ) {
@@ -137,17 +137,15 @@ var commandHandler = function ( msg ) {
     //parse the message and stuff.
     var user = msg.get( 'user_name' ).replace( /\s/g, '' ),
         afkMsg = msg.content,
-        reply, botReply;
+        botReply;
 
     bot.log( '/afk input', user, afkMsg );
 
     if ( demAFKs.hasOwnProperty(user) ) {
-        reply = demAFKs[ user ].returnMsg;
         clearAFK( user );
     }
     else {
         botReply = responses.random();
-        reply = botReply.outgoing;
 
         goAFK( user, afkMsg, botReply.incoming.random() );
     }

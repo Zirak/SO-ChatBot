@@ -1,5 +1,5 @@
 //the following is code that'll run inside eval's web worker
-module.exports = (function () {
+module.exports = function () {
 var global = this;
 
 /*most extra functions could be possibly unsafe*/
@@ -118,7 +118,7 @@ Object.defineProperty( Array.prototype, 'join', {
 
     value: (function ( old ) {
         return function ( arg ) {
-            if ( this.length > 500 || (arg && arg.length > 500) ) {
+            if ( this.length > 500 || (arg && arg.length) > 500 ) {
                 throw 'Exception: too many items';
             }
 
@@ -129,9 +129,11 @@ Object.defineProperty( Array.prototype, 'join', {
 
 
 /* we define it outside so it'll not be in strict mode */
+/* eslint-disable no-unused-vars */
 var exec = function ( code, arg ) {
     return eval( 'undefined;\n' + code );
 };
+/* eslint-enable no-unused-vars*/
 var console = {
     _items : [],
     log : function() {
@@ -185,7 +187,7 @@ console.error = console.info = console.debug = console.log;
             Undefined : true, RegExp : true
         };
         var shouldString = function ( value ) {
-            var type = ( {} ).toString.call( value ).slice( 8, -1 );
+            var type = {}.toString.call( value ).slice( 8, -1 );
 
             if ( type in strung ) {
                 return true;
@@ -230,4 +232,4 @@ console.error = console.info = console.debug = console.log;
         }
     };
 })();
-}).stringContents();
+};

@@ -1,4 +1,5 @@
 module.exports = function (bot) {
+/*global Map*/
 
 //only activate for SO room 17; TODO consider changing if well accepted
 if (bot.adapter.site !== 'stackoverflow' || bot.adapter.roomid !== 17) {
@@ -37,7 +38,7 @@ bot.IO.register( 'rawinput', function checkUnformattedCode (msgObj) {
                 //for some reason, chat adds a space prefix for every line...
                 return line.replace(/^ /, '');
             }).join( '\n' );
-    content = IO.decodehtmlEntities(content);
+    content = bot.IO.decodehtmlEntities(content);
 
     //and messages which aren't code blocks
     if ( content.startsWith('<pre class=\'full\'>') ) {

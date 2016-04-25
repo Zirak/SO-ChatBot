@@ -19,7 +19,7 @@ var laws = [
     return idx + '. ' + law;
 }).join( '\n' );
 
-bot.listen( /^tell (me (your|the) )?(rule|law)s/, function ( msg ) {
+bot.listen( /^tell (me (your|the) )?(rule|law)s/, function () {
     return laws;
 });
 

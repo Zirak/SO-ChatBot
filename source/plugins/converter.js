@@ -112,7 +112,7 @@ var longNames = {
     grams : 'g',
     kilograms : 'kg',
     inches : 'i',
-    stones : 'st',
+    stones : 'st'
 };
 
 var currencies = require('static/currencyNames'),
@@ -308,14 +308,12 @@ var moneyConverter = {
     checkCache : function () {
         var now = Date.now(), obj;
 
-        var exists = (
-            this.ratesCache[ this.upFrom ] &&
-                ( obj = this.ratesCache[this.upFrom][this.upTo] ) &&
-                //so we won't request again, keep it in memory for 5 hours
-                // 5(hours) = 1000(ms) * 60(seconds)
-                //            * 60(minutes) * 5 = 18000000
-                obj.time - now <= 18e6
-        );
+        var exists = this.ratesCache[ this.upFrom ] &&
+            ( obj = this.ratesCache[this.upFrom][this.upTo] ) &&
+            //so we won't request again, keep it in memory for 5 hours
+            // 5(hours) = 1000(ms) * 60(seconds)
+            //            * 60(minutes) * 5 = 18000000
+            obj.time - now <= 18e6;
 
         console.log( this.ratesCache, exists );
 

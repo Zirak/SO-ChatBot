@@ -136,7 +136,7 @@ var adapter = {
     init : function () {
         var fkey = document.getElementById( 'fkey' );
         if ( !fkey ) {
-            console.error( 'bot.adapter could not find fkey; aborting' );
+            console.error( 'adapter could not find fkey; aborting' );
             return;
         }
 
@@ -245,7 +245,9 @@ var input = {
 
     init : function ( roomid ) {
         var that = this,
-            providedRoomid = ( roomid !== undefined );
+            //TODO: this is fucking yucky.
+            providedRoomid = arguments.length > 0;
+
         roomid = roomid || adapter.roomid;
 
         IO.xhr({

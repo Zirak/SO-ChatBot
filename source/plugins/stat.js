@@ -161,12 +161,6 @@ function calc_qa_ratio ( questions, answers ) {
         return 'http://i.imgur.com/F79hP.png';
     }
 
-    // #196:
-    // 1. GCD of 1.
-    // 2. Either the antecedent or the consequent are 1
-    //(in A:B, A is the antecedent, B is the consequent)
-    var gcd = Math.gcd( questions, answers );
-
     return Math.ratio( questions, answers );
 }
 

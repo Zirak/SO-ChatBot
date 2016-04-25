@@ -28,6 +28,12 @@ then
 	fi
 fi
 
+npm lint
+if [ $? -ne 0 ]
+then
+	exit $?
+fi
+
 #execute the build script
 node build.js
 

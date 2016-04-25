@@ -1,4 +1,5 @@
 module.exports = function (bot) {
+/*global fkey*/
 "use strict";
 
 var memoryKey = 'unonebox-state',

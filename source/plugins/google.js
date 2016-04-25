@@ -31,7 +31,7 @@ var command = {
         function finishCall ( resp ) {
             bot.log( resp, '/google response' );
             if ( resp.responseStatus !== 200 ) {
-                finish( 'My Google-Fu is on vacation; status ' +
+                cb( 'My Google-Fu is on vacation; status ' +
                         resp.responseStatus );
                 return;
             }

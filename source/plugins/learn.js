@@ -106,7 +106,7 @@ function makeCustomCommand ( command ) {
     };
 
     function extractPattern () {
-        var matches = replyPatterns.exec( command.output ) || [ , 'user' ],
+        var matches = replyPatterns.exec( command.output ) || [ null, 'user' ],
             pattern =  matches[ 1 ];
 
         return pattern.slice(1, -1);

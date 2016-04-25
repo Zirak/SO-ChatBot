@@ -32,7 +32,6 @@ var define = {
         }
 
         bot.log( args, definee, definitionIndex, '/define input' );
-        var self = this;
 
         this.fetchDefinition( definee, definitionIndex, finish );
 
