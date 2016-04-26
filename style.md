@@ -2,7 +2,7 @@ First, the most important thing:
 
 ## Favour design over speed ##
 
-The bottleneck will always be the network operations. Unless you're doing something insanely stupid, you will not be able to create performence issues. As such, feel free to go wild on memory and CPU. Use closures all you want, write costly event handlers, don't optimise, but whatever you do - *clarity is God*.
+The bottleneck will always be the network operations. Unless you're doing something insanely stupid, you won't be able to create performance issues. As such, feel free to go wild on memory and CPU. Use closures all you want, write costly event handlers, don't optimise, but whatever you do - *clarity is God*.
 
 As an extension of that, if code A is longer than code B but A is cleaner and more easily understood, prefer A. It doesn't matter if the difference is 1 line or 10 lines (see [Syntactical Anomalies](#syntactical-anomalies) below).
 
@@ -10,67 +10,45 @@ For those who want a definition of how fast the bot should be: if it handles 1 c
 
 Now to the lesser stuff:
 
-## Whitespace ##
+## Style ##
+
+There are lint rules set up which should resolve most questions: `npm run lint`
+
+This design guide was written before the rules were set up; if there are any inconsistencies, favour the linter and raise a bug report on the bot repo.
+
+### Whitespace ###
 
 Use 4 spaces for indentation. Tabs are better, but our editing tools are not meant to be good.
 
-Object literals' keys should not be wrapped in quotes unless you have to (why would you?), and the colon be padded on both sites:
+Object literals' keys should not be wrapped in quotes unless you have to (why would you?), and the colon be padded on the right side:
 
     var obj = {
-        foo : 4,
-        bar : 5
+        foo: 4,
+        bar: 5
     };
 
-The whitespace rules are a bit weird, so I apologise in advance. I wrote the bot in a simpler time, I repent now. The basic rule is that you pad any kind of brace and bracket, if it's the outermost one. Nested ones are not padded, and so are empties:
-
-    var empty = [];
-    foo();
-
-    [ 0, 1, 2 ]
-    if ( foo.bar() ) { ... }
-
-    [ 0, [1], [2] ]
-    if ( foo.bar(4) ) { ... }
-
-If you begin a new line, you can consider it as "erasing" that memory:
-
-    [
-        0,
-        [ 1 ],
-        2
-    ]
-
-But the original outermost one should still be padded:
-
-    cuz(
-        foo.bar( 4 ) )
-
-This is a bit of a mess, and if anyone wants to reformat to a saner style, feel free.
+The whitespace rules used to be fucked up, but now it's simple. Use whitespace as you would in any other js project. Linter will shout at you if I'm being considerably weird.
 
 If you introduce trailing whitespace, I will put you on a stick and slowly roast you. Also, ensure a newline at EOF you piece of scum.
 
-## Primitives ##
+### Syntactical Anomalies ###
 
-Don't use object wrappers (`new Boolean` etc), write the real values. Strings should also be surrounded with single quotes. If you can and it makes sense in the context, use scientific notation for numbers.
-
-## Syntactical Anomalies ##
-
-Semicolons are not dropped. Use them as if js did not have ASI. Comma-first is also discouraged. Trailing commas are fine.
+Semicolons are not dropped. Use them as if js did not have ASI. Comma-first is also discouraged.
 
     var a = 4,
         b = 5;
     var arr = [
         0,
         1,
-        2,
+        2
     ];
 
 In addition, disfavour operator tricks. This includes, but is not limited, to:
 
     //bad
-    +function () {}()
+    +function() {}()
     //good
-    (function () {})()
+    (function() {})()
 
     //bad
     x|0
@@ -78,13 +56,11 @@ In addition, disfavour operator tricks. This includes, but is not limited, to:
     Math.floor(x)
 
     //bad
-    if ( ~~arr.indexOf(i) ) { ... }
+    if (~~arr.indexOf(i)) { ... }
     //good
-    if ( arr.indexOf(i) < 0 ) { ... }
+    if (arr.indexOf(i) < 0) { ... }
 
-As an addendum to the last example, it might be better to define a method to do it for you on `Array.prototype`. See [Extending Natives](#extending_natives).
-
-## Variables ##
+### Variables ###
 
 Use `camelCase` for variable names, `PascalCase` for constructors (this means any object-generating object, not necessarily a `new PascalCase` constructor), `SHOUT_CASE` for constants (why would you have constants?).
 
@@ -116,6 +92,12 @@ Objects and arrays should have their own variable declaration if they're not emp
     var c = {
         foo : 'bar'
     };
+
+## Primitives ##
+
+Don't use object wrappers (`new Boolean` etc), write the real values. Strings should also be surrounded with single quotes. If you can and it makes sense in the context, use scientific notation for numbers.
+
+As an addendum to the last example, it might be better to define a method to do it for you on `Array.prototype`. See [Extending Natives](#extending_natives).
 
 ## The Pillows ##
 

@@ -1,4 +1,4 @@
-//follows is an explanation of how SO's chat does things. you may want to skip
+// follows is an explanation of how SO's chat does things. you may want to skip
 // this gigantuous comment.
 /*
   Note: This may be outdated next year, tomorrow, never, or in 4 minutes. We
@@ -34,7 +34,7 @@ Request:
 
 Response:
   Content-Type: application/json; charset=utf-8
-  Content: {"url":"wss://chat.sockets.stackexchange.com/events/17/another32CharLongStringBlahBlaah"}
+  Content: {"url":"wss://chat.sockets.stackexchange.com/events/17/..."}
 
 We parse the response, and connect to the websocket at the specified URL. Note
 that the websocket URL accepts an `l` query parameter
@@ -115,33 +115,33 @@ And...that's it. Pretty simple. Most of the requests endpoints are like that.
 
 /*global location, WebSocket, setTimeout, module, require*/
 /*global fkey, CHAT*/
-"use strict";
+'use strict';
 
 var IO = require('./IO');
 
 var linkTemplate = '[{text}]({url})';
 
 var adapter = {
-    //the following two only used in the adapter; you can change & drop at will
-    roomid  : null,
-    fkey    : null,
-    //used in commands calling the SO API
-    site    : null,
-    //our user id
-    user_id : null,
+    // the following two only used in the adapter; you can change & drop at will
+    roomid: null,
+    fkey: null,
+    // used in commands calling the SO API
+    site: null,
+    // our user id
+    user_id: null,
 
-    maxLineLength : 500,
+    maxLineLength: 500,
 
-    //not a necessary function, used in here to set some variables
-    init : function () {
-        var fkey = document.getElementById( 'fkey' );
-        if ( !fkey ) {
-            console.error( 'adapter could not find fkey; aborting' );
+    // not a necessary function, used in here to set some variables
+    init: function () {
+        var fkey = document.getElementById('fkey');
+        if (!fkey) {
+            console.error('adapter could not find fkey; aborting');
             return;
         }
 
         this.fkey    = fkey.value;
-        this.roomid  = Number( /\d+/.exec(location)[0] );
+        this.roomid  = Number(/\d+/.exec(location)[0]);
         this.site    = this.getCurrentSite();
         this.user_id = CHAT.CURRENT_USER_ID;
 
@@ -149,174 +149,174 @@ var adapter = {
         this.out.init();
     },
 
-    getCurrentSite : function () {
-        var site = /chat\.(\w+)/.exec( location )[ 1 ];
+    getCurrentSite: function () {
+        var site = /chat\.(\w+)/.exec(location)[1];
 
-        if ( site !== 'stackexchange' ) {
+        if (site !== 'stackexchange') {
             return site;
         }
 
-        var siteRoomsLink = document.getElementById( 'siterooms' ).href;
+        var siteRoomsLink = document.getElementById('siterooms').href;
 
         // #170. thanks to @patricknc4pk for the original fix.
-        site = /host=(.+?)\./.exec( siteRoomsLink )[ 1 ];
+        site = /host=(.+?)\./.exec(siteRoomsLink)[1];
 
         return site;
     },
 
-    //a pretty crucial function. accepts the msgObj we know nothing about,
+    // a pretty crucial function. accepts the msgObj we know nothing about,
     // and returns an object with these properties:
     //   user_name, user_id, room_id, content
     // and any other properties, as the abstraction sees fit
-    //since the bot was designed around the SO chat message object, in this
+    // since the bot was designed around the SO chat message object, in this
     // case, we simply do nothing
-    transform : function ( msgObj ) {
+    transform: function (msgObj) {
         return msgObj;
     },
 
-    //escape characters meaningful to the chat, such as parentheses
-    //full list of escaped characters: `*_()[]
-    escape : function ( msg ) {
-        return msg.replace( /([`\*_\(\)\[\]])/g, '\\$1' );
+    // escape characters meaningful to the chat, such as parentheses
+    // full list of escaped characters: `*_()[]
+    escape: function (msg) {
+        return msg.replace(/([`\*_\(\)\[\]])/g, '\\$1');
     },
 
-    //receives a username, and returns a string recognized as a reply to the
+    // receives a username, and returns a string recognized as a reply to the
     // user
-    reply : function ( usrname ) {
-        return '@' + usrname.replace( /\s/g, '' );
+    reply: function (usrname) {
+        return '@' + usrname.replace(/\s/g, '');
     },
-    //receives a msgid, returns a string recognized as a reply to the specific
+    // receives a msgid, returns a string recognized as a reply to the specific
     // message
-    directreply : function ( msgid ) {
+    directreply: function (msgid) {
         return ':' + msgid;
     },
 
-    //receives text and turns it into a codified version
-    //codified is ambiguous for a simple reason: it means nicely-aligned and
+    // receives text and turns it into a codified version
+    // codified is ambiguous for a simple reason: it means nicely-aligned and
     // mono-spaced. in SO chat, it handles it for us nicely; in others, more
     // clever methods may need to be taken
-    codify : function ( msg ) {
+    codify: function (msg) {
         var tab = '    ',
-            spacified = msg.replace( '\t', tab ),
-            lines = spacified.split( /[\r\n]/g );
+            spacified = msg.replace('\t', tab),
+            lines = spacified.split(/[\r\n]/g);
 
-        if ( lines.length === 1 ) {
-            return '`' + lines[ 0 ] + '`';
+        if (lines.length === 1) {
+            return '`' + lines[0] + '`';
         }
 
-        return lines.map(function ( line ) {
+        return lines.map(function (line) {
             return tab + line;
-        }).join( '\n' );
+        }).join('\n');
     },
 
-    //receives a url and text to display, returns a recognizable link
-    link : function ( text, url ) {
+    // receives a url and text to display, returns a recognizable link
+    link: function (text, url) {
         return linkTemplate.supplant({
-            text : this.escape( text ),
-            url  : url
+            text: this.escape(text),
+            url: url
         });
     },
 
-    moveMessage : function ( msgid, fromRoom, toRoom, cb ) {
+    moveMessage: function (msgid, fromRoom, toRoom, cb) {
         IO.xhr({
-            method : 'POST',
-            url : '/admin/movePosts/' + fromRoom,
-            data : {
+            method: 'POST',
+            url: '/admin/movePosts/' + fromRoom,
+            data: {
                 fkey: adapter.fkey,
                 to: toRoom,
                 ids: msgid
             },
-            finish : cb || function () {}
+            finish: cb || function () {}
         });
     }
 };
 
-//the input is not used by the bot directly, so you can implement it however
+// the input is not used by the bot directly, so you can implement it however
 // you like
 var input = {
-    //used in the SO chat requests, dunno exactly what for, but guessing it's
+    // used in the SO chat requests, dunno exactly what for, but guessing it's
     // the latest id or something like that. could also be the time last
     // sent, which is why I called it times at the beginning. or something.
-    times : {},
+    times: {},
 
-    firstPoll : true,
+    firstPoll: true,
 
-    interval : 5000,
+    interval: 5000,
 
-    init : function ( roomid ) {
+    init: function (roomid) {
         var that = this,
-            //TODO: this is fucking yucky.
+            // TODO: this is fucking yucky.
             providedRoomid = arguments.length > 0;
 
         roomid = roomid || adapter.roomid;
 
         IO.xhr({
-            url : '/ws-auth',
-            data : fkey({
-                roomid : roomid
+            url: '/ws-auth',
+            data: fkey({
+                roomid: roomid
             }),
-            method : 'POST',
-            complete : finish
+            method: 'POST',
+            complete: finish
         });
 
-        function finish ( resp ) {
-            resp = JSON.parse( resp );
-            console.log( resp );
+        function finish (resp) {
+            resp = JSON.parse(resp);
+            console.log(resp);
 
-            that.openSocket( resp.url, providedRoomid );
+            that.openSocket(resp.url, providedRoomid);
         }
     },
 
-    initialPoll : function () {
-        console.log( 'adapter: initial poll' );
+    initialPoll: function () {
+        console.log('adapter: initial poll');
         var roomid = adapter.roomid,
             that = this;
 
         IO.xhr({
-            url : '/chats/' + roomid + '/events/',
-            data : fkey({
-                since : 0,
-                mode : 'Messages',
-                msgCount : 0
+            url: '/chats/' + roomid + '/events/',
+            data: fkey({
+                since: 0,
+                mode: 'Messages',
+                msgCount: 0
             }),
-            method : 'POST',
-            complete : finish
+            method: 'POST',
+            complete: finish
         });
 
-        function finish ( resp ) {
-            resp = JSON.parse( resp );
-            console.log( resp );
+        function finish (resp) {
+            resp = JSON.parse(resp);
+            console.log(resp);
 
-            that.times[ 'r' + roomid ] = resp.time;
+            that.times['r' + roomid] = resp.time;
             that.firstPoll = false;
         }
     },
 
-    openSocket : function ( url, discard ) {
-        //chat sends an l query string parameter. seems to be the same as the
+    openSocket: function (url, discard) {
+        // chat sends an l query string parameter. seems to be the same as the
         // since xhr parameter, but I didn't know what that was either so...
-        //putting in 0 got the last shitload of messages, so what does a high
+        // putting in 0 got the last shitload of messages, so what does a high
         // number do? (spoiler: it "works")
-        var socket = new WebSocket( url + '?l=99999999999' );
+        var socket = new WebSocket(url + '?l=99999999999');
 
-        if ( discard ) {
+        if (discard) {
             socket.onmessage = function () {
                 socket.close();
             };
         }
         else {
             this.socket = socket;
-            socket.onmessage = this.ondata.bind( this );
-            socket.onclose = this.socketFail.bind( this );
+            socket.onmessage = this.ondata.bind(this);
+            socket.onclose = this.socketFail.bind(this);
         }
     },
 
-    ondata : function ( messageEvent ) {
-        this.pollComplete( messageEvent.data );
+    ondata: function (messageEvent) {
+        this.pollComplete(messageEvent.data);
     },
 
-    poll : function () {
-        if ( this.firstPoll ) {
+    poll: function () {
+        if (this.firstPoll) {
             this.initialPoll();
             return;
         }
@@ -324,84 +324,84 @@ var input = {
         var that = this;
 
         IO.xhr({
-            url : '/events',
-            data : fkey( that.times ),
-            method : 'POST',
-            complete : that.pollComplete,
-            thisArg : that
+            url: '/events',
+            data: fkey(that.times),
+            method: 'POST',
+            complete: that.pollComplete,
+            thisArg: that
         });
     },
 
-    pollComplete : function ( resp ) {
-        if ( !resp ) {
+    pollComplete: function (resp) {
+        if (!resp) {
             return;
         }
-        resp = JSON.parse( resp );
+        resp = JSON.parse(resp);
 
-        //each key will be in the form of rROOMID
-        Object.iterate(resp, function ( key, msgObj ) {
-            //t is a...something important
-            if ( msgObj.t ) {
-                this.times[ key ] = msgObj.t;
+        // each key will be in the form of rROOMID
+        Object.iterate(resp, function (key, msgObj) {
+            // t is a...something important
+            if (msgObj.t) {
+                this.times[key] = msgObj.t;
             }
 
-            //e is an array of events, what is referred to in the bot as msgObj
-            if ( msgObj.e ) {
-                msgObj.e.forEach( this.handleMessageObject, this );
+            // e is an array of events, what is referred to in the bot as msgObj
+            if (msgObj.e) {
+                msgObj.e.forEach(this.handleMessageObject, this);
             }
         }, this);
 
-        //handle all the input
+        // handle all the input
         IO.in.flush();
     },
 
-    handleMessageObject : function ( msg ) {
-        IO.fire( 'rawinput', msg );
+    handleMessageObject: function (msg) {
+        IO.fire('rawinput', msg);
 
-        //msg.event_type:
+        // msg.event_type:
         // 1 => new message
         // 2 => message edit
         // 3 => user joined room
         // 4 => user left room
         // 10 => message deleted
-        var et /* phone home */ = msg.event_type;
-        if ( et === 3 || et === 4 ) {
-            this.handleUserEvent( msg );
+        var et = msg.event_type;
+        if (et === 3 || et === 4) {
+            this.handleUserEvent(msg);
             return;
         }
-        else if ( et !== 1 && et !== 2 ) {
-            return;
-        }
-
-        //check for a multiline message
-        if ( msg.content.startsWith('<div class=\'full\'>') ) {
-            this.handleMultilineMessage( msg );
+        else if (et !== 1 && et !== 2) {
             return;
         }
 
-        //add the message to the input buffer
-        IO.in.receive( msg );
+        // check for a multiline message
+        if (msg.content.startsWith('<div class=\'full\'>')) {
+            this.handleMultilineMessage(msg);
+            return;
+        }
+
+        // add the message to the input buffer
+        IO.in.receive(msg);
     },
 
-    handleMultilineMessage : function ( msg ) {
-        this.breakMultilineMessage( msg.content ).forEach(function ( line ) {
-            var msgObj = Object.merge( msg, { content : line.trim() });
+    handleMultilineMessage: function (msg) {
+        this.breakMultilineMessage(msg.content).forEach(function (line) {
+            var msgObj = Object.merge(msg, { content: line.trim() });
 
-            IO.in.receive( msgObj );
+            IO.in.receive(msgObj);
         });
     },
-    breakMultilineMessage : function ( content ) {
-        //remove the enclosing tag
+    breakMultilineMessage: function (content) {
+        // remove the enclosing tag
         var multiline = content
-            //slice upto the beginning of the ending tag
-            .slice( 0, content.lastIndexOf('</div>') )
-            //and strip away the beginning tag
-            .replace( '<div class=\'full\'>', '' );
+            // slice upto the beginning of the ending tag
+            .slice(0, content.lastIndexOf('</div>'))
+            // and strip away the beginning tag
+            .replace('<div class=\'full\'>', '');
 
-        return multiline.split( '<br>' );
+        return multiline.split('<br>');
     },
 
-    handleUserEvent : function ( msg ) {
+    handleUserEvent: function (msg) {
         var et = msg.event_type;
 
         /*
@@ -423,8 +423,8 @@ var input = {
             }
         }
         */
-        if ( et === 3 ) {
-            IO.fire( 'userjoin', msg );
+        if (et === 3) {
+            IO.fire('userjoin', msg);
         }
         /*
         {
@@ -445,38 +445,36 @@ var input = {
             }
         }
         */
-        else if ( et === 4 ) {
-            IO.fire( 'userleave', msg );
+        else if (et === 4) {
+            IO.fire('userleave', msg);
         }
     },
 
-    leaveRoom : function ( roomid, cb ) {
-        if ( roomid === adapter.roomid ) {
-            cb( 'base_room' );
+    leaveRoom: function (roomid, cb) {
+        if (roomid === adapter.roomid) {
+            cb('base_room');
             return;
         }
 
         IO.xhr({
-            method : 'POST',
-            url : '/chats/leave/' + roomid,
-            data : fkey({
-                quiet : true
+            method: 'POST',
+            url: '/chats/leave/' + roomid,
+            data: fkey({
+                quiet: true
             }),
-            complete : function () {
-                cb();
-            }
+            complete: cb
         });
     },
 
-    socketFail : function () {
-        console.log( 'adapter: socket failed', this );
+    socketFail: function () {
+        console.log('adapter: socket failed', this);
         this.socket.close();
         this.socket = null;
         this.loopage();
     },
 
-    loopage : function () {
-        if ( this.socket ) {
+    loopage: function () {
+        if (this.socket) {
             return;
         }
 
@@ -484,99 +482,101 @@ var input = {
         setTimeout(function () {
             that.poll();
             that.loopage();
-        }, this.interval );
+        }, this.interval);
     }
 };
 
-//the output is expected to have only one method: add, which receives a message
+// the output is expected to have only one method: add, which receives a message
 // and the room_id. everything else is up to the implementation.
 var output = {
-    '409' : 0, //count the number of conflicts
-    total : 0, //number of messages sent
-    interval : input.interval + 500,
-    flushWait : 500,
+    // count the number of conflicts
+    409: 0,
+    // number of messages sent
+    total: 0,
+    interval: input.interval + 500,
+    flushWait: 500,
 
-    init : function () {},
+    init: function () {},
 
-    //add a message to the output queue
-    add : function ( msg, roomid ) {
+    // add a message to the output queue
+    add: function (msg, roomid) {
         IO.out.receive({
-            text : msg + '\n',
-            room : roomid || adapter.roomid
+            text: msg + '\n',
+            room: roomid || adapter.roomid
         });
         IO.out.flush();
     },
 
-    //send output to all the good boys and girls
-    //no messages for naughty kids
-    //...what's red and sits in the corner?
-    //a naughty strawberry
-    send : function ( obj ) {
-        //unless the bot's stopped. in which case, it should shut the fudge up
+    // send output to all the good boys and girls
+    // no messages for naughty kids
+    // ...what's red and sits in the corner?
+    // a naughty strawberry
+    send: function (obj) {
+        // unless the bot's stopped. in which case, it should shut the fudge up
         // the freezer and never let it out. not until it can talk again. what
         // was I intending to say?
-        if ( this.stopped ) {
-            //ah fuck it
+        if (this.stopped) {
+            // ah fuck it
             return;
         }
 
         // #152, wait a bit before sending output.
         setTimeout(function () {
-            output.sendToRoom( obj.text, obj.room );
-        }, this.flushWait );
+            output.sendToRoom(obj.text, obj.room);
+        }, this.flushWait);
     },
 
-    //what's brown and sticky?
-    //a stick
-    sendToRoom : function ( text, roomid ) {
+    // what's brown and sticky?
+    // a stick
+    sendToRoom: function (text, roomid) {
         IO.xhr({
-            url : '/chats/' + roomid + '/messages/new',
-            data : {
-                text : text,
-                fkey : fkey().fkey
+            url: '/chats/' + roomid + '/messages/new',
+            data: {
+                text: text,
+                fkey: fkey().fkey
             },
-            method : 'POST',
-            complete : complete
+            method: 'POST',
+            complete: complete
         });
 
-        function complete ( resp, xhr ) {
-            console.log( xhr.status );
+        function complete (resp, xhr) {
+            console.log(xhr.status);
 
-            //conflict, wait for next round to send message
-            if ( xhr.status === 409 ) {
+            // conflict, wait for next round to send message
+            if (xhr.status === 409) {
                 output['409'] += 1;
-                delayAdd( text, roomid );
+                delayAdd(text, roomid);
             }
-            //server error, usually caused by message being too long
-            else if ( xhr.status === 500 ) {
+            // server error, usually caused by message being too long
+            else if (xhr.status === 500) {
                 output.add(
                     'Server error (status 500) occured ' +
                         ' (message probably too long)',
-                    roomid );
+                    roomid);
             }
-            else if ( xhr.status !== 200 ) {
-                console.error( xhr );
+            else if (xhr.status !== 200) {
+                console.error(xhr);
                 output.add(
                     'Error ' + xhr.status + ' occured, I will call the maid ' +
-                    ' (@Zirak)' );
+                    ' (@Zirak)');
             }
             else {
                 output.total += 1;
-                IO.fire( 'sendoutput', xhr, text, roomid );
+                IO.fire('sendoutput', xhr, text, roomid);
             }
         }
 
-        //what's orange and sounds like a parrot?
-        //a carrot
+        // what's orange and sounds like a parrot?
+        // a carrot
         function delayAdd () {
             setTimeout(function delayedAdd () {
-                output.add( text, roomid );
-            }, output.interval );
+                output.add(text, roomid);
+            }, output.interval);
         }
     }
 };
 
-//two guys walk into a bar. the bartender asks them "is this some kind of joke?"
+// two guys walk into a bar. the bartender asks them "is this some kind of joke?"
 
 adapter.in  = input;
 adapter.out = output;

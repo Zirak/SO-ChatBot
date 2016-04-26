@@ -7,10 +7,12 @@ var hound = new Nightmare({
 
 var config = require('./run-headless.config.json');
 
-function once (fn) {
+function once(fn) {
 	var called = false, res;
 	return function () {
-		if (called) { return res; }
+		if (called) {
+			return res;
+		}
 
 		called = true;
 		res = fn.apply(this, arguments);

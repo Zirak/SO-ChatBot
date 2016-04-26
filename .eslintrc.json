@@ -13,11 +13,50 @@
     "rules": {
         "no-console": 0,
 
-        "semi": ["error", "always"],
-
         "array-callback-return": 2,
         "curly": ["error", "all"],
         "eqeqeq": ["error", "allow-null"],
-        "dot-notation": 2
+        "dot-notation": 2,
+
+        // style
+
+        "array-bracket-spacing": ["error", "never"],
+        // block-spacing?
+        "brace-style": ["error", "stroustrup"],
+        "camelcase": 2,
+        "comma-spacing": 2,
+        "comma-style": 2,
+        "computed-property-spacing": 2,
+        // consistent-this?
+        "eol-last": 2,
+        "indent": ["error", 4],
+        "key-spacing": ["error", {
+            "mode": "minimum"
+        }],
+        "keyword-spacing": 2,
+        // linebreak-style?
+        "max-len": ["warn", 80],
+        // other max-*?
+        "no-array-constructor": 2,
+        "no-inline-comments": 2,
+        "no-lonely-if": 2,
+        "no-multiple-empty-lines": 1,
+        "no-nested-ternary": 2,
+        "no-new-object": 2,
+        "no-plusplus": 2,
+        // no-restricted-syntax maybe? discourage `with`?
+        "no-trailing-spaces": 2, // !!!!!!!!!!!!!!!!!!!
+        "no-spaced-func": 2,
+        "no-unneeded-ternary": 2,
+        "no-whitespace-before-property": 2,
+        "object-curly-spacing": ["error", "always"],
+        // operator-linebreak? operator-assignment?
+        "quote-props": ["error", "as-needed"],
+        "quotes": ["error", "single"],
+        "semi": ["error", "always"],
+        "space-in-parens": ["error", "never"],
+        "spaced-comment": ["error", "always", {
+            "markers": ["global"]
+        }]
     }
 }

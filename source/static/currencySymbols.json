@@ -13,13 +13,13 @@
     "\u20b9" : "INR",
 
     //yen ¥
-    '\u00a5' : "JPY",
+    "\u00a5" : "JPY",
     //double-width yen ￥
-    '\uffe5' : "JPY",
+    "\uffe5" : "JPY",
 
     //israeli shekels ₪
     "\u20aa" : "ILS",
 
     //united states dollar $
-    "\u0024" : "USD",
+    "\u0024" : "USD"
 }

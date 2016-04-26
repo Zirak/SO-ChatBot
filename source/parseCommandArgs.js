@@ -1,7 +1,7 @@
-"use strict";
+'use strict';
 
 var argParser = {
-    create : function () {
+    create: function () {
         var ret = Object.create(this);
 
         ret.separator = ' ';
@@ -11,7 +11,7 @@ var argParser = {
         return ret;
     },
 
-    parse : function (source) {
+    parse: function (source) {
         this.source = source;
         this.pos = 0;
 
@@ -24,7 +24,7 @@ var argParser = {
         return ret;
     },
 
-    nextArg : function () {
+    nextArg: function () {
         var endChar = this.separator;
 
         if (this.peek() === this.quote) {
@@ -35,7 +35,7 @@ var argParser = {
         return this.consumeUntil(endChar);
     },
 
-    consumeUntil : function (endChar) {
+    consumeUntil: function (endChar) {
         var char = this.nextChar(),
             escape = false,
             ret = '';
@@ -54,17 +54,17 @@ var argParser = {
         return ret;
     },
 
-    nextChar : function () {
+    nextChar: function () {
         var ret = this.source[this.pos];
         this.pos += 1;
         return ret;
     },
 
-    peek : function () {
+    peek: function () {
         return this.source[this.pos];
     },
 
-    done : function () {
+    done: function () {
         return this.pos >= this.source.length;
     }
 };

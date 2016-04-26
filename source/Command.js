@@ -1,7 +1,7 @@
 /*global exports*/
 
-//some sort of pseudo constructor
-exports.Command = function ( cmd ) {
+// some sort of pseudo constructor
+exports.Command = function (cmd) {
     var bot = this;
 
     cmd.name = cmd.name.toLowerCase();
@@ -14,106 +14,107 @@ exports.Command = function ( cmd ) {
     cmd.description = cmd.description || '';
     cmd.creator = cmd.creator || 'God';
 
-    //make canUse and canDel
-    [ 'Use', 'Del' ].forEach(function ( perm ) {
+    // make canUse and canDel
+    ['Use', 'Del'].forEach(function (perm) {
         var low = perm.toLowerCase();
 
-        cmd[ 'can' + perm ] = function ( usrid ) {
-            var canDo = this.permissions[ low ];
+        cmd['can' + perm] = function (usrid) {
+            var canDo = this.permissions[low];
 
-            if ( canDo === 'ALL' ) {
+            if (canDo === 'ALL') {
                 return true;
             }
-            else if ( canDo === 'NONE' ) {
+            else if (canDo === 'NONE') {
                 return false;
             }
-            else if ( bot.isOwner(usrid) ) {
+            else if (bot.isOwner(usrid)) {
                 return true;
             }
 
-            return canDo.indexOf( usrid ) > -1;
+            return canDo.indexOf(usrid) > -1;
         };
     });
 
     cmd.exec = function () {
-        return this.fun.apply( this.thisArg, arguments );
+        return this.fun.apply(this.thisArg, arguments);
     };
 
     cmd.del = function () {
         bot.info.forgotten += 1;
-        delete bot.commands[ cmd.name ];
+        delete bot.commands[cmd.name];
         bot.commandDictionary.trie.del(cmd.name);
     };
 
     return cmd;
 };
 
-//a normally priviliged command which can be executed if enough people use it
-exports.CommunityCommand = function ( command, req ) {
+// a normally priviliged command which can be executed if enough people use it
+exports.CommunityCommand = function (command, req) {
     var bot = this;
 
-    var cmd = this.Command( command ),
+    var cmd = this.Command(command),
         used = {},
-        old_execute = cmd.exec,
-        old_canUse  = cmd.canUse;
+        oldExecute = cmd.exec,
+        oldCanUse  = cmd.canUse;
 
     var pendingMessage = command.pendingMessage ||
             'Already registered; still need {0} more';
-    console.log( command.pendingMessage, pendingMessage );
+    console.log(command.pendingMessage, pendingMessage);
     req = req || 2;
 
     cmd.canUse = function () {
         return true;
     };
-    cmd.exec = function ( msg ) {
-        var err = register( msg.get('user_id') );
-        if ( err ) {
-            bot.log( err );
+    cmd.exec = function (msg) {
+        var err = register(msg.get('user_id'));
+        if (err) {
+            bot.log(err);
             return err;
         }
 
         used = {};
 
-        return old_execute.apply( cmd, arguments );
+        return oldExecute.apply(cmd, arguments);
     };
 
     return cmd;
 
-    //once again, a switched return statement: truthy means a message, falsy
+    // once again, a switched return statement: truthy means a message, falsy
     // means to go on ahead
-    function register ( usrid ) {
-        if ( old_canUse.call(cmd, usrid) ) {
+    function register (usrid) {
+        if (oldCanUse.call(cmd, usrid)) {
             return false;
         }
 
         clean();
-        var count = Object.keys( used ).length,
+        var count = Object.keys(used).length,
             needed = req - count;
-        bot.log( used, count, req );
+        bot.log(used, count, req);
 
-        if ( usrid in used ) {
-            return 'Already registered; still need {0} more'.supplant( needed );
+        if (usrid in used) {
+            return 'Already registered; still need {0} more'.supplant(needed);
         }
 
-        used[ usrid ] = new Date();
+        used[usrid] = new Date();
         needed -= 1;
 
-        if ( needed > 0 ) {
-            return pendingMessage.supplant( needed );
+        if (needed > 0) {
+            return pendingMessage.supplant(needed);
         }
 
-        bot.log( 'should execute' );
-        return false; //huzzah!
+        bot.log('should execute');
+        // huzzah!
+        return false;
     }
 
     function clean () {
         var tenMinsAgo = new Date();
-        tenMinsAgo.setMinutes( tenMinsAgo.getMinutes() - 10 );
+        tenMinsAgo.setMinutes(tenMinsAgo.getMinutes() - 10);
 
-        Object.keys( used ).reduce( rm, used );
-        function rm ( ret, key ) {
-            if ( ret[key] < tenMinsAgo ) {
-                delete ret[ key ];
+        Object.keys(used).reduce(rm, used);
+        function rm (ret, key) {
+            if (ret[key] < tenMinsAgo) {
+                delete ret[key];
             }
             return ret;
         }
