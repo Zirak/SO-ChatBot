@@ -37,13 +37,13 @@ module.exports = function (bot) {
        user_id
 */
 
-    var template = '{display_name} ({link}) '            +
-        '{indicative} {reputation} reputation, '     +
-        'earned {reputation_change_day} rep today, ' +
-        'asked {question_count} questions, '         +
-        'gave {answer_count} answers, '              +
-        'for a q:a ratio of {ratio}.\n'              +
-        'avg. rep/post: {avg_rep_post}. Badges: '    +
+    var template = '{displayName} ({link}) '       +
+        '{indicative} {reputation} reputation, '   +
+        'earned {reputationChangeDay} rep today, ' +
+        'asked {questionCount} questions, '        +
+        'gave {answerCount} answers, '             +
+        'for a q:a ratio of {ratio}.\n'            +
+        'avg. rep/post: {avgRepPost}. Badges: '    +
         '{gold}g {silver}s {bronze}b ';
 
     function stat (msg, cb) {
@@ -78,8 +78,10 @@ module.exports = function (bot) {
         });
 
         function done(resp) {
-            if (resp.error_message) {
-                finish(resp.error_message);
+            bot.IO.normalizeUnderscoreProperties(resp);
+
+            if (resp.errorMessage) {
+                finish(resp.errorMessage);
                 return;
             }
 
@@ -88,6 +90,7 @@ module.exports = function (bot) {
                 res = 'User ' + id + ' not found';
             }
             else {
+                bot.IO.normalizeUnderscoreProperties(user);
                 res = handleUserObject(user, msg);
             }
 
@@ -111,12 +114,12 @@ module.exports = function (bot) {
         // asking about themselves.
         if (user.user_id === msg.get('user_id')) {
             // You (link) have ...
-            user.display_name = 'You';
+            user.displayName = 'You';
             user.indicative = 'have';
         }
         else {
             // Bob (link) has ...
-            user.display_name = bot.IO.decodehtmlEntities(user.display_name);
+            user.displayName = bot.IO.decodehtmlEntities(user.displayName);
             user.indicative = 'has';
         }
 
@@ -125,24 +128,24 @@ module.exports = function (bot) {
 
     function normalizeStats(stats) {
         stats = Object.merge({
-            question_count: 0,
-            answer_count: 0,
-            reputation_change_day: 0
+            questionCount: 0,
+            answerCount: 0,
+            reputationChangeDay: 0
         }, stats.badge_counts, stats);
 
         stats = Object.merge(stats.badge_counts, stats);
 
         // avg = rep / (questions + answers)
-        stats.avg_rep_post = (
-            stats.reputation / (stats.question_count + stats.answer_count)
+        stats.avgRepPost = (
+            stats.reputation / (stats.questionCount + stats.answerCount)
         ).maxDecimal(2);
 
         // 1 / 0 === Infinity
-        if (stats.avg_rep_post === Infinity) {
-            stats.avg_rep_post = 'T͎͍̘͙̖̤̉̌̇̅ͯ͋͢͜͝H̖͙̗̗̺͚̱͕̒́͟E̫̺̯͖͎̗̒͑̅̈ ̈ͮ̽ͯ̆̋́͏͙͓͓͇̹<̩̟̳̫̪̇ͩ̑̆͗̽̇͆́ͅC̬͎ͪͩ̓̑͊ͮͪ̄̚̕Ě̯̰̤̗̜̗͓͛͝N̶̴̞͇̟̲̪̅̓ͯͅT͍̯̰͓̬͚̅͆̄E̠͇͇̬̬͕͖ͨ̔̓͞R͚̠̻̲̗̹̀>̇̏ͣ҉̳̖̟̫͕ ̧̛͈͙͇͂̓̚͡C͈̞̻̩̯̠̻ͥ̆͐̄ͦ́̀͟A̛̪̫͙̺̱̥̞̙ͦͧ̽͛̈́ͯ̅̍N̦̭͕̹̤͓͙̲̑͋̾͊ͣŅ̜̝͌͟O̡̝͍͚̲̝ͣ̔́͝Ť͈͢ ̪̘̳͔̂̒̋ͭ͆̽͠H̢͈̤͚̬̪̭͗ͧͬ̈́̈̀͌͒͡Ơ̮͍͇̝̰͍͚͖̿ͮ̀̍́L͐̆ͨ̏̎͡҉̧̱̯̤̹͓̗̻̭ͅḐ̲̰͙͑̂̒̐́̊';
+        if (stats.avgRepPost === Infinity) {
+            stats.avgRepPost = 'T͎͍̘͙̖̤̉̌̇̅ͯ͋͢͜͝H̖͙̗̗̺͚̱͕̒́͟E̫̺̯͖͎̗̒͑̅̈ ̈ͮ̽ͯ̆̋́͏͙͓͓͇̹<̩̟̳̫̪̇ͩ̑̆͗̽̇͆́ͅC̬͎ͪͩ̓̑͊ͮͪ̄̚̕Ě̯̰̤̗̜̗͓͛͝N̶̴̞͇̟̲̪̅̓ͯͅT͍̯̰͓̬͚̅͆̄E̠͇͇̬̬͕͖ͨ̔̓͞R͚̠̻̲̗̹̀>̇̏ͣ҉̳̖̟̫͕ ̧̛͈͙͇͂̓̚͡C͈̞̻̩̯̠̻ͥ̆͐̄ͦ́̀͟A̛̪̫͙̺̱̥̞̙ͦͧ̽͛̈́ͯ̅̍N̦̭͕̹̤͓͙̲̑͋̾͊ͣŅ̜̝͌͟O̡̝͍͚̲̝ͣ̔́͝Ť͈͢ ̪̘̳͔̂̒̋ͭ͆̽͠H̢͈̤͚̬̪̭͗ͧͬ̈́̈̀͌͒͡Ơ̮͍͇̝̰͍͚͖̿ͮ̀̍́L͐̆ͨ̏̎͡҉̧̱̯̤̹͓̗̻̭ͅḐ̲̰͙͑̂̒̐́̊';
         }
 
-        stats.ratio = calcQARatio(stats.question_count, stats.answer_count);
+        stats.ratio = calcQARatio(stats.questionCount, stats.answerCount);
 
         bot.log(stats, '/stat normalized');
         return stats;

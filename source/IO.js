@@ -353,3 +353,16 @@ IO.jsonp.google = function (query, cb) {
         fun: cb
     });
 };
+
+IO.normalizeUnderscoreProperties = function (obj) {
+    Object.iterate(obj, function (key, val) {
+        key = key.replace(/_([A-z])/g, function (_, $1) {
+            return $1.toUpperCase();
+        });
+
+        // lulz what am I doing
+        delete obj[key];
+        obj[key] = val;
+    });
+    return obj;
+};

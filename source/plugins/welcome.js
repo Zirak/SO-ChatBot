@@ -70,8 +70,8 @@ module.exports = function (bot) {
 
         function isSemiLegitUser (user) {
             return bot.isOwner(user.id) ||
-            user.reputation > 1000 ||
-            user.reputation < 20;
+                user.reputation > 1000 ||
+                user.reputation < 20;
         }
     });
 

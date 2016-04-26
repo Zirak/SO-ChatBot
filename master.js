@@ -479,6 +479,19 @@ IO.jsonp.google = function (query, cb) {
     });
 };
 
+IO.normalizeUnderscoreProperties = function (obj) {
+    Object.iterate(obj, function (key, val) {
+        key = key.replace(/_([A-z])/g, function (_, $1) {
+            return $1.toUpperCase();
+        });
+
+        // lulz what am I doing
+        delete obj[key];
+        obj[key] = val;
+    });
+    return obj;
+};
+
 },{"static/htmlEntities.json":53}],3:[function(require,module,exports){
 /*global exports*/
 
@@ -732,7 +745,7 @@ var adapter = {
     // used in commands calling the SO API
     site: null,
     // our user id
-    user_id: null,
+    userid: null,
 
     maxLineLength: 500,
 
@@ -747,7 +760,7 @@ var adapter = {
         this.fkey    = fkey.value;
         this.roomid  = Number(/\d+/.exec(location)[0]);
         this.site    = this.getCurrentSite();
-        this.user_id = CHAT.CURRENT_USER_ID;
+        this.userid = CHAT.CURRENT_USER_ID;
 
         this.in.init();
         this.out.init();
@@ -1385,7 +1398,7 @@ var bot = window.bot = {
         }
 
         // make sure we don't process our own messages,
-        return msgObj.user_id !== bot.adapter.user_id &&
+        return msgObj.user_id !== bot.adapter.userid &&
             // make sure we don't process Feeds
             msgObj.user_id > 0 &&
             // and the message begins with the invocation pattern
@@ -2813,7 +2826,7 @@ module.exports = function (bot) {
             now = Date.now();
 
         // we don't care about bot messages
-        if (msgObj.user_id === bot.adapter.user_id) {
+        if (msgObj.user_id === bot.adapter.userid) {
             return;
         }
 
@@ -3149,10 +3162,10 @@ module.exports = function (bot) {
  */
     var rUnits = /(-?\d+\.?\d*)\s*(\S+)(\s+(?:(?:to|in)\s+)?(\S+))?$/;
 
-// string is in the form of:
-// <number><unit>
-// <number><unit> to|in <unit>
-// note that units are case-sensitive: F is the temperature, f is the length
+    // string is in the form of:
+    // <number><unit>
+    // <number><unit> to|in <unit>
+    // note that units are case-sensitive: F is the temperature, f is the length
     var convert = function (inp, cb) {
         if (inp.toLowerCase() === 'list') {
             finish(listUnits().join(', '));
@@ -3443,7 +3456,7 @@ module.exports = function (bot) {
         },
 
         // choose the borders to use for the balloon
-        chooseBorder: function (lineCount) {
+        chooseBorders: function (lineCount) {
             var border;
 
             // thought bubbles always look the same
@@ -4677,7 +4690,7 @@ module.exports = function (bot) {
         if (!bot.users.hasOwnProperty(usrid)) {
             return unexisto.supplant(usrid, bot.adapter.roomid);
         }
-        else if (Number(usrid) === bot.adapter.user_id) {
+        else if (Number(usrid) === bot.adapter.userid) {
             return [
                 'Nobody puts a mustache on me. Again.',
                 'Mustache me once, shame on you. Mustache me ---twice--- 9 times...'
@@ -4944,13 +4957,13 @@ module.exports = function (bot) {
        user_id
 */
 
-    var template = '{display_name} ({link}) '            +
+    var template = '{displayName} ({link}) '            +
         '{indicative} {reputation} reputation, '     +
-        'earned {reputation_change_day} rep today, ' +
-        'asked {question_count} questions, '         +
-        'gave {answer_count} answers, '              +
+        'earned {reputationChangeDay} rep today, ' +
+        'asked {questionCount} questions, '         +
+        'gave {answerCount} answers, '              +
         'for a q:a ratio of {ratio}.\n'              +
-        'avg. rep/post: {avg_rep_post}. Badges: '    +
+        'avg. rep/post: {avgRepPost}. Badges: '    +
         '{gold}g {silver}s {bronze}b ';
 
     function stat (msg, cb) {
@@ -4985,8 +4998,10 @@ module.exports = function (bot) {
         });
 
         function done(resp) {
-            if (resp.error_message) {
-                finish(resp.error_message);
+            bot.IO.normalizeUnderscoreProperties(resp);
+
+            if (resp.errorMessage) {
+                finish(resp.errorMessage);
                 return;
             }
 
@@ -4995,6 +5010,7 @@ module.exports = function (bot) {
                 res = 'User ' + id + ' not found';
             }
             else {
+                bot.IO.normalizeUnderscoreProperties(user);
                 res = handleUserObject(user, msg);
             }
 
@@ -5018,12 +5034,12 @@ module.exports = function (bot) {
         // asking about themselves.
         if (user.user_id === msg.get('user_id')) {
             // You (link) have ...
-            user.display_name = 'You';
+            user.displayName = 'You';
             user.indicative = 'have';
         }
         else {
             // Bob (link) has ...
-            user.display_name = bot.IO.decodehtmlEntities(user.display_name);
+            user.displayName = bot.IO.decodehtmlEntities(user.displayName);
             user.indicative = 'has';
         }
 
@@ -5032,24 +5048,24 @@ module.exports = function (bot) {
 
     function normalizeStats(stats) {
         stats = Object.merge({
-            question_count: 0,
-            answer_count: 0,
-            reputation_change_day: 0
+            questionCount: 0,
+            answerCount: 0,
+            reputationChangeDay: 0
         }, stats.badge_counts, stats);
 
         stats = Object.merge(stats.badge_counts, stats);
 
         // avg = rep / (questions + answers)
-        stats.avg_rep_post = (
-            stats.reputation / (stats.question_count + stats.answer_count)
+        stats.avgRepPost = (
+            stats.reputation / (stats.questionCount + stats.answerCount)
         ).maxDecimal(2);
 
         // 1 / 0 === Infinity
-        if (stats.avg_rep_post === Infinity) {
-            stats.avg_rep_post = 'T͎͍̘͙̖̤̉̌̇̅ͯ͋͢͜͝H̖͙̗̗̺͚̱͕̒́͟E̫̺̯͖͎̗̒͑̅̈ ̈ͮ̽ͯ̆̋́͏͙͓͓͇̹<̩̟̳̫̪̇ͩ̑̆͗̽̇͆́ͅC̬͎ͪͩ̓̑͊ͮͪ̄̚̕Ě̯̰̤̗̜̗͓͛͝N̶̴̞͇̟̲̪̅̓ͯͅT͍̯̰͓̬͚̅͆̄E̠͇͇̬̬͕͖ͨ̔̓͞R͚̠̻̲̗̹̀>̇̏ͣ҉̳̖̟̫͕ ̧̛͈͙͇͂̓̚͡C͈̞̻̩̯̠̻ͥ̆͐̄ͦ́̀͟A̛̪̫͙̺̱̥̞̙ͦͧ̽͛̈́ͯ̅̍N̦̭͕̹̤͓͙̲̑͋̾͊ͣŅ̜̝͌͟O̡̝͍͚̲̝ͣ̔́͝Ť͈͢ ̪̘̳͔̂̒̋ͭ͆̽͠H̢͈̤͚̬̪̭͗ͧͬ̈́̈̀͌͒͡Ơ̮͍͇̝̰͍͚͖̿ͮ̀̍́L͐̆ͨ̏̎͡҉̧̱̯̤̹͓̗̻̭ͅḐ̲̰͙͑̂̒̐́̊';
+        if (stats.avgRepPost === Infinity) {
+            stats.avgRepPost = 'T͎͍̘͙̖̤̉̌̇̅ͯ͋͢͜͝H̖͙̗̗̺͚̱͕̒́͟E̫̺̯͖͎̗̒͑̅̈ ̈ͮ̽ͯ̆̋́͏͙͓͓͇̹<̩̟̳̫̪̇ͩ̑̆͗̽̇͆́ͅC̬͎ͪͩ̓̑͊ͮͪ̄̚̕Ě̯̰̤̗̜̗͓͛͝N̶̴̞͇̟̲̪̅̓ͯͅT͍̯̰͓̬͚̅͆̄E̠͇͇̬̬͕͖ͨ̔̓͞R͚̠̻̲̗̹̀>̇̏ͣ҉̳̖̟̫͕ ̧̛͈͙͇͂̓̚͡C͈̞̻̩̯̠̻ͥ̆͐̄ͦ́̀͟A̛̪̫͙̺̱̥̞̙ͦͧ̽͛̈́ͯ̅̍N̦̭͕̹̤͓͙̲̑͋̾͊ͣŅ̜̝͌͟O̡̝͍͚̲̝ͣ̔́͝Ť͈͢ ̪̘̳͔̂̒̋ͭ͆̽͠H̢͈̤͚̬̪̭͗ͧͬ̈́̈̀͌͒͡Ơ̮͍͇̝̰͍͚͖̿ͮ̀̍́L͐̆ͨ̏̎͡҉̧̱̯̤̹͓̗̻̭ͅḐ̲̰͙͑̂̒̐́̊';
         }
 
-        stats.ratio = calcQARatio(stats.question_count, stats.answer_count);
+        stats.ratio = calcQARatio(stats.questionCount, stats.answerCount);
 
         bot.log(stats, '/stat normalized');
         return stats;
@@ -5606,10 +5622,10 @@ module.exports = function (bot) {
         unboxInterval = 90 * 1000;
 
     var unonebox = {
-        // because people are bad at reading instructions, accept a wide range of
-        // values for the command
-        enablers: Object.TruthMap(['yes', 'on', 'true', 'start', '1', 'enable']),
-        disablers: Object.TruthMap(['no', 'off', 'false', 'stop', '0', 'disable']),
+        // because people are bad at reading instructions, accept a wide range
+        // of values for the command
+        enablers: Object.TruthMap(['on', 'true', 'start', 'enable']),
+        disablers: Object.TruthMap(['off', 'false', 'stop', 'disable']),
 
         command: function unoneboxCommand (args) {
             var state = args.toLowerCase(),
@@ -5635,8 +5651,8 @@ module.exports = function (bot) {
             }
             else {
                 bot.log('/unonebox invalid input');
-                reply = 'That didn\'t make much sense. Please use `on` or `off` ' +
-                    'to toggle the command';
+                reply = 'That didn\'t make much sense. Please use `on` or ' +
+                    '`off` to toggle the command';
             }
 
             if (save) {
@@ -5658,7 +5674,7 @@ module.exports = function (bot) {
 
         unbox: function (msgObj) {
             // We only operate on our own messages.
-            if (msgObj.user_id !== bot.adapter.user_id) {
+            if (msgObj.user_id !== bot.adapter.userid) {
                 return;
             }
 
@@ -6173,8 +6189,8 @@ module.exports = function (bot) {
 
         function isSemiLegitUser (user) {
             return bot.isOwner(user.id) ||
-            user.reputation > 1000 ||
-            user.reputation < 20;
+                user.reputation > 1000 ||
+                user.reputation < 20;
         }
     });
 

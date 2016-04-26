@@ -27,7 +27,7 @@ module.exports = function (bot) {
         if (!bot.users.hasOwnProperty(usrid)) {
             return unexisto.supplant(usrid, bot.adapter.roomid);
         }
-        else if (Number(usrid) === bot.adapter.user_id) {
+        else if (Number(usrid) === bot.adapter.userid) {
             return [
                 'Nobody puts a mustache on me. Again.',
                 'Mustache me once, shame on you. Mustache me ---twice--- 9 times...'
@@ -41,15 +41,13 @@ module.exports = function (bot) {
             finish(encodeURIComponent(hash.slice(1)) + '#.png');
         }
         else {
-            finish(
-            'http%3A%2F%2Fwww.gravatar.com%2Favatar%2F{0}%3Fs%3D256%26d%3Didenticon#.png'.supplant(hash));
+            finish('http%3A%2F%2Fwww.gravatar.com%2Favatar%2F{0}%3Fs%3D256%26d%3Didenticon#.png'.supplant(hash));
         }
 
         function finish (src) {
             bot.log(src, '/mustache finish');
 
-            args.directreply(
-            'http://mustachify.me/' + props.mustache + '?src=' + src);
+            args.directreply('http://mustachify.me/' + props.mustache + '?src=' + src);
         }
 
         function parseArgs (args) {

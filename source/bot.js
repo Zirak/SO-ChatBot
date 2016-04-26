@@ -170,7 +170,7 @@ var bot = window.bot = {
         }
 
         // make sure we don't process our own messages,
-        return msgObj.user_id !== bot.adapter.user_id &&
+        return msgObj.user_id !== bot.adapter.userid &&
             // make sure we don't process Feeds
             msgObj.user_id > 0 &&
             // and the message begins with the invocation pattern

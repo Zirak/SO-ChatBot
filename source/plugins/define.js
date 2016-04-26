@@ -10,9 +10,9 @@ module.exports = function (bot) {
 
     // I wish regexps had the x flag...
     /*
-    ( ... )    # the category: alternative spelling, common missspelling, etc
-    (of|for)  # alternative spelling of, aternative term for
-    (.+?)\.?   # what this shit is an alternative of, sometimes followed by a dot
+    (...)    # the category: alternative spelling, common missspelling, etc
+    (of|for) # alternative spelling of, aternative term for
+    (.+?)\.? # what this shit is an alternative of, sometimes followed by a dot
     */
     var alternativeRe = /(alternative (spelling|term)|common misspelling|informal form|archaic spelling) (of|for) (.+?)\.?$/i;
 

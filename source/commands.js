@@ -148,8 +148,8 @@ module.exports = function (bot) {
             });
 
             var sortedCommands = commandGroups.builtin.sort().concat(
-        (commandGroups.learned || []).sort()
-    );
+                (commandGroups.learned || []).sort()
+            );
 
             var helpIndex = sortedCommands.indexOf('help');
             sortedCommands.unshift(sortedCommands.splice(helpIndex, 1)[0]);
@@ -185,7 +185,7 @@ module.exports = function (bot) {
         cmd = bot.getCommand(cmdName);
         if (cmd.error) {
             return cmd.error +
-            ' (note that /tell works on commands, it\'s not an echo.)';
+                ' (note that /tell works on commands, it\'s not an echo.)';
         }
 
         if (cmd.unTellable) {
@@ -258,7 +258,7 @@ module.exports = function (bot) {
         listen: 'Forwards the message to my ears (as if called without the /)',
         refresh: 'Reloads the browser window I live in',
         tell: 'Redirect command result to user/message.' +
-            ' /tell `msg_id|usr_name cmdName [cmdArgs]`'
+            ' /tell `msg_id|user_name cmdName [cmdArgs]`'
     };
 
     // only allow owners to use certain commands
@@ -295,5 +295,4 @@ module.exports = function (bot) {
         }
         bot.addCommand(cmd);
     });
-
 };

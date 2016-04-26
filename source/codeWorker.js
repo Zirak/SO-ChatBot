@@ -75,14 +75,15 @@ module.exports = function () {
         WorkerMessageEvent: 1
     };
 
-    /**
-     * DOM specification doesn't define an enumerable `fetch` function object on the global object
-     * so we add the property here, and the following code will blacklist it.
-     * (`fetch` descends from `GlobalFetch`, and is thus present in worker code as well)
-     * Just in case someone runs the bot on some old browser where `fetch` is not defined anyways,
-     * this will have no effect.
-     * Reason for blacklisting fetch: well, same as XHR.
-     */
+    /*
+     DOM specification doesn't define an enumerable `fetch` function object on
+     the global object so we add the property here, and the following code will
+     blacklist it. (`fetch` descends from `GlobalFetch`, and is thus present in
+     worker code as well)
+     Just in case someone runs the bot on some old browser where `fetch` is not
+     defined anyways, this will have no effect.
+     Reason for blacklisting fetch: well, same as XHR.
+    */
     global.fetch = undefined;
 
     [global, Object.getPrototypeOf(global)].forEach(function (obj) {

@@ -7,10 +7,10 @@ module.exports = function (bot) {
         unboxInterval = 90 * 1000;
 
     var unonebox = {
-        // because people are bad at reading instructions, accept a wide range of
-        // values for the command
-        enablers: Object.TruthMap(['yes', 'on', 'true', 'start', '1', 'enable']),
-        disablers: Object.TruthMap(['no', 'off', 'false', 'stop', '0', 'disable']),
+        // because people are bad at reading instructions, accept a wide range
+        // of values for the command
+        enablers: Object.TruthMap(['on', 'true', 'start', 'enable']),
+        disablers: Object.TruthMap(['off', 'false', 'stop', 'disable']),
 
         command: function unoneboxCommand (args) {
             var state = args.toLowerCase(),
@@ -36,8 +36,8 @@ module.exports = function (bot) {
             }
             else {
                 bot.log('/unonebox invalid input');
-                reply = 'That didn\'t make much sense. Please use `on` or `off` ' +
-                    'to toggle the command';
+                reply = 'That didn\'t make much sense. Please use `on` or ' +
+                    '`off` to toggle the command';
             }
 
             if (save) {
@@ -59,7 +59,7 @@ module.exports = function (bot) {
 
         unbox: function (msgObj) {
             // We only operate on our own messages.
-            if (msgObj.user_id !== bot.adapter.user_id) {
+            if (msgObj.user_id !== bot.adapter.userid) {
                 return;
             }
 

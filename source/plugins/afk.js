@@ -118,7 +118,7 @@ module.exports = function (bot) {
             now = Date.now();
 
         // we don't care about bot messages
-        if (msgObj.user_id === bot.adapter.user_id) {
+        if (msgObj.user_id === bot.adapter.userid) {
             return;
         }
 

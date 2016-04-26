@@ -240,7 +240,8 @@ module.exports = function (bot) {
 
         if (!converters[unit]) {
             cb({
-                error: 'Confuse converter with ' + unit + ', receive error message'
+                error: 'Confuse converter with {0}, receive error message'
+                    .supplant(unit)
             });
         }
         else {

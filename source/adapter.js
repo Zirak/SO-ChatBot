@@ -128,7 +128,7 @@ var adapter = {
     // used in commands calling the SO API
     site: null,
     // our user id
-    user_id: null,
+    userid: null,
 
     maxLineLength: 500,
 
@@ -143,7 +143,7 @@ var adapter = {
         this.fkey    = fkey.value;
         this.roomid  = Number(/\d+/.exec(location)[0]);
         this.site    = this.getCurrentSite();
-        this.user_id = CHAT.CURRENT_USER_ID;
+        this.userid = CHAT.CURRENT_USER_ID;
 
         this.in.init();
         this.out.init();
@@ -576,7 +576,8 @@ var output = {
     }
 };
 
-// two guys walk into a bar. the bartender asks them "is this some kind of joke?"
+// two guys walk into a bar. the bartender asks them "is this some kind of
+// joke?"
 
 adapter.in  = input;
 adapter.out = output;
