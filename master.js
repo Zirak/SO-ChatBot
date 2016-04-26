@@ -1193,7 +1193,8 @@ var output = {
     }
 };
 
-// two guys walk into a bar. the bartender asks them "is this some kind of joke?"
+// two guys walk into a bar. the bartender asks them "is this some kind of
+// joke?"
 
 adapter.in  = input;
 adapter.out = output;
@@ -1618,14 +1619,15 @@ module.exports = function () {
         WorkerMessageEvent: 1
     };
 
-    /**
-     * DOM specification doesn't define an enumerable `fetch` function object on the global object
-     * so we add the property here, and the following code will blacklist it.
-     * (`fetch` descends from `GlobalFetch`, and is thus present in worker code as well)
-     * Just in case someone runs the bot on some old browser where `fetch` is not defined anyways,
-     * this will have no effect.
-     * Reason for blacklisting fetch: well, same as XHR.
-     */
+    /*
+     DOM specification doesn't define an enumerable `fetch` function object on
+     the global object so we add the property here, and the following code will
+     blacklist it. (`fetch` descends from `GlobalFetch`, and is thus present in
+     worker code as well)
+     Just in case someone runs the bot on some old browser where `fetch` is not
+     defined anyways, this will have no effect.
+     Reason for blacklisting fetch: well, same as XHR.
+    */
     global.fetch = undefined;
 
     [global, Object.getPrototypeOf(global)].forEach(function (obj) {
@@ -1930,8 +1932,8 @@ module.exports = function (bot) {
             });
 
             var sortedCommands = commandGroups.builtin.sort().concat(
-        (commandGroups.learned || []).sort()
-    );
+                (commandGroups.learned || []).sort()
+            );
 
             var helpIndex = sortedCommands.indexOf('help');
             sortedCommands.unshift(sortedCommands.splice(helpIndex, 1)[0]);
@@ -1967,7 +1969,7 @@ module.exports = function (bot) {
         cmd = bot.getCommand(cmdName);
         if (cmd.error) {
             return cmd.error +
-            ' (note that /tell works on commands, it\'s not an echo.)';
+                ' (note that /tell works on commands, it\'s not an echo.)';
         }
 
         if (cmd.unTellable) {
@@ -2040,7 +2042,7 @@ module.exports = function (bot) {
         listen: 'Forwards the message to my ears (as if called without the /)',
         refresh: 'Reloads the browser window I live in',
         tell: 'Redirect command result to user/message.' +
-            ' /tell `msg_id|usr_name cmdName [cmdArgs]`'
+            ' /tell `msg_id|user_name cmdName [cmdArgs]`'
     };
 
     // only allow owners to use certain commands
@@ -2077,7 +2079,6 @@ module.exports = function (bot) {
         }
         bot.addCommand(cmd);
     });
-
 };
 
 },{}],10:[function(require,module,exports){
@@ -3247,7 +3248,8 @@ module.exports = function (bot) {
 
         if (!converters[unit]) {
             cb({
-                error: 'Confuse converter with ' + unit + ', receive error message'
+                error: 'Confuse converter with {0}, receive error message'
+                    .supplant(unit)
             });
         }
         else {
@@ -3551,9 +3553,9 @@ module.exports = function (bot) {
 
     // I wish regexps had the x flag...
     /*
-    ( ... )    # the category: alternative spelling, common missspelling, etc
-    (of|for)  # alternative spelling of, aternative term for
-    (.+?)\.?   # what this shit is an alternative of, sometimes followed by a dot
+    (...)    # the category: alternative spelling, common missspelling, etc
+    (of|for) # alternative spelling of, aternative term for
+    (.+?)\.? # what this shit is an alternative of, sometimes followed by a dot
     */
     var alternativeRe = /(alternative (spelling|term)|common misspelling|informal form|archaic spelling) (of|for) (.+?)\.?$/i;
 
@@ -4704,15 +4706,13 @@ module.exports = function (bot) {
             finish(encodeURIComponent(hash.slice(1)) + '#.png');
         }
         else {
-            finish(
-            'http%3A%2F%2Fwww.gravatar.com%2Favatar%2F{0}%3Fs%3D256%26d%3Didenticon#.png'.supplant(hash));
+            finish('http%3A%2F%2Fwww.gravatar.com%2Favatar%2F{0}%3Fs%3D256%26d%3Didenticon#.png'.supplant(hash));
         }
 
         function finish (src) {
             bot.log(src, '/mustache finish');
 
-            args.directreply(
-            'http://mustachify.me/' + props.mustache + '?src=' + src);
+            args.directreply('http://mustachify.me/' + props.mustache + '?src=' + src);
         }
 
         function parseArgs (args) {
@@ -4957,12 +4957,12 @@ module.exports = function (bot) {
        user_id
 */
 
-    var template = '{displayName} ({link}) '            +
-        '{indicative} {reputation} reputation, '     +
+    var template = '{displayName} ({link}) '       +
+        '{indicative} {reputation} reputation, '   +
         'earned {reputationChangeDay} rep today, ' +
-        'asked {questionCount} questions, '         +
-        'gave {answerCount} answers, '              +
-        'for a q:a ratio of {ratio}.\n'              +
+        'asked {questionCount} questions, '        +
+        'gave {answerCount} answers, '             +
+        'for a q:a ratio of {ratio}.\n'            +
         'avg. rep/post: {avgRepPost}. Badges: '    +
         '{gold}g {silver}s {bronze}b ';
 
