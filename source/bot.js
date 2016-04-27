@@ -24,6 +24,8 @@ var bot = window.bot = {
 
     // defined in users.js
     users: {},
+    // defined in rooms.js
+    rooms: {},
     // defined in config.js
     config: {},
 

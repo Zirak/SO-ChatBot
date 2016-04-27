@@ -10,7 +10,7 @@ exports.eval = (function () {
     var blob = new Blob([workerCode.stringContents()], {
             type: 'application/javascript'
         }),
-        codeUrl = window.URL.createObjectURL(blob);
+        codeUrl = URL.createObjectURL(blob);
 
     return function (code, arg, cb) {
         if (arguments.length === 2) {
@@ -51,7 +51,7 @@ exports.eval = (function () {
                 return;
             }
 
-            timeout = window.setTimeout(function () {
+            timeout = setTimeout(function () {
                 finish('Maximum execution time exceeded');
             }, 500);
         }

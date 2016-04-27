@@ -140,9 +140,9 @@ var adapter = {
             return;
         }
 
-        this.fkey    = fkey.value;
-        this.roomid  = Number(/\d+/.exec(location)[0]);
-        this.site    = this.getCurrentSite();
+        this.fkey   = fkey.value;
+        this.roomid = Number(/\d+/.exec(location)[0]);
+        this.site   = this.getCurrentSite();
         this.userid = CHAT.CURRENT_USER_ID;
 
         this.in.init();

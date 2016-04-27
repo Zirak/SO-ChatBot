@@ -35,7 +35,7 @@ module.exports = function (bot) {
         },
 
         refresh: function() {
-            window.location.reload();
+            location.reload();
         },
 
         forget: function (args) {

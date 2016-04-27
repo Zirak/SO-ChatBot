@@ -24,7 +24,7 @@ module.exports = function (bot) {
             now = Date.now();
 
         if (shouldReply()) {
-        // Send a response and such
+            // Send a response and such
             msg.directreply(formulateReponse());
             afkObj.lastPing[roomId] = now;
             bot.memory.save('afk');
@@ -81,7 +81,7 @@ module.exports = function (bot) {
     };
 
     var commandHandler = function (msg) {
-    // parse the message and stuff.
+        // parse the message and stuff.
         var user = msg.get('user_name').replace(/\s/g, ''),
             afkMsg = msg.content;
 
@@ -135,7 +135,7 @@ module.exports = function (bot) {
         }
 
         Object.keys(demAFKs).forEach(function afkCheckAndRespond (name) {
-        // /(^|\b)@bob\b/i
+            // /(^|\b)@bob\b/i
             var pinged = new RegExp(
             '(^|\b)' + RegExp.escape('@' + name) + '\\b', 'i');
 
