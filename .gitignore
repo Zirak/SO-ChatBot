@@ -6,3 +6,6 @@ data/
 
 # ignore local config files; only commit ones with .SAMPLE
 *.config.json
+
+# Silly npm
+npm-debug.log
