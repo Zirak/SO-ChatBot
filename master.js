@@ -492,7 +492,7 @@ IO.normalizeUnderscoreProperties = function (obj) {
     return obj;
 };
 
-},{"static/htmlEntities.json":53}],3:[function(require,module,exports){
+},{"static/htmlEntities.json":51}],3:[function(require,module,exports){
 /*global exports*/
 
 exports.Message = function (text, msgObj) {
@@ -555,6 +555,39 @@ exports.Message = function (text, msgObj) {
         codify: bot.adapter.codify.bind(bot.adapter),
         escape: bot.adapter.escape.bind(bot.adapter),
         link: bot.adapter.link.bind(bot.adapter),
+
+        stringifyGiantArray: function (giantArray) {
+            function partition (list, maxSize) {
+                var size = 0, last = [];
+
+                var ret = list.reduce(function partition (ret, item) {
+                    // +1 for comma, +1 for space
+                    var len = item.length + 2;
+
+                    if (size + len > maxSize) {
+                        ret.push(last);
+                        last = [];
+                        size = 0;
+                    }
+                    last.push(item);
+                    size += len;
+
+                    return ret;
+                }, []);
+
+                if (last.length) {
+                    ret.push(last);
+                }
+
+                return ret;
+            }
+
+            // 500 is the max, compensate for user reply
+            var maxSize = 499 - bot.adapter.reply(this.get('user_name')).length,
+                partitioned = partition(giantArray, maxSize);
+
+            return partitioned.invoke('join', ', ').join('\n');
+        },
 
         // retrieve a value from the original message object, or if no argument
         // provided, the msgObj itself
@@ -757,9 +790,9 @@ var adapter = {
             return;
         }
 
-        this.fkey    = fkey.value;
-        this.roomid  = Number(/\d+/.exec(location)[0]);
-        this.site    = this.getCurrentSite();
+        this.fkey   = fkey.value;
+        this.roomid = Number(/\d+/.exec(location)[0]);
+        this.site   = this.getCurrentSite();
         this.userid = CHAT.CURRENT_USER_ID;
 
         this.in.init();
@@ -1253,6 +1286,8 @@ var bot = window.bot = {
 
     // defined in users.js
     users: {},
+    // defined in rooms.js
+    rooms: {},
     // defined in config.js
     config: {},
 
@@ -1541,7 +1576,7 @@ require('./_plugin-loader')(bot);
 
 IO.register('input', bot.parseMessage, bot);
 
-},{"./Command":1,"./IO":2,"./Message":3,"./_plugin-loader":4,"./adapter":5,"./banlist":6,"./commands":9,"./config":10,"./eval":11,"./listeners":12,"./memory":13,"./parseCommandArgs":14,"./parseMacro":15,"./personality":16,"./suggestionDict":56,"./users":57}],8:[function(require,module,exports){
+},{"./Command":1,"./IO":2,"./Message":3,"./_plugin-loader":4,"./adapter":5,"./banlist":6,"./commands":9,"./config":10,"./eval":11,"./listeners":12,"./memory":13,"./parseCommandArgs":14,"./parseMacro":15,"./personality":16,"./suggestionDict":55,"./users":56}],8:[function(require,module,exports){
 // the following is code that'll run inside eval's web worker
 module.exports = function () {
     var global = this;
@@ -1819,7 +1854,7 @@ module.exports = function (bot) {
         },
 
         refresh: function() {
-            window.location.reload();
+            location.reload();
         },
 
         forget: function (args) {
@@ -1897,31 +1932,6 @@ module.exports = function (bot) {
     };
 
     commands.listcommands = (function () {
-        function partition (list, maxSize) {
-            var size = 0, last = [];
-
-            var ret = list.reduce(function partition (ret, item) {
-                 // +1 for comma, +1 for space
-                var len = item.length + 2;
-
-                if (size + len > maxSize) {
-                    ret.push(last);
-                    last = [];
-                    size = 0;
-                }
-                last.push(item);
-                size += len;
-
-                return ret;
-            }, []);
-
-            if (last.length) {
-                ret.push(last);
-            }
-
-            return ret;
-        }
-
         function getSortedCommands() {
             // well, sort of sorted. we want to sort the commands, but have the
             // built-ins be in front, with help as the first one. #153
@@ -1942,12 +1952,7 @@ module.exports = function (bot) {
         }
 
         return function (args) {
-            var commands = getSortedCommands(),
-                // 500 is the max, compensate for user reply
-                maxSize = 499 - bot.adapter.reply(args.get('user_name')).length,
-                partitioned = partition(commands, maxSize);
-
-            return partitioned.invoke('join', ', ').join('\n');
+            return args.stringifyGiantArray(getSortedCommands());
         };
     })();
 
@@ -2122,7 +2127,7 @@ exports.eval = (function () {
     var blob = new Blob([workerCode.stringContents()], {
             type: 'application/javascript'
         }),
-        codeUrl = window.URL.createObjectURL(blob);
+        codeUrl = URL.createObjectURL(blob);
 
     return function (code, arg, cb) {
         if (arguments.length === 2) {
@@ -2163,7 +2168,7 @@ exports.eval = (function () {
                 return;
             }
 
-            timeout = window.setTimeout(function () {
+            timeout = setTimeout(function () {
                 finish('Maximum execution time exceeded');
             }, 500);
         }
@@ -2733,7 +2738,7 @@ module.exports = function (bot) {
             now = Date.now();
 
         if (shouldReply()) {
-        // Send a response and such
+            // Send a response and such
             msg.directreply(formulateReponse());
             afkObj.lastPing[roomId] = now;
             bot.memory.save('afk');
@@ -2790,7 +2795,7 @@ module.exports = function (bot) {
     };
 
     var commandHandler = function (msg) {
-    // parse the message and stuff.
+        // parse the message and stuff.
         var user = msg.get('user_name').replace(/\s/g, ''),
             afkMsg = msg.content;
 
@@ -2844,7 +2849,7 @@ module.exports = function (bot) {
         }
 
         Object.keys(demAFKs).forEach(function afkCheckAndRespond (name) {
-        // /(^|\b)@bob\b/i
+            // /(^|\b)@bob\b/i
             var pinged = new RegExp(
             '(^|\b)' + RegExp.escape('@' + name) + '\\b', 'i');
 
@@ -3006,345 +3011,65 @@ module.exports = function (bot) {
 };
 
 },{}],20:[function(require,module,exports){
+'use strict';
+
+var defs = require('static/qtyDefinitions.js');
+
+var UNITS = defs.UNITS,
+    BASE_UNITS = defs.BASE_UNITS,
+
+    UNITY = defs.UNITY,
+    UNITY_ARRAY = defs.UNITY_ARRAY,
+
+    SIGNATURE_VECTOR = defs.SIGNATURE_VECTOR,
+
+    QTY_STRING = defs.QTY_STRING,
+    QTY_STRING_REGEX = defs.QTY_STRING_REGEX,
+    TOP_REGEX = defs.TOP_REGEX,
+    BOTTOM_REGEX = defs.BOTTOM_REGEX,
+
+    UNIT_VALUES = defs.UNIT_VALUES,
+    UNIT_MAP = defs.UNIT_MAP,
+    PREFIX_VALUES = defs.PREFIX_VALUES,
+    PREFIX_MAP = defs.PREFIX_MAP,
+    OUTPUT_MAP = defs.OUTPUT_MAP,
+
+    UNIT_MATCH_REGEX = defs.UNIT_MATCH_REGEX,
+    UNIT_TEST_REGEX = defs.UNIT_TEST_REGEX;
+
 module.exports = function (bot) {
     'use strict';
 
-    var converters = {
-        // temperatures
-        // 1C = 32.8F = 274.15K
-        C: function (c) {
-            return {
-                // // 9/5 = 1.8
-                F: c * 1.8 + 32,
-                K: c + 273.15
-            };
-        },
-        F: function (f) {
-            return {
-                C: (f - 32) / 1.8,
-                K: (f + 459.67) * 5 / 9
-            };
-        },
-        K: function (k) {
-            if (k < 0) {
-                return {
-                    C: 0,
-                    F: 0
-                };
-            }
-
-            return {
-                C: k - 273.15,
-                F: k * 1.8 - 459.67
-            };
-        },
-
-        // lengths
-        // 1m = 3.2808(...)f
-        m: function (m) {
-            return {
-                f: m * 3.280839895
-            };
-        },
-        f: function (f) {
-            return {
-                m: f / 3.28083989
-            };
-        },
-
-        // km: 1m = 1km * 1000
-        km: function (km) {
-            return converters.m(km * 1000);
-        },
-        // centimeter: 1m = 100cm
-        cm: function (cm) {
-            return converters.m(cm / 100);
-        },
-        // millimeters: 1m = 1mm / 1000
-        mm: function (mm) {
-            return converters.m(mm / 1000);
-        },
-        // inches: 1f = 1i / 12
-        i: function (i) {
-            return converters.f(i / 12);
-        },
-
-        // angles
-        d: function (d) {
-            return {
-                r: d * Math.PI / 180
-            };
-        },
-        r: function (r) {
-            return {
-                d: r * 180 / Math.PI
-            };
-        },
-
-        // weights
-        g: function (g) {
-            return {
-                lb: g * 0.0022,
-                // the following will be horribly inaccurate
-                st: g * 0.000157473
-            };
-        },
-        lb: function (lb) {
-            return {
-                g: lb * 453.592,
-                st: lb * 0.0714286
-            };
-        },
-        // stones: 1st = 6350g = 14lb
-        st: function (st) {
-            return {
-                g: st * 6350.29,
-                lb: st * 14
-            };
-        },
-
-        // kg: 1g = 1kg * 1000
-        kg: function (kg) {
-            return converters.g(kg * 1000);
-        }
-    };
-
-    var longNames = {
-        lbs: 'lb',
-        ft: 'f',
-        foot: 'f',
-        metres: 'm',
-        millimetres: 'mm',
-        killometres: 'km',
-        degrees: 'd',
-        radians: 'r',
-        grams: 'g',
-        kilograms: 'kg',
-        inches: 'i',
-        stones: 'st'
-    };
-
-    var currencies = require('static/currencyNames'),
-        symbols = require('static/currencySymbols');
-
-    function unalias (unit) {
-        var up = unit.toUpperCase();
-        if (symbols.hasOwnProperty(up)) {
-            return symbols[up];
-        }
-        if (longNames.hasOwnProperty(unit)) {
-            return longNames[unit];
+    function convert(args) {
+        bot.log(args, '/convert input');
+        if (args.toLowerCase() === 'list') {
+            return args.stringifyGiantArray(Qty.getUnits());
         }
 
-        return unit;
-    }
-
-/*
-  (        #start number matching
-   -?      #optional negative
-   \d+     #the integer part of the number
-   \.?     #optional dot for decimal portion
-   \d*     #optional decimal portion
-  )
-  \s*      #optional whitespace, just 'cus
-  (        #start unit matching
-   \S+     #the unit. we don't know anyhing about it, besides having no ws
-  )
-  (        #begin matching optional target unit (required for currencies)
-    \s+
-    (?:
-     (?:
-      to|in #10 X to Y, 10 X in Y
-     )
-     \s+
-    )?
-    (\S+)  #the unit itself
-  )?
- */
-    var rUnits = /(-?\d+\.?\d*)\s*(\S+)(\s+(?:(?:to|in)\s+)?(\S+))?$/;
-
-    // string is in the form of:
-    // <number><unit>
-    // <number><unit> to|in <unit>
-    // note that units are case-sensitive: F is the temperature, f is the length
-    var convert = function (inp, cb) {
-        if (inp.toLowerCase() === 'list') {
-            finish(listUnits().join(', '));
-            return;
-        }
-
-        var parts = rUnits.exec(inp);
-
+        // Trust me on this.
+        var re = new RegExp('^(' + QTY_STRING + ') (?:(?:to|in) )?(' + QTY_STRING + ')$');
+        var parts = re.exec(args);
         if (!parts) {
-            finish({
-                error: 'Unidentified format; please see `/help convert`'
-            });
-            return;
+            console.log('wtf');
+            return 'You have confused me greatly, see `/help convert`.';
         }
 
-        var num = Number(parts[1]),
-            unit = parts[2],
-            target = parts[4] || '',
-            moneh = false;
-        bot.log(num, unit, target, '/convert input');
+        console.log(parts);
+        console.log(parts[1]);
+        console.log(parts[5]);
+        bot.log(parts[1], '=>', parts[5], '/convert parsed');
 
-        unit   = unalias(unit);
-        target = unalias(target);
-        if (currencies[unit.toUpperCase()]) {
-            moneh = true;
+        try {
+            // And on this as well.
+            var origin = Qty(parts[1]),
+                dest = Qty(parts[5]);
+
+            return origin.to(dest).toString(4);
         }
-
-        if (moneh) {
-            moneyConverter.convert(num, unit, target, finish);
+        catch (e) {
+            console.error('/convert error', e);
+            return e.message;
         }
-        else {
-            convertUnit(num, unit, finish);
-        }
-
-        function finish (res) {
-            bot.log(res, '/convert answer');
-
-            var reply;
-            // list was passed
-            if (res.substr) {
-                reply = res;
-            }
-            // an error occured
-            else if (res.error) {
-                reply = res.error;
-            }
-            // just a normal result
-            else {
-                reply = format(res);
-            }
-
-            if (cb && cb.call) {
-                cb(reply);
-            }
-            else {
-                inp.reply(reply);
-            }
-        }
-
-        function format (res) {
-            var keys = Object.keys(res);
-
-            if (!keys.length) {
-                return 'Could not convert {0} to {1}'.supplant(unit, target);
-            }
-            return keys.filter(nameGoesHere).map(formatKey).join(', ');
-
-            function nameGoesHere (key) {
-                return !target || target === key;
-            }
-            function formatKey (key) {
-                return res[key].maxDecimal(4) + key;
-            }
-        }
-    };
-
-    function convertUnit (number, unit, cb) {
-        bot.log(number, unit, '/convert unit broken');
-
-        if (!converters[unit]) {
-            cb({
-                error: 'Confuse converter with {0}, receive error message'
-                    .supplant(unit)
-            });
-        }
-        else {
-            cb(converters[unit](number));
-        }
-    }
-
-    var moneyConverter = {
-        ratesCache: {},
-
-        convert: function (number, from, to, cb) {
-            this.from = from;
-            this.to = to;
-
-            this.upFrom = from.toUpperCase();
-            this.upTo = to.toUpperCase();
-
-            var err = this.errorMessage();
-            if (err) {
-                cb({ error: err });
-                return;
-            }
-            bot.log(number, from, to, '/convert money broken');
-
-            this.getRate(function (rate) {
-                // once again, the lack of dynamic key names sucks.
-                var res = {};
-                res[to] = number * rate;
-
-                cb(res);
-            });
-        },
-
-        getRate: function (cb) {
-            var self = this,
-                rate = this.checkCache();
-
-            if (rate) {
-                cb(rate);
-                return;
-            }
-
-            bot.IO.jsonp({
-                url: 'http://rate-exchange.appspot.com/currency',
-                jsonpName: 'callback',
-                data: {
-                    from: self.from,
-                    to: self.to
-                },
-                fun: finish
-            });
-
-            function finish (resp) {
-                rate = resp.rate;
-
-                self.updateCache(rate);
-                cb(rate);
-            }
-        },
-
-        updateCache: function (rate) {
-            this.ratesCache[this.upFrom] = this.ratesCache[this.upFrom] || {};
-            this.ratesCache[this.upFrom][this.upTo] = {
-                rate: rate,
-                time: Date.now()
-            };
-        },
-
-        checkCache: function () {
-            var now = Date.now(), obj;
-
-            var exists = this.ratesCache[this.upFrom] &&
-                (obj = this.ratesCache[this.upFrom][this.upTo]) &&
-                // so we won't request again, keep it in memory for 5 hours
-                // 5(hours) = 1000(ms) * 60(seconds)
-                //            * 60(minutes) * 5 = 18000000
-                obj.time - now <= 18e6;
-
-            console.log(this.ratesCache, exists);
-
-            return exists ? obj.rate : false;
-        },
-
-        errorMessage: function () {
-            if (!this.to) {
-                return 'What do you want to convert ' + this.from + ' to?';
-            }
-            if (!currencies[this.upTo]) {
-                return this.to + ' aint no currency I ever heard of';
-            }
-        }
-    };
-
-    function listUnits () {
-        return Object.keys(converters);
     }
 
     bot.addCommand({
@@ -3355,12 +3080,898 @@ module.exports = function (bot) {
         },
         description: 'Converts several units and currencies, case sensitive. '+
             '`/convert <num><unit> [to|in <unit>]` ' +
-            'Pass in list for supported units `/convert list`',
-        async: true
+            'Pass in list for supported units `/convert list`'
     });
 };
 
-},{"static/currencyNames":51,"static/currencySymbols":52}],21:[function(require,module,exports){
+// From here on on it's a slightly altered Qty:
+// https://github.com/gentooboontoo/js-quantities
+/*
+Copyright © 2006-2007 Kevin C. Olbrich
+Copyright © 2010-2013 LIM SAS (http://lim.eu) - Julien Sanchez
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+function Qty(initValue, initUnits) {
+    if (!(isQty(this))) {
+        return new Qty(initValue, initUnits);
+    }
+
+    this.scalar = null;
+    this.baseScalar = null;
+    this.signature = null;
+    this.numerator = UNITY_ARRAY;
+    this.denominator = UNITY_ARRAY;
+
+    if (isDefinitionObject(initValue)) {
+        this.scalar = initValue.scalar;
+        this.numerator = (initValue.numerator && initValue.numerator.length !== 0) ? initValue.numerator : UNITY_ARRAY;
+        this.denominator = (initValue.denominator && initValue.denominator.length !== 0) ? initValue.denominator : UNITY_ARRAY;
+    }
+    else if (initUnits) {
+        parse.call(this, initUnits);
+        this.scalar = initValue;
+    }
+    else {
+        parse.call(this, initValue);
+    }
+
+    // math with temperatures is very limited
+    if (this.denominator.join('*').indexOf('temp') >= 0) {
+        throw new Error('Cannot divide with temperatures');
+    }
+    if (this.numerator.join('*').indexOf('temp') >= 0) {
+        if (this.numerator.length > 1) {
+            throw new Error('Cannot multiply by temperatures');
+        }
+        if (!isUnityArray(this.denominator)) {
+            throw new Error('Cannot divide with temperatures');
+        }
+    }
+
+    this.initValue = initValue;
+
+    if (this.isBase()) {
+        this.baseScalar = this.scalar;
+        this.signature = unitSignature.call(this);
+    }
+    else {
+        var base = this.toBase();
+        this.baseScalar = base.scalar;
+        this.signature = base.signature;
+    }
+
+    if (this.isTemperature() && this.baseScalar < 0) {
+        throw new Error('Temperatures must not be less than absolute zero');
+    }
+}
+
+Qty.getUnits = function() {
+    var i;
+    var units = [];
+    var unitKeys = Object.keys(UNITS);
+    for (i = 0; i < unitKeys.length; i += 1) {
+        if (['', 'prefix'].indexOf(UNITS[unitKeys[i]][2]) === -1) {
+            units.push(unitKeys[i].substr(1, unitKeys[i].length - 2));
+        }
+    }
+
+    return units.sort(function(a, b) {
+        if (a.toLowerCase() < b.toLowerCase()) {
+            return -1;
+        }
+        if (a.toLowerCase() > b.toLowerCase()) {
+            return 1;
+        }
+        return 0;
+    });
+};
+
+/*
+  calculates the unit signature id for use in comparing compatible units and simplification
+  the signature is based on a simple classification of units and is based on the following publication
+
+  Novak, G.S., Jr. 'Conversion of units of measurement', IEEE Transactions on Software Engineering,
+  21(8), Aug 1995, pp.651-661
+  doi://10.1109/32.403789
+  http://ieeexplore.ieee.org/Xplore/login.jsp?url=/iel1/32/9079/00403789.pdf?isnumber=9079&prod=JNL&arnumber=403789&arSt=651&ared=661&arAuthor=Novak%2C+G.S.%2C+Jr.
+*/
+var unitSignature = function() {
+    if (this.signature) {
+        return this.signature;
+    }
+    var vector = unitSignatureVector.call(this);
+    for (var i = 0; i < vector.length; i += 1) {
+        vector[i] *= Math.pow(20, i);
+    }
+
+    return vector.reduce(function(previous, current) {
+        return previous + current;
+    }, 0);
+};
+
+// calculates the unit signature vector used by unit_signature
+var unitSignatureVector = function() {
+    if (!this.isBase()) {
+        return unitSignatureVector.call(this.toBase());
+    }
+
+    var vector = new Array(SIGNATURE_VECTOR.length);
+    for (var i = 0; i < vector.length; i += 1) {
+        vector[i] = 0;
+    }
+    var r, n;
+    for (var j = 0; j < this.numerator.length; j += 1) {
+        if ((r = UNITS[this.numerator[j]])) {
+            n = SIGNATURE_VECTOR.indexOf(r[2]);
+            if (n >= 0) {
+                vector[n] = vector[n] + 1;
+            }
+        }
+    }
+
+    for (var k = 0; k < this.denominator.length; k += 1) {
+        if ((r = UNITS[this.denominator[k]])) {
+            n = SIGNATURE_VECTOR.indexOf(r[2]);
+            if (n >= 0) {
+                vector[n] = vector[n] - 1;
+            }
+        }
+    }
+    return vector;
+};
+
+/* parse a string into a unit object.
+ * Typical formats like :
+ * '5.6 kg*m/s^2'
+ * '5.6 kg*m*s^-2'
+ * '5.6 kilogram*meter*second^-2'
+ * '2.2 kPa'
+ * '37 degC'
+ * '1'  -- creates a unitless constant with value 1
+ * 'GPa'  -- creates a unit with scalar 1 with units 'GPa'
+ * 6'4'  -- recognized as 6 feet + 4 inches
+ * 8 lbs 8 oz -- recognized as 8 lbs + 8 ounces
+ */
+var parse = function(val) {
+    if (!isString(val)) {
+        val = val.toString();
+    }
+    val = val.trim();
+
+    var result = QTY_STRING_REGEX.exec(val);
+    if (!result) {
+        throw new Error(val + ': Quantity not recognized');
+    }
+
+    var scalarMatch = result[1];
+    if (scalarMatch) {
+        // Allow whitespaces between sign and scalar for loose parsing
+        scalarMatch = scalarMatch.replace(/\s/g, '');
+        this.scalar = parseFloat(scalarMatch);
+    }
+    else {
+        this.scalar = 1;
+    }
+    var top = result[2];
+    var bottom = result[3];
+
+    var n, x, nx;
+    // TODO DRY me
+    while ((result = TOP_REGEX.exec(top))) {
+        n = parseFloat(result[2]);
+        if (isNaN(n)) {
+            // Prevents infinite loops
+            throw new Error('Unit exponent is not a number');
+        }
+        // Disallow unrecognized unit even if exponent is 0
+        if (n === 0 && !UNIT_TEST_REGEX.test(result[1])) {
+            throw new Error('Unit ' + result[1] + ' not recognized');
+        }
+        x = result[1] + ' ';
+        nx = '';
+        for (var i = 0; i < Math.abs(n) ; i += 1) {
+            nx += x;
+        }
+        if (n >= 0) {
+            top = top.replace(result[0], nx);
+        }
+        else {
+            bottom = bottom ? bottom + nx : nx;
+            top = top.replace(result[0], '');
+        }
+    }
+
+    while ((result = BOTTOM_REGEX.exec(bottom))) {
+        n = parseFloat(result[2]);
+        if (isNaN(n)) {
+            // Prevents infinite loops
+            throw new Error('Unit exponent is not a number');
+        }
+        // Disallow unrecognized unit even if exponent is 0
+        if (n === 0 && !UNIT_TEST_REGEX.test(result[1])) {
+            throw new Error('Unit ' + result[1] + ' not recognized');
+        }
+        x = result[1] + ' ';
+        nx = '';
+        for (var j = 0; j < n ; j += 1) {
+            nx += x;
+        }
+
+        bottom = bottom.replace(result[0], nx);
+    }
+
+    if (top) {
+        this.numerator = parseUnits(top.trim());
+    }
+    if (bottom) {
+        this.denominator = parseUnits(bottom.trim());
+    }
+
+};
+
+function throwIncompatibleUnits() {
+    throw new Error('Incompatible units');
+}
+
+Qty.prototype = {
+    constructor: Qty,
+
+    isUnitless: function() {
+        return isUnityArray(this.numerator) && isUnityArray(this.denominator);
+    },
+
+    isCompatible: function(other) {
+        if (isString(other)) {
+            return this.isCompatible(Qty(other));
+        }
+
+        if (!(isQty(other))) {
+            return false;
+        }
+
+        if (other.signature !== undefined) {
+            return this.signature === other.signature;
+        }
+        else {
+            return false;
+        }
+    },
+
+    isInverse: function(other) {
+        return this.inverse().isCompatible(other);
+    },
+
+    isBase: function() {
+        if (this._isBase !== undefined) {
+            return this._isBase;
+        }
+        if (this.isDegrees() && this.numerator[0].match(/<(kelvin|temp-K)>/)) {
+            this._isBase = true;
+            return this._isBase;
+        }
+
+        this.numerator.concat(this.denominator).forEach(function(item) {
+            if (item !== UNITY && BASE_UNITS.indexOf(item) === -1) {
+                this._isBase = false;
+            }
+        }, this);
+        if (this._isBase === false) {
+            return this._isBase;
+        }
+        this._isBase = true;
+        return this._isBase;
+    },
+
+    toBase: function() {
+        if (this.isBase()) {
+            return this;
+        }
+
+        if (this.isTemperature()) {
+            return toTempK(this);
+        }
+
+        return toBaseUnits(this.numerator, this.denominator).mul(this.scalar);
+    },
+
+    units: function() {
+        if (this._units !== undefined) {
+            return this._units;
+        }
+
+        var numIsUnity = isUnityArray(this.numerator),
+            denIsUnity = isUnityArray(this.denominator);
+        if (numIsUnity && denIsUnity) {
+            this._units = '';
+            return this._units;
+        }
+
+        var numUnits = stringifyUnits(this.numerator),
+            denUnits = stringifyUnits(this.denominator);
+        this._units = numUnits + (denIsUnity ? '' : ('/' + denUnits));
+        return this._units;
+    },
+
+    toPrec: function(precQuantity) {
+        if (isString(precQuantity)) {
+            precQuantity = Qty(precQuantity);
+        }
+        if (isNumber(precQuantity)) {
+            precQuantity = Qty(precQuantity + ' ' + this.units());
+        }
+
+        if (!this.isUnitless()) {
+            precQuantity = precQuantity.to(this.units());
+        }
+        else if (!precQuantity.isUnitless()) {
+            throwIncompatibleUnits();
+        }
+
+        if (precQuantity.scalar === 0) {
+            throw new Error('Divide by zero');
+        }
+
+        var precRoundedResult = mulSafe(Math.round(this.scalar / precQuantity.scalar),
+                                        precQuantity.scalar);
+
+        return Qty(precRoundedResult + this.units());
+    },
+
+    toString: function(targetUnitsOrMaxDecimalsOrPrec, maxDecimals) {
+        var targetUnits;
+        if (isNumber(targetUnitsOrMaxDecimalsOrPrec)) {
+            targetUnits = this.units();
+            maxDecimals = targetUnitsOrMaxDecimalsOrPrec;
+        }
+        else if (isString(targetUnitsOrMaxDecimalsOrPrec)) {
+            targetUnits = targetUnitsOrMaxDecimalsOrPrec;
+        }
+        else if (isQty(targetUnitsOrMaxDecimalsOrPrec)) {
+            return this.toPrec(targetUnitsOrMaxDecimalsOrPrec).toString(maxDecimals);
+        }
+
+        var out = this.to(targetUnits);
+
+        var outScalar = maxDecimals !== undefined ? round(out.scalar, maxDecimals) : out.scalar;
+        out = (outScalar + ' ' + out.units()).trim();
+        return out;
+    },
+
+    inverse: function() {
+        if (this.isTemperature()) {
+            throw new Error('Cannot divide with temperatures');
+        }
+        if (this.scalar === 0) {
+            throw new Error('Divide by zero');
+        }
+        return Qty({
+            scalar: 1 / this.scalar,
+            numerator: this.denominator,
+            denominator: this.numerator
+        });
+    },
+
+    isDegrees: function() {
+        return (this.signature === null || this.signature === 400) &&
+            this.numerator.length === 1 &&
+            isUnityArray(this.denominator) &&
+            (this.numerator[0].match(/<temp-[CFRK]>/) || this.numerator[0].match(/<(kelvin|celsius|rankine|fahrenheit)>/));
+    },
+
+    isTemperature: function() {
+        return this.isDegrees() && this.numerator[0].match(/<temp-[CFRK]>/);
+    },
+
+    to: function(other) {
+        var target;
+
+        if (!other) {
+            return this;
+        }
+
+        if (!isString(other)) {
+            return this.to(other.units());
+        }
+
+        target = Qty(other);
+        if (target.units() === this.units()) {
+            return this;
+        }
+
+        if (!this.isCompatible(target)) {
+            if (this.isInverse(target)) {
+                target = this.inverse().to(other);
+            }
+            else {
+                throw new Error('Cannot convert ' + stuff(this) + ' to ' + stuff(target) + '.');
+            }
+        }
+        else if (target.isTemperature()) {
+            target = toTemp(this, target);
+        }
+        else if (target.isDegrees()) {
+            target = toDegrees(this, target);
+        }
+        else {
+            var q = divSafe(this.baseScalar, target.baseScalar);
+            target = Qty({
+                scalar: q,
+                numerator: target.numerator,
+                denominator: target.denominator
+            });
+        }
+
+        return target;
+
+        // zirak: I give up. It's really late. Or early. I don't know. I want
+        // to cry.
+        function stuff(qty) {
+            var up, down;
+
+            up = singularStuff(qty.numerator);
+
+            if (isUnityArray(qty.denominator)) {
+                return up;
+            }
+
+            down = singularStuff(qty.denominator);
+
+            return up + '/' + down;
+
+            function singularStuff(thingy) {
+                return thingy.length === 1 ?
+                    thingy[0] :
+                    '(' + thingy.join('*') + ')';
+            }
+        }
+    },
+
+    mul: function(other) {
+        if (isNumber(other)) {
+            return Qty({
+                scalar: mulSafe(this.scalar, other),
+                numerator: this.numerator,
+                denominator: this.denominator
+            });
+        }
+        else if (isString(other)) {
+            other = Qty(other);
+        }
+
+        if ((this.isTemperature() || other.isTemperature()) && !(this.isUnitless() || other.isUnitless())) {
+            throw new Error('Cannot multiply by temperatures');
+        }
+
+        var op1 = this;
+        var op2 = other;
+
+        if (op1.isCompatible(op2) && op1.signature !== 400) {
+            op2 = op2.to(op1);
+        }
+        var numden = cleanTerms(op1.numerator.concat(op2.numerator), op1.denominator.concat(op2.denominator));
+
+        return Qty({
+            scalar: mulSafe(op1.scalar, op2.scalar),
+            numerator: numden[0],
+            denominator: numden[1]
+        });
+    }
+};
+
+function toBaseUnits (numerator, denominator) {
+    var num = [];
+    var den = [];
+    var q = 1;
+    var unit;
+    for (var i = 0; i < numerator.length; i += 1) {
+        unit = numerator[i];
+        if (PREFIX_VALUES[unit]) {
+            q = mulSafe(q, PREFIX_VALUES[unit]);
+        }
+        else if (UNIT_VALUES[unit]) {
+            q *= UNIT_VALUES[unit].scalar;
+
+            if (UNIT_VALUES[unit].numerator) {
+                num.push(UNIT_VALUES[unit].numerator);
+            }
+            if (UNIT_VALUES[unit].denominator) {
+                den.push(UNIT_VALUES[unit].denominator);
+            }
+        }
+    }
+    for (var j = 0; j < denominator.length; j += 1) {
+        unit = denominator[j];
+        if (PREFIX_VALUES[unit]) {
+            q /= PREFIX_VALUES[unit];
+        }
+        else if (UNIT_VALUES[unit]) {
+            q /= UNIT_VALUES[unit].scalar;
+
+            if (UNIT_VALUES[unit].numerator) {
+                den.push(UNIT_VALUES[unit].numerator);
+            }
+            if (UNIT_VALUES[unit].denominator) {
+                num.push(UNIT_VALUES[unit].denominator);
+            }
+        }
+    }
+
+    num = num.reduce(function(a, b) {
+        return a.concat(b);
+    }, []);
+    den = den.reduce(function(a, b) {
+        return a.concat(b);
+    }, []);
+
+    return Qty({
+        scalar: q,
+        numerator: num,
+        denominator: den
+    });
+}
+
+function parseUnits(units) {
+    var unitMatch, normalizedUnits = [];
+    if (!UNIT_TEST_REGEX.test(units)) {
+        throw new Error('Unit ' + units + ' not recognized');
+    }
+
+    while ((unitMatch = UNIT_MATCH_REGEX.exec(units))) {
+        normalizedUnits.push(unitMatch.slice(1));
+
+    }
+    normalizedUnits = normalizedUnits.map(function(item) {
+        return PREFIX_MAP[item[0]] ? [PREFIX_MAP[item[0]], UNIT_MAP[item[1]]] : [UNIT_MAP[item[1]]];
+    });
+
+    normalizedUnits = normalizedUnits.reduce(function(a, b) {
+        return a.concat(b);
+    }, []);
+    normalizedUnits = normalizedUnits.filter(function(item) {
+        return item;
+    });
+
+    return normalizedUnits;
+}
+
+function stringifyUnits(units) {
+    var stringified;
+
+    var isUnity = isUnityArray(units);
+    if (isUnity) {
+        stringified = '1';
+    }
+    else {
+        stringified = simplify(getOutputNames(units)).join('*');
+    }
+
+    return stringified;
+}
+
+function getOutputNames(units) {
+    var unitNames = [], token, tokenNext;
+    for (var i = 0; i < units.length; i += 1) {
+        token = units[i];
+        tokenNext = units[i + 1];
+        if (PREFIX_VALUES[token]) {
+            unitNames.push(OUTPUT_MAP[token] + OUTPUT_MAP[tokenNext]);
+            i += 1;
+        }
+        else {
+            unitNames.push(OUTPUT_MAP[token]);
+        }
+    }
+    return unitNames;
+}
+
+function simplify (units) {
+    var unitCounts = units.reduce(function(acc, unit) {
+        var unitCounter = acc[unit];
+        if (!unitCounter) {
+            acc.push(unitCounter = acc[unit] = [unit, 0]);
+        }
+
+        unitCounter[1] += 1;
+
+        return acc;
+    }, []);
+
+    return unitCounts.map(function(unitCount) {
+        return unitCount[0] + (unitCount[1] > 1 ? unitCount[1] : '');
+    });
+}
+
+function isUnityArray(arr) {
+    return arr.length === 1 && arr[0] === UNITY_ARRAY[0];
+}
+
+function round(val, decimals) {
+    return Math.round(val * Math.pow(10, decimals)) / Math.pow(10, decimals);
+}
+
+function toDegrees(src, dst) {
+    var srcDegK = toDegK(src);
+    var dstUnits = dst.units();
+    var dstScalar;
+
+    if (dstUnits === 'degK') {
+        dstScalar = srcDegK.scalar;
+    }
+    else if (dstUnits === 'degC') {
+        dstScalar = srcDegK.scalar ;
+    }
+    else if (dstUnits === 'degF') {
+        dstScalar = srcDegK.scalar * 9 / 5;
+    }
+    else if (dstUnits === 'degR') {
+        dstScalar = srcDegK.scalar * 9 / 5;
+    }
+    else {
+        throw new Error('Unknown type for degree conversion to: ' + dstUnits);
+    }
+
+    return Qty({
+        scalar: dstScalar,
+        numerator: dst.numerator,
+        denominator: dst.denominator
+    });
+}
+
+function toDegK(qty) {
+    var units = qty.units();
+    var q;
+    if (units.match(/(deg)[CFRK]/)) {
+        q = qty.baseScalar;
+    }
+    else if (units === 'tempK') {
+        q = qty.scalar;
+    }
+    else if (units === 'tempC') {
+        q = qty.scalar;
+    }
+    else if (units === 'tempF') {
+        q = qty.scalar * 5 / 9;
+    }
+    else if (units === 'tempR') {
+        q = qty.scalar * 5 / 9;
+    }
+    else {
+        throw new Error('Unknown type for temp conversion from: ' + units);
+    }
+
+    return Qty({
+        scalar: q,
+        numerator: ['<kelvin>'],
+        denominator: UNITY_ARRAY
+    });
+}
+
+function toTemp(src, dst) {
+    var dstUnits = dst.units();
+    var dstScalar;
+
+    if (dstUnits === 'tempK') {
+        dstScalar = src.baseScalar;
+    }
+    else if (dstUnits === 'tempC') {
+        dstScalar = src.baseScalar - 273.15;
+    }
+    else if (dstUnits === 'tempF') {
+        dstScalar = (src.baseScalar * 9 / 5) - 459.67;
+    }
+    else if (dstUnits === 'tempR') {
+        dstScalar = src.baseScalar * 9 / 5;
+    }
+    else {
+        throw new Error('Unknown type for temp conversion to: ' + dstUnits);
+    }
+
+    return Qty({
+        scalar: dstScalar,
+        numerator: dst.numerator,
+        denominator: dst.denominator
+    });
+}
+
+function toTempK(qty) {
+    var units = qty.units();
+    var q;
+    if (units.match(/(deg)[CFRK]/)) {
+        q = qty.baseScalar;
+    }
+    else if (units === 'tempK') {
+        q = qty.scalar;
+    }
+    else if (units === 'tempC') {
+        q = qty.scalar + 273.15;
+    }
+    else if (units === 'tempF') {
+        q = (qty.scalar + 459.67) * 5 / 9;
+    }
+    else if (units === 'tempR') {
+        q = qty.scalar * 5 / 9;
+    }
+    else {
+        throw new Error('Unknown type for temp conversion from: ' + units);
+    }
+
+    return Qty({
+        scalar: q,
+        numerator: ['<temp-K>'],
+        denominator: UNITY_ARRAY
+    });
+}
+
+function mulSafe() {
+    var result = 1, decimals = 0;
+    for (var i = 0; i < arguments.length; i += 1) {
+        var arg = arguments[i];
+        decimals = decimals + getFractional(arg);
+        result *= arg;
+    }
+
+    return decimals !== 0 ? round(result, decimals) : result;
+}
+
+function divSafe(num, den) {
+    if (den === 0) {
+        throw new Error('Divide by zero');
+    }
+
+    var factor = Math.pow(10, getFractional(den));
+    var invDen = factor / (factor * den);
+
+    return mulSafe(num, invDen);
+}
+
+function getFractional(num) {
+    // Check for NaNs or Infinities
+    if (!isFinite(num)) {
+        return 0;
+    }
+
+    // Faster than parsing strings
+    // http://jsperf.com/count-decimals/2
+    var count = 0;
+    while (num % 1 !== 0) {
+        num *= 10;
+        count += 1;
+    }
+    return count;
+}
+
+Qty.mulSafe = mulSafe;
+Qty.divSafe = divSafe;
+
+function cleanTerms(num, den) {
+    num = num.filter(function(val) {
+        return val !== UNITY;
+    });
+    den = den.filter(function(val) {
+        return val !== UNITY;
+    });
+
+    var combined = {};
+
+    var k;
+    for (var i = 0; i < num.length; i += 1) {
+        if (PREFIX_VALUES[num[i]]) {
+            k = [num[i], num[i + 1]];
+            i += 1;
+        }
+        else {
+            k = num[i];
+        }
+        if (k && k !== UNITY) {
+            if (combined[k]) {
+                combined[k][0] += 1;
+            }
+            else {
+                combined[k] = [1, k];
+            }
+        }
+    }
+
+    for (var j = 0; j < den.length; j += 1) {
+        if (PREFIX_VALUES[den[j]]) {
+            k = [den[j], den[j + 1]];
+            j += 1;
+        }
+        else {
+            k = den[j];
+        }
+        if (k && k !== UNITY) {
+            if (combined[k]) {
+                combined[k][0] -= 1;
+            }
+            else {
+                combined[k] = [-1, k];
+            }
+        }
+    }
+
+    num = [];
+    den = [];
+
+    for (var prop in combined) {
+        if (combined.hasOwnProperty(prop)) {
+            var item = combined[prop];
+            var n;
+            if (item[0] > 0) {
+                for (n = 0; n < item[0]; n += 1) {
+                    num.push(item[1]);
+                }
+            }
+            else if (item[0] < 0) {
+                for (n = 0; n < -item[0]; n += 1) {
+                    den.push(item[1]);
+                }
+            }
+        }
+    }
+
+    if (num.length === 0) {
+        num = UNITY_ARRAY;
+    }
+    if (den.length === 0) {
+        den = UNITY_ARRAY;
+    }
+
+    // Flatten
+    num = num.reduce(function(a, b) {
+        return a.concat(b);
+    }, []);
+    den = den.reduce(function(a, b) {
+        return a.concat(b);
+    }, []);
+
+    return [num, den];
+}
+
+function isString(value) {
+    return typeof value === 'string' || value instanceof String;
+}
+
+/*
+ * Prefer stricter Number.isFinite if currently supported.
+ * To be dropped when ES6 is finalized. Obsolete browsers will
+ * have to use ES6 polyfills.
+ */
+var isFinite = Number.isFinite || window.isFinite;
+function isNumber(value) {
+    // Number.isFinite allows not to consider NaN or '1' as numbers
+    return isFinite(value);
+}
+
+function isQty(value) {
+    return value instanceof Qty;
+}
+
+function isDefinitionObject(value) {
+    return value && typeof value === 'object' && value.hasOwnProperty('scalar');
+}
+
+Qty.version = '1.6.2';
+
+},{"static/qtyDefinitions.js":52}],21:[function(require,module,exports){
 module.exports = function (bot) {
     'use strict';
 
@@ -4917,7 +5528,7 @@ module.exports = function (bot) {
     });
 };
 
-},{"static/specParts.json":54}],36:[function(require,module,exports){
+},{"static/specParts.json":53}],36:[function(require,module,exports){
 module.exports = function (bot) {
     'use strict';
 
@@ -5970,7 +6581,7 @@ module.exports = function (bot) {
 
 };
 
-},{"static/weaselReplies.js":55}],45:[function(require,module,exports){
+},{"static/weaselReplies.js":54}],45:[function(require,module,exports){
 module.exports = function (bot) {
     'use strict';
 
@@ -6541,137 +7152,392 @@ Th͎̯̠͚̥e̜̞͇͔̣ ̼̰͚̱̜̬͡ͅN̢̳̞͔e̴̩̠̖͎̤̬z̧̺̘͎̮̣ṕ
 };
 
 },{}],51:[function(require,module,exports){
-module.exports={
-    "AED": true,
-    "ANG": true,
-    "ARS": true,
-    "AUD": true,
-    "BDT": true,
-    "BGN": true,
-    "BHD": true,
-    "BND": true,
-    "BOB": true,
-    "BRL": true,
-    "BWP": true,
-    "CAD": true,
-    "CHF": true,
-    "CLP": true,
-    "CNY": true,
-    "COP": true,
-    "CRC": true,
-    "CZK": true,
-    "DKK": true,
-    "DOP": true,
-    "DZD": true,
-    "EEK": true,
-    "EGP": true,
-    "EUR": true,
-    "FJD": true,
-    "GBP": true,
-    "HKD": true,
-    "HNL": true,
-    "HRK": true,
-    "HUF": true,
-    "IDR": true,
-    "ILS": true,
-    "INR": true,
-    "JMD": true,
-    "JOD": true,
-    "JPY": true,
-    "KES": true,
-    "KRW": true,
-    "KWD": true,
-    "KYD": true,
-    "KZT": true,
-    "LBP": true,
-    "LKR": true,
-    "LTL": true,
-    "LVL": true,
-    "MAD": true,
-    "MDL": true,
-    "MKD": true,
-    "MUR": true,
-    "MVR": true,
-    "MXN": true,
-    "MYR": true,
-    "NAD": true,
-    "NGN": true,
-    "NIO": true,
-    "NIS": true,
-    "NOK": true,
-    "NPR": true,
-    "NZD": true,
-    "OMR": true,
-    "PEN": true,
-    "PGK": true,
-    "PHP": true,
-    "PKR": true,
-    "PLN": true,
-    "PYG": true,
-    "QAR": true,
-    "RON": true,
-    "RSD": true,
-    "RUB": true,
-    "SAR": true,
-    "SCR": true,
-    "SEK": true,
-    "SGD": true,
-    "SKK": true,
-    "SLL": true,
-    "SVC": true,
-    "THB": true,
-    "TND": true,
-    "TRY": true,
-    "TTD": true,
-    "TWD": true,
-    "TZS": true,
-    "UAH": true,
-    "UGX": true,
-    "USD": true,
-    "UYU": true,
-    "UZS": true,
-    "VEF": true,
-    "VND": true,
-    "XOF": true,
-    "YER": true,
-    "ZAR": true,
-    "ZMK": true
-}
-
-},{}],52:[function(require,module,exports){
-module.exports={
-    //euro €
-    "\u20ac" : "EUR",
-
-    //pound sterling £
-    "\u00a3" : "GBP",
-    //pound sterling ₤
-    "\u20a4" : "GBP",
-
-    //indian rupee ₨
-    "\u20a8" : "INR",
-    //indian rupee ₹
-    "\u20b9" : "INR",
-
-    //yen ¥
-    "\u00a5" : "JPY",
-    //double-width yen ￥
-    "\uffe5" : "JPY",
-
-    //israeli shekels ₪
-    "\u20aa" : "ILS",
-
-    //united states dollar $
-    "\u0024" : "USD"
-}
-
-},{}],53:[function(require,module,exports){
 module.exports={"quot":"\"","amp":"&","apos":"'","lt":"<","gt":">","nbsp":" ","iexcl":"¡","cent":"¢","pound":"£","curren":"¤","yen":"¥","brvbar":"¦","sect":"§","uml":"¨","copy":"©","ordf":"ª","laquo":"«","not":"¬","reg":"®","macr":"¯","deg":"°","plusmn":"±","sup2":"²","sup3":"³","acute":"´","micro":"µ","para":"¶","middot":"·","cedil":"¸","sup1":"¹","ordm":"º","raquo":"»","frac14":"¼","frac12":"½","frac34":"¾","iquest":"¿","Agrave":"À","Aacute":"Á","Acirc":"Â","Atilde":"Ã","Auml":"Ä","Aring":"Å","AElig":"Æ","Ccedil":"Ç","Egrave":"È","Eacute":"É","Ecirc":"Ê","Euml":"Ë","Igrave":"Ì","Iacute":"Í","Icirc":"Î","Iuml":"Ï","ETH":"Ð","Ntilde":"Ñ","Ograve":"Ò","Oacute":"Ó","Ocirc":"Ô","Otilde":"Õ","Ouml":"Ö","times":"×","Oslash":"Ø","Ugrave":"Ù","Uacute":"Ú","Ucirc":"Û","Uuml":"Ü","Yacute":"Ý","THORN":"Þ","szlig":"ß","agrave":"à","aacute":"á","acirc":"â","atilde":"ã","auml":"ä","aring":"å","aelig":"æ","ccedil":"ç","egrave":"è","eacute":"é","ecirc":"ê","euml":"ë","igrave":"ì","iacute":"í","icirc":"î","iuml":"ï","eth":"ð","ntilde":"ñ","ograve":"ò","oacute":"ó","ocirc":"ô","otilde":"õ","ouml":"ö","divide":"÷","oslash":"ø","ugrave":"ù","uacute":"ú","ucirc":"û","uuml":"ü","yacute":"ý","thorn":"þ","yuml":"ÿ","OElig":"Œ","oelig":"œ","Scaron":"Š","scaron":"š","Yuml":"Ÿ","fnof":"ƒ","circ":"ˆ","tilde":"˜","Alpha":"Α","Beta":"Β","Gamma":"Γ","Delta":"Δ","Epsilon":"Ε","Zeta":"Ζ","Eta":"Η","Theta":"Θ","Iota":"Ι","Kappa":"Κ","Lambda":"Λ","Mu":"Μ","Nu":"Ν","Xi":"Ξ","Omicron":"Ο","Pi":"Π","Rho":"Ρ","Sigma":"Σ","Tau":"Τ","Upsilon":"Υ","Phi":"Φ","Chi":"Χ","Psi":"Ψ","Omega":"Ω","alpha":"α","beta":"β","gamma":"γ","delta":"δ","epsilon":"ε","zeta":"ζ","eta":"η","theta":"θ","iota":"ι","kappa":"κ","lambda":"λ","mu":"μ","nu":"ν","xi":"ξ","omicron":"ο","pi":"π","rho":"ρ","sigmaf":"ς","sigma":"σ","tau":"τ","upsilon":"υ","phi":"φ","chi":"χ","psi":"ψ","omega":"ω","thetasym":"ϑ","upsih":"ϒ","piv":"ϖ","ensp":" ","emsp":" ","thinsp":" ","ndash":"–","mdash":"—","lsquo":"‘","rsquo":"’","sbquo":"‚","ldquo":"“","rdquo":"”","bdquo":"„","dagger":"†","Dagger":"‡","bull":"•","hellip":"…","permil":"‰","prime":"′","Prime":"″","lsaquo":"‹","rsaquo":"›","oline":"‾","frasl":"⁄","euro":"€","image":"ℑ","weierp":"℘","real":"ℜ","trade":"™","alefsym":"ℵ","larr":"←","uarr":"↑","rarr":"→","darr":"↓","harr":"↔","crarr":"↵","lArr":"⇐","uArr":"⇑","rArr":"⇒","dArr":"⇓","hArr":"⇔","forall":"∀","part":"∂","exist":"∃","empty":"∅","nabla":"∇","isin":"∈","notin":"∉","ni":"∋","prod":"∏","sum":"∑","minus":"−","lowast":"∗","radic":"√","prop":"∝","infin":"∞","ang":"∠","and":"∧","or":"∨","cap":"∩","cup":"∪","int":"∫","there4":"∴","sim":"∼","cong":"≅","asymp":"≈","ne":"≠","equiv":"≡","le":"≤","ge":"≥","sub":"⊂","sup":"⊃","nsub":"⊄","sube":"⊆","supe":"⊇","oplus":"⊕","otimes":"⊗","perp":"⊥","sdot":"⋅","lceil":"⌈","rceil":"⌉","lfloor":"⌊","rfloor":"⌋","lang":"〈","rang":"〉","loz":"◊","spades":"♠","clubs":"♣","hearts":"♥","diams":"♦", "zwnj":"", "zwsp":""}
 
-},{}],54:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
+// Taken from Qty: https://github.com/gentooboontoo/js-quantities
+/*
+Copyright © 2006-2007 Kevin C. Olbrich
+Copyright © 2010-2013 LIM SAS (http://lim.eu) - Julien Sanchez
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+/* eslint-disable max-len, no-inline-comments, spaced-comment */
+var UNITS = {
+    /* prefixes */
+    '<googol>': [['googol'], 1e100, 'prefix'],
+    '<kibi>':  [['Ki', 'Kibi', 'kibi'], Math.pow(2, 10), 'prefix'],
+    '<mebi>':  [['Mi', 'Mebi', 'mebi'], Math.pow(2, 20), 'prefix'],
+    '<gibi>':  [['Gi', 'Gibi', 'gibi'], Math.pow(2, 30), 'prefix'],
+    '<tebi>':  [['Ti', 'Tebi', 'tebi'], Math.pow(2, 40), 'prefix'],
+    '<pebi>':  [['Pi', 'Pebi', 'pebi'], Math.pow(2, 50), 'prefix'],
+    '<exi>':  [['Ei', 'Exi', 'exi'], Math.pow(2, 60), 'prefix'],
+    '<zebi>':  [['Zi', 'Zebi', 'zebi'], Math.pow(2, 70), 'prefix'],
+    '<yebi>':  [['Yi', 'Yebi', 'yebi'], Math.pow(2, 80), 'prefix'],
+    '<yotta>':  [['Y', 'Yotta', 'yotta'], 1e24, 'prefix'],
+    '<zetta>':  [['Z', 'Zetta', 'zetta'], 1e21, 'prefix'],
+    '<exa>':  [['E', 'Exa', 'exa'], 1e18, 'prefix'],
+    '<peta>':  [['P', 'Peta', 'peta'], 1e15, 'prefix'],
+    '<tera>':  [['T', 'Tera', 'tera'], 1e12, 'prefix'],
+    '<giga>':  [['G', 'Giga', 'giga'], 1e9, 'prefix'],
+    '<mega>':  [['M', 'Mega', 'mega'], 1e6, 'prefix'],
+    '<kilo>':  [['k', 'kilo'], 1e3, 'prefix'],
+    '<hecto>':  [['h', 'Hecto', 'hecto'], 1e2, 'prefix'],
+    '<deca>':  [['da', 'Deca', 'deca', 'deka'], 1e1, 'prefix'],
+    '<deci>':  [['d', 'Deci', 'deci'], 1e-1, 'prefix'],
+    '<centi>': [['c', 'Centi', 'centi'], 1e-2, 'prefix'],
+    '<milli>':  [['m', 'Milli', 'milli'], 1e-3, 'prefix'],
+    '<micro>': [
+        ['u', '\u03BC'/*µ as greek letter*/, '\u00B5'/*µ as micro sign*/, 'Micro', 'mc', 'micro'],
+        1e-6,
+        'prefix'
+    ],
+    '<nano>':  [['n', 'Nano', 'nano'], 1e-9, 'prefix'],
+    '<pico>':  [['p', 'Pico', 'pico'], 1e-12, 'prefix'],
+    '<femto>':  [['f', 'Femto', 'femto'], 1e-15, 'prefix'],
+    '<atto>':  [['a', 'Atto', 'atto'], 1e-18, 'prefix'],
+    '<zepto>':  [['z', 'Zepto', 'zepto'], 1e-21, 'prefix'],
+    '<yocto>':  [['y', 'Yocto', 'yocto'], 1e-24, 'prefix'],
+
+    '<1>':  [['1', '<1>'], 1, ''],
+    /* length units */
+    '<meter>':  [['m', 'meter', 'meters', 'metre', 'metres'], 1.0, 'length', ['<meter>']],
+    '<inch>':  [['in', 'inch', 'inches', '"'], 0.0254, 'length', ['<meter>']],
+    '<foot>':  [['ft', 'foot', 'feet', '\''], 0.3048, 'length', ['<meter>']],
+    '<yard>':  [['yd', 'yard', 'yards'], 0.9144, 'length', ['<meter>']],
+    '<mile>':  [['mi', 'mile', 'miles'], 1609.344, 'length', ['<meter>']],
+    '<naut-mile>': [['nmi'], 1852, 'length', ['<meter>']],
+    '<league>':  [['league', 'leagues'], 4828, 'length', ['<meter>']],
+    '<furlong>': [['furlong', 'furlongs'], 201.2, 'length', ['<meter>']],
+    '<rod>':  [['rd', 'rod', 'rods'], 5.029, 'length', ['<meter>']],
+    '<mil>':  [['mil', 'mils'], 0.0000254, 'length', ['<meter>']],
+    '<angstrom>': [['ang', 'angstrom', 'angstroms'], 1e-10, 'length', ['<meter>']],
+    '<fathom>': [['fathom', 'fathoms'], 1.829, 'length', ['<meter>']],
+    '<pica>': [['pica', 'picas'], 0.00423333333, 'length', ['<meter>']],
+    '<point>': [['pt', 'point', 'points'], 0.000352777778, 'length', ['<meter>']],
+    '<redshift>': [['z', 'red-shift'], 1.302773e26, 'length', ['<meter>']],
+    '<AU>': [['AU', 'astronomical-unit'], 149597900000, 'length', ['<meter>']],
+    '<light-second>': [['ls', 'light-second'], 299792500, 'length', ['<meter>']],
+    '<light-minute>': [['lmin', 'light-minute'], 17987550000, 'length', ['<meter>']],
+    '<light-year>': [['ly', 'light-year'], 9460528000000000, 'length', ['<meter>']],
+    '<parsec>': [['pc', 'parsec', 'parsecs'], 30856780000000000, 'length', ['<meter>']],
+
+    /* mass */
+    '<kilogram>': [['kg', 'kilogram', 'kilograms'], 1.0, 'mass', ['<kilogram>']],
+    '<AMU>': [['u', 'AMU', 'amu'], 1.660538921e-27, 'mass', ['<kilogram>']],
+    '<dalton>': [['Da', 'Dalton', 'Daltons', 'dalton', 'daltons'], 1.660538921e-27, 'mass', ['<kilogram>']],
+    '<slug>': [['slug', 'slugs'], 14.5939029, 'mass', ['<kilogram>']],
+    '<short-ton>': [['tn', 'ton'], 907.18474, 'mass', ['<kilogram>']],
+    '<metric-ton>': [['tonne'], 1000, 'mass', ['<kilogram>']],
+    '<carat>': [['ct', 'carat', 'carats'], 0.0002, 'mass', ['<kilogram>']],
+    '<pound>': [['lbs', 'lb', 'pound', 'pounds', '#'], 0.45359237, 'mass', ['<kilogram>']],
+    '<ounce>': [['oz', 'ounce', 'ounces'], 0.0283495231, 'mass', ['<kilogram>']],
+    '<gram>':  [['g', 'gram', 'grams', 'gramme', 'grammes'], 1e-3, 'mass', ['<kilogram>']],
+    '<grain>': [['grain', 'grains', 'gr'], 6.479891e-5, 'mass', ['<kilogram>']],
+    '<dram>': [['dram', 'drams', 'dr'], 0.0017718452, 'mass', ['<kilogram>']],
+    '<stone>': [['stone', 'stones', 'st'], 6.35029318, 'mass', ['<kilogram>']],
+
+    /* area */
+    '<hectare>': [['hectare'], 10000, 'area', ['<meter>', '<meter>']],
+    '<acre>': [['acre', 'acres'], 4046.85642, 'area', ['<meter>', '<meter>']],
+    '<sqft>': [['sqft'], 1, 'area', ['<foot>', '<foot>']],
+
+    /* volume */
+    '<liter>': [['l', 'L', 'liter', 'liters', 'litre', 'litres'], 0.001, 'volume', ['<meter>', '<meter>', '<meter>']],
+    '<gallon>':  [['gal', 'gallon', 'gallons'], 0.0037854118, 'volume', ['<meter>', '<meter>', '<meter>']],
+    '<quart>':  [['qt', 'quart', 'quarts'], 0.00094635295, 'volume', ['<meter>', '<meter>', '<meter>']],
+    '<pint>':  [['pt', 'pint', 'pints'], 0.000473176475, 'volume', ['<meter>', '<meter>', '<meter>']],
+    '<cup>':  [['cu', 'cup', 'cups'], 0.000236588238, 'volume', ['<meter>', '<meter>', '<meter>']],
+    '<fluid-ounce>':  [['floz', 'fluid-ounce', 'fluid-ounces'], 2.95735297e-5, 'volume', ['<meter>', '<meter>', '<meter>']],
+    '<tablespoon>':  [['tb', 'tbsp', 'tbs', 'tablespoon', 'tablespoons'], 1.47867648e-5, 'volume', ['<meter>', '<meter>', '<meter>']],
+    '<teaspoon>':  [['tsp', 'teaspoon', 'teaspoons'], 4.92892161e-6, 'volume', ['<meter>', '<meter>', '<meter>']],
+    '<bushel>':  [['bu', 'bsh', 'bushel', 'bushels'], 0.035239072, 'volume', ['<meter>', '<meter>', '<meter>']],
+
+    /* speed */
+    '<kph>': [['kph'], 0.277777778, 'speed', ['<meter>'], ['<second>']],
+    '<mph>': [['mph'], 0.44704, 'speed', ['<meter>'], ['<second>']],
+    '<knot>': [['kt', 'kn', 'kts', 'knot', 'knots'], 0.514444444, 'speed', ['<meter>'], ['<second>']],
+    '<fps>': [['fps'], 0.3048, 'speed', ['<meter>'], ['<second>']],
+
+    /* acceleration */
+    '<gee>': [['gee'], 9.80665, 'acceleration', ['<meter>'], ['<second>', '<second>']],
+
+    /* temperature_difference */
+    '<kelvin>': [['degK', 'K', 'kelvin'], 1.0, 'temperature', ['<kelvin>']],
+    '<celsius>': [['degC', 'C', 'celsius', 'celsius', 'centigrade'], 1.0, 'temperature', ['<kelvin>']],
+    '<fahrenheit>': [['degF', 'F', 'fahrenheit'], 5 / 9, 'temperature', ['<kelvin>']],
+    '<rankine>': [['degR', 'rankine'], 5 / 9, 'temperature', ['<kelvin>']],
+    '<temp-K>': [['tempK'], 1.0, 'temperature', ['<temp-K>']],
+    '<temp-C>': [['tempC'], 1.0, 'temperature', ['<temp-K>']],
+    '<temp-F>': [['tempF'], 5 / 9, 'temperature', ['<temp-K>']],
+    '<temp-R>': [['tempR'], 5 / 9, 'temperature', ['<temp-K>']],
+
+    /* time */
+    '<second>':  [['s', 'sec', 'secs', 'second', 'seconds'], 1.0, 'time', ['<second>']],
+    '<minute>':  [['min', 'mins', 'minute', 'minutes'], 60.0, 'time', ['<second>']],
+    '<hour>':  [['h', 'hr', 'hrs', 'hour', 'hours'], 3600.0, 'time', ['<second>']],
+    '<day>':  [['d', 'day', 'days'], 3600 * 24, 'time', ['<second>']],
+    '<week>':  [['wk', 'week', 'weeks'], 7 * 3600 * 24, 'time', ['<second>']],
+    '<fortnight>': [['fortnight', 'fortnights'], 1209600, 'time', ['<second>']],
+    '<year>':  [['y', 'yr', 'year', 'years', 'annum'], 31556926, 'time', ['<second>']],
+    '<decade>': [['decade', 'decades'], 315569260, 'time', ['<second>']],
+    '<century>': [['century', 'centuries'], 3155692600, 'time', ['<second>']],
+
+    /* pressure */
+    '<pascal>': [['Pa', 'pascal', 'Pascal'], 1.0, 'pressure', ['<kilogram>'], ['<meter>', '<second>', '<second>']],
+    '<bar>': [['bar', 'bars'], 100000, 'pressure', ['<kilogram>'], ['<meter>', '<second>', '<second>']],
+    '<mmHg>': [['mmHg'], 133.322368, 'pressure', ['<kilogram>'], ['<meter>', '<second>', '<second>']],
+    '<inHg>': [['inHg'], 3386.3881472, 'pressure', ['<kilogram>'], ['<meter>', '<second>', '<second>']],
+    '<torr>': [['torr'], 133.322368, 'pressure', ['<kilogram>'], ['<meter>', '<second>', '<second>']],
+    '<atm>': [['atm', 'ATM', 'atmosphere', 'atmospheres'], 101325, 'pressure', ['<kilogram>'], ['<meter>', '<second>', '<second>']],
+    '<psi>': [['psi'], 6894.76, 'pressure', ['<kilogram>'], ['<meter>', '<second>', '<second>']],
+    '<cmh2o>': [['cmH2O'], 98.0638, 'pressure', ['<kilogram>'], ['<meter>', '<second>', '<second>']],
+    '<inh2o>': [['inH2O'], 249.082052, 'pressure', ['<kilogram>'], ['<meter>', '<second>', '<second>']],
+
+    /* viscosity */
+    '<poise>': [['P', 'poise'], 0.1, 'viscosity', ['<kilogram>'], ['<meter>', '<second>']],
+    '<stokes>': [['St', 'stokes'], 1e-4, 'viscosity', ['<meter>', '<meter>'], ['<second>']],
+
+    /* substance */
+    '<mole>':  [['mol', 'mole'], 1.0, 'substance', ['<mole>']],
+
+    /* concentration */
+    '<molar>': [['M', 'molar'], 1000, 'concentration', ['<mole>'], ['<meter>', '<meter>', '<meter>']],
+    '<wtpercent>': [['wt%', 'wtpercent'], 10, 'concentration', ['<kilogram>'], ['<meter>', '<meter>', '<meter>']],
+
+    /* activity */
+    '<katal>':  [['kat', 'katal', 'Katal'], 1.0, 'activity', ['<mole>'], ['<second>']],
+    '<unit>':  [['U', 'enzUnit'], 16.667e-16, 'activity', ['<mole>'], ['<second>']],
+
+    /* capacitance */
+    '<farad>':  [['farad', 'Farad'], 1.0, 'capacitance', ['<farad>']],
+
+    /* charge */
+    '<coulomb>':  [['coulomb', 'Coulomb'], 1.0, 'charge', ['<ampere>', '<second>']],
+    '<Ah>':  [['Ah'], 3600, 'charge', ['<ampere>', '<second>']],
+
+    /* current */
+    '<ampere>':  [['A', 'Ampere', 'ampere', 'amp', 'amps'], 1.0, 'current', ['<ampere>']],
+
+    /* conductance */
+    '<siemens>': [['S', 'Siemens', 'siemens'], 1.0, 'conductance', ['<second>', '<second>', '<second>', '<ampere>', '<ampere>'], ['<kilogram>', '<meter>', '<meter>']],
+
+    /* inductance */
+    '<henry>':  [['H', 'Henry', 'henry'], 1.0, 'inductance', ['<meter>', '<meter>', '<kilogram>'], ['<second>', '<second>', '<ampere>', '<ampere>']],
+
+    /* potential */
+    '<volt>':  [['V', 'Volt', 'volt', 'volts'], 1.0, 'potential', ['<meter>', '<meter>', '<kilogram>'], ['<second>', '<second>', '<second>', '<ampere>']],
+
+    /* resistance */
+    '<ohm>':  [
+        ['Ohm', 'ohm', '\u03A9'/*Ω as greek letter*/, '\u2126'/*Ω as ohm sign*/],
+        1.0,
+        'resistance',
+        ['<meter>', '<meter>', '<kilogram>'], ['<second>', '<second>', '<second>', '<ampere>', '<ampere>']
+    ],
+    /* magnetism */
+    '<weber>': [['Wb', 'weber', 'webers'], 1.0, 'magnetism', ['<meter>', '<meter>', '<kilogram>'], ['<second>', '<second>', '<ampere>']],
+    '<tesla>': [['T', 'tesla', 'teslas'], 1.0, 'magnetism', ['<kilogram>'], ['<second>', '<second>', '<ampere>']],
+    '<gauss>': [['G', 'gauss'], 1e-4, 'magnetism',  ['<kilogram>'], ['<second>', '<second>', '<ampere>']],
+    '<maxwell>': [['Mx', 'maxwell', 'maxwells'], 1e-8, 'magnetism', ['<meter>', '<meter>', '<kilogram>'], ['<second>', '<second>', '<ampere>']],
+    '<oersted>': [['Oe', 'oersted', 'oersteds'], 250.0 / Math.PI, 'magnetism', ['<ampere>'], ['<meter>']],
+
+    /* energy */
+    '<joule>':  [['J', 'joule', 'Joule', 'joules'], 1.0, 'energy', ['<meter>', '<meter>', '<kilogram>'], ['<second>', '<second>']],
+    '<erg>':  [['erg', 'ergs'], 1e-7, 'energy', ['<meter>', '<meter>', '<kilogram>'], ['<second>', '<second>']],
+    '<btu>':  [['BTU', 'btu', 'BTUs'], 1055.056, 'energy', ['<meter>', '<meter>', '<kilogram>'], ['<second>', '<second>']],
+    '<calorie>':  [['cal', 'calorie', 'calories'], 4.18400, 'energy', ['<meter>', '<meter>', '<kilogram>'], ['<second>', '<second>']],
+    '<Calorie>':  [['Cal', 'Calorie', 'Calories'], 4184.00, 'energy', ['<meter>', '<meter>', '<kilogram>'], ['<second>', '<second>']],
+    '<therm-US>': [['th', 'therm', 'therms', 'Therm'], 105480400, 'energy', ['<meter>', '<meter>', '<kilogram>'], ['<second>', '<second>']],
+    '<Wh>': [['Wh'], 3600, 'energy', ['<meter>', '<meter>', '<kilogram>'], ['<second>', '<second>']],
+
+    /* force */
+    '<newton>': [['N', 'Newton', 'newton'], 1.0, 'force', ['<kilogram>', '<meter>'], ['<second>', '<second>']],
+    '<dyne>': [['dyn', 'dyne'], 1e-5, 'force', ['<kilogram>', '<meter>'], ['<second>', '<second>']],
+    '<pound-force>': [['lbf', 'pound-force'], 4.448222, 'force', ['<kilogram>', '<meter>'], ['<second>', '<second>']],
+
+    /* frequency */
+    '<hertz>': [['Hz', 'hertz', 'Hertz'], 1.0, 'frequency', ['<1>'], ['<second>']],
+
+    /* angle */
+    '<radian>': [['rad', 'radian', 'radians'], 1.0, 'angle', ['<radian>']],
+    '<degree>': [['deg', 'degree', 'degrees'], Math.PI / 180.0, 'angle', ['<radian>']],
+    '<gradian>': [['gon', 'grad', 'gradian', 'grads'], Math.PI / 200.0, 'angle', ['<radian>']],
+    '<steradian>': [['sr', 'steradian', 'steradians'], 1.0, 'solid_angle', ['<steradian>']],
+
+    /* rotation */
+    '<rotation>': [['rotation'], 2.0 * Math.PI, 'angle', ['<radian>']],
+    '<rpm>': [['rpm'], 2.0 * Math.PI / 60.0, 'angular_velocity', ['<radian>'], ['<second>']],
+
+    /* information */
+    '<byte>': [['B', 'byte', 'bytes'], 1.0, 'information', ['<byte>']],
+    '<bit>': [['b', 'bit', 'bits'], 0.125, 'information', ['<byte>']],
+
+    /* information rate */
+    '<Bps>': [['Bps'], 1.0, 'information_rate', ['<byte>'], ['<second>']],
+    '<bps>': [['bps'], 0.125, 'information_rate', ['<byte>'], ['<second>']],
+
+    /* currency */
+    '<dollar>': [['USD', 'dollar'], 1.0, 'currency', ['<dollar>']],
+    '<cents>': [['cents'], 0.01, 'currency', ['<dollar>']],
+
+    /* luminosity */
+    '<candela>': [['cd', 'candela'], 1.0, 'luminosity', ['<candela>']],
+    '<lumen>': [['lm', 'lumen'], 1.0, 'luminous_power', ['<candela>', '<steradian>']],
+    '<lux>': [['lux'], 1.0, 'illuminance', ['<candela>', '<steradian>'], ['<meter>', '<meter>']],
+
+    /* power */
+    '<watt>': [['W', 'watt', 'watts'], 1.0, 'power', ['<kilogram>', '<meter>', '<meter>'], ['<second>', '<second>', '<second>']],
+    '<horsepower>':  [['hp', 'horsepower'], 745.699872, 'power', ['<kilogram>', '<meter>', '<meter>'], ['<second>', '<second>', '<second>']],
+
+    /* radiation */
+    '<gray>': [['Gy', 'gray', 'grays'], 1.0, 'radiation', ['<meter>', '<meter>'], ['<second>', '<second>']],
+    '<roentgen>': [['R', 'roentgen'], 0.009330, 'radiation', ['<meter>', '<meter>'], ['<second>', '<second>']],
+    '<sievert>': [['Sv', 'sievert', 'sieverts'], 1.0, 'radiation', ['<meter>', '<meter>'], ['<second>', '<second>']],
+    '<becquerel>': [['Bq', 'bequerel', 'bequerels'], 1.0, 'radiation', ['<1>'], ['<second>']],
+    '<curie>': [['Ci', 'curie', 'curies'], 3.7e10, 'radiation', ['<1>'], ['<second>']],
+
+    /* rate */
+    '<cpm>': [['cpm'], 1.0 / 60.0, 'rate', ['<count>'], ['<second>']],
+    '<dpm>': [['dpm'], 1.0 / 60.0, 'rate', ['<count>'], ['<second>']],
+    '<bpm>': [['bpm'], 1.0 / 60.0, 'rate', ['<count>'], ['<second>']],
+
+    /* resolution / typography */
+    '<dot>': [['dot', 'dots'], 1, 'resolution', ['<each>']],
+    '<pixel>': [['pixel', 'px'], 1, 'resolution', ['<each>']],
+    '<ppi>': [['ppi'], 1, 'resolution', ['<pixel>'], ['<inch>']],
+    '<dpi>': [['dpi'], 1, 'typography', ['<dot>'], ['<inch>']],
+
+    /* other */
+    '<cell>': [['cells', 'cell'], 1, 'counting', ['<each>']],
+    '<each>': [['each'], 1.0, 'counting', ['<each>']],
+    '<count>': [['count'], 1.0, 'counting', ['<each>']],
+    '<base-pair>': [['bp'], 1.0, 'counting', ['<each>']],
+    '<nucleotide>': [['nt'], 1.0, 'counting', ['<each>']],
+    '<molecule>': [['molecule', 'molecules'], 1.0, 'counting', ['<1>']],
+    '<dozen>':  [['doz', 'dz', 'dozen'], 12.0, 'prefix_only', ['<each>']],
+    '<percent>': [['%', 'percent'], 0.01, 'prefix_only', ['<1>']],
+    '<ppm>':  [['ppm'], 1e-6, 'prefix_only', ['<1>']],
+    '<ppt>':  [['ppt'], 1e-9, 'prefix_only', ['<1>']],
+    '<gross>':  [['gr', 'gross'], 144.0, 'prefix_only', ['<dozen>', '<dozen>']],
+    '<decibel>': [['dB', 'decibel', 'decibels'], 1.0, 'logarithmic', ['<decibel>']]
+};
+/* eslint-enable max-len, no-inline-comments, spaced-comments */
+
+var BASE_UNITS = ['<meter>', '<kilogram>', '<second>', '<mole>', '<farad>', '<ampere>', '<radian>', '<kelvin>', '<temp-K>', '<byte>', '<dollar>', '<candela>', '<each>', '<steradian>', '<decibel>'];
+var UNITY = '<1>';
+var UNITY_ARRAY = [UNITY];
+var SIGN = '[+-]';
+var INTEGER = '\\d+';
+var SIGNED_INTEGER = SIGN + '?' + INTEGER;
+var FRACTION = '\\.' + INTEGER;
+var FLOAT = '(?:' + INTEGER + '(?:' + FRACTION + ')?' + ')' +
+    '|' +
+    '(?:' + FRACTION + ')';
+var EXPONENT = '[Ee]' + SIGNED_INTEGER;
+var SCI_NUMBER = '(?:' + FLOAT + ')(?:' + EXPONENT + ')?';
+var SIGNED_NUMBER = SIGN + '?\\s*' + SCI_NUMBER;
+var UNIT_STRING = '\\s*([^/]*?)(?:\/(.+?))?';
+var QTY_STRING = '(' + SIGNED_NUMBER + ')?' + UNIT_STRING;
+var QTY_STRING_REGEX = new RegExp('^' + QTY_STRING + '$');
+var POWER_OP = '\\^|\\*{2}';
+var TOP_REGEX = new RegExp('([^ \\*]+?)(?:' + POWER_OP + ')?(-?\\d+(?![a-zA-Z]))');
+var BOTTOM_REGEX = new RegExp('([^ \\*]+?)(?:' + POWER_OP + ')?(\\d+(?![a-zA-Z]))');
+
+var SIGNATURE_VECTOR = ['length', 'time', 'temperature', 'mass', 'current', 'substance', 'luminosity', 'currency', 'information', 'angle', 'capacitance'];
+
+// Setup
+var PREFIX_VALUES = {};
+var PREFIX_MAP = {};
+var UNIT_VALUES = {};
+var UNIT_MAP = {};
+var OUTPUT_MAP = {};
+for (var unitDef in UNITS) {
+    if (UNITS.hasOwnProperty(unitDef)) {
+        var definition = UNITS[unitDef];
+        if (definition[2] === 'prefix') {
+            PREFIX_VALUES[unitDef] = definition[1];
+            for (var i = 0; i < definition[0].length; i += 1) {
+                PREFIX_MAP[definition[0][i]] = unitDef;
+            }
+        }
+        else {
+            UNIT_VALUES[unitDef] = {
+                scalar: definition[1],
+                numerator: definition[3],
+                denominator: definition[4]
+            };
+            for (var j = 0; j < definition[0].length; j += 1) {
+                UNIT_MAP[definition[0][j]] = unitDef;
+            }
+        }
+        OUTPUT_MAP[unitDef] = definition[0][0];
+    }
+}
+var PREFIX_REGEX = Object.keys(PREFIX_MAP).sort(function(a, b) {
+    return b.length - a.length;
+}).join('|');
+var UNIT_REGEX = Object.keys(UNIT_MAP).sort(function(a, b) {
+    return b.length - a.length;
+}).join('|');
+
+/*
+ * Minimal boundary regex to support units with Unicode characters
+ * \b only works for ASCII
+ */
+var BOUNDARY_REGEX = '\\b|$';
+var UNIT_MATCH = '(' + PREFIX_REGEX + ')??(' +
+        UNIT_REGEX +
+    ')(?:' + BOUNDARY_REGEX + ')';
+// g flag for multiple occurences
+var UNIT_MATCH_REGEX = new RegExp(UNIT_MATCH, 'g');
+var UNIT_TEST_REGEX = new RegExp('^\\s*(' + UNIT_MATCH + '\\s*\\*?\\s*)+$');
+
+module.exports = {
+    UNITS: UNITS,
+    BASE_UNITS: BASE_UNITS,
+
+    UNITY: UNITY,
+    UNITY_ARRAY: UNITY_ARRAY,
+
+    SIGNATURE_VECTOR: SIGNATURE_VECTOR,
+
+    QTY_STRING: QTY_STRING,
+    QTY_STRING_REGEX: QTY_STRING_REGEX,
+    TOP_REGEX: TOP_REGEX,
+    BOTTOM_REGEX: BOTTOM_REGEX,
+
+    UNIT_VALUES: UNIT_VALUES,
+    UNIT_MAP: UNIT_MAP,
+    PREFIX_VALUES: PREFIX_VALUES,
+    PREFIX_MAP: PREFIX_MAP,
+    OUTPUT_MAP: OUTPUT_MAP,
+
+    UNIT_MATCH_REGEX: UNIT_MATCH_REGEX,
+    UNIT_TEST_REGEX: UNIT_TEST_REGEX
+};
+
+},{}],53:[function(require,module,exports){
 module.exports=[{"section":"introduction","name":"Introduction"},{"section":"x1","name":"1 Scope"},{"section":"x2","name":"2 Conformance"},{"section":"x3","name":"3 Normative references"},{"section":"x4","name":"4 Overview"},{"section":"x4.1","name":"4.1 Web Scripting"},{"section":"x4.2","name":"4.2 Language Overview"},{"section":"x4.2.1","name":"4.2.1 Objects"},{"section":"x4.2.2","name":"4.2.2 The Strict Variant of ECMAScript"},{"section":"x4.3","name":"4.3 Definitions"},{"section":"x4.3.1","name":"4.3.1 type"},{"section":"x4.3.2","name":"4.3.2 primitive value"},{"section":"x4.3.3","name":"4.3.3 object"},{"section":"x4.3.4","name":"4.3.4 constructor"},{"section":"x4.3.5","name":"4.3.5 prototype"},{"section":"x4.3.6","name":"4.3.6 native object"},{"section":"x4.3.7","name":"4.3.7 built-in object"},{"section":"x4.3.8","name":"4.3.8 host object"},{"section":"x4.3.9","name":"4.3.9 undefined value"},{"section":"x4.3.10","name":"4.3.10 Undefined type"},{"section":"x4.3.11","name":"4.3.11 null value"},{"section":"x4.3.12","name":"4.3.12 Null type"},{"section":"x4.3.13","name":"4.3.13 Boolean value"},{"section":"x4.3.14","name":"4.3.14 Boolean type"},{"section":"x4.3.15","name":"4.3.15 Boolean object"},{"section":"x4.3.16","name":"4.3.16 String value"},{"section":"x4.3.17","name":"4.3.17 String type"},{"section":"x4.3.18","name":"4.3.18 String object"},{"section":"x4.3.19","name":"4.3.19 Number value"},{"section":"x4.3.20","name":"4.3.20 Number type"},{"section":"x4.3.21","name":"4.3.21 Number object"},{"section":"x4.3.22","name":"4.3.22 Infinity"},{"section":"x4.3.23","name":"4.3.23 NaN"},{"section":"x4.3.24","name":"4.3.24 function"},{"section":"x4.3.25","name":"4.3.25 built-in function"},{"section":"x4.3.26","name":"4.3.26 property"},{"section":"x4.3.27","name":"4.3.27 method"},{"section":"x4.3.28","name":"4.3.28 built-in method"},{"section":"x4.3.29","name":"4.3.29 attribute"},{"section":"x4.3.30","name":"4.3.30 own property"},{"section":"x4.3.31","name":"4.3.31 inherited property"},{"section":"x5","name":"5 Notational Conventions"},{"section":"x5.1","name":"5.1 Syntactic and Lexical Grammars"},{"section":"x5.1.1","name":"5.1.1 Context-Free Grammars"},{"section":"x5.1.2","name":"5.1.2 The Lexical and RegExp Grammars"},{"section":"x5.1.3","name":"5.1.3 The Numeric String Grammar"},{"section":"x5.1.4","name":"5.1.4 The Syntactic Grammar"},{"section":"x5.1.5","name":"5.1.5 The JSON Grammar"},{"section":"x5.1.6","name":"5.1.6 Grammar Notation"},{"section":"x5.2","name":"5.2 Algorithm Conventions"},{"section":"x6","name":"6 Source Text"},{"section":"x7","name":"7 Lexical Conventions"},{"section":"x7.1","name":"7.1 Unicode Format-Control Characters"},{"section":"x7.2","name":"7.2 White Space"},{"section":"x7.3","name":"7.3 Line Terminators"},{"section":"x7.4","name":"7.4 Comments"},{"section":"x7.5","name":"7.5 Tokens"},{"section":"x7.6","name":"7.6 Identifier Names and Identifiers"},{"section":"x7.6.1","name":"7.6.1 Reserved Words"},{"section":"x7.6.1.1","name":"7.6.1.1 Keywords"},{"section":"x7.6.1.2","name":"7.6.1.2 Future Reserved Words"},{"section":"x7.7","name":"7.7 Punctuators"},{"section":"x7.8","name":"7.8 Literals"},{"section":"x7.8.1","name":"7.8.1 Null Literals"},{"section":"x7.8.2","name":"7.8.2 Boolean Literals"},{"section":"x7.8.3","name":"7.8.3 Numeric Literals"},{"section":"x7.8.4","name":"7.8.4 String Literals"},{"section":"x7.8.5","name":"7.8.5 Regular Expression Literals"},{"section":"x7.9","name":"7.9 Automatic Semicolon Insertion"},{"section":"x7.9.1","name":"7.9.1 Rules of Automatic Semicolon Insertion"},{"section":"x7.9.2","name":"7.9.2 Examples of Automatic Semicolon Insertion"},{"section":"x8","name":"8 Types"},{"section":"x8.1","name":"8.1 The Undefined Type"},{"section":"x8.2","name":"8.2 The Null Type"},{"section":"x8.3","name":"8.3 The Boolean Type"},{"section":"x8.4","name":"8.4 The String Type"},{"section":"x8.5","name":"8.5 The Number Type"},{"section":"x8.6","name":"8.6 The Object Type"},{"section":"x8.6.1","name":"8.6.1 Property Attributes"},{"section":"x8.6.2","name":"8.6.2 Object Internal Properties and Methods"},{"section":"x8.7","name":"8.7 The Reference Specification Type"},{"section":"x8.7.1","name":"8.7.1 GetValue (V)"},{"section":"x8.7.2","name":"8.7.2 PutValue (V, W)"},{"section":"x8.8","name":"8.8 The List Specification Type"},{"section":"x8.9","name":"8.9 The Completion Specification Type"},{"section":"x8.10","name":"8.10 The Property Descriptor and Property Identifier Specification Types"},{"section":"x8.10.1","name":"8.10.1 IsAccessorDescriptor ( Desc )"},{"section":"x8.10.2","name":"8.10.2 IsDataDescriptor ( Desc )"},{"section":"x8.10.3","name":"8.10.3 IsGenericDescriptor ( Desc )"},{"section":"x8.10.4","name":"8.10.4 FromPropertyDescriptor ( Desc )"},{"section":"x8.10.5","name":"8.10.5 ToPropertyDescriptor ( Obj )"},{"section":"x8.11","name":"8.11 The Lexical Environment and Environment Record Specification Types"},{"section":"x8.12","name":"8.12 Algorithms for Object Internal Methods"},{"section":"x8.12.1","name":"8.12.1 [[GetOwnProperty]] (P)"},{"section":"x8.12.2","name":"8.12.2 [[GetProperty]] (P)"},{"section":"x8.12.3","name":"8.12.3 [[Get]] (P)"},{"section":"x8.12.4","name":"8.12.4 [[CanPut]] (P)"},{"section":"x8.12.5","name":"8.12.5 [[Put]] ( P, V, Throw )"},{"section":"x8.12.6","name":"8.12.6 [[HasProperty]] (P)"},{"section":"x8.12.7","name":"8.12.7 [[Delete]] (P, Throw)"},{"section":"x8.12.8","name":"8.12.8 [[DefaultValue]] (hint)"},{"section":"x8.12.9","name":"8.12.9 [[DefineOwnProperty]] (P, Desc, Throw)"},{"section":"x9","name":"9 Type Conversion and Testing"},{"section":"x9.1","name":"9.1 ToPrimitive"},{"section":"x9.2","name":"9.2 ToBoolean"},{"section":"x9.3","name":"9.3 ToNumber"},{"section":"x9.3.1","name":"9.3.1 ToNumber Applied to the String Type"},{"section":"x9.4","name":"9.4 ToInteger"},{"section":"x9.5","name":"9.5 ToInt32: (Signed 32 Bit Integer)"},{"section":"x9.6","name":"9.6 ToUint32: (Unsigned 32 Bit Integer)"},{"section":"x9.7","name":"9.7 ToUint16: (Unsigned 16 Bit Integer)"},{"section":"x9.8","name":"9.8 ToString"},{"section":"x9.8.1","name":"9.8.1 ToString Applied to the Number Type"},{"section":"x9.9","name":"9.9 ToObject"},{"section":"x9.10","name":"9.10 CheckObjectCoercible"},{"section":"x9.11","name":"9.11 IsCallable"},{"section":"x9.12","name":"9.12 The SameValue Algorithm"},{"section":"x10","name":"10 Executable Code and Execution Contexts"},{"section":"x10.1","name":"10.1 Types of Executable Code"},{"section":"x10.1.1","name":"10.1.1 Strict Mode Code"},{"section":"x10.2","name":"10.2 Lexical Environments"},{"section":"x10.2.1","name":"10.2.1 Environment Records"},{"section":"x10.2.1.1","name":"10.2.1.1 Declarative Environment Records"},{"section":"x10.2.1.1.1","name":"10.2.1.1.1 HasBinding(N)"},{"section":"x10.2.1.1.2","name":"10.2.1.1.2 CreateMutableBinding (N, D)"},{"section":"x10.2.1.1.3","name":"10.2.1.1.3 SetMutableBinding (N,V,S)"},{"section":"x10.2.1.1.4","name":"10.2.1.1.4 GetBindingValue(N,S)"},{"section":"x10.2.1.1.5","name":"10.2.1.1.5 DeleteBinding (N)"},{"section":"x10.2.1.1.6","name":"10.2.1.1.6 ImplicitThisValue()"},{"section":"x10.2.1.1.7","name":"10.2.1.1.7 CreateImmutableBinding (N)"},{"section":"x10.2.1.1.8","name":"10.2.1.1.8 InitializeImmutableBinding (N,V)"},{"section":"x10.2.1.2","name":"10.2.1.2 Object Environment Records"},{"section":"x10.2.1.2.1","name":"10.2.1.2.1 HasBinding(N)"},{"section":"x10.2.1.2.2","name":"10.2.1.2.2 CreateMutableBinding (N, D)"},{"section":"x10.2.1.2.3","name":"10.2.1.2.3 SetMutableBinding (N,V,S)"},{"section":"x10.2.1.2.4","name":"10.2.1.2.4 GetBindingValue(N,S)"},{"section":"x10.2.1.2.5","name":"10.2.1.2.5 DeleteBinding (N)"},{"section":"x10.2.1.2.6","name":"10.2.1.2.6 ImplicitThisValue()"},{"section":"x10.2.2","name":"10.2.2 Lexical Environment Operations"},{"section":"x10.2.2.1","name":"10.2.2.1 GetIdentifierReference (lex, name, strict)"},{"section":"x10.2.2.2","name":"10.2.2.2 NewDeclarativeEnvironment (E)"},{"section":"x10.2.2.3","name":"10.2.2.3 NewObjectEnvironment (O, E)"},{"section":"x10.2.3","name":"10.2.3 The Global Environment"},{"section":"x10.3","name":"10.3 Execution Contexts"},{"section":"x10.3.1","name":"10.3.1 Identifier Resolution"},{"section":"x10.4","name":"10.4 Establishing an Execution Context"},{"section":"x10.4.1","name":"10.4.1 Entering Global Code"},{"section":"x10.4.1.1","name":"10.4.1.1 Initial Global Execution Context"},{"section":"x10.4.2","name":"10.4.2 Entering Eval Code"},{"section":"x10.4.2.1","name":"10.4.2.1 Strict Mode Restrictions"},{"section":"x10.4.3","name":"10.4.3 Entering Function Code"},{"section":"x10.5","name":"10.5 Declaration Binding Instantiation"},{"section":"x10.6","name":"10.6 Arguments Object"},{"section":"x11","name":"11 Expressions"},{"section":"x11.1","name":"11.1 Primary Expressions"},{"section":"x11.1.1","name":"11.1.1 The this Keyword"},{"section":"x11.1.2","name":"11.1.2 Identifier Reference"},{"section":"x11.1.3","name":"11.1.3 Literal Reference"},{"section":"x11.1.4","name":"11.1.4 Array Initialiser"},{"section":"x11.1.5","name":"11.1.5 Object Initialiser"},{"section":"x11.1.6","name":"11.1.6 The Grouping Operator"},{"section":"x11.2","name":"11.2 Left-Hand-Side Expressions"},{"section":"x11.2.1","name":"11.2.1 Property Accessors"},{"section":"x11.2.2","name":"11.2.2 The new Operator"},{"section":"x11.2.3","name":"11.2.3 Function Calls"},{"section":"x11.2.4","name":"11.2.4 Argument Lists"},{"section":"x11.2.5","name":"11.2.5 Function Expressions"},{"section":"x11.3","name":"11.3 Postfix Expressions"},{"section":"x11.3.1","name":"11.3.1 Postfix Increment Operator"},{"section":"x11.3.2","name":"11.3.2 Postfix Decrement Operator"},{"section":"x11.4","name":"11.4 Unary Operators"},{"section":"x11.4.1","name":"11.4.1 The delete Operator"},{"section":"x11.4.2","name":"11.4.2 The void Operator"},{"section":"x11.4.3","name":"11.4.3 The typeof Operator"},{"section":"x11.4.4","name":"11.4.4 Prefix Increment Operator"},{"section":"x11.4.5","name":"11.4.5 Prefix Decrement Operator"},{"section":"x11.4.6","name":"11.4.6 Unary + Operator"},{"section":"x11.4.7","name":"11.4.7 Unary - Operator"},{"section":"x11.4.8","name":"11.4.8 Bitwise NOT Operator ( ~ )"},{"section":"x11.4.9","name":"11.4.9 Logical NOT Operator ( ! )"},{"section":"x11.5","name":"11.5 Multiplicative Operators"},{"section":"x11.5.1","name":"11.5.1 Applying the * Operator"},{"section":"x11.5.2","name":"11.5.2 Applying the / Operator"},{"section":"x11.5.3","name":"11.5.3 Applying the % Operator"},{"section":"x11.6","name":"11.6 Additive Operators"},{"section":"x11.6.1","name":"11.6.1 The Addition operator ( + )"},{"section":"x11.6.2","name":"11.6.2 The Subtraction Operator ( - )"},{"section":"x11.6.3","name":"11.6.3 Applying the Additive Operators to Numbers"},{"section":"x11.7","name":"11.7 Bitwise Shift Operators"},{"section":"x11.7.1","name":"11.7.1 The Left Shift Operator ( << )"},{"section":"x11.7.2","name":"11.7.2 The Signed Right Shift Operator ( >> )"},{"section":"x11.7.3","name":"11.7.3 The Unsigned Right Shift Operator ( >>> )"},{"section":"x11.8","name":"11.8 Relational Operators"},{"section":"x11.8.1","name":"11.8.1 The Less-than Operator ( < )"},{"section":"x11.8.2","name":"11.8.2 The Greater-than Operator ( > )"},{"section":"x11.8.3","name":"11.8.3 The Less-than-or-equal Operator ( <= )"},{"section":"x11.8.4","name":"11.8.4 The Greater-than-or-equal Operator ( >= )"},{"section":"x11.8.5","name":"11.8.5 The Abstract Relational Comparison Algorithm"},{"section":"x11.8.6","name":"11.8.6 The instanceof operator"},{"section":"x11.8.7","name":"11.8.7 The in operator"},{"section":"x11.9","name":"11.9 Equality Operators"},{"section":"x11.9.1","name":"11.9.1 The Equals Operator ( == )"},{"section":"x11.9.2","name":"11.9.2 The Does-not-equals Operator ( != )"},{"section":"x11.9.3","name":"11.9.3 The Abstract Equality Comparison Algorithm"},{"section":"x11.9.4","name":"11.9.4 The Strict Equals Operator ( === )"},{"section":"x11.9.5","name":"11.9.5 The Strict Does-not-equal Operator ( !== )"},{"section":"x11.9.6","name":"11.9.6 The Strict Equality Comparison Algorithm"},{"section":"x11.10","name":"11.10 Binary Bitwise Operators"},{"section":"x11.11","name":"11.11 Binary Logical Operators"},{"section":"x11.12","name":"11.12 Conditional Operator ( ? : )"},{"section":"x11.13","name":"11.13 Assignment Operators"},{"section":"x11.13.1","name":"11.13.1 Simple Assignment ( = )"},{"section":"x11.13.2","name":"11.13.2 Compound Assignment ( op= )"},{"section":"x11.14","name":"11.14 Comma Operator ( , )"},{"section":"x12","name":"12 Statements"},{"section":"x12.1","name":"12.1 Block"},{"section":"x12.2","name":"12.2 Variable Statement"},{"section":"x12.2.1","name":"12.2.1 Strict Mode Restrictions"},{"section":"x12.3","name":"12.3 Empty Statement"},{"section":"x12.4","name":"12.4 Expression Statement"},{"section":"x12.5","name":"12.5 The if Statement"},{"section":"x12.6","name":"12.6 Iteration Statements"},{"section":"x12.6.1","name":"12.6.1 The do-while Statement"},{"section":"x12.6.2","name":"12.6.2 The while Statement"},{"section":"x12.6.3","name":"12.6.3 The for Statement"},{"section":"x12.6.4","name":"12.6.4 The for-in Statement"},{"section":"x12.7","name":"12.7 The continue Statement"},{"section":"x12.8","name":"12.8 The break Statement"},{"section":"x12.9","name":"12.9 The return Statement"},{"section":"x12.10","name":"12.10 The with Statement"},{"section":"x12.10.1","name":"12.10.1 Strict Mode Restrictions"},{"section":"x12.11","name":"12.11 The switch Statement"},{"section":"x12.12","name":"12.12 Labelled Statements"},{"section":"x12.13","name":"12.13 The throw Statement"},{"section":"x12.14","name":"12.14 The try Statement"},{"section":"x12.14.1","name":"12.14.1 Strict Mode Restrictions"},{"section":"x12.15","name":"12.15 The debugger statement"},{"section":"x13","name":"13 Function Definition"},{"section":"x13.1","name":"13.1 Strict Mode Restrictions"},{"section":"x13.2","name":"13.2 Creating Function Objects"},{"section":"x13.2.1","name":"13.2.1 [[Call]]"},{"section":"x13.2.2","name":"13.2.2 [[Construct]]"},{"section":"x13.2.3","name":"13.2.3 The Function Object"},{"section":"x14","name":"14 Program"},{"section":"x14.1","name":"14.1 Directive Prologues and the Use Strict Directive"},{"section":"x15","name":"15 Standard Built-in ECMAScript Objects"},{"section":"x15.1","name":"15.1 The Global Object"},{"section":"x15.1.1","name":"15.1.1 Value Properties of the Global Object"},{"section":"x15.1.1.1","name":"15.1.1.1 NaN"},{"section":"x15.1.1.2","name":"15.1.1.2 Infinity"},{"section":"x15.1.1.3","name":"15.1.1.3 undefined"},{"section":"x15.1.2","name":"15.1.2 Function Properties of the Global Object"},{"section":"x15.1.2.1","name":"15.1.2.1 eval (x)"},{"section":"x15.1.2.1.1","name":"15.1.2.1.1 Direct Call to Eval"},{"section":"x15.1.2.2","name":"15.1.2.2 parseInt (string , radix)"},{"section":"x15.1.2.3","name":"15.1.2.3 parseFloat (string)"},{"section":"x15.1.2.4","name":"15.1.2.4 isNaN (number)"},{"section":"x15.1.2.5","name":"15.1.2.5 isFinite (number)"},{"section":"x15.1.3","name":"15.1.3 URI Handling Function Properties"},{"section":"x15.1.3.1","name":"15.1.3.1 decodeURI (encodedURI)"},{"section":"x15.1.3.2","name":"15.1.3.2 decodeURIComponent (encodedURIComponent)"},{"section":"x15.1.3.3","name":"15.1.3.3 encodeURI (uri)"},{"section":"x15.1.3.4","name":"15.1.3.4 encodeURIComponent (uriComponent)"},{"section":"x15.1.4","name":"15.1.4 Constructor Properties of the Global Object"},{"section":"x15.1.4.1","name":"15.1.4.1 Object ( . . . )"},{"section":"x15.1.4.2","name":"15.1.4.2 Function ( . . . )"},{"section":"x15.1.4.3","name":"15.1.4.3 Array ( . . . )"},{"section":"x15.1.4.4","name":"15.1.4.4 String ( . . . )"},{"section":"x15.1.4.5","name":"15.1.4.5 Boolean ( . . . )"},{"section":"x15.1.4.6","name":"15.1.4.6 Number ( . . . )"},{"section":"x15.1.4.7","name":"15.1.4.7 Date ( . . . )"},{"section":"x15.1.4.8","name":"15.1.4.8 RegExp ( . . . )"},{"section":"x15.1.4.9","name":"15.1.4.9 Error ( . . . )"},{"section":"x15.1.4.10","name":"15.1.4.10 EvalError ( . . . )"},{"section":"x15.1.4.11","name":"15.1.4.11 RangeError ( . . . )"},{"section":"x15.1.4.12","name":"15.1.4.12 ReferenceError ( . . . )"},{"section":"x15.1.4.13","name":"15.1.4.13 SyntaxError ( . . . )"},{"section":"x15.1.4.14","name":"15.1.4.14 TypeError ( . . . )"},{"section":"x15.1.4.15","name":"15.1.4.15 URIError ( . . . )"},{"section":"x15.1.5","name":"15.1.5 Other Properties of the Global Object"},{"section":"x15.1.5.1","name":"15.1.5.1 Math"},{"section":"x15.1.5.2","name":"15.1.5.2 JSON"},{"section":"x15.2","name":"15.2 Object Objects"},{"section":"x15.2.1","name":"15.2.1 The Object Constructor Called as a Function"},{"section":"x15.2.1.1","name":"15.2.1.1 Object ( [ value ] )"},{"section":"x15.2.2","name":"15.2.2 The Object Constructor"},{"section":"x15.2.2.1","name":"15.2.2.1 new Object ( [ value ] )"},{"section":"x15.2.3","name":"15.2.3 Properties of the Object Constructor"},{"section":"x15.2.3.1","name":"15.2.3.1 Object.prototype"},{"section":"x15.2.3.2","name":"15.2.3.2 Object.getPrototypeOf ( O )"},{"section":"x15.2.3.3","name":"15.2.3.3 Object.getOwnPropertyDescriptor ( O, P ) "},{"section":"x15.2.3.4","name":"15.2.3.4 Object.getOwnPropertyNames ( O )"},{"section":"x15.2.3.5","name":"15.2.3.5 Object.create ( O [, Properties] )"},{"section":"x15.2.3.6","name":"15.2.3.6 Object.defineProperty ( O, P, Attributes )"},{"section":"x15.2.3.7","name":"15.2.3.7 Object.defineProperties ( O, Properties )"},{"section":"x15.2.3.8","name":"15.2.3.8 Object.seal ( O )"},{"section":"x15.2.3.9","name":"15.2.3.9 Object.freeze ( O )"},{"section":"x15.2.3.10","name":"15.2.3.10 Object.preventExtensions ( O )"},{"section":"x15.2.3.11","name":"15.2.3.11 Object.isSealed ( O )"},{"section":"x15.2.3.12","name":"15.2.3.12 Object.isFrozen ( O )"},{"section":"x15.2.3.13","name":"15.2.3.13 Object.isExtensible ( O )"},{"section":"x15.2.3.14","name":"15.2.3.14 Object.keys ( O )"},{"section":"x15.2.4","name":"15.2.4 Properties of the Object Prototype Object"},{"section":"x15.2.4.1","name":"15.2.4.1 Object.prototype.constructor"},{"section":"x15.2.4.2","name":"15.2.4.2 Object.prototype.toString ( )"},{"section":"x15.2.4.3","name":"15.2.4.3 Object.prototype.toLocaleString ( )"},{"section":"x15.2.4.4","name":"15.2.4.4 Object.prototype.valueOf ( )"},{"section":"x15.2.4.5","name":"15.2.4.5 Object.prototype.hasOwnProperty (V)"},{"section":"x15.2.4.6","name":"15.2.4.6 Object.prototype.isPrototypeOf (V)"},{"section":"x15.2.4.7","name":"15.2.4.7 Object.prototype.propertyIsEnumerable (V)"},{"section":"x15.2.5","name":"15.2.5 Properties of Object Instances"},{"section":"x15.3","name":"15.3 Function Objects"},{"section":"x15.3.1","name":"15.3.1 The Function Constructor Called as a Function"},{"section":"x15.3.1.1","name":"15.3.1.1 Function (p1, p2, … , pn, body)"},{"section":"x15.3.2","name":"15.3.2 The Function Constructor"},{"section":"x15.3.2.1","name":"15.3.2.1 new Function (p1, p2, … , pn, body)"},{"section":"x15.3.3","name":"15.3.3 Properties of the Function Constructor"},{"section":"x15.3.3.1","name":"15.3.3.1 Function.prototype"},{"section":"x15.3.3.2","name":"15.3.3.2 Function.length"},{"section":"x15.3.4","name":"15.3.4 Properties of the Function Prototype Object"},{"section":"x15.3.4.1","name":"15.3.4.1 Function.prototype.constructor"},{"section":"x15.3.4.2","name":"15.3.4.2 Function.prototype.toString ( )"},{"section":"x15.3.4.3","name":"15.3.4.3 Function.prototype.apply (thisArg, argArray)"},{"section":"x15.3.4.4","name":"15.3.4.4 Function.prototype.call (thisArg [ , arg1 [ , arg2, … ] ] )"},{"section":"x15.3.4.5","name":"15.3.4.5 Function.prototype.bind (thisArg [, arg1 [, arg2, …]])"},{"section":"x15.3.4.5.1","name":"15.3.4.5.1 [[Call]]"},{"section":"x15.3.4.5.2","name":"15.3.4.5.2 [[Construct]]"},{"section":"x15.3.4.5.3","name":"15.3.4.5.3 [[HasInstance]] (V)"},{"section":"x15.3.5","name":"15.3.5 Properties of Function Instances"},{"section":"x15.3.5.1","name":"15.3.5.1 length"},{"section":"x15.3.5.2","name":"15.3.5.2 prototype"},{"section":"x15.3.5.3","name":"15.3.5.3 [[HasInstance]] (V)"},{"section":"x15.3.5.4","name":"15.3.5.4 [[Get]] (P)"},{"section":"x15.4","name":"15.4 Array Objects"},{"section":"x15.4.1","name":"15.4.1 The Array Constructor Called as a Function"},{"section":"x15.4.1.1","name":"15.4.1.1 Array ( [ item1 [ , item2 [ , … ] ] ] )"},{"section":"x15.4.2","name":"15.4.2 The Array Constructor"},{"section":"x15.4.2.1","name":"15.4.2.1 new Array ( [ item0 [ , item1 [ , … ] ] ] )"},{"section":"x15.4.2.2","name":"15.4.2.2 new Array (len)"},{"section":"x15.4.3","name":"15.4.3 Properties of the Array Constructor"},{"section":"x15.4.3.1","name":"15.4.3.1 Array.prototype"},{"section":"x15.4.3.2","name":"15.4.3.2 Array.isArray ( arg )"},{"section":"x15.4.4","name":"15.4.4 Properties of the Array Prototype Object"},{"section":"x15.4.4.1","name":"15.4.4.1 Array.prototype.constructor"},{"section":"x15.4.4.2","name":"15.4.4.2 Array.prototype.toString ( )"},{"section":"x15.4.4.3","name":"15.4.4.3 Array.prototype.toLocaleString ( )"},{"section":"x15.4.4.4","name":"15.4.4.4 Array.prototype.concat ( [ item1 [ , item2 [ , … ] ] ] )"},{"section":"x15.4.4.5","name":"15.4.4.5 Array.prototype.join (separator)"},{"section":"x15.4.4.6","name":"15.4.4.6 Array.prototype.pop ( )"},{"section":"x15.4.4.7","name":"15.4.4.7 Array.prototype.push ( [ item1 [ , item2 [ , … ] ] ] )"},{"section":"x15.4.4.8","name":"15.4.4.8 Array.prototype.reverse ( )"},{"section":"x15.4.4.9","name":"15.4.4.9 Array.prototype.shift ( )"},{"section":"x15.4.4.10","name":"15.4.4.10 Array.prototype.slice (start, end)"},{"section":"x15.4.4.11","name":"15.4.4.11 Array.prototype.sort (comparefn)"},{"section":"x15.4.4.12","name":"15.4.4.12 Array.prototype.splice (start, deleteCount [ , item1 [ , item2 [ , … ] ] ] )"},{"section":"x15.4.4.13","name":"15.4.4.13 Array.prototype.unshift ( [ item1 [ , item2 [ , … ] ] ] )"},{"section":"x15.4.4.14","name":"15.4.4.14 Array.prototype.indexOf ( searchElement [ , fromIndex ] )"},{"section":"x15.4.4.15","name":"15.4.4.15 Array.prototype.lastIndexOf ( searchElement [ , fromIndex ] )"},{"section":"x15.4.4.16","name":"15.4.4.16 Array.prototype.every ( callbackfn [ , thisArg ] )"},{"section":"x15.4.4.17","name":"15.4.4.17 Array.prototype.some ( callbackfn [ , thisArg ] )"},{"section":"x15.4.4.18","name":"15.4.4.18 Array.prototype.forEach ( callbackfn [ , thisArg ] )"},{"section":"x15.4.4.19","name":"15.4.4.19 Array.prototype.map ( callbackfn [ , thisArg ] )"},{"section":"x15.4.4.20","name":"15.4.4.20 Array.prototype.filter ( callbackfn [ , thisArg ] )"},{"section":"x15.4.4.21","name":"15.4.4.21 Array.prototype.reduce ( callbackfn [ , initialValue ] )"},{"section":"x15.4.4.22","name":"15.4.4.22 Array.prototype.reduceRight ( callbackfn [ , initialValue ] )"},{"section":"x15.4.5","name":"15.4.5 Properties of Array Instances"},{"section":"x15.4.5.1","name":"15.4.5.1 [[DefineOwnProperty]] ( P, Desc, Throw )"},{"section":"x15.4.5.2","name":"15.4.5.2 length"},{"section":"x15.5","name":"15.5 String Objects"},{"section":"x15.5.1","name":"15.5.1 The String Constructor Called as a Function"},{"section":"x15.5.1.1","name":"15.5.1.1 String ( [ value ] )"},{"section":"x15.5.2","name":"15.5.2 The String Constructor"},{"section":"x15.5.2.1","name":"15.5.2.1 new String ( [ value ] )"},{"section":"x15.5.3","name":"15.5.3 Properties of the String Constructor"},{"section":"x15.5.3.1","name":"15.5.3.1 String.prototype"},{"section":"x15.5.3.2","name":"15.5.3.2 String.fromCharCode ( [ char0 [ , char1 [ , … ] ] ] )"},{"section":"x15.5.4","name":"15.5.4 Properties of the String Prototype Object"},{"section":"x15.5.4.1","name":"15.5.4.1 String.prototype.constructor"},{"section":"x15.5.4.2","name":"15.5.4.2 String.prototype.toString ( )"},{"section":"x15.5.4.3","name":"15.5.4.3 String.prototype.valueOf ( )"},{"section":"x15.5.4.4","name":"15.5.4.4 String.prototype.charAt (pos)"},{"section":"x15.5.4.5","name":"15.5.4.5 String.prototype.charCodeAt (pos)"},{"section":"x15.5.4.6","name":"15.5.4.6 String.prototype.concat ( [ string1 [ , string2 [ , … ] ] ] )"},{"section":"x15.5.4.7","name":"15.5.4.7 String.prototype.indexOf (searchString, position)"},{"section":"x15.5.4.8","name":"15.5.4.8 String.prototype.lastIndexOf (searchString, position)"},{"section":"x15.5.4.9","name":"15.5.4.9 String.prototype.localeCompare (that)"},{"section":"x15.5.4.10","name":"15.5.4.10 String.prototype.match (regexp)"},{"section":"x15.5.4.11","name":"15.5.4.11 String.prototype.replace (searchValue, replaceValue)"},{"section":"x15.5.4.12","name":"15.5.4.12 String.prototype.search (regexp)"},{"section":"x15.5.4.13","name":"15.5.4.13 String.prototype.slice (start, end)"},{"section":"x15.5.4.14","name":"15.5.4.14 String.prototype.split (separator, limit)"},{"section":"x15.5.4.15","name":"15.5.4.15 String.prototype.substring (start, end)"},{"section":"x15.5.4.16","name":"15.5.4.16 String.prototype.toLowerCase ( )"},{"section":"x15.5.4.17","name":"15.5.4.17 String.prototype.toLocaleLowerCase ( )"},{"section":"x15.5.4.18","name":"15.5.4.18 String.prototype.toUpperCase ( )"},{"section":"x15.5.4.19","name":"15.5.4.19 String.prototype.toLocaleUpperCase ( )"},{"section":"x15.5.4.20","name":"15.5.4.20 String.prototype.trim ( )"},{"section":"x15.5.5","name":"15.5.5 Properties of String Instances"},{"section":"x15.5.5.1","name":"15.5.5.1 length"},{"section":"x15.5.5.2","name":"15.5.5.2 [[GetOwnProperty]] ( P )"},{"section":"x15.6","name":"15.6 Boolean Objects"},{"section":"x15.6.1","name":"15.6.1 The Boolean Constructor Called as a Function"},{"section":"x15.6.1.1","name":"15.6.1.1 Boolean (value)"},{"section":"x15.6.2","name":"15.6.2 The Boolean Constructor"},{"section":"x15.6.2.1","name":"15.6.2.1 new Boolean (value)"},{"section":"x15.6.3","name":"15.6.3 Properties of the Boolean Constructor"},{"section":"x15.6.3.1","name":"15.6.3.1 Boolean.prototype"},{"section":"x15.6.4","name":"15.6.4 Properties of the Boolean Prototype Object"},{"section":"x15.6.4.1","name":"15.6.4.1 Boolean.prototype.constructor"},{"section":"x15.6.4.2","name":"15.6.4.2 Boolean.prototype.toString ( )"},{"section":"x15.6.4.3","name":"15.6.4.3 Boolean.prototype.valueOf ( )"},{"section":"x15.6.5","name":"15.6.5 Properties of Boolean Instances"},{"section":"x15.7","name":"15.7 Number Objects"},{"section":"x15.7.1","name":"15.7.1 The Number Constructor Called as a Function"},{"section":"x15.7.1.1","name":"15.7.1.1 Number ( [ value ] )"},{"section":"x15.7.2","name":"15.7.2 The Number Constructor"},{"section":"x15.7.2.1","name":"15.7.2.1 new Number ( [ value ] )"},{"section":"x15.7.3","name":"15.7.3 Properties of the Number Constructor"},{"section":"x15.7.3.1","name":"15.7.3.1 Number.prototype"},{"section":"x15.7.3.2","name":"15.7.3.2 Number.MAX_VALUE"},{"section":"x15.7.3.3","name":"15.7.3.3 Number.MIN_VALUE"},{"section":"x15.7.3.4","name":"15.7.3.4 Number.NaN"},{"section":"x15.7.3.5","name":"15.7.3.5 Number.NEGATIVE_INFINITY"},{"section":"x15.7.3.6","name":"15.7.3.6 Number.POSITIVE_INFINITY"},{"section":"x15.7.4","name":"15.7.4 Properties of the Number Prototype Object"},{"section":"x15.7.4.1","name":"15.7.4.1 Number.prototype.constructor"},{"section":"x15.7.4.2","name":"15.7.4.2 Number.prototype.toString ( [ radix ] )"},{"section":"x15.7.4.3","name":"15.7.4.3 Number.prototype.toLocaleString()"},{"section":"x15.7.4.4","name":"15.7.4.4 Number.prototype.valueOf ( )"},{"section":"x15.7.4.5","name":"15.7.4.5 Number.prototype.toFixed (fractionDigits)"},{"section":"x15.7.4.6","name":"15.7.4.6 Number.prototype.toExponential (fractionDigits)"},{"section":"x15.7.4.7","name":"15.7.4.7 Number.prototype.toPrecision (precision)"},{"section":"x15.7.5","name":"15.7.5 Properties of Number Instances"},{"section":"x15.8","name":"15.8 The Math Object"},{"section":"x15.8.1","name":"15.8.1 Value Properties of the Math Object"},{"section":"x15.8.1.1","name":"15.8.1.1 E"},{"section":"x15.8.1.2","name":"15.8.1.2 LN10"},{"section":"x15.8.1.3","name":"15.8.1.3 LN2"},{"section":"x15.8.1.4","name":"15.8.1.4 LOG2E"},{"section":"x15.8.1.5","name":"15.8.1.5 LOG10E"},{"section":"x15.8.1.6","name":"15.8.1.6 PI"},{"section":"x15.8.1.7","name":"15.8.1.7 SQRT1_2"},{"section":"x15.8.1.8","name":"15.8.1.8 SQRT2"},{"section":"x15.8.2","name":"15.8.2 Function Properties of the Math Object"},{"section":"x15.8.2.1","name":"15.8.2.1 abs (x)"},{"section":"x15.8.2.2","name":"15.8.2.2 acos (x)"},{"section":"x15.8.2.3","name":"15.8.2.3 asin (x)"},{"section":"x15.8.2.4","name":"15.8.2.4 atan (x)"},{"section":"x15.8.2.5","name":"15.8.2.5 atan2 (y, x)"},{"section":"x15.8.2.6","name":"15.8.2.6 ceil (x)"},{"section":"x15.8.2.7","name":"15.8.2.7 cos (x)"},{"section":"x15.8.2.8","name":"15.8.2.8 exp (x)"},{"section":"x15.8.2.9","name":"15.8.2.9 floor (x)"},{"section":"x15.8.2.10","name":"15.8.2.10 log (x)"},{"section":"x15.8.2.11","name":"15.8.2.11 max ( [ value1 [ , value2 [ , … ] ] ] )"},{"section":"x15.8.2.12","name":"15.8.2.12 min ( [ value1 [ , value2 [ , … ] ] ] )"},{"section":"x15.8.2.13","name":"15.8.2.13 pow (x, y)"},{"section":"x15.8.2.14","name":"15.8.2.14 random ( )"},{"section":"x15.8.2.15","name":"15.8.2.15 round (x)"},{"section":"x15.8.2.16","name":"15.8.2.16 sin (x)"},{"section":"x15.8.2.17","name":"15.8.2.17 sqrt (x)"},{"section":"x15.8.2.18","name":"15.8.2.18 tan (x)"},{"section":"x15.9","name":"15.9 Date Objects"},{"section":"x15.9.1","name":"15.9.1 Overview of Date Objects and Definitions of Abstract Operators"},{"section":"x15.9.1.1","name":"15.9.1.1 Time Values and Time Range"},{"section":"x15.9.1.2","name":"15.9.1.2 Day Number and Time within Day"},{"section":"x15.9.1.3","name":"15.9.1.3 Year Number"},{"section":"x15.9.1.4","name":"15.9.1.4 Month Number"},{"section":"x15.9.1.5","name":"15.9.1.5 Date Number"},{"section":"x15.9.1.6","name":"15.9.1.6 Week Day"},{"section":"x15.9.1.7","name":"15.9.1.7 Local Time Zone Adjustment"},{"section":"x15.9.1.8","name":"15.9.1.8 Daylight Saving Time Adjustment"},{"section":"x15.9.1.9","name":"15.9.1.9 Local Time"},{"section":"x15.9.1.10","name":"15.9.1.10 Hours, Minutes, Second, and Milliseconds"},{"section":"x15.9.1.11","name":"15.9.1.11 MakeTime (hour, min, sec, ms)"},{"section":"x15.9.1.12","name":"15.9.1.12 MakeDay (year, month, date)"},{"section":"x15.9.1.13","name":"15.9.1.13 MakeDate (day, time)"},{"section":"x15.9.1.14","name":"15.9.1.14 TimeClip (time)"},{"section":"x15.9.1.15","name":"15.9.1.15 Date Time String Format"},{"section":"x15.9.1.15.1","name":"15.9.1.15.1 Extended years"},{"section":"x15.9.2","name":"15.9.2 The Date Constructor Called as a Function"},{"section":"x15.9.2.1","name":"15.9.2.1 Date ( [ year [, month [, date [, hours [, minutes [, seconds [, ms ] ] ] ] ] ] ] )"},{"section":"x15.9.3","name":"15.9.3 The Date Constructor"},{"section":"x15.9.3.1","name":"15.9.3.1 new Date (year, month [, date [, hours [, minutes [, seconds [, ms ] ] ] ] ] )"},{"section":"x15.9.3.2","name":"15.9.3.2 new Date (value)"},{"section":"x15.9.3.3","name":"15.9.3.3 new Date ( )"},{"section":"x15.9.4","name":"15.9.4 Properties of the Date Constructor"},{"section":"x15.9.4.1","name":"15.9.4.1 Date.prototype"},{"section":"x15.9.4.2","name":"15.9.4.2 Date.parse (string)"},{"section":"x15.9.4.3","name":"15.9.4.3 Date.UTC (year, month [, date [, hours [, minutes [, seconds [, ms ] ] ] ] ])"},{"section":"x15.9.4.4","name":"15.9.4.4 Date.now ( )"},{"section":"x15.9.5","name":"15.9.5 Properties of the Date Prototype Object"},{"section":"x15.9.5.1","name":"15.9.5.1 Date.prototype.constructor"},{"section":"x15.9.5.2","name":"15.9.5.2 Date.prototype.toString ( )"},{"section":"x15.9.5.3","name":"15.9.5.3 Date.prototype.toDateString ( )"},{"section":"x15.9.5.4","name":"15.9.5.4 Date.prototype.toTimeString ( )"},{"section":"x15.9.5.5","name":"15.9.5.5 Date.prototype.toLocaleString ( )"},{"section":"x15.9.5.6","name":"15.9.5.6 Date.prototype.toLocaleDateString ( )"},{"section":"x15.9.5.7","name":"15.9.5.7 Date.prototype.toLocaleTimeString ( )"},{"section":"x15.9.5.8","name":"15.9.5.8 Date.prototype.valueOf ( )"},{"section":"x15.9.5.9","name":"15.9.5.9 Date.prototype.getTime ( )"},{"section":"x15.9.5.10","name":"15.9.5.10 Date.prototype.getFullYear ( )"},{"section":"x15.9.5.11","name":"15.9.5.11 Date.prototype.getUTCFullYear ( )"},{"section":"x15.9.5.12","name":"15.9.5.12 Date.prototype.getMonth ( )"},{"section":"x15.9.5.13","name":"15.9.5.13 Date.prototype.getUTCMonth ( )"},{"section":"x15.9.5.14","name":"15.9.5.14 Date.prototype.getDate ( )"},{"section":"x15.9.5.15","name":"15.9.5.15 Date.prototype.getUTCDate ( )"},{"section":"x15.9.5.16","name":"15.9.5.16 Date.prototype.getDay ( )"},{"section":"x15.9.5.17","name":"15.9.5.17 Date.prototype.getUTCDay ( )"},{"section":"x15.9.5.18","name":"15.9.5.18 Date.prototype.getHours ( )"},{"section":"x15.9.5.19","name":"15.9.5.19 Date.prototype.getUTCHours ( )"},{"section":"x15.9.5.20","name":"15.9.5.20 Date.prototype.getMinutes ( )"},{"section":"x15.9.5.21","name":"15.9.5.21 Date.prototype.getUTCMinutes ( )"},{"section":"x15.9.5.22","name":"15.9.5.22 Date.prototype.getSeconds ( )"},{"section":"x15.9.5.23","name":"15.9.5.23 Date.prototype.getUTCSeconds ( )"},{"section":"x15.9.5.24","name":"15.9.5.24 Date.prototype.getMilliseconds ( )"},{"section":"x15.9.5.25","name":"15.9.5.25 Date.prototype.getUTCMilliseconds ( )"},{"section":"x15.9.5.26","name":"15.9.5.26 Date.prototype.getTimezoneOffset ( )"},{"section":"x15.9.5.27","name":"15.9.5.27 Date.prototype.setTime (time)"},{"section":"x15.9.5.28","name":"15.9.5.28 Date.prototype.setMilliseconds (ms)"},{"section":"x15.9.5.29","name":"15.9.5.29 Date.prototype.setUTCMilliseconds (ms)"},{"section":"x15.9.5.30","name":"15.9.5.30 Date.prototype.setSeconds (sec [, ms ] )"},{"section":"x15.9.5.31","name":"15.9.5.31 Date.prototype.setUTCSeconds (sec [, ms ] )"},{"section":"x15.9.5.32","name":"15.9.5.32 Date.prototype.setMinutes (min [, sec [, ms ] ] )"},{"section":"x15.9.5.33","name":"15.9.5.33 Date.prototype.setUTCMinutes (min [, sec [, ms ] ] )"},{"section":"x15.9.5.34","name":"15.9.5.34 Date.prototype.setHours (hour [, min [, sec [, ms ] ] ] )"},{"section":"x15.9.5.35","name":"15.9.5.35 Date.prototype.setUTCHours (hour [, min [, sec [, ms ] ] ] )"},{"section":"x15.9.5.36","name":"15.9.5.36 Date.prototype.setDate (date)"},{"section":"x15.9.5.37","name":"15.9.5.37 Date.prototype.setUTCDate (date)"},{"section":"x15.9.5.38","name":"15.9.5.38 Date.prototype.setMonth (month [, date ] )"},{"section":"x15.9.5.39","name":"15.9.5.39 Date.prototype.setUTCMonth (month [, date ] )"},{"section":"x15.9.5.40","name":"15.9.5.40 Date.prototype.setFullYear (year [, month [, date ] ] )"},{"section":"x15.9.5.41","name":"15.9.5.41 Date.prototype.setUTCFullYear (year [, month [, date ] ] )"},{"section":"x15.9.5.42","name":"15.9.5.42 Date.prototype.toUTCString ( )"},{"section":"x15.9.5.43","name":"15.9.5.43 Date.prototype.toISOString ( )"},{"section":"x15.9.5.44","name":"15.9.5.44 Date.prototype.toJSON ( key )"},{"section":"x15.9.6","name":"15.9.6 Properties of Date Instances"},{"section":"x15.10","name":"15.10 RegExp (Regular Expression) Objects"},{"section":"x15.10.1","name":"15.10.1 Patterns"},{"section":"x15.10.2","name":"15.10.2 Pattern Semantics"},{"section":"x15.10.2.1","name":"15.10.2.1 Notation"},{"section":"x15.10.2.2","name":"15.10.2.2 Pattern"},{"section":"x15.10.2.3","name":"15.10.2.3 Disjunction"},{"section":"x15.10.2.4","name":"15.10.2.4 Alternative"},{"section":"x15.10.2.5","name":"15.10.2.5 Term"},{"section":"x15.10.2.6","name":"15.10.2.6 Assertion"},{"section":"x15.10.2.7","name":"15.10.2.7 Quantifier"},{"section":"x15.10.2.8","name":"15.10.2.8 Atom"},{"section":"x15.10.2.9","name":"15.10.2.9 AtomEscape"},{"section":"x15.10.2.10","name":"15.10.2.10 CharacterEscape"},{"section":"x15.10.2.11","name":"15.10.2.11 DecimalEscape"},{"section":"x15.10.2.12","name":"15.10.2.12 CharacterClassEscape"},{"section":"x15.10.2.13","name":"15.10.2.13 CharacterClass"},{"section":"x15.10.2.14","name":"15.10.2.14 ClassRanges"},{"section":"x15.10.2.15","name":"15.10.2.15 NonemptyClassRanges"},{"section":"x15.10.2.16","name":"15.10.2.16 NonemptyClassRangesNoDash"},{"section":"x15.10.2.17","name":"15.10.2.17 ClassAtom"},{"section":"x15.10.2.18","name":"15.10.2.18 ClassAtomNoDash"},{"section":"x15.10.2.19","name":"15.10.2.19 ClassEscape"},{"section":"x15.10.3","name":"15.10.3 The RegExp Constructor Called as a Function"},{"section":"x15.10.3.1","name":"15.10.3.1 RegExp(pattern, flags)"},{"section":"x15.10.4","name":"15.10.4 The RegExp Constructor"},{"section":"x15.10.4.1","name":"15.10.4.1 new RegExp(pattern, flags)"},{"section":"x15.10.5","name":"15.10.5 Properties of the RegExp Constructor"},{"section":"x15.10.5.1","name":"15.10.5.1 RegExp.prototype"},{"section":"x15.10.6","name":"15.10.6 Properties of the RegExp Prototype Object"},{"section":"x15.10.6.1","name":"15.10.6.1 RegExp.prototype.constructor"},{"section":"x15.10.6.2","name":"15.10.6.2 RegExp.prototype.exec(string)"},{"section":"x15.10.6.3","name":"15.10.6.3 RegExp.prototype.test(string)"},{"section":"x15.10.6.4","name":"15.10.6.4 RegExp.prototype.toString()"},{"section":"x15.10.7","name":"15.10.7 Properties of RegExp Instances"},{"section":"x15.10.7.1","name":"15.10.7.1 source"},{"section":"x15.10.7.2","name":"15.10.7.2 global"},{"section":"x15.10.7.3","name":"15.10.7.3 ignoreCase"},{"section":"x15.10.7.4","name":"15.10.7.4 multiline"},{"section":"x15.10.7.5","name":"15.10.7.5 lastIndex"},{"section":"x15.11","name":"15.11 Error Objects"},{"section":"x15.11.1","name":"15.11.1 The Error Constructor Called as a Function"},{"section":"x15.11.1.1","name":"15.11.1.1 Error (message)"},{"section":"x15.11.2","name":"15.11.2 The Error Constructor"},{"section":"x15.11.2.1","name":"15.11.2.1 new Error (message)"},{"section":"x15.11.3","name":"15.11.3 Properties of the Error Constructor"},{"section":"x15.11.3.1","name":"15.11.3.1 Error.prototype"},{"section":"x15.11.4","name":"15.11.4 Properties of the Error Prototype Object"},{"section":"x15.11.4.1","name":"15.11.4.1 Error.prototype.constructor"},{"section":"x15.11.4.2","name":"15.11.4.2 Error.prototype.name"},{"section":"x15.11.4.3","name":"15.11.4.3 Error.prototype.message"},{"section":"x15.11.4.4","name":"15.11.4.4 Error.prototype.toString ( )"},{"section":"x15.11.5","name":"15.11.5 Properties of Error Instances"},{"section":"x15.11.6","name":"15.11.6 Native Error Types Used in This Standard"},{"section":"x15.11.6.1","name":"15.11.6.1 EvalError"},{"section":"x15.11.6.2","name":"15.11.6.2 RangeError"},{"section":"x15.11.6.3","name":"15.11.6.3 ReferenceError"},{"section":"x15.11.6.4","name":"15.11.6.4 SyntaxError"},{"section":"x15.11.6.5","name":"15.11.6.5 TypeError"},{"section":"x15.11.6.6","name":"15.11.6.6 URIError"},{"section":"x15.11.7","name":"15.11.7 NativeError Object Structure"},{"section":"x15.11.7.1","name":"15.11.7.1 NativeError Constructors Called as Functions"},{"section":"x15.11.7.2","name":"15.11.7.2 NativeError (message)"},{"section":"x15.11.7.3","name":"15.11.7.3 The NativeError Constructors"},{"section":"x15.11.7.4","name":"15.11.7.4 New NativeError (message)"},{"section":"x15.11.7.5","name":"15.11.7.5 Properties of the NativeError Constructors"},{"section":"x15.11.7.6","name":"15.11.7.6 NativeError.prototype"},{"section":"x15.11.7.7","name":"15.11.7.7 Properties of the NativeError Prototype Objects"},{"section":"x15.11.7.8","name":"15.11.7.8 NativeError.prototype.constructor"},{"section":"x15.11.7.9","name":"15.11.7.9 NativeError.prototype.name"},{"section":"x15.11.7.10","name":"15.11.7.10 NativeError.prototype.message"},{"section":"x15.11.7.11","name":"15.11.7.11 Properties of NativeError Instances"},{"section":"x15.12","name":"15.12 The JSON Object"},{"section":"x15.12.1","name":"15.12.1 The JSON Grammar  "},{"section":"x15.12.1.1","name":"15.12.1.1 The JSON Lexical Grammar"},{"section":"x15.12.1.2","name":"15.12.1.2 The JSON Syntactic Grammar"},{"section":"x15.12.2","name":"15.12.2 parse ( text [ , reviver ] )"},{"section":"x15.12.3","name":"15.12.3 stringify ( value [ , replacer [ , space ] ] )"},{"section":"x16","name":"16 Errors"},{"section":"A","name":"Annex A (informative) Grammar Summary"},{"section":"A.1","name":"A.1 Lexical Grammar"},{"section":"A.2","name":"A.2 Number Conversions"},{"section":"A.3","name":"A.3 Expressions"},{"section":"A.4","name":"A.4 Statements"},{"section":"A.5","name":"A.5 Functions and Programs"},{"section":"A.6","name":"A.6 Universal Resource Identifier Character Classes"},{"section":"A.7","name":"A.7 Regular Expressions"},{"section":"A.8","name":"A.8 JSON"},{"section":"A.8.1","name":"A.8.1 JSON Lexical Grammar"},{"section":"A.8.2","name":"A.8.2 JSON Syntactic Grammar"},{"section":"B","name":"Annex B (informative) Compatibility"},{"section":"B.1","name":"B.1 Additional Syntax"},{"section":"B.1.1","name":"B.1.1 Numeric Literals"},{"section":"B.1.2","name":"B.1.2 String Literals"},{"section":"B.2","name":"B.2 Additional Properties"},{"section":"B.2.1","name":"B.2.1 escape (string)"},{"section":"B.2.2","name":"B.2.2 unescape (string)"},{"section":"B.2.3","name":"B.2.3 String.prototype.substr (start, length)"},{"section":"B.2.4","name":"B.2.4 Date.prototype.getYear ( )"},{"section":"B.2.5","name":"B.2.5 Date.prototype.setYear (year)"},{"section":"B.2.6","name":"B.2.6 Date.prototype.toGMTString ( )"},{"section":"C","name":"Annex C (informative) The Strict Mode of ECMAScript"},{"section":"D","name":"Annex D (informative) Corrections and Clarifications in the 5th Edition with Possible 3rd Edition Compatibility Impact"},{"section":"E","name":"Annex E (informative) Additions and Changes in the 5th Edition that Introduce Incompatibilities with the 3rd Edition"},{"section":"bibliography","name":"Bibliography"}]
 
-},{}],55:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 /*eslint-disable*/
 // "encoded" to leave some surprise
 exports.undecided=['SSdtIG5vdCBzdXJl', 'RVJST1IgQ0FMQ1VMQVRJTkcgUkVTVUxU', 'SSBrbm93IGp1c3Qgb25lIHRoaW5nLCBhbmQgdGhhdCBpcyB0aGF0IEknbSBhIGx1bWJlcmphY2s='].map(atob);
@@ -6681,7 +7547,7 @@ exports.sameness=['VGhhdCdzIG5vdCByZWFsbHkgYSBjaG9pY2UsIG5vdyBpcyBpdD8=', 'U291b
 // now for the juicy part
 exports.answers=['QWJzb2x1dGVseSBub3Q=', 'QWJzb2x1dGVseSBub3Q=', 'QWJzb2x1dGVseSBub3Q=', 'QWxsIHNpZ25zIHBvaW50IHRvIG5v', 'QWxsIHNpZ25zIHBvaW50IHRvIG5v', 'QWxsIHNpZ25zIHBvaW50IHRvIG5v', 'QWxsIHNpZ25zIHBvaW50IHRvIHllcw==', 'QWxsIHNpZ25zIHBvaW50IHRvIHllcw==', 'QWxsIHNpZ25zIHBvaW50IHRvIHllcw==', 'QnV0IG9mIGNvdXJzZQ==', 'QnV0IG9mIGNvdXJzZQ==', 'QnV0IG9mIGNvdXJzZQ==', 'QnkgYWxsIG1lYW5z', 'QnkgYWxsIG1lYW5z', 'QnkgYWxsIG1lYW5z', 'Q2VydGFpbmx5IG5vdA==', 'Q2VydGFpbmx5IG5vdA==', 'Q2VydGFpbmx5IG5vdA==', 'Q2VydGFpbmx5', 'Q2VydGFpbmx5', 'Q2VydGFpbmx5', 'RGVmaW5pdGVseQ==', 'RGVmaW5pdGVseQ==', 'RGVmaW5pdGVseQ==', 'RG91YnRmdWxseQ==', 'RG91YnRmdWxseQ==', 'RG91YnRmdWxseQ==', 'RnJhbmtseSBteSBkZWFyLCBJIGRvbid0IGdpdmUgYSBkZWFu', 'RnJhbmtseSBteSBkZWFyLCBJIGRvbid0IGdpdmUgYSBkZWFu', 'SSBjYW4gbmVpdGhlciBjb25maXJtIG5vciBkZW55', 'SSBleHBlY3Qgc28=', 'SSBleHBlY3Qgc28=', 'SSBleHBlY3Qgc28=', 'SSdtIG5vdCBzbyBzdXJlIGFueW1vcmUuIEl0IGNhbiBnbyBlaXRoZXIgd2F5', 'SW1wb3NzaWJsZQ==', 'SW1wb3NzaWJsZQ==', 'SW1wb3NzaWJsZQ==', 'SW5kZWVk', 'SW5kZWVk', 'SW5kZWVk', 'SW5kdWJpdGFibHk=', 'SW5kdWJpdGFibHk=', 'SW5kdWJpdGFibHk=', 'Tm8gd2F5', 'Tm8gd2F5', 'Tm8gd2F5', 'Tm8=', 'Tm8=', 'Tm8=', 'Tm8=', 'Tm9wZQ==', 'Tm9wZQ==', 'Tm9wZQ==', 'Tm90IGEgY2hhbmNl', 'Tm90IGEgY2hhbmNl', 'Tm90IGEgY2hhbmNl', 'Tm90IGF0IGFsbA==', 'Tm90IGF0IGFsbA==', 'Tm90IGF0IGFsbA==', 'TnVoLXVo', 'TnVoLXVo', 'TnVoLXVo', 'T2YgY291cnNlIG5vdA==', 'T2YgY291cnNlIG5vdA==', 'T2YgY291cnNlIG5vdA==', 'T2YgY291cnNlIQ==', 'T2YgY291cnNlIQ==', 'T2YgY291cnNlIQ==', 'UHJvYmFibHk=', 'UHJvYmFibHk=', 'UHJvYmFibHk=', 'WWVzIQ==', 'WWVzIQ==', 'WWVzIQ==', 'WWVzIQ==', 'WWVzLCBhYnNvbHV0ZWx5', 'WWVzLCBhYnNvbHV0ZWx5', 'WWVzLCBhYnNvbHV0ZWx5'].map(atob);
 // can you feel the nectar?
-},{}],56:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 // a Trie suggestion dictionary, made by Esailija (small fixes by God)
 // http://stackoverflow.com/users/995876/esailija
 // used in the "command not found" message to show you closest commands
@@ -6862,7 +7728,7 @@ function searchRecursive(node, letter, word, previousRow, results, maxCost) {
 
 exports.SuggestionDictionary = SuggestionDictionary;
 
-},{}],57:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 'use strict';
 /*global module, CHAT*/
 module.exports = function (bot) {
@@ -6979,7 +7845,7 @@ module.exports = function (bot) {
     return users;
 };
 
-},{}],58:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 // 45678901234567890123456789012345678901234567890123456789012345678901234567890
 // small utility functions
 
@@ -7349,4 +8215,4 @@ Date.timeSince = function (d0, d1) {
     }
 };
 
-},{}]},{},[58,7,4]);
+},{}]},{},[57,7,4]);

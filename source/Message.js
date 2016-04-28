@@ -61,6 +61,39 @@ exports.Message = function (text, msgObj) {
         escape: bot.adapter.escape.bind(bot.adapter),
         link: bot.adapter.link.bind(bot.adapter),
 
+        stringifyGiantArray: function (giantArray) {
+            function partition (list, maxSize) {
+                var size = 0, last = [];
+
+                var ret = list.reduce(function partition (ret, item) {
+                    // +1 for comma, +1 for space
+                    var len = item.length + 2;
+
+                    if (size + len > maxSize) {
+                        ret.push(last);
+                        last = [];
+                        size = 0;
+                    }
+                    last.push(item);
+                    size += len;
+
+                    return ret;
+                }, []);
+
+                if (last.length) {
+                    ret.push(last);
+                }
+
+                return ret;
+            }
+
+            // 500 is the max, compensate for user reply
+            var maxSize = 499 - bot.adapter.reply(this.get('user_name')).length,
+                partitioned = partition(giantArray, maxSize);
+
+            return partitioned.invoke('join', ', ').join('\n');
+        },
+
         // retrieve a value from the original message object, or if no argument
         // provided, the msgObj itself
         get: function (what) {

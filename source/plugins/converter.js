@@ -1,342 +1,62 @@
+'use strict';
+
+var defs = require('static/qtyDefinitions.js');
+
+var UNITS = defs.UNITS,
+    BASE_UNITS = defs.BASE_UNITS,
+
+    UNITY = defs.UNITY,
+    UNITY_ARRAY = defs.UNITY_ARRAY,
+
+    SIGNATURE_VECTOR = defs.SIGNATURE_VECTOR,
+
+    QTY_STRING = defs.QTY_STRING,
+    QTY_STRING_REGEX = defs.QTY_STRING_REGEX,
+    TOP_REGEX = defs.TOP_REGEX,
+    BOTTOM_REGEX = defs.BOTTOM_REGEX,
+
+    UNIT_VALUES = defs.UNIT_VALUES,
+    UNIT_MAP = defs.UNIT_MAP,
+    PREFIX_VALUES = defs.PREFIX_VALUES,
+    PREFIX_MAP = defs.PREFIX_MAP,
+    OUTPUT_MAP = defs.OUTPUT_MAP,
+
+    UNIT_MATCH_REGEX = defs.UNIT_MATCH_REGEX,
+    UNIT_TEST_REGEX = defs.UNIT_TEST_REGEX;
+
 module.exports = function (bot) {
     'use strict';
 
-    var converters = {
-        // temperatures
-        // 1C = 32.8F = 274.15K
-        C: function (c) {
-            return {
-                // // 9/5 = 1.8
-                F: c * 1.8 + 32,
-                K: c + 273.15
-            };
-        },
-        F: function (f) {
-            return {
-                C: (f - 32) / 1.8,
-                K: (f + 459.67) * 5 / 9
-            };
-        },
-        K: function (k) {
-            if (k < 0) {
-                return {
-                    C: 0,
-                    F: 0
-                };
-            }
-
-            return {
-                C: k - 273.15,
-                F: k * 1.8 - 459.67
-            };
-        },
-
-        // lengths
-        // 1m = 3.2808(...)f
-        m: function (m) {
-            return {
-                f: m * 3.280839895
-            };
-        },
-        f: function (f) {
-            return {
-                m: f / 3.28083989
-            };
-        },
-
-        // km: 1m = 1km * 1000
-        km: function (km) {
-            return converters.m(km * 1000);
-        },
-        // centimeter: 1m = 100cm
-        cm: function (cm) {
-            return converters.m(cm / 100);
-        },
-        // millimeters: 1m = 1mm / 1000
-        mm: function (mm) {
-            return converters.m(mm / 1000);
-        },
-        // inches: 1f = 1i / 12
-        i: function (i) {
-            return converters.f(i / 12);
-        },
-
-        // angles
-        d: function (d) {
-            return {
-                r: d * Math.PI / 180
-            };
-        },
-        r: function (r) {
-            return {
-                d: r * 180 / Math.PI
-            };
-        },
-
-        // weights
-        g: function (g) {
-            return {
-                lb: g * 0.0022,
-                // the following will be horribly inaccurate
-                st: g * 0.000157473
-            };
-        },
-        lb: function (lb) {
-            return {
-                g: lb * 453.592,
-                st: lb * 0.0714286
-            };
-        },
-        // stones: 1st = 6350g = 14lb
-        st: function (st) {
-            return {
-                g: st * 6350.29,
-                lb: st * 14
-            };
-        },
-
-        // kg: 1g = 1kg * 1000
-        kg: function (kg) {
-            return converters.g(kg * 1000);
-        }
-    };
-
-    var longNames = {
-        lbs: 'lb',
-        ft: 'f',
-        foot: 'f',
-        metres: 'm',
-        millimetres: 'mm',
-        killometres: 'km',
-        degrees: 'd',
-        radians: 'r',
-        grams: 'g',
-        kilograms: 'kg',
-        inches: 'i',
-        stones: 'st'
-    };
-
-    var currencies = require('static/currencyNames'),
-        symbols = require('static/currencySymbols');
-
-    function unalias (unit) {
-        var up = unit.toUpperCase();
-        if (symbols.hasOwnProperty(up)) {
-            return symbols[up];
-        }
-        if (longNames.hasOwnProperty(unit)) {
-            return longNames[unit];
+    function convert(args) {
+        bot.log(args, '/convert input');
+        if (args.toLowerCase() === 'list') {
+            return args.stringifyGiantArray(Qty.getUnits());
         }
 
-        return unit;
-    }
-
-/*
-  (        #start number matching
-   -?      #optional negative
-   \d+     #the integer part of the number
-   \.?     #optional dot for decimal portion
-   \d*     #optional decimal portion
-  )
-  \s*      #optional whitespace, just 'cus
-  (        #start unit matching
-   \S+     #the unit. we don't know anyhing about it, besides having no ws
-  )
-  (        #begin matching optional target unit (required for currencies)
-    \s+
-    (?:
-     (?:
-      to|in #10 X to Y, 10 X in Y
-     )
-     \s+
-    )?
-    (\S+)  #the unit itself
-  )?
- */
-    var rUnits = /(-?\d+\.?\d*)\s*(\S+)(\s+(?:(?:to|in)\s+)?(\S+))?$/;
-
-    // string is in the form of:
-    // <number><unit>
-    // <number><unit> to|in <unit>
-    // note that units are case-sensitive: F is the temperature, f is the length
-    var convert = function (inp, cb) {
-        if (inp.toLowerCase() === 'list') {
-            finish(listUnits().join(', '));
-            return;
-        }
-
-        var parts = rUnits.exec(inp);
-
+        // Trust me on this.
+        var re = new RegExp('^(' + QTY_STRING + ') (?:(?:to|in) )?(' + QTY_STRING + ')$');
+        var parts = re.exec(args);
         if (!parts) {
-            finish({
-                error: 'Unidentified format; please see `/help convert`'
-            });
-            return;
+            console.log('wtf');
+            return 'You have confused me greatly, see `/help convert`.';
         }
 
-        var num = Number(parts[1]),
-            unit = parts[2],
-            target = parts[4] || '',
-            moneh = false;
-        bot.log(num, unit, target, '/convert input');
+        console.log(parts);
+        console.log(parts[1]);
+        console.log(parts[5]);
+        bot.log(parts[1], '=>', parts[5], '/convert parsed');
 
-        unit   = unalias(unit);
-        target = unalias(target);
-        if (currencies[unit.toUpperCase()]) {
-            moneh = true;
+        try {
+            // And on this as well.
+            var origin = Qty(parts[1]),
+                dest = Qty(parts[5]);
+
+            return origin.to(dest).toString(4);
         }
-
-        if (moneh) {
-            moneyConverter.convert(num, unit, target, finish);
+        catch (e) {
+            console.error('/convert error', e);
+            return e.message;
         }
-        else {
-            convertUnit(num, unit, finish);
-        }
-
-        function finish (res) {
-            bot.log(res, '/convert answer');
-
-            var reply;
-            // list was passed
-            if (res.substr) {
-                reply = res;
-            }
-            // an error occured
-            else if (res.error) {
-                reply = res.error;
-            }
-            // just a normal result
-            else {
-                reply = format(res);
-            }
-
-            if (cb && cb.call) {
-                cb(reply);
-            }
-            else {
-                inp.reply(reply);
-            }
-        }
-
-        function format (res) {
-            var keys = Object.keys(res);
-
-            if (!keys.length) {
-                return 'Could not convert {0} to {1}'.supplant(unit, target);
-            }
-            return keys.filter(nameGoesHere).map(formatKey).join(', ');
-
-            function nameGoesHere (key) {
-                return !target || target === key;
-            }
-            function formatKey (key) {
-                return res[key].maxDecimal(4) + key;
-            }
-        }
-    };
-
-    function convertUnit (number, unit, cb) {
-        bot.log(number, unit, '/convert unit broken');
-
-        if (!converters[unit]) {
-            cb({
-                error: 'Confuse converter with {0}, receive error message'
-                    .supplant(unit)
-            });
-        }
-        else {
-            cb(converters[unit](number));
-        }
-    }
-
-    var moneyConverter = {
-        ratesCache: {},
-
-        convert: function (number, from, to, cb) {
-            this.from = from;
-            this.to = to;
-
-            this.upFrom = from.toUpperCase();
-            this.upTo = to.toUpperCase();
-
-            var err = this.errorMessage();
-            if (err) {
-                cb({ error: err });
-                return;
-            }
-            bot.log(number, from, to, '/convert money broken');
-
-            this.getRate(function (rate) {
-                // once again, the lack of dynamic key names sucks.
-                var res = {};
-                res[to] = number * rate;
-
-                cb(res);
-            });
-        },
-
-        getRate: function (cb) {
-            var self = this,
-                rate = this.checkCache();
-
-            if (rate) {
-                cb(rate);
-                return;
-            }
-
-            bot.IO.jsonp({
-                url: 'http://rate-exchange.appspot.com/currency',
-                jsonpName: 'callback',
-                data: {
-                    from: self.from,
-                    to: self.to
-                },
-                fun: finish
-            });
-
-            function finish (resp) {
-                rate = resp.rate;
-
-                self.updateCache(rate);
-                cb(rate);
-            }
-        },
-
-        updateCache: function (rate) {
-            this.ratesCache[this.upFrom] = this.ratesCache[this.upFrom] || {};
-            this.ratesCache[this.upFrom][this.upTo] = {
-                rate: rate,
-                time: Date.now()
-            };
-        },
-
-        checkCache: function () {
-            var now = Date.now(), obj;
-
-            var exists = this.ratesCache[this.upFrom] &&
-                (obj = this.ratesCache[this.upFrom][this.upTo]) &&
-                // so we won't request again, keep it in memory for 5 hours
-                // 5(hours) = 1000(ms) * 60(seconds)
-                //            * 60(minutes) * 5 = 18000000
-                obj.time - now <= 18e6;
-
-            console.log(this.ratesCache, exists);
-
-            return exists ? obj.rate : false;
-        },
-
-        errorMessage: function () {
-            if (!this.to) {
-                return 'What do you want to convert ' + this.from + ' to?';
-            }
-            if (!currencies[this.upTo]) {
-                return this.to + ' aint no currency I ever heard of';
-            }
-        }
-    };
-
-    function listUnits () {
-        return Object.keys(converters);
     }
 
     bot.addCommand({
@@ -347,7 +67,893 @@ module.exports = function (bot) {
         },
         description: 'Converts several units and currencies, case sensitive. '+
             '`/convert <num><unit> [to|in <unit>]` ' +
-            'Pass in list for supported units `/convert list`',
-        async: true
+            'Pass in list for supported units `/convert list`'
     });
 };
+
+// From here on on it's a slightly altered Qty:
+// https://github.com/gentooboontoo/js-quantities
+/*
+Copyright © 2006-2007 Kevin C. Olbrich
+Copyright © 2010-2013 LIM SAS (http://lim.eu) - Julien Sanchez
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+function Qty(initValue, initUnits) {
+    if (!(isQty(this))) {
+        return new Qty(initValue, initUnits);
+    }
+
+    this.scalar = null;
+    this.baseScalar = null;
+    this.signature = null;
+    this.numerator = UNITY_ARRAY;
+    this.denominator = UNITY_ARRAY;
+
+    if (isDefinitionObject(initValue)) {
+        this.scalar = initValue.scalar;
+        this.numerator = (initValue.numerator && initValue.numerator.length !== 0) ? initValue.numerator : UNITY_ARRAY;
+        this.denominator = (initValue.denominator && initValue.denominator.length !== 0) ? initValue.denominator : UNITY_ARRAY;
+    }
+    else if (initUnits) {
+        parse.call(this, initUnits);
+        this.scalar = initValue;
+    }
+    else {
+        parse.call(this, initValue);
+    }
+
+    // math with temperatures is very limited
+    if (this.denominator.join('*').indexOf('temp') >= 0) {
+        throw new Error('Cannot divide with temperatures');
+    }
+    if (this.numerator.join('*').indexOf('temp') >= 0) {
+        if (this.numerator.length > 1) {
+            throw new Error('Cannot multiply by temperatures');
+        }
+        if (!isUnityArray(this.denominator)) {
+            throw new Error('Cannot divide with temperatures');
+        }
+    }
+
+    this.initValue = initValue;
+
+    if (this.isBase()) {
+        this.baseScalar = this.scalar;
+        this.signature = unitSignature.call(this);
+    }
+    else {
+        var base = this.toBase();
+        this.baseScalar = base.scalar;
+        this.signature = base.signature;
+    }
+
+    if (this.isTemperature() && this.baseScalar < 0) {
+        throw new Error('Temperatures must not be less than absolute zero');
+    }
+}
+
+Qty.getUnits = function() {
+    var i;
+    var units = [];
+    var unitKeys = Object.keys(UNITS);
+    for (i = 0; i < unitKeys.length; i += 1) {
+        if (['', 'prefix'].indexOf(UNITS[unitKeys[i]][2]) === -1) {
+            units.push(unitKeys[i].substr(1, unitKeys[i].length - 2));
+        }
+    }
+
+    return units.sort(function(a, b) {
+        if (a.toLowerCase() < b.toLowerCase()) {
+            return -1;
+        }
+        if (a.toLowerCase() > b.toLowerCase()) {
+            return 1;
+        }
+        return 0;
+    });
+};
+
+/*
+  calculates the unit signature id for use in comparing compatible units and simplification
+  the signature is based on a simple classification of units and is based on the following publication
+
+  Novak, G.S., Jr. 'Conversion of units of measurement', IEEE Transactions on Software Engineering,
+  21(8), Aug 1995, pp.651-661
+  doi://10.1109/32.403789
+  http://ieeexplore.ieee.org/Xplore/login.jsp?url=/iel1/32/9079/00403789.pdf?isnumber=9079&prod=JNL&arnumber=403789&arSt=651&ared=661&arAuthor=Novak%2C+G.S.%2C+Jr.
+*/
+var unitSignature = function() {
+    if (this.signature) {
+        return this.signature;
+    }
+    var vector = unitSignatureVector.call(this);
+    for (var i = 0; i < vector.length; i += 1) {
+        vector[i] *= Math.pow(20, i);
+    }
+
+    return vector.reduce(function(previous, current) {
+        return previous + current;
+    }, 0);
+};
+
+// calculates the unit signature vector used by unit_signature
+var unitSignatureVector = function() {
+    if (!this.isBase()) {
+        return unitSignatureVector.call(this.toBase());
+    }
+
+    var vector = new Array(SIGNATURE_VECTOR.length);
+    for (var i = 0; i < vector.length; i += 1) {
+        vector[i] = 0;
+    }
+    var r, n;
+    for (var j = 0; j < this.numerator.length; j += 1) {
+        if ((r = UNITS[this.numerator[j]])) {
+            n = SIGNATURE_VECTOR.indexOf(r[2]);
+            if (n >= 0) {
+                vector[n] = vector[n] + 1;
+            }
+        }
+    }
+
+    for (var k = 0; k < this.denominator.length; k += 1) {
+        if ((r = UNITS[this.denominator[k]])) {
+            n = SIGNATURE_VECTOR.indexOf(r[2]);
+            if (n >= 0) {
+                vector[n] = vector[n] - 1;
+            }
+        }
+    }
+    return vector;
+};
+
+/* parse a string into a unit object.
+ * Typical formats like :
+ * '5.6 kg*m/s^2'
+ * '5.6 kg*m*s^-2'
+ * '5.6 kilogram*meter*second^-2'
+ * '2.2 kPa'
+ * '37 degC'
+ * '1'  -- creates a unitless constant with value 1
+ * 'GPa'  -- creates a unit with scalar 1 with units 'GPa'
+ * 6'4'  -- recognized as 6 feet + 4 inches
+ * 8 lbs 8 oz -- recognized as 8 lbs + 8 ounces
+ */
+var parse = function(val) {
+    if (!isString(val)) {
+        val = val.toString();
+    }
+    val = val.trim();
+
+    var result = QTY_STRING_REGEX.exec(val);
+    if (!result) {
+        throw new Error(val + ': Quantity not recognized');
+    }
+
+    var scalarMatch = result[1];
+    if (scalarMatch) {
+        // Allow whitespaces between sign and scalar for loose parsing
+        scalarMatch = scalarMatch.replace(/\s/g, '');
+        this.scalar = parseFloat(scalarMatch);
+    }
+    else {
+        this.scalar = 1;
+    }
+    var top = result[2];
+    var bottom = result[3];
+
+    var n, x, nx;
+    // TODO DRY me
+    while ((result = TOP_REGEX.exec(top))) {
+        n = parseFloat(result[2]);
+        if (isNaN(n)) {
+            // Prevents infinite loops
+            throw new Error('Unit exponent is not a number');
+        }
+        // Disallow unrecognized unit even if exponent is 0
+        if (n === 0 && !UNIT_TEST_REGEX.test(result[1])) {
+            throw new Error('Unit ' + result[1] + ' not recognized');
+        }
+        x = result[1] + ' ';
+        nx = '';
+        for (var i = 0; i < Math.abs(n) ; i += 1) {
+            nx += x;
+        }
+        if (n >= 0) {
+            top = top.replace(result[0], nx);
+        }
+        else {
+            bottom = bottom ? bottom + nx : nx;
+            top = top.replace(result[0], '');
+        }
+    }
+
+    while ((result = BOTTOM_REGEX.exec(bottom))) {
+        n = parseFloat(result[2]);
+        if (isNaN(n)) {
+            // Prevents infinite loops
+            throw new Error('Unit exponent is not a number');
+        }
+        // Disallow unrecognized unit even if exponent is 0
+        if (n === 0 && !UNIT_TEST_REGEX.test(result[1])) {
+            throw new Error('Unit ' + result[1] + ' not recognized');
+        }
+        x = result[1] + ' ';
+        nx = '';
+        for (var j = 0; j < n ; j += 1) {
+            nx += x;
+        }
+
+        bottom = bottom.replace(result[0], nx);
+    }
+
+    if (top) {
+        this.numerator = parseUnits(top.trim());
+    }
+    if (bottom) {
+        this.denominator = parseUnits(bottom.trim());
+    }
+
+};
+
+function throwIncompatibleUnits() {
+    throw new Error('Incompatible units');
+}
+
+Qty.prototype = {
+    constructor: Qty,
+
+    isUnitless: function() {
+        return isUnityArray(this.numerator) && isUnityArray(this.denominator);
+    },
+
+    isCompatible: function(other) {
+        if (isString(other)) {
+            return this.isCompatible(Qty(other));
+        }
+
+        if (!(isQty(other))) {
+            return false;
+        }
+
+        if (other.signature !== undefined) {
+            return this.signature === other.signature;
+        }
+        else {
+            return false;
+        }
+    },
+
+    isInverse: function(other) {
+        return this.inverse().isCompatible(other);
+    },
+
+    isBase: function() {
+        if (this._isBase !== undefined) {
+            return this._isBase;
+        }
+        if (this.isDegrees() && this.numerator[0].match(/<(kelvin|temp-K)>/)) {
+            this._isBase = true;
+            return this._isBase;
+        }
+
+        this.numerator.concat(this.denominator).forEach(function(item) {
+            if (item !== UNITY && BASE_UNITS.indexOf(item) === -1) {
+                this._isBase = false;
+            }
+        }, this);
+        if (this._isBase === false) {
+            return this._isBase;
+        }
+        this._isBase = true;
+        return this._isBase;
+    },
+
+    toBase: function() {
+        if (this.isBase()) {
+            return this;
+        }
+
+        if (this.isTemperature()) {
+            return toTempK(this);
+        }
+
+        return toBaseUnits(this.numerator, this.denominator).mul(this.scalar);
+    },
+
+    units: function() {
+        if (this._units !== undefined) {
+            return this._units;
+        }
+
+        var numIsUnity = isUnityArray(this.numerator),
+            denIsUnity = isUnityArray(this.denominator);
+        if (numIsUnity && denIsUnity) {
+            this._units = '';
+            return this._units;
+        }
+
+        var numUnits = stringifyUnits(this.numerator),
+            denUnits = stringifyUnits(this.denominator);
+        this._units = numUnits + (denIsUnity ? '' : ('/' + denUnits));
+        return this._units;
+    },
+
+    toPrec: function(precQuantity) {
+        if (isString(precQuantity)) {
+            precQuantity = Qty(precQuantity);
+        }
+        if (isNumber(precQuantity)) {
+            precQuantity = Qty(precQuantity + ' ' + this.units());
+        }
+
+        if (!this.isUnitless()) {
+            precQuantity = precQuantity.to(this.units());
+        }
+        else if (!precQuantity.isUnitless()) {
+            throwIncompatibleUnits();
+        }
+
+        if (precQuantity.scalar === 0) {
+            throw new Error('Divide by zero');
+        }
+
+        var precRoundedResult = mulSafe(Math.round(this.scalar / precQuantity.scalar),
+                                        precQuantity.scalar);
+
+        return Qty(precRoundedResult + this.units());
+    },
+
+    toString: function(targetUnitsOrMaxDecimalsOrPrec, maxDecimals) {
+        var targetUnits;
+        if (isNumber(targetUnitsOrMaxDecimalsOrPrec)) {
+            targetUnits = this.units();
+            maxDecimals = targetUnitsOrMaxDecimalsOrPrec;
+        }
+        else if (isString(targetUnitsOrMaxDecimalsOrPrec)) {
+            targetUnits = targetUnitsOrMaxDecimalsOrPrec;
+        }
+        else if (isQty(targetUnitsOrMaxDecimalsOrPrec)) {
+            return this.toPrec(targetUnitsOrMaxDecimalsOrPrec).toString(maxDecimals);
+        }
+
+        var out = this.to(targetUnits);
+
+        var outScalar = maxDecimals !== undefined ? round(out.scalar, maxDecimals) : out.scalar;
+        out = (outScalar + ' ' + out.units()).trim();
+        return out;
+    },
+
+    inverse: function() {
+        if (this.isTemperature()) {
+            throw new Error('Cannot divide with temperatures');
+        }
+        if (this.scalar === 0) {
+            throw new Error('Divide by zero');
+        }
+        return Qty({
+            scalar: 1 / this.scalar,
+            numerator: this.denominator,
+            denominator: this.numerator
+        });
+    },
+
+    isDegrees: function() {
+        return (this.signature === null || this.signature === 400) &&
+            this.numerator.length === 1 &&
+            isUnityArray(this.denominator) &&
+            (this.numerator[0].match(/<temp-[CFRK]>/) || this.numerator[0].match(/<(kelvin|celsius|rankine|fahrenheit)>/));
+    },
+
+    isTemperature: function() {
+        return this.isDegrees() && this.numerator[0].match(/<temp-[CFRK]>/);
+    },
+
+    to: function(other) {
+        var target;
+
+        if (!other) {
+            return this;
+        }
+
+        if (!isString(other)) {
+            return this.to(other.units());
+        }
+
+        target = Qty(other);
+        if (target.units() === this.units()) {
+            return this;
+        }
+
+        if (!this.isCompatible(target)) {
+            if (this.isInverse(target)) {
+                target = this.inverse().to(other);
+            }
+            else {
+                throw new Error('Cannot convert ' + stuff(this) + ' to ' + stuff(target) + '.');
+            }
+        }
+        else if (target.isTemperature()) {
+            target = toTemp(this, target);
+        }
+        else if (target.isDegrees()) {
+            target = toDegrees(this, target);
+        }
+        else {
+            var q = divSafe(this.baseScalar, target.baseScalar);
+            target = Qty({
+                scalar: q,
+                numerator: target.numerator,
+                denominator: target.denominator
+            });
+        }
+
+        return target;
+
+        // zirak: I give up. It's really late. Or early. I don't know. I want
+        // to cry.
+        function stuff(qty) {
+            var up, down;
+
+            up = singularStuff(qty.numerator);
+
+            if (isUnityArray(qty.denominator)) {
+                return up;
+            }
+
+            down = singularStuff(qty.denominator);
+
+            return up + '/' + down;
+
+            function singularStuff(thingy) {
+                return thingy.length === 1 ?
+                    thingy[0] :
+                    '(' + thingy.join('*') + ')';
+            }
+        }
+    },
+
+    mul: function(other) {
+        if (isNumber(other)) {
+            return Qty({
+                scalar: mulSafe(this.scalar, other),
+                numerator: this.numerator,
+                denominator: this.denominator
+            });
+        }
+        else if (isString(other)) {
+            other = Qty(other);
+        }
+
+        if ((this.isTemperature() || other.isTemperature()) && !(this.isUnitless() || other.isUnitless())) {
+            throw new Error('Cannot multiply by temperatures');
+        }
+
+        var op1 = this;
+        var op2 = other;
+
+        if (op1.isCompatible(op2) && op1.signature !== 400) {
+            op2 = op2.to(op1);
+        }
+        var numden = cleanTerms(op1.numerator.concat(op2.numerator), op1.denominator.concat(op2.denominator));
+
+        return Qty({
+            scalar: mulSafe(op1.scalar, op2.scalar),
+            numerator: numden[0],
+            denominator: numden[1]
+        });
+    }
+};
+
+function toBaseUnits (numerator, denominator) {
+    var num = [];
+    var den = [];
+    var q = 1;
+    var unit;
+    for (var i = 0; i < numerator.length; i += 1) {
+        unit = numerator[i];
+        if (PREFIX_VALUES[unit]) {
+            q = mulSafe(q, PREFIX_VALUES[unit]);
+        }
+        else if (UNIT_VALUES[unit]) {
+            q *= UNIT_VALUES[unit].scalar;
+
+            if (UNIT_VALUES[unit].numerator) {
+                num.push(UNIT_VALUES[unit].numerator);
+            }
+            if (UNIT_VALUES[unit].denominator) {
+                den.push(UNIT_VALUES[unit].denominator);
+            }
+        }
+    }
+    for (var j = 0; j < denominator.length; j += 1) {
+        unit = denominator[j];
+        if (PREFIX_VALUES[unit]) {
+            q /= PREFIX_VALUES[unit];
+        }
+        else if (UNIT_VALUES[unit]) {
+            q /= UNIT_VALUES[unit].scalar;
+
+            if (UNIT_VALUES[unit].numerator) {
+                den.push(UNIT_VALUES[unit].numerator);
+            }
+            if (UNIT_VALUES[unit].denominator) {
+                num.push(UNIT_VALUES[unit].denominator);
+            }
+        }
+    }
+
+    num = num.reduce(function(a, b) {
+        return a.concat(b);
+    }, []);
+    den = den.reduce(function(a, b) {
+        return a.concat(b);
+    }, []);
+
+    return Qty({
+        scalar: q,
+        numerator: num,
+        denominator: den
+    });
+}
+
+function parseUnits(units) {
+    var unitMatch, normalizedUnits = [];
+    if (!UNIT_TEST_REGEX.test(units)) {
+        throw new Error('Unit ' + units + ' not recognized');
+    }
+
+    while ((unitMatch = UNIT_MATCH_REGEX.exec(units))) {
+        normalizedUnits.push(unitMatch.slice(1));
+
+    }
+    normalizedUnits = normalizedUnits.map(function(item) {
+        return PREFIX_MAP[item[0]] ? [PREFIX_MAP[item[0]], UNIT_MAP[item[1]]] : [UNIT_MAP[item[1]]];
+    });
+
+    normalizedUnits = normalizedUnits.reduce(function(a, b) {
+        return a.concat(b);
+    }, []);
+    normalizedUnits = normalizedUnits.filter(function(item) {
+        return item;
+    });
+
+    return normalizedUnits;
+}
+
+function stringifyUnits(units) {
+    var stringified;
+
+    var isUnity = isUnityArray(units);
+    if (isUnity) {
+        stringified = '1';
+    }
+    else {
+        stringified = simplify(getOutputNames(units)).join('*');
+    }
+
+    return stringified;
+}
+
+function getOutputNames(units) {
+    var unitNames = [], token, tokenNext;
+    for (var i = 0; i < units.length; i += 1) {
+        token = units[i];
+        tokenNext = units[i + 1];
+        if (PREFIX_VALUES[token]) {
+            unitNames.push(OUTPUT_MAP[token] + OUTPUT_MAP[tokenNext]);
+            i += 1;
+        }
+        else {
+            unitNames.push(OUTPUT_MAP[token]);
+        }
+    }
+    return unitNames;
+}
+
+function simplify (units) {
+    var unitCounts = units.reduce(function(acc, unit) {
+        var unitCounter = acc[unit];
+        if (!unitCounter) {
+            acc.push(unitCounter = acc[unit] = [unit, 0]);
+        }
+
+        unitCounter[1] += 1;
+
+        return acc;
+    }, []);
+
+    return unitCounts.map(function(unitCount) {
+        return unitCount[0] + (unitCount[1] > 1 ? unitCount[1] : '');
+    });
+}
+
+function isUnityArray(arr) {
+    return arr.length === 1 && arr[0] === UNITY_ARRAY[0];
+}
+
+function round(val, decimals) {
+    return Math.round(val * Math.pow(10, decimals)) / Math.pow(10, decimals);
+}
+
+function toDegrees(src, dst) {
+    var srcDegK = toDegK(src);
+    var dstUnits = dst.units();
+    var dstScalar;
+
+    if (dstUnits === 'degK') {
+        dstScalar = srcDegK.scalar;
+    }
+    else if (dstUnits === 'degC') {
+        dstScalar = srcDegK.scalar ;
+    }
+    else if (dstUnits === 'degF') {
+        dstScalar = srcDegK.scalar * 9 / 5;
+    }
+    else if (dstUnits === 'degR') {
+        dstScalar = srcDegK.scalar * 9 / 5;
+    }
+    else {
+        throw new Error('Unknown type for degree conversion to: ' + dstUnits);
+    }
+
+    return Qty({
+        scalar: dstScalar,
+        numerator: dst.numerator,
+        denominator: dst.denominator
+    });
+}
+
+function toDegK(qty) {
+    var units = qty.units();
+    var q;
+    if (units.match(/(deg)[CFRK]/)) {
+        q = qty.baseScalar;
+    }
+    else if (units === 'tempK') {
+        q = qty.scalar;
+    }
+    else if (units === 'tempC') {
+        q = qty.scalar;
+    }
+    else if (units === 'tempF') {
+        q = qty.scalar * 5 / 9;
+    }
+    else if (units === 'tempR') {
+        q = qty.scalar * 5 / 9;
+    }
+    else {
+        throw new Error('Unknown type for temp conversion from: ' + units);
+    }
+
+    return Qty({
+        scalar: q,
+        numerator: ['<kelvin>'],
+        denominator: UNITY_ARRAY
+    });
+}
+
+function toTemp(src, dst) {
+    var dstUnits = dst.units();
+    var dstScalar;
+
+    if (dstUnits === 'tempK') {
+        dstScalar = src.baseScalar;
+    }
+    else if (dstUnits === 'tempC') {
+        dstScalar = src.baseScalar - 273.15;
+    }
+    else if (dstUnits === 'tempF') {
+        dstScalar = (src.baseScalar * 9 / 5) - 459.67;
+    }
+    else if (dstUnits === 'tempR') {
+        dstScalar = src.baseScalar * 9 / 5;
+    }
+    else {
+        throw new Error('Unknown type for temp conversion to: ' + dstUnits);
+    }
+
+    return Qty({
+        scalar: dstScalar,
+        numerator: dst.numerator,
+        denominator: dst.denominator
+    });
+}
+
+function toTempK(qty) {
+    var units = qty.units();
+    var q;
+    if (units.match(/(deg)[CFRK]/)) {
+        q = qty.baseScalar;
+    }
+    else if (units === 'tempK') {
+        q = qty.scalar;
+    }
+    else if (units === 'tempC') {
+        q = qty.scalar + 273.15;
+    }
+    else if (units === 'tempF') {
+        q = (qty.scalar + 459.67) * 5 / 9;
+    }
+    else if (units === 'tempR') {
+        q = qty.scalar * 5 / 9;
+    }
+    else {
+        throw new Error('Unknown type for temp conversion from: ' + units);
+    }
+
+    return Qty({
+        scalar: q,
+        numerator: ['<temp-K>'],
+        denominator: UNITY_ARRAY
+    });
+}
+
+function mulSafe() {
+    var result = 1, decimals = 0;
+    for (var i = 0; i < arguments.length; i += 1) {
+        var arg = arguments[i];
+        decimals = decimals + getFractional(arg);
+        result *= arg;
+    }
+
+    return decimals !== 0 ? round(result, decimals) : result;
+}
+
+function divSafe(num, den) {
+    if (den === 0) {
+        throw new Error('Divide by zero');
+    }
+
+    var factor = Math.pow(10, getFractional(den));
+    var invDen = factor / (factor * den);
+
+    return mulSafe(num, invDen);
+}
+
+function getFractional(num) {
+    // Check for NaNs or Infinities
+    if (!isFinite(num)) {
+        return 0;
+    }
+
+    // Faster than parsing strings
+    // http://jsperf.com/count-decimals/2
+    var count = 0;
+    while (num % 1 !== 0) {
+        num *= 10;
+        count += 1;
+    }
+    return count;
+}
+
+Qty.mulSafe = mulSafe;
+Qty.divSafe = divSafe;
+
+function cleanTerms(num, den) {
+    num = num.filter(function(val) {
+        return val !== UNITY;
+    });
+    den = den.filter(function(val) {
+        return val !== UNITY;
+    });
+
+    var combined = {};
+
+    var k;
+    for (var i = 0; i < num.length; i += 1) {
+        if (PREFIX_VALUES[num[i]]) {
+            k = [num[i], num[i + 1]];
+            i += 1;
+        }
+        else {
+            k = num[i];
+        }
+        if (k && k !== UNITY) {
+            if (combined[k]) {
+                combined[k][0] += 1;
+            }
+            else {
+                combined[k] = [1, k];
+            }
+        }
+    }
+
+    for (var j = 0; j < den.length; j += 1) {
+        if (PREFIX_VALUES[den[j]]) {
+            k = [den[j], den[j + 1]];
+            j += 1;
+        }
+        else {
+            k = den[j];
+        }
+        if (k && k !== UNITY) {
+            if (combined[k]) {
+                combined[k][0] -= 1;
+            }
+            else {
+                combined[k] = [-1, k];
+            }
+        }
+    }
+
+    num = [];
+    den = [];
+
+    for (var prop in combined) {
+        if (combined.hasOwnProperty(prop)) {
+            var item = combined[prop];
+            var n;
+            if (item[0] > 0) {
+                for (n = 0; n < item[0]; n += 1) {
+                    num.push(item[1]);
+                }
+            }
+            else if (item[0] < 0) {
+                for (n = 0; n < -item[0]; n += 1) {
+                    den.push(item[1]);
+                }
+            }
+        }
+    }
+
+    if (num.length === 0) {
+        num = UNITY_ARRAY;
+    }
+    if (den.length === 0) {
+        den = UNITY_ARRAY;
+    }
+
+    // Flatten
+    num = num.reduce(function(a, b) {
+        return a.concat(b);
+    }, []);
+    den = den.reduce(function(a, b) {
+        return a.concat(b);
+    }, []);
+
+    return [num, den];
+}
+
+function isString(value) {
+    return typeof value === 'string' || value instanceof String;
+}
+
+/*
+ * Prefer stricter Number.isFinite if currently supported.
+ * To be dropped when ES6 is finalized. Obsolete browsers will
+ * have to use ES6 polyfills.
+ */
+var isFinite = Number.isFinite || window.isFinite;
+function isNumber(value) {
+    // Number.isFinite allows not to consider NaN or '1' as numbers
+    return isFinite(value);
+}
+
+function isQty(value) {
+    return value instanceof Qty;
+}
+
+function isDefinitionObject(value) {
+    return value && typeof value === 'object' && value.hasOwnProperty('scalar');
+}
+
+Qty.version = '1.6.2';

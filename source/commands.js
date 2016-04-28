@@ -113,31 +113,6 @@ module.exports = function (bot) {
     };
 
     commands.listcommands = (function () {
-        function partition (list, maxSize) {
-            var size = 0, last = [];
-
-            var ret = list.reduce(function partition (ret, item) {
-                 // +1 for comma, +1 for space
-                var len = item.length + 2;
-
-                if (size + len > maxSize) {
-                    ret.push(last);
-                    last = [];
-                    size = 0;
-                }
-                last.push(item);
-                size += len;
-
-                return ret;
-            }, []);
-
-            if (last.length) {
-                ret.push(last);
-            }
-
-            return ret;
-        }
-
         function getSortedCommands() {
             // well, sort of sorted. we want to sort the commands, but have the
             // built-ins be in front, with help as the first one. #153
@@ -158,12 +133,7 @@ module.exports = function (bot) {
         }
 
         return function (args) {
-            var commands = getSortedCommands(),
-                // 500 is the max, compensate for user reply
-                maxSize = 499 - bot.adapter.reply(args.get('user_name')).length,
-                partitioned = partition(commands, maxSize);
-
-            return partitioned.invoke('join', ', ').join('\n');
+            return args.stringifyGiantArray(getSortedCommands());
         };
     })();
 
