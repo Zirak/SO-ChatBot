@@ -6147,7 +6147,7 @@ module.exports = function (bot) {
 module.exports = function (bot) {
 /*global Map*/
 
-// only activate for SO room 17; TODO consider changing if well accepted
+    // only activate for SO room 17; TODO consider changing if well accepted
     if (bot.adapter.site !== 'stackoverflow' || bot.adapter.roomid !== 17) {
         bot.log('Not activating unformatted code checking; not in right room/site');
         return;
@@ -6158,22 +6158,22 @@ module.exports = function (bot) {
     bot.IO.register('rawinput', function checkUnformattedCode (msgObj) {
         var msgid = msgObj.message_id;
 
-    // only handle new messages and edits
+        // only handle new messages and edits
         if (msgObj.event_type !== 1 && msgObj.event_type !== 2) {
             return;
         }
 
-    // so far it should only apply to the js room
+        // so far it should only apply to the js room
         if (msgObj.room_id !== 17) {
             return;
         }
 
-    // don't bother with owners
+        // don't bother with owners
         if (bot.isOwner(msgObj.user_id)) {
             return;
         }
 
-    // and only look at multiline messages
+        // and only look at multiline messages
         if (!msgObj.content.startsWith('<div class=\'full\'>')) {
             potentiallyUnlecture();
             return;
@@ -6186,7 +6186,7 @@ module.exports = function (bot) {
             }).join('\n');
         content = bot.IO.decodehtmlEntities(content);
 
-    // and messages which aren't code blocks
+        // and messages which aren't code blocks
         if (content.startsWith('<pre class=\'full\'>')) {
             potentiallyUnlecture();
             return;
@@ -6231,14 +6231,15 @@ module.exports = function (bot) {
         var lineCount = content.split('\n').length;
 
         var lecture = (
-        'Please don\'t post unformatted code - ' +
-        'hit Ctrl+K before sending, use up-arrow to edit messages, ' +
-        'and see the {0}.'
-    ).supplant(bot.adapter.link('faq', '/faq'));
+            'Please don\'t post unformatted code - ' +
+            'hit Ctrl+K before sending, use up-arrow to edit messages, ' +
+            'and see the {0}.'
+        ).supplant(bot.adapter.link('faq', '/faq'));
 
         if (lineCount >= 10) {
-            lecture += ' For posting large code blocks, use a paste site like ' +
-            'https://gist.github.com, http://hastebin.com or http://pastie.org';
+            lecture += ' For posting large code blocks, use a paste site ' +
+                'like https://gist.github.com, http://hastebin.com, ' +
+                'http://pastie.org or a demo site like https://jsbin.com/';
         }
 
         return lecture;
