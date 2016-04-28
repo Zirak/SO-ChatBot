@@ -5595,7 +5595,7 @@ module.exports = function (bot) {
 
     var template = '{displayName} ({link}) '       +
         '{indicative} {reputation} reputation, '   +
-        'earned {reputationChangeDay} rep today, ' +
+        '{verb} {reputationChangeDay} rep today, ' +
         'asked {questionCount} questions, '        +
         'gave {answerCount} answers, '             +
         'for a q:a ratio of {ratio}.\n'            +
@@ -5677,6 +5677,14 @@ module.exports = function (bot) {
             // Bob (link) has ...
             user.displayName = bot.IO.decodehtmlEntities(user.displayName);
             user.indicative = 'has';
+        }
+
+        if (user.reputationChangeDay < 0) {
+            user.verb = 'lost';
+            user.reputationChangeDay = Math.abs(user.reputationChangeDay);
+        }
+        else {
+            user.verb = 'earned';
         }
 
         return template.supplant(user);
