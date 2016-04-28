@@ -3013,7 +3013,8 @@ module.exports = function (bot) {
 },{}],20:[function(require,module,exports){
 'use strict';
 
-var defs = require('static/qtyDefinitions.js');
+var defs = require('static/qtyDefinitions'),
+    SuggestionDictionary = require('suggestionDict').SuggestionDictionary;
 
 var UNITS = defs.UNITS,
     BASE_UNITS = defs.BASE_UNITS,
@@ -3037,6 +3038,11 @@ var UNITS = defs.UNITS,
     UNIT_MATCH_REGEX = defs.UNIT_MATCH_REGEX,
     UNIT_TEST_REGEX = defs.UNIT_TEST_REGEX;
 
+var suggestionDict = new SuggestionDictionary(2);
+suggestionDict.build(Object.keys(UNIT_MAP).filter(function (key) {
+    return key.length > 1;
+}));
+
 module.exports = function (bot) {
     'use strict';
 
@@ -3054,9 +3060,6 @@ module.exports = function (bot) {
             return 'You have confused me greatly, see `/help convert`.';
         }
 
-        console.log(parts);
-        console.log(parts[1]);
-        console.log(parts[5]);
         bot.log(parts[1], '=>', parts[5], '/convert parsed');
 
         try {
@@ -3266,6 +3269,11 @@ var parse = function(val) {
         // Allow whitespaces between sign and scalar for loose parsing
         scalarMatch = scalarMatch.replace(/\s/g, '');
         this.scalar = parseFloat(scalarMatch);
+
+        // zirak: Handle Infinity inputs and the like
+        if (!isFinite(this.scalar)) {
+            throw new Error('Number too large: ' + scalarMatch);
+        }
     }
     else {
         this.scalar = 1;
@@ -3283,7 +3291,7 @@ var parse = function(val) {
         }
         // Disallow unrecognized unit even if exponent is 0
         if (n === 0 && !UNIT_TEST_REGEX.test(result[1])) {
-            throw new Error('Unit ' + result[1] + ' not recognized');
+            throw createUnrecognizedUnitError(result[1]);
         }
         x = result[1] + ' ';
         nx = '';
@@ -3307,7 +3315,7 @@ var parse = function(val) {
         }
         // Disallow unrecognized unit even if exponent is 0
         if (n === 0 && !UNIT_TEST_REGEX.test(result[1])) {
-            throw new Error('Unit ' + result[1] + ' not recognized');
+            throw createUnrecognizedUnitError(result[1]);
         }
         x = result[1] + ' ';
         nx = '';
@@ -3329,6 +3337,23 @@ var parse = function(val) {
 
 function throwIncompatibleUnits() {
     throw new Error('Incompatible units');
+}
+function createUnrecognizedUnitError(unit) {
+    var msg = 'Unit ' + unit + ' not recognized.',
+        suggestions = suggestionDict.search(unit);
+
+    if (suggestions.length) {
+        var imTired = suggestions.groupBy(function (suggestion) {
+            return UNITS[UNIT_MAP[suggestion]][2];
+        });
+        var goAway = Object.keys(imTired).map(function (kind) {
+            return '* {0}: {1}'.supplant(kind, imTired[kind].join(', '));
+        });
+
+        msg += ' Did you mean:\n' + goAway.join('\n');
+    }
+
+    return new Error(msg);
 }
 
 Qty.prototype = {
@@ -3631,7 +3656,7 @@ function toBaseUnits (numerator, denominator) {
 function parseUnits(units) {
     var unitMatch, normalizedUnits = [];
     if (!UNIT_TEST_REGEX.test(units)) {
-        throw new Error('Unit ' + units + ' not recognized');
+        throw createUnrecognizedUnitError(units);
     }
 
     while ((unitMatch = UNIT_MATCH_REGEX.exec(units))) {
@@ -3971,7 +3996,7 @@ function isDefinitionObject(value) {
 
 Qty.version = '1.6.2';
 
-},{"static/qtyDefinitions.js":52}],21:[function(require,module,exports){
+},{"static/qtyDefinitions":52,"suggestionDict":55}],21:[function(require,module,exports){
 module.exports = function (bot) {
     'use strict';
 
