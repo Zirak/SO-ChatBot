@@ -354,6 +354,18 @@ IO.jsonp.google = function (query, cb) {
     });
 };
 
+IO.jsonp.duckduckgo = function (query, cb) {
+    IO.jsonp({
+        url: 'http://api.duckduckgo.com/',
+        jsonpName: 'callback',
+        data: {
+            format: 'json',
+            q: query
+        },
+        fun: cb
+    });
+};
+
 IO.normalizeUnderscoreProperties = function (obj) {
     Object.iterate(obj, function (key, val) {
         key = key.replace(/_([A-z])/g, function (_, $1) {
