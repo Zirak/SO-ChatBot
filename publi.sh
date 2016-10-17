@@ -28,7 +28,7 @@ then
 	fi
 fi
 
-npm lint
+npm run-script lint
 if [ $? -ne 0 ]
 then
 	exit $?

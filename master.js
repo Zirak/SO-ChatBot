@@ -5152,7 +5152,7 @@ module.exports = function (bot) {
         description: 'Resurrects me (:D) if I\'m down (D:)'
     });
 
-    bot.addCommand(bot.CommunityCommand({
+    bot.addCommand({
         name: 'die',
         fun: function () {
             if (bot.stopped) {
@@ -5164,10 +5164,8 @@ module.exports = function (bot) {
             return 'You killed me!';
         },
         permissions: { del: 'NONE', use: 'OWNER' },
-        description: 'Kills me :(',
-        pendingMessage: 'I will shut up after {0} more invocations.'
-    }));
-
+        description: 'Kills me :('
+    });
 };
 
 },{}],31:[function(require,module,exports){
