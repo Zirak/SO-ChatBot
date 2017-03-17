@@ -1,7 +1,16 @@
 {
-	"email": "you can guess",
-	"password": "what these are",
+    "email": "you can guess",
+    "password": "what these are",
 
-	"siteUrl": "https://stackoverflow.com",
-	"roomUrl": "https://chat.stackoverflow.com/rooms/1"
+    "siteUrl": "https://stackoverflow.com",
+    "roomUrl": "https://chat.stackoverflow.com/rooms/1",
+    "loginUrl": "https://stackexchange.com/users/login",
+
+    "scriptUrl": "http://localhost/master.js",
+
+    "driverOptions": {
+        "desiredCapabilities": {
+            "browserName": "phantomjs"
+        }
+    }
 }

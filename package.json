@@ -2,10 +2,9 @@
   "name": "so-chatbot",
   "version": "0.2.0",
   "description": "A chatbot for StackOverflow.",
-  "main": "run-headless.js",
+  "main": "run-headless-webdriver.js",
   "dependencies": {
-    "nightmare": "^1.8.1"
-  },
+  "webdriverio": "3.4.0"
   "devDependencies": {
     "browserify": "^13.0.0",
     "eslint": "^2.8.0",
