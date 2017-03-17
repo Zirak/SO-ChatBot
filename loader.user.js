@@ -8,5 +8,5 @@
 // ==/UserScript==
 
 var s = document.createElement( 'script' );
-s.src = 'https://raw.github.com/Zirak/SO-ChatBot/master/master.js';
+s.src = 'https://rawgit.com/Zirak/SO-ChatBot/master/master.js';
 document.head.appendChild( s );
