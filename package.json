@@ -4,7 +4,7 @@
   "description": "A chatbot for StackOverflow.",
   "main": "run-headless.js",
   "dependencies": {
-    "nightmare": "^1.8.1"
+    "chrome-remote-interface": "^0.24.3"
   },
   "devDependencies": {
     "browserify": "^13.0.0",

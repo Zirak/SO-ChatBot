@@ -1,126 +1,119 @@
-var Nightmare = require('nightmare'),
-	readline = require('readline');
-
-var hound = new Nightmare({
-	cookiesFile: 'cookies.jar'
-});
+var cri = require('chrome-remote-interface');
+var fs = require('fs');
+var repl = require('readline');
+var util = require('util');
 
 var config = require('./run-headless.config.json');
 
-function once(fn) {
-	var called = false, res;
-	return function () {
-		if (called) {
-			return res;
-		}
+cri(async (client) => {
+    try {
+        await demLogics(client);
+    }
+    catch (e) {
+        console.error(e);
+    }
+    finally {
+        client.close();
+        console.log('Have a nice day!');
+    }
+}).on('error', console.error);
 
-		called = true;
-		res = fn.apply(this, arguments);
+async function demLogics(client) {
+    var { DOM, Page, Runtime } = client;
 
-		return res;
-	};
+    await Promise.all([
+        DOM.enable(),
+        Page.enable(),
+        Runtime.enable()
+    ]);
+
+    await Page.navigate({ url: config.siteUrl + '/users/login/' });
+    await Page.loadEventFired();
+    await screenshot('pics/login-pre.png', client);
+
+    var url = await getUrl(client);
+    if (!/login-add($|\?)/.test(url)) {
+        console.log('Need to authenticate');
+        await loginToSE(client);
+    }
+    else {
+        console.log('Cool, already logged in');
+    }
+
+    await injectBot(client);
+    console.log('Injected bot');
 }
 
-hound.drainQueue = function (cb) {
-	var self = hound;
+async function loginToSE(client) {
+    var { DOM, Page } = client;
 
-	setTimeout(next, 0);
-	function next(err) {
-		var item = self.queue.shift();
-		if (!item) {
-			cb && cb(err, self);
-			return;
-		}
+    var { root: { nodeId: documentId } } = await DOM.getDocument({ depth: 0 });
 
-		var method = item[0],
-			args = item[1];
-		args.push(once(next));
-		method.apply(self, args);
-	}
+    await Promise.all([
+        type('#login-form #email', config.email, client, documentId),
+        type('#login-form #password', config.password, client, documentId)
+    ]);
+    await screenshot('pics/login-filled.png', client);
+
+    await click('#login-form #submit-button', client);
+    await Page.loadEventFired();
+    await screenshot('pics/login-post.png', client);
+}
+
+async function injectBot(client) {
+    var { Page, Runtime } = client;
+
+    await Page.navigate({ url: config.roomUrl });
+    await Page.loadEventFired();
+    await screenshot('pics/chat.png', client);
+
+    await Runtime.evaluate({
+        expression: `
+var script = document.createElement('script');
+script.src = 'https://rawgit.com/Zirak/SO-ChatBot/master/master.js';
+script.onload = function() {
+    bot.activateDevMode();
+    console.log('Loaded bot');
+    bot.adapter.out.add('I will derive!');
 };
-
-function seLogin () {
-	hound
-		.type('#se-login input[type="email"]', config.email)
-		.type('#se-login input[type="password"]', config.password)
-		.click('#se-login input[type="button"]')
-		.wait()
-		.screenshot('pics/login.png');
-}
-function injectToChat (hound) {
-	hound
-		.goto(config.roomUrl)
-		.wait()
-		.screenshot('pics/chat.png')
-		.evaluate(function () {
-			var script = document.createElement('script');
-			script.src = 'https://raw.github.com/Zirak/SO-ChatBot/master/master.js';
-			script.onload = function() {
-				bot.activateDevMode();
-				console.log('Loaded bot');
-				bot.adapter.out.add('I will derive!');
-			};
-			document.head.appendChild(script);
-		}, function () {
-			console.log('Injected chatbot.');
-		});
+document.head.appendChild(script);`
+    });
 }
 
-hound
-	.goto(config.siteUrl + '/users/login/')
-	.screenshot('pics/pre-login.png')
-	.wait(1000)
-	.url(function (url) {
-		if (!/login-add$/.test(url)) {
-			console.log('Need to authenticate');
-			hound.use(seLogin);
-		}
-		else {
-			console.log('Cool, already logged in');
-		}
+// rando utils because fml
 
-		hound.use(injectToChat);
-		hound.drainQueue(function () {
-			console.log('Should be done loading stuff.');
-			hitTheRepl();
-		});
-	})
-	.setup(function () {
-		hound.drainQueue();
-	});
+async function type(selector, value, { DOM }, documentId) {
+    var { nodeId } = await DOM.querySelector({
+        selector,
+        nodeId: documentId
+    });
 
-function hitTheRepl() {
-	var repl = readline.createInterface({
-		input: process.stdin,
-		output: process.stdout
-	});
+    await DOM.setAttributeValue({
+        nodeId,
+        name: 'value',
+        value
+    });
+}
 
-	console.log('You are now in a REPL with the remote page. Have fun!');
+async function click(selector, { Runtime }) {
+    // as of yet, the only way to dispatch mouse events is via coordinates
+    // that's rather lame so we do something lamer
+    await Runtime.evaluate({
+        expression: `document.querySelector('${selector}').click()`
+    });
+    // plz no kill me i have family, kidnap me and depand ransom
+    // or just kill them
+}
 
-	hound.on('consoleMessage', function (msg) {
-		console.log('<', msg);
-	});
-	hound.on('error', function (msg) {
-		console.log('! ', msg);
-	});
+async function getUrl({ Runtime }) {
+    var { result: { value } } = await Runtime.evaluate({
+        expression: 'location.href'
+    });
+    return value;
+}
 
-	repl.on('line', function (data) {
-		hound.evaluate(function (code) {
-			try {
-				return eval(code);
-			}
-			catch (e) {
-				return e.message;
-			}
-		}, function (res) {
-			console.log('$', res);
-			repl.prompt();
-		}, data).drainQueue();
-	});
-	repl.on('close', function () {
-		console.log('Leaving the nightmare...');
-		hound.teardownInstance();
-	});
+async function screenshot(ssName, { Page }) {
+    var ss = new Buffer((await Page.captureScreenshot()).data, 'base64');
 
-	repl.prompt();
+    return await util.promisify(fs.writeFile)(ssName, ss, 'base64');
 }
