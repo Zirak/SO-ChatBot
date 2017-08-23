@@ -30,7 +30,7 @@ module.exports = function (bot) {
         bot.log(query, resultIndex, '/urban input');
 
         bot.IO.jsonp({
-            url: 'http://api.urbandictionary.com/v0/define',
+            url: 'https://api.urbandictionary.com/v0/define',
             data: {
                 term: query
             },
