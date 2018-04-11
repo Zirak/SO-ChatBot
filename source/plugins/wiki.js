@@ -3,7 +3,7 @@ module.exports = function (bot) {
 
     function command (args, cb) {
         bot.IO.jsonp({
-            url: 'http://en.wikipedia.org/w/api.php',
+            url: 'https://en.wikipedia.org/w/api.php',
             jsonpName: 'callback',
             data: {
                 action: 'opensearch',
