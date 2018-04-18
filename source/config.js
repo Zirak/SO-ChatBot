@@ -12,13 +12,13 @@ module.exports = function (bot) {
             pattern: '!!',
             welcomeMessage: welcomeFmt.supplant(rulesLink),
 
-            // visit OpenWeatherMap site to obtain a key.
-            // the sample key no longer works.
-            weatherKey: 'sample',
+            // these must be set for the weather
+            // command and backup command respectivly.
+            // I've removed the sample keys so I can easily
+            // change them with the bot loader script.
 
-            // visit github to obtain a key
-            // no public keys work.
-            githubToken: 'sample'
+            //weatherKey: '',
+            //githubToken: ''
         },
         bot.memory.get('config', {})
     );
