@@ -1,4 +1,4 @@
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+(function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 /*global exports*/
 
 // some sort of pseudo constructor
@@ -612,6 +612,7 @@ exports.Message = function (text, msgObj) {
 
 },{}],4:[function(require,module,exports){
 module.exports = function (bot) {
+require("plugins/STOP.js")(bot);
 require("plugins/afk.js")(bot);
 require("plugins/ban.js")(bot);
 require("plugins/converter.js")(bot);
@@ -633,7 +634,6 @@ require("plugins/nudge.js")(bot);
 require("plugins/quote.js")(bot);
 require("plugins/spec.js")(bot);
 require("plugins/stat.js")(bot);
-require("plugins/STOP.js")(bot);
 require("plugins/substitution.js")(bot);
 require("plugins/summon.js")(bot);
 require("plugins/undo.js")(bot);
@@ -6823,7 +6823,7 @@ module.exports = function (bot) {
             }
 
             bot.IO.jsonp({
-                url: 'http://api.openweathermap.org/data/2.5/weather',
+                url: 'https://api.openweathermap.org/data/2.5/weather',
                 jsonpName: 'callback',
                 data: {
                     lat: lat,
@@ -6840,7 +6840,7 @@ module.exports = function (bot) {
 
         city: function (city, cb) {
             bot.IO.jsonp({
-                url: 'http://api.openweathermap.org/data/2.5/weather',
+                url: 'https://api.openweathermap.org/data/2.5/weather',
                 jsonpName: 'callback',
                 data: {
                     q: city,
@@ -6882,7 +6882,7 @@ module.exports = function (bot) {
 
             ret =
                 bot.adapter.link(
-                    data.name, 'http://openweathermap.org/city/' + data.id
+                    data.name, 'https://openweathermap.org/city/' + data.id
                 ) + ': ';
 
             // to help our dear American friends, also include fahrenheit
@@ -7034,7 +7034,7 @@ module.exports = function (bot) {
 
     function command (args, cb) {
         bot.IO.jsonp({
-            url: 'http://en.wikipedia.org/w/api.php',
+            url: 'https://en.wikipedia.org/w/api.php',
             jsonpName: 'callback',
             data: {
                 action: 'opensearch',
