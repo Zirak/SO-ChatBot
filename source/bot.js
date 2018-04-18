@@ -30,6 +30,7 @@ var bot = window.bot = {
     config: {},
 
     parseMessage: function (msgObj) {
+
         if (!this.validateMessage(msgObj)) {
             bot.log(msgObj, 'parseMessage invalid');
             return;
@@ -164,7 +165,7 @@ var bot = window.bot = {
 
     validateMessage: function (msgObj) {
         var msg = msgObj.content.trim();
-
+        
         // a bit js bot specific...make sure it isn't just !!! all round. #139
         if (this.config.pattern === '!!' && (/^!!!+$/).test(msg)) {
             bot.log('special skip');

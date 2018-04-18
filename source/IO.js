@@ -284,6 +284,10 @@ IO.xhr = function (params) {
         params.data = IO.urlstringify(params.data);
     }
 
+    if (params.method === 'GET') {
+        params.url += '?' + params.data;
+    }
+
     var xhr = new XMLHttpRequest();
     xhr.open(params.method, params.url);
 

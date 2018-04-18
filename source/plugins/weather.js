@@ -31,9 +31,8 @@ module.exports = function (bot) {
                 return;
             }
 
-            bot.IO.jsonp({
+            bot.IO.xhr({
                 url: 'https://api.openweathermap.org/data/2.5/weather',
-                jsonpName: 'callback',
                 data: {
                     lat: lat,
                     lon: lon,
@@ -42,35 +41,44 @@ module.exports = function (bot) {
                     type: 'json'
                 },
 
-                fun: this.finishCb(cb),
-                error: this.errorCb(cb)
+                complete: this.completeCb(cb)
             });
         },
 
         city: function (city, cb) {
-            bot.IO.jsonp({
+            bot.IO.xhr({
                 url: 'https://api.openweathermap.org/data/2.5/weather',
-                jsonpName: 'callback',
                 data: {
                     q: city,
                     appid: bot.config.weatherKey,
                     type: 'json'
                 },
 
-                fun: this.finishCb(cb),
-                error: this.errorCb(cb)
+                complete: this.completeCb(cb)
             });
         },
 
+        completeCb: function (cb) {
+            var self = this;
+            return function (resp) {
+                const data = JSON.parse(resp);
+                if ('cod' in data) {
+                    return self.errorCb(cb)(data);
+                }
+                self.finishCb(cb)(data);
+            };
+        },
         finishCb: function (cb) {
             var self = this;
-
             return function (resp) {
                 cb(self.format(resp));
             };
         },
         errorCb: function (cb) {
-            return cb;
+            var self = this;
+            return function (resp) {
+                cb(self.format(resp));
+            };
         },
 
         format: function (resp) {
