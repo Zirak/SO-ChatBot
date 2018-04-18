@@ -32,7 +32,7 @@ module.exports = function (bot) {
             }
 
             bot.IO.jsonp({
-                url: 'http://api.openweathermap.org/data/2.5/weather',
+                url: 'https://api.openweathermap.org/data/2.5/weather',
                 jsonpName: 'callback',
                 data: {
                     lat: lat,
@@ -91,7 +91,7 @@ module.exports = function (bot) {
 
             ret =
                 bot.adapter.link(
-                    data.name, 'http://openweathermap.org/city/' + data.id
+                    data.name, 'https://openweathermap.org/city/' + data.id
                 ) + ': ';
 
             // to help our dear American friends, also include fahrenheit
