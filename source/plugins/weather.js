@@ -49,7 +49,7 @@ module.exports = function (bot) {
 
         city: function (city, cb) {
             bot.IO.jsonp({
-                url: 'http://api.openweathermap.org/data/2.5/weather',
+                url: 'https://api.openweathermap.org/data/2.5/weather',
                 jsonpName: 'callback',
                 data: {
                     q: city,
