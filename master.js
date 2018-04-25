@@ -1940,6 +1940,25 @@ module.exports = function (bot) {
         }
     };
 
+    bot.prettifyStr = function(oldStr,newLen){
+        var oldLen = oldStr.length
+        var newStr = oldStr
+        while(oldLen < newLen){
+            oldLen++
+            newStr+=" "
+        }
+        return newStr
+    }
+    bot.prettify2dArr = function(Arr2D){
+        Arr2D = Arr2D.map(function(item,index){
+            var itemName = bot.prettifyStr(item[0],12)
+            var itemDescription = bot.prettifyStr(item[1], 90)
+            return "    │"+itemName+"│"+itemDescription+"│"
+        })
+        Arr2D = Arr2D.join("\n    ├────────────┼────────────────────────────────────────────────────────────────────────────────┤\n")
+        var result = "    ┌────────────┬────────────────────────────────────────────────────────────────────────────────┐\n" + Arr2D + "    └────────────┴────────────────────────────────────────────────────────────────────────────────┘\n"
+        return result
+    }
     commands.listcommands = (function () {
         function getSortedCommands() {
             // well, sort of sorted. we want to sort the commands, but have the
@@ -1956,12 +1975,17 @@ module.exports = function (bot) {
 
             var helpIndex = sortedCommands.indexOf('help');
             sortedCommands.unshift(sortedCommands.splice(helpIndex, 1)[0]);
-
+            sortedCommands=sortedCommands.map(function(item){
+                return [item,bot.commands[item].description]
+            })
             return sortedCommands;
         }
 
         return function (args) {
-            return args.stringifyGiantArray(getSortedCommands());
+              var result = bot.prettify2dArr(getSortedCommands())
+              window.re = result
+            bot.adapter.out.add(result)
+              console.log(result)
         };
     })();
 
@@ -5696,7 +5720,7 @@ module.exports = function (bot) {
             'Get a quote: `/quote get ...quoteName',
             'List quotes: `/quote list [username]`',
             'Get a random quote: `/quote random`'
-        ].join('\n'),
+        ].map(function(item){return bot.prettifyStr(item,90)}).join('│\n    │            │'),
         async: true
     });
 
