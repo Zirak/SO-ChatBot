@@ -2097,18 +2097,22 @@ module.exports = function (bot) {
 
 },{}],10:[function(require,module,exports){
 module.exports = function (bot) {
-    var welcomeFmt = 'Welcome to the JavaScript chat! Please review the {0}. ' +
-        'Please don\'t ask if you can ask or if anyone\'s around; just ask ' +
-        'your question, and if anyone\'s free and interested they\'ll help.';
+    var welcomeFmt = "Welcome to the JavaScript chat! Please review the {rulesLink}. " +
+        "If you have a question, just post it, and if anyone's free and interested they'll help. " +
+        "If you want to report an abusive user or a problem in this room, visit our {metaLink}.";
     var rulesLink = bot.adapter.link(
         'room rules',
-        'http://rlemon.github.com/so-chat-javascript-rules/'
+        'https://rlemon.github.com/so-chat-javascript-rules/'
+    );
+    var metaLink = bot.adapter.link(
+        'meta',
+        'https://github.com/JavaScriptRoom/culture/'
     );
 
     var config = Object.merge(
         {
             pattern: '!!',
-            welcomeMessage: welcomeFmt.supplant(rulesLink),
+            welcomeMessage: welcomeFmt.supplant({ rulesLink: rulesLink, metaLink: metaLink }),
 
             // these must be set for the weather
             // command and backup command respectivly.
