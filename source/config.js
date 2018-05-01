@@ -1,7 +1,7 @@
 module.exports = function (bot) {
-    var welcomeFmt = "Welcome to the JavaScript chat! Please review the {rulesLink}. " +
-        "If you have a question, just post it, and if anyone's free and interested they'll help. " +
-        "If you want to report an abusive user or a problem in this room, visit our {metaLink}.";
+    var welcomeFmt = 'Welcome to the JavaScript chat! Please review the {rulesLink}. ' +
+        'If you have a question, just post it, and if anyone\'s free and interested they\'ll help. ' +
+        'If you want to report an abusive user or a problem in this room, visit our {metaLink}.';
     var rulesLink = bot.adapter.link(
         'room rules',
         'https://rlemon.github.com/so-chat-javascript-rules/'
