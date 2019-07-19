@@ -616,6 +616,7 @@ exports.Message = function (text, msgObj) {
 
 },{}],4:[function(require,module,exports){
 module.exports = function (bot) {
+require("plugins/STOP.js")(bot);
 require("plugins/afk.js")(bot);
 require("plugins/backup.js")(bot);
 require("plugins/ban.js")(bot);
@@ -639,7 +640,6 @@ require("plugins/nudge.js")(bot);
 require("plugins/quote.js")(bot);
 require("plugins/spec.js")(bot);
 require("plugins/stat.js")(bot);
-require("plugins/STOP.js")(bot);
 require("plugins/substitution.js")(bot);
 require("plugins/summon.js")(bot);
 require("plugins/undo.js")(bot);
@@ -4682,7 +4682,7 @@ module.exports = function (bot) {
     'use strict';
 
     var randomWord = function (length, cb) {
-        var url = 'http://sleepy-bastion-8674.herokuapp.com/';
+        var url = 'https://sleepy-bastion-8674.herokuapp.com/';
 
         if (Number(length)) {
             url += '?length=' + length;

@@ -35,11 +35,16 @@ wizard.bundle((err, buff) => {
     console.log('minifying...');
     var minified = uglify.minify(buff.toString('utf8'), { fromString: true });
     console.log('Minified. Writing master.min.js...');
-    fs.writeFile('master.min.js', minified.code, () => {
+    fs.writeFile('master.min.js', minified.code, function() {
         console.log('wrote master.min.js');
     });
 
-    fs.unlink('source/' + pluginLoaderPath);
+    fs.unlink('source/' + pluginLoaderPath, function(err) {
+        if( err ) {
+            console.error('Oh noes!')
+            console.error(err);
+        }
+    });
 });
 
 function getJSFiles(dirPath) {
