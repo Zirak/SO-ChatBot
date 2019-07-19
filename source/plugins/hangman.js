@@ -2,7 +2,7 @@ module.exports = function (bot) {
     'use strict';
 
     var randomWord = function (length, cb) {
-        var url = 'http://sleepy-bastion-8674.herokuapp.com/';
+        var url = 'https://sleepy-bastion-8674.herokuapp.com/';
 
         if (Number(length)) {
             url += '?length=' + length;
