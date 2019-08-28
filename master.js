@@ -5082,7 +5082,7 @@ module.exports = function (bot) {
 
         function parseArgs (args) {
             var parts = args.parse(),
-                last = args.pop(), // todo: remove this, or add options
+                last = parts.pop(), // todo: remove this, or add options
                 ret = {};
 
             // /juicebox usrid juicebox
