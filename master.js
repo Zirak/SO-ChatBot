@@ -5030,7 +5030,7 @@ module.exports = function (bot) {
 },{}],31:[function(require,module,exports){
 module.exports = function (bot) {
     'use strict';
-    // Zirak, this is a clone of moustachify. didn't you get cross-room stuff working?
+    // Zirak, this is a clone of moustachify. didn't you get cross-room stuff working? 
     var unexisto = 'User {0} was not found in room {1} (sorry, juicebox only ' +
         'works there).';
 
@@ -5082,6 +5082,7 @@ module.exports = function (bot) {
 
         function parseArgs (args) {
             var parts = args.parse(),
+                last = args.pop(), // todo: remove this, or add options
                 ret = {};
 
             // /juicebox usrid juicebox
